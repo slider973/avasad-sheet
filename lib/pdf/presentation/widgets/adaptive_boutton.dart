@@ -16,6 +16,9 @@ class AdaptiveButton extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     if (theme.platform == TargetPlatform.iOS) {
       return CupertinoButton(
+       color: theme.primaryColor,
+        pressedOpacity: 0.5,
+        borderRadius: BorderRadius.circular(50),
         onPressed: onPressed,
         child: Text(text),
       );

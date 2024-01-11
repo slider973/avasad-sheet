@@ -7,6 +7,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:time_sheet/services/logger_service.dart';
 
 import '../../domain/use_cases/generate_date_usecase.dart';
+import '../../domain/use_cases/generate_week_usecase.dart';
 import '../widgets/adaptive_boutton.dart';
 
 Future<Uint8List> _loadImage() async {
@@ -114,8 +115,7 @@ class PdfDocument extends StatelessWidget {
         child: AdaptiveButton(
           onPressed: () {
             generatePdf(); // Générer le PDF
-            List<String> dates = generateDateList(2022, 11);
-            print(dates);
+           WeekGeneratorUseCase().execute();
           },
           text: 'Générer PDF', // Texte du bouton
         ),
