@@ -1,13 +1,13 @@
 import 'work_day.dart';
 
 class WorkWeek {
-  List<Workday> days;
+  List<Workday> workday;
 
-  WorkWeek(this.days);
+  WorkWeek(this.workday);
 
   Duration calculateTotalWeekHours() {
     Duration total = const Duration();
-    for (var day in days) {
+    for (var day in workday) {
       total += day.calculateTotalHours();
     }
     return total;

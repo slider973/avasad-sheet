@@ -3,7 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 
 import '../../domain/entities/timesheet_entry.dart';
-import '../pages/time-sheet/bloc/time_sheet_bloc.dart'; // Ajustez le chemin d'importation
+import '../pages/time-sheet/bloc/time_sheet/time_sheet_bloc.dart';
+
 
 class TimesheetDisplayWidget extends StatelessWidget {
   const TimesheetDisplayWidget({super.key});

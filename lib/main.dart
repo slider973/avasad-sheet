@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:logger/logger.dart';
@@ -9,11 +10,17 @@ import 'home/presentation/pages/home_page.dart';
 import 'pdf/presentation/pages/pdf_document.dart';
 import 'pdf/presentation/widgets/calandar_page/calandar_page.dart';
 
+import './services/injection_container.dart' as di;
 
 
-void main() {
+
+void main() async {
 
   logger.i('main');
+  WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('fr_CH', null);
+
+  await di.setup();
   initializeDateFormatting().then((_) => runApp(const MyApp()));
 }
 

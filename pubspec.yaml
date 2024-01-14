@@ -18,6 +18,8 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # of the product and file versions while build-number is used as the build suffix.
 version: 1.0.0+1
 
+isar_version: &isar_version ^3.1.0+1
+
 environment:
   sdk: '>=3.1.2 <4.0.0'
 
@@ -37,6 +39,8 @@ dependencies:
   path_provider: ^2.1.1
   intl: ^0.18.1
   table_calendar: ^3.0.9
+  get_it: ^7.6.6
+  isar: *isar_version
 
 
 
@@ -47,6 +51,9 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  isar_flutter_libs: *isar_version # contains Isar Core
+  isar_generator: *isar_version
+  build_runner: any
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
