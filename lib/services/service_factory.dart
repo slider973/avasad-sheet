@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 
+import '../BottomNavTab/presentation/pages/bloc/bottom_navigation_bar_bloc.dart';
 import '../home/presentation/manager/init_data_bloc.dart';
 import '../pdf/domain/use_cases/find_pointed_list_usecase.dart';
 import '../pdf/domain/use_cases/save_timesheet_entry_usecase.dart';
@@ -29,6 +30,9 @@ class ServiceFactory extends StatelessWidget {
         create: (context) => TimeSheetListBloc(
             findPointedListUseCase: getIt<FindPointedListUseCase>(),
         ),
+      ),
+      BlocProvider<BottomNavigationBarBloc>(
+        create: (context) => BottomNavigationBarBloc(),
       ),
     ], child: child);
   }

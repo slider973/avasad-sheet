@@ -1,6 +1,5 @@
 import 'package:isar/isar.dart';
 import 'package:time_sheet/pdf/data/models/timesheet_entry.dart';
-import 'package:time_sheet/pdf/domain/entities/timesheet_entry.dart';
 
 import '../../domain/data_source/time_sheet.dart';
 
