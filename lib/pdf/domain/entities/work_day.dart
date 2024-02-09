@@ -9,7 +9,7 @@ class Workday {
 
   // Helper function to parse time string to DateTime
   DateTime _parseTime(String time) {
-    DateFormat format = DateFormat.Hm();  // Assuming time is in HH:mm format
+    DateFormat format = DateFormat.Hm(); // Assuming time is in HH:mm format
     return format.parse(time);
   }
 
@@ -25,6 +25,13 @@ class Workday {
     Duration afternoonDuration = endAfternoon.difference(startAfternoon);
 
     return morningDuration + afternoonDuration;
+  }
+
+  String formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    String hours = twoDigits(duration.inHours);
+    String minutes = twoDigits(duration.inMinutes.remainder(60));
+    return "$hours:$minutes";
   }
 
   Workday disable() {

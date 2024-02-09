@@ -4,8 +4,10 @@ import 'package:get_it/get_it.dart';
 
 import '../BottomNavTab/presentation/pages/bloc/bottom_navigation_bar_bloc.dart';
 import '../home/presentation/manager/init_data_bloc.dart';
+import '../pdf/data/repositories/timesheet_repository_impl.dart';
 import '../pdf/domain/use_cases/find_pointed_list_usecase.dart';
 import '../pdf/domain/use_cases/save_timesheet_entry_usecase.dart';
+import '../pdf/presentation/pages/pdf/bloc/pdf_bloc.dart';
 import '../pdf/presentation/pages/time-sheet/bloc/time_sheet/time_sheet_bloc.dart';
 import '../pdf/presentation/pages/time-sheet/bloc/time_sheet_list/time_sheet_list_bloc.dart';
 
@@ -33,6 +35,9 @@ class ServiceFactory extends StatelessWidget {
       ),
       BlocProvider<BottomNavigationBarBloc>(
         create: (context) => BottomNavigationBarBloc(),
+      ),
+      BlocProvider<PdfBloc>(
+        create: (context) => PdfBloc(getIt<TimesheetRepositoryImpl>()),
       ),
     ], child: child);
   }

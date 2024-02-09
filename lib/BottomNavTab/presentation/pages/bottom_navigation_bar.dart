@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../pdf/presentation/pages/pdf_document.dart';
 import '../../../pdf/presentation/pages/time_sheet_page.dart';
 import '../widgets/bottom_navigation_bar_widget.dart';
 import 'bloc/bottom_navigation_bar_bloc.dart';
@@ -19,13 +20,13 @@ class BottomNavigationBarPage extends StatelessWidget {
             currentScreen = const TimeSheetPage();
             break;
           case 1:
-            currentScreen = const Text('Business');
+            currentScreen = const PdfDocument();
             break;
           case 2:
             currentScreen = const Text('School');
             break;
           default:
-            currentScreen = const Text('Home');
+            currentScreen = const TimeSheetPage();
         }
         return Column(
           mainAxisAlignment: MainAxisAlignment.end,

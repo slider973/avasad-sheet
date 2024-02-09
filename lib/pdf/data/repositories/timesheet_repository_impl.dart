@@ -17,18 +17,31 @@ class TimesheetRepositoryImpl implements TimesheetRepository {
     final entryModel = TimesheetEntryMapper.toModel(entry);
     await datasource.saveTimeSheet(entryModel);
   }
+
   @override
   Future<List<TimesheetEntry>> getTimesheetEntries() async {
     final entries = await datasource.getTimesheetEntries();
     return entries.map((e) => TimesheetEntryMapper.fromModel(e)).toList();
   }
+
   @override
-  Future<List<TimesheetEntry>> getTimesheetEntriesForWeek(int weekNumber) async {
+  Future<List<TimesheetEntry>> getTimesheetEntriesForWeek(
+      int weekNumber) async {
     final allEntries = await datasource.getTimesheetEntries();
 
-    return allEntries.where((entry) {
-      return TimeSheetUtils.getWeekNumber(entry.dayDate) == weekNumber;
-    }).map((e) => TimesheetEntryMapper.fromModel(e)).toList();
+    return allEntries
+        .where((entry) {
+          return TimeSheetUtils.getWeekNumber(entry.dayDate) == weekNumber;
+        })
+        .map((e) => TimesheetEntryMapper.fromModel(e))
+        .toList();
   }
 
+  @override
+  Future<List<TimesheetEntry>> findEntriesFromMonthOf(int monthNumber) {
+    logger.i('findEntriesFromMonthOf $monthNumber');
+    return datasource.findEntriesFromMonthOf(monthNumber).then((entries) {
+      return entries.map((e) => TimesheetEntryMapper.fromModel(e)).toList();
+    });
+  }
 }

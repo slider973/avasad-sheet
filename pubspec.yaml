@@ -53,6 +53,7 @@ dev_dependencies:
     sdk: flutter
   isar_flutter_libs: *isar_version # contains Isar Core
   isar_generator: *isar_version
+  mockito: ^5.0.15
   build_runner: any
 
   # The "flutter_lints" package below contains a set of recommended lints to

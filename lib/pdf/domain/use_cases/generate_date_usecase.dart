@@ -1,7 +1,5 @@
 import 'package:intl/intl.dart';
 
-
-
 class DateGenerator {
   DateTime startDate;
   DateTime endDate;
