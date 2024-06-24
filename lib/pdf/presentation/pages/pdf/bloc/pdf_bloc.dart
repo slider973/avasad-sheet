@@ -165,14 +165,25 @@ Future<void> generatePdf(List<WorkWeek> weeks) async {
               pw.TableRow(
                 children: [
                   pw.Table(
+                    border: pw.TableBorder(
+                      top: pw.BorderSide.none,
+                      bottom: pw.BorderSide.none,
+                      left: pw.BorderSide.none,
+                      right: pw.BorderSide.none,
+                      horizontalInside: pw.BorderSide.none,
+                      verticalInside: pw.BorderSide.none,
+                    ),
                     children: [
                       pw.TableRow(
                         children: [
-                          pw.Text('Total de la semaine: ${week.formatDuration(week.calculateTotalWeekHours())}', style: const pw.TextStyle(fontSize: textSize)),
+                          pw.Text(
+                            'Total de la semaine: ${week.formatDuration(week.calculateTotalWeekHours())}',
+                            style: const pw.TextStyle(fontSize: textSize),
+                          ),
                         ],
                       ),
                     ],
-                  ),
+                  )
                 ],
               ),
             ],
