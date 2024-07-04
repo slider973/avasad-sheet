@@ -14,7 +14,6 @@ class BottomNavigationBarPage extends StatelessWidget {
     return Scaffold(body: BlocBuilder<BottomNavigationBarBloc, int>(
       builder: (context, currentIndex) {
         Widget currentScreen;
-
         switch (currentIndex) {
           case 0:
             currentScreen = const TimeSheetPage();
@@ -24,6 +23,9 @@ class BottomNavigationBarPage extends StatelessWidget {
             break;
           case 2:
             currentScreen = const Text('School');
+            break;
+          case 3:
+            currentScreen = const Text('pointage');
             break;
           default:
             currentScreen = const TimeSheetPage();

@@ -17,7 +17,8 @@ Future<void> setup() async {
     directory: dir.path,
   );
   // a decommenter pour insérer des données de test
-  // TestDataInserter(isar).insertTestData();
+
+  //TestDataInserter(isar).insertTestData();
 
   getIt.registerSingleton<Isar>(isar);
   getIt.registerLazySingleton<LocalDatasourceImpl>(() => LocalDatasourceImpl(getIt<Isar>()));

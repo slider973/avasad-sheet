@@ -6,6 +6,7 @@ import 'package:time_sheet/services/service_factory.dart';
 import 'BottomNavTab/presentation/pages/bottom_navigation_bar.dart';
 
 import './services/injection_container.dart' as di;
+import './services/request_permission_handler.dart' as permission;
 
 void main() async {
   logger.i('main');
@@ -13,6 +14,7 @@ void main() async {
   await initializeDateFormatting('fr_CH', null);
 
   await di.setup();
+  await permission.handlePermission();
   initializeDateFormatting().then((_) => runApp(const MyApp()));
 }
 
@@ -26,7 +28,7 @@ class MyApp extends StatelessWidget {
         child: MaterialApp(
       title: 'Time Sheet',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueAccent),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
         useMaterial3: false,
       ),
       home: const BottomNavigationBarPage(),

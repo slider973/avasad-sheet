@@ -31,8 +31,14 @@ class BottomNavigationBarWidget extends StatelessWidget {
                     .read<BottomNavigationBarBloc>()
                     .add(BottomNavigationBarEvent.tab3);
                 break;
+                case 3:
+                context
+                    .read<BottomNavigationBarBloc>()
+                    .add(BottomNavigationBarEvent.tab4);
+                break;
             }
           },
+          type: BottomNavigationBarType.fixed,
           items: const [
             BottomNavigationBarItem(
               icon: Icon(Icons.home),
@@ -40,6 +46,10 @@ class BottomNavigationBarWidget extends StatelessWidget {
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.business),
+              label: 'Liste de pointage',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.list_alt),
               label: 'Pdf',
             ),
             BottomNavigationBarItem(

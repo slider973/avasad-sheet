@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:time_sheet/pdf/presentation/widgets/watch_counter/timerv2.dart';
+import './_buildTimer.dart';
 
 class WatchCounter extends StatefulWidget {
 
@@ -40,6 +42,12 @@ class _WatchCounterState extends State<WatchCounter> {
 
   @override
   Widget build(BuildContext context) {
-    return Text(_timeString);
+    return Column(
+      children: [
+      ],
+    );
   }
+
 }
+
+

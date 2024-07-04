@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-
 import '../widgets/adaptive_boutton.dart';
-import '../widgets/countrer.dart';
+import '../widgets/watch_counter/_buildTimer.dart';
+import '../widgets/watch_counter/countrer.dart';
 import '../widgets/days_pointed_list.dart';
-import '../widgets/timesheet_display_widget.dart';
+import '../widgets/timesheet_display_widget/timesheet_display_widget.dart';
 import 'time-sheet/bloc/time_sheet/time_sheet_bloc.dart';
 
 class TimeSheetPage extends StatelessWidget {
@@ -14,21 +14,20 @@ class TimeSheetPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Time sheet')),
-      body: const Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SizedBox(height: 150),
-          TimesheetDisplayWidget(),
-          WatchCounter(),
-          SizedBox(height: 50),
-          FirstLineButton(),
-          SizedBox(height: 20),
-          SecondLineButton(),
-          Expanded(child: DaysPointedListWidget()),
-        ],
-      ),
-    );
+        appBar: AppBar(title: const Text('Time sheet')),
+        backgroundColor: Colors.teal[50],
+        body: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: PointageWidget(),
+                ),
+              ),
+            );
+          },
+        ));
   }
 }
 
@@ -44,18 +43,14 @@ class SecondLineButton extends StatelessWidget {
         AdaptiveButton(
           onPressed: () {
             DateTime now = DateTime.now();
-            context
-                .read<TimeSheetBloc>()
-                .add(TimeSheetStartBreakEvent(now));
+            context.read<TimeSheetBloc>().add(TimeSheetStartBreakEvent(now));
           },
           text: 'Début pause',
         ),
         AdaptiveButton(
           onPressed: () {
             DateTime now = DateTime.now();
-            context
-                .read<TimeSheetBloc>()
-                .add(TimeSheetEndBreakEvent(now));
+            context.read<TimeSheetBloc>().add(TimeSheetEndBreakEvent(now));
           },
           text: 'Fin pause',
         ),
