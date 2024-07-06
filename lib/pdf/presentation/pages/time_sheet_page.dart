@@ -14,20 +14,16 @@ class TimeSheetPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(title: const Text('Time sheet')),
-        backgroundColor: Colors.teal[50],
-        body: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: IntrinsicHeight(
-                  child: PointageWidget(),
-                ),
-              ),
-            );
-          },
-        ));
+      appBar: AppBar(title: const Text('Time sheet')),
+      backgroundColor: Colors.teal[50],
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            PointageWidget(),
+          ],
+        ),
+      ),
+    );
   }
 }
 

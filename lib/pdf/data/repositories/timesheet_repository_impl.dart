@@ -44,4 +44,17 @@ class TimesheetRepositoryImpl implements TimesheetRepository {
       return entries.map((e) => TimesheetEntryMapper.fromModel(e)).toList();
     });
   }
+
+  @override
+  Future<List<TimesheetEntry>> getTimesheetEntriesForMonth(int monthNumber) {
+    final allEntries = datasource.getTimesheetEntries();
+    return allEntries.then((entries) {
+      return entries
+          .where((entry) {
+            return TimeSheetUtils.getMonthNumber(entry.dayDate) == monthNumber;
+          })
+          .map((e) => TimesheetEntryMapper.fromModel(e))
+          .toList();
+    });
+  }
 }

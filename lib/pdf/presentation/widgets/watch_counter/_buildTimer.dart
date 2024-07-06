@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:time_sheet/pdf/presentation/widgets/watch_counter/pointageCard.dart';
 
 class PointageWidget extends StatefulWidget {
   @override
@@ -13,6 +14,9 @@ class _PointageWidgetState extends State<PointageWidget> with SingleTickerProvid
   late AnimationController _controller;
   late Animation<double> _progressionAnimation;
   double _progression = 0.0;
+
+
+  List<Map<String, dynamic>> pointages = [];
 
   @override
   void initState() {
@@ -35,58 +39,51 @@ class _PointageWidgetState extends State<PointageWidget> with SingleTickerProvid
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[200],
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const Text(
+            'Timer de la journée',
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: 300,
+            height: 300,
+            child: CustomPaint(
+              painter: TimerPainter(progression: _progressionAnimation.value),
               child: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
-                      'Timer de la journée',
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    Text(
+                      _etatActuel,
+                      style: const TextStyle(fontSize: 18),
                     ),
-                    const SizedBox(height: 20),
-                    Container(
-                      width: 300,
-                      height: 300,
-                      child: CustomPaint(
-                        painter: TimerPainter(progression: _progressionAnimation.value),
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                _etatActuel,
-                                style: const TextStyle(fontSize: 18),
-                              ),
-                              Text(
-                                _dernierPointage != null
-                                    ? DateFormat('HH:mm').format(_dernierPointage!)
-                                    : '00:00',
-                                style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                    Text(
+                      _dernierPointage != null
+                          ? DateFormat('HH:mm').format(_dernierPointage!)
+                          : '00:00',
+                      style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
                     ),
-                    const SizedBox(height: 20),
-                    _construireBoutonAction(),
                   ],
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 20),
+          _construireBoutonAction(),
+          SizedBox(height: 20),
+          _construireListePointages(),
+        ],
       ),
     );
   }
 
   Widget _construireBoutonAction() {
+    final maintenant = DateTime.now();
     String texte;
     Color couleur;
     switch (_etatActuel) {
@@ -97,10 +94,12 @@ class _PointageWidgetState extends State<PointageWidget> with SingleTickerProvid
       case 'Entrée':
         texte = 'Pause';
         couleur = const Color(0xFF365E32);
+
         break;
       case 'Pause':
         texte = 'Reprise';
         couleur = const Color(0xFF81A263);
+
         break;
       case 'Sortie':
         texte = 'Reset';
@@ -111,7 +110,7 @@ class _PointageWidgetState extends State<PointageWidget> with SingleTickerProvid
         couleur = const Color(0xFFFD9B63);
     }
 
-    return Container(
+    return SizedBox(
       width: 320,
       height: 40,
       child: ElevatedButton(
@@ -130,6 +129,42 @@ class _PointageWidgetState extends State<PointageWidget> with SingleTickerProvid
     );
   }
 
+  Widget _construireListePointages() {
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: pointages.length,
+      itemBuilder: (context, index) {
+        final pointage = pointages[index];
+        return PointageCard(
+          type: pointage['type'],
+          heure: pointage['heure'],
+          onModifier: () => _modifierPointage(pointage),
+        );
+      },
+    );
+  }
+  void _modifierPointage(Map<String, dynamic> pointage) {
+    // Implémentez ici la logique pour modifier un pointage
+    // Par exemple, vous pourriez ouvrir un dialogue pour sélectionner une nouvelle heure
+    showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(pointage['heure']),
+    ).then((nouvelleHeure) {
+      if (nouvelleHeure != null) {
+        setState(() {
+          pointage['heure'] = DateTime(
+            pointage['heure'].year,
+            pointage['heure'].month,
+            pointage['heure'].day,
+            nouvelleHeure.hour,
+            nouvelleHeure.minute,
+          );
+        });
+      }
+    });
+  }
+
   void _actionPointage() {
     final maintenant = DateTime.now();
     setState(() {
@@ -138,22 +173,27 @@ class _PointageWidgetState extends State<PointageWidget> with SingleTickerProvid
         case 'Non commencé':
           _etatActuel = 'Entrée';
           _animerProgression(0.25);
+          pointages.add({'type': 'Entrée', 'heure': maintenant});
           break;
         case 'Entrée':
           _etatActuel = 'Pause';
           _animerProgression(0.5);
+          pointages.add({'type': 'Début pause', 'heure': maintenant});
           break;
         case 'Pause':
           _etatActuel = 'Reprise';
           _animerProgression(0.75);
+          pointages.add({'type': 'Fin pause', 'heure': maintenant});
           break;
         case 'Reprise':
           _etatActuel = 'Sortie';
           _animerProgression(1.0);
+          pointages.add({'type': 'Fin de journée', 'heure': maintenant});
           break;
         case 'Sortie':
           _etatActuel = 'Non commencé';
           _animerProgression(0.0);
+          pointages.clear();
           break;
       }
     });
@@ -170,6 +210,7 @@ class _PointageWidgetState extends State<PointageWidget> with SingleTickerProvid
     _progression = nouvelleValeur;
     _controller.forward(from: 0);
   }
+
 }
 
 class TimerPainter extends CustomPainter {

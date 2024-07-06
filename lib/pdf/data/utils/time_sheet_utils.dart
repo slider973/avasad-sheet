@@ -25,4 +25,8 @@ class TimeSheetUtils {
     DateTime dateTime = dateFormat.parse(date);
     return newFormat.format(dateTime);
   }
+
+  static getMonthNumber(DateTime dayDate) {
+    return int.parse(DateFormat('MM').format(dayDate));
+  }
 }
