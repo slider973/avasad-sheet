@@ -1,7 +1,10 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:time_sheet/features/time_sheet/presentation/widgets/watch_counter/pointageCard.dart';
+
+import '../../pages/time-sheet/bloc/time_sheet/time_sheet_bloc.dart';
 
 class PointageWidget extends StatefulWidget {
   @override
@@ -167,6 +170,8 @@ class _PointageWidgetState extends State<PointageWidget> with SingleTickerProvid
 
   void _actionPointage() {
     final maintenant = DateTime.now();
+    final bloc = context.read<TimeSheetBloc>();
+
     setState(() {
       _dernierPointage = maintenant;
       switch (_etatActuel) {
@@ -174,26 +179,31 @@ class _PointageWidgetState extends State<PointageWidget> with SingleTickerProvid
           _etatActuel = 'Entrée';
           _animerProgression(0.25);
           pointages.add({'type': 'Entrée', 'heure': maintenant});
+          bloc.add(TimeSheetEnterEvent(maintenant));
           break;
         case 'Entrée':
           _etatActuel = 'Pause';
           _animerProgression(0.5);
           pointages.add({'type': 'Début pause', 'heure': maintenant});
+          bloc.add(TimeSheetStartBreakEvent(maintenant));
           break;
         case 'Pause':
           _etatActuel = 'Reprise';
           _animerProgression(0.75);
           pointages.add({'type': 'Fin pause', 'heure': maintenant});
+          bloc.add(TimeSheetEndBreakEvent(maintenant));
           break;
         case 'Reprise':
           _etatActuel = 'Sortie';
           _animerProgression(1.0);
           pointages.add({'type': 'Fin de journée', 'heure': maintenant});
+          bloc.add(TimeSheetOutEvent(maintenant));
           break;
         case 'Sortie':
           _etatActuel = 'Non commencé';
           _animerProgression(0.0);
           pointages.clear();
+          bloc.add(TimeSheetInitialEvent());
           break;
       }
     });

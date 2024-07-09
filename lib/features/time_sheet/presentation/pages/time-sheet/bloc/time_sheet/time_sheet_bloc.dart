@@ -25,12 +25,12 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
           '',
         ))) {
     on<TimeSheetEnterEvent>(_updateEnter);
-    on<TimeSheetOutEvent>(_updateUpdate);
     on<TimeSheetStartBreakEvent>(_updateStartBreak);
     on<TimeSheetEndBreakEvent>(_updateEndBreak);
+    on<TimeSheetOutEvent>(_updateUpdate);
   }
 
-  _updateEnter(event, Emitter<TimeSheetState> emit) async {
+  _updateEnter(event, Emitter<TimeSheetState> emit) {
     if (state is TimeSheetDataState) {
       TimesheetEntry currentEntry = (state as TimeSheetDataState).entry;
       TimesheetEntry updatedEntry = TimesheetEntry(
@@ -48,7 +48,7 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
     }
   }
 
-  _updateUpdate(event, Emitter<TimeSheetState> emit) {
+  _updateUpdate(event, Emitter<TimeSheetState> emit) async {
     if (state is TimeSheetDataState) {
       TimesheetEntry currentEntry = (state as TimeSheetDataState).entry;
       TimesheetEntry updatedEntry = TimesheetEntry(
@@ -59,7 +59,7 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
         currentEntry.startAfternoon,
         currentEntry.endAfternoon,
       );
-
+      await saveTimesheetEntryUseCase.execute(updatedEntry);
       emit(TimeSheetDataState(updatedEntry));
     } else {
       print('non implémenté');
@@ -95,7 +95,6 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
         currentEntry.startAfternoon,
         DateFormat('HH:mm').format(event.endBreakTime),
       );
-      await saveTimesheetEntryUseCase.execute(updatedEntry);
       emit(TimeSheetDataState(updatedEntry));
     } else {
       print('non implémenté');

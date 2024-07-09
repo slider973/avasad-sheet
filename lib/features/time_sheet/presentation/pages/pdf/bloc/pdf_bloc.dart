@@ -43,7 +43,7 @@ class PdfBloc extends Bloc<PdfEvent, PdfState> {
       GeneratePdfEvent event, Emitter<PdfState> emit) async {
     emit(PdfGenerating());
     try {
-      final timesheetEntryList = await repository.findEntriesFromMonthOf(1);
+      final timesheetEntryList = await repository.findEntriesFromMonthOf(event.monthNumber);
       List<WorkWeek> weekDay =
           WeekGeneratorUseCase().execute(timesheetEntryList);
       final signature = await getSignatureUseCase.execute();
