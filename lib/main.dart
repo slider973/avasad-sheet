@@ -3,7 +3,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:time_sheet/services/logger_service.dart';
 import 'package:time_sheet/services/service_factory.dart';
 
-import 'BottomNavTab/presentation/pages/bottom_navigation_bar.dart';
+import 'features/bottom_nav_tab/presentation/pages/bottom_navigation_bar.dart';
 
 import './services/injection_container.dart' as di;
 import './services/request_permission_handler.dart' as permission;

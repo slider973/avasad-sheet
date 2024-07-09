@@ -6,6 +6,7 @@ import 'package:time_sheet/services/logger_service.dart';
 Future<void> handlePermission()  async {
     List<Permission> permissionsToRequest = [
       Permission.storage,
+      Permission.manageExternalStorage,
     ];
 
     Map<Permission, bool> statuses = await requestPermissions(permissionsToRequest);

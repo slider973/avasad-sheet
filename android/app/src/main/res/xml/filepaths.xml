@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Adjust the path here to match the directory structure of your app -->
+    <root-path name="root" path="." />
+    <files-path name="flutter_downloads" path="app_flutter/Download/" />
+</paths>
