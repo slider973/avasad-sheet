@@ -9,14 +9,19 @@ class TimesheetEntry {
   String startAfternoon;
   String endAfternoon;
 
-  TimesheetEntry(this.dayDate, this.dayOfWeekDate, this.startMorning,
-      this.endMorning, this.startAfternoon, this.endAfternoon, {this.id});
+  TimesheetEntry(
+      {this.id,
+      required this.dayDate,
+      required this.dayOfWeekDate,
+      required this.startMorning,
+      required this.endMorning,
+      required this.startAfternoon,
+      required this.endAfternoon});
 
   @override
   String toString() {
     return 'TimesheetEntry{id: $id, dayDate: $dayDate, dayOfWeekDate: $dayOfWeekDate, startMorning: $startMorning, endMorning: $endMorning, startAfternoon: $startAfternoon, endAfternoon: $endAfternoon}';
   }
-
 
   String get currentState {
     if (startMorning.isEmpty) return 'Non commencé';
@@ -37,7 +42,8 @@ class TimesheetEntry {
   DateTime? get lastPointage {
     final format = DateFormat('dd-MMM-yy HH:mm');
     if (endAfternoon.isNotEmpty) return format.parse('$dayDate $endAfternoon');
-    if (startAfternoon.isNotEmpty) return format.parse('$dayDate $startAfternoon');
+    if (startAfternoon.isNotEmpty)
+      return format.parse('$dayDate $startAfternoon');
     if (endMorning.isNotEmpty) return format.parse('$dayDate $endMorning');
     if (startMorning.isNotEmpty) return format.parse('$dayDate $startMorning');
     return null;
