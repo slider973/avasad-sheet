@@ -2,7 +2,7 @@ import 'package:isar/isar.dart';
 
 part 'timesheet_entry.g.dart';
 
-@Collection()
+@collection
 class TimeSheetEntryModel {
   Id id = Isar.autoIncrement;
 
@@ -12,4 +12,13 @@ class TimeSheetEntryModel {
   late String endMorning;
   late String startAfternoon;
   late String endAfternoon;
+
+  TimeSheetEntryModel({
+    required this.dayDate,
+    required this.dayOfWeekDate,
+    this.startMorning = '',
+    this.endMorning = '',
+    this.startAfternoon = '',
+    this.endAfternoon = '',
+  });
 }

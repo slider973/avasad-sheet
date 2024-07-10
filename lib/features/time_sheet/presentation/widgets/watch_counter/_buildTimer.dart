@@ -11,13 +11,13 @@ class PointageWidget extends StatefulWidget {
   _PointageWidgetState createState() => _PointageWidgetState();
 }
 
-class _PointageWidgetState extends State<PointageWidget> with SingleTickerProviderStateMixin {
+class _PointageWidgetState extends State<PointageWidget>
+    with SingleTickerProviderStateMixin {
   DateTime? _dernierPointage;
   String _etatActuel = 'Non commencé';
   late AnimationController _controller;
   late Animation<double> _progressionAnimation;
   double _progression = 0.0;
-
 
   List<Map<String, dynamic>> pointages = [];
 
@@ -32,56 +32,81 @@ class _PointageWidgetState extends State<PointageWidget> with SingleTickerProvid
       ..addListener(() {
         setState(() {});
       });
-  }
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+  // Charger les données au démarrage
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+  _chargerDonneesPersistees();
+  });
+}
 
+@override
+void dispose() {
+  _controller.dispose();
+  super.dispose();
+}
+
+void _chargerDonneesPersistees() {
+  final bloc = context.read<TimeSheetBloc>();
+  bloc.add(LoadTimeSheetDataEvent());
+}
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          const Text(
-            'Timer de la journée',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 20),
-          SizedBox(
-            width: 300,
-            height: 300,
-            child: CustomPaint(
-              painter: TimerPainter(progression: _progressionAnimation.value),
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      _etatActuel,
-                      style: const TextStyle(fontSize: 18),
+    return BlocConsumer<TimeSheetBloc, TimeSheetState>(
+      listener: (context, state) {
+        if (state is TimeSheetDataState) {
+          setState(() {
+            _etatActuel = state.entry.currentState;
+            _dernierPointage = state.entry.lastPointage;
+            _progression = state.entry.progression;
+            _animerProgression(_progression);
+          });
+        }
+      },
+      builder: (context, state) {
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const Text(
+                'Heure de pointage',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: 300,
+                height: 300,
+                child: CustomPaint(
+                  painter:
+                      TimerPainter(progression: _progressionAnimation.value),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          _etatActuel,
+                          style: const TextStyle(fontSize: 18),
+                        ),
+                        Text(
+                          _dernierPointage != null
+                              ? DateFormat('HH:mm').format(_dernierPointage!)
+                              : '00:00',
+                          style: const TextStyle(
+                              fontSize: 48, fontWeight: FontWeight.bold),
+                        ),
+                      ],
                     ),
-                    Text(
-                      _dernierPointage != null
-                          ? DateFormat('HH:mm').format(_dernierPointage!)
-                          : '00:00',
-                      style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
-                    ),
-                  ],
+                  ),
                 ),
               ),
-            ),
+              const SizedBox(height: 20),
+              _construireBoutonAction(),
+              const SizedBox(height: 20),
+              _construireListePointages(),
+            ],
           ),
-          const SizedBox(height: 20),
-          _construireBoutonAction(),
-          SizedBox(height: 20),
-          _construireListePointages(),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -147,6 +172,7 @@ class _PointageWidgetState extends State<PointageWidget> with SingleTickerProvid
       },
     );
   }
+
   void _modifierPointage(Map<String, dynamic> pointage) {
     // Implémentez ici la logique pour modifier un pointage
     // Par exemple, vous pourriez ouvrir un dialogue pour sélectionner une nouvelle heure
@@ -203,7 +229,6 @@ class _PointageWidgetState extends State<PointageWidget> with SingleTickerProvid
           _etatActuel = 'Non commencé';
           _animerProgression(0.0);
           pointages.clear();
-          bloc.add(TimeSheetInitialEvent());
           break;
       }
     });
@@ -220,7 +245,6 @@ class _PointageWidgetState extends State<PointageWidget> with SingleTickerProvid
     _progression = nouvelleValeur;
     _controller.forward(from: 0);
   }
-
 }
 
 class TimerPainter extends CustomPainter {
@@ -263,7 +287,9 @@ class TimerPainter extends CustomPainter {
       final angle = 2 * pi * i / 60 - pi / 2;
       final markerLength = i % 5 == 0 ? 15.0 : 5.0;
       canvas.drawLine(
-        center + Offset(cos(angle) * (radius - markerLength), sin(angle) * (radius - markerLength)),
+        center +
+            Offset(cos(angle) * (radius - markerLength),
+                sin(angle) * (radius - markerLength)),
         center + Offset(cos(angle) * radius, sin(angle) * radius),
         markerPaint,
       );
@@ -271,5 +297,6 @@ class TimerPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(TimerPainter oldDelegate) => progression != oldDelegate.progression;
+  bool shouldRepaint(TimerPainter oldDelegate) =>
+      progression != oldDelegate.progression;
 }

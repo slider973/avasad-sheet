@@ -1,4 +1,6 @@
+import 'package:intl/intl.dart';
 import 'package:time_sheet/features/time_sheet/data/models/generated_pdf/generated_pdf.dart';
+import 'package:time_sheet/features/time_sheet/data/models/timesheet_entry/timesheet_entry.dart';
 import 'package:time_sheet/services/logger_service.dart';
 
 import '../../domain/data_source/time_sheet.dart';
@@ -61,7 +63,7 @@ class TimesheetRepositoryImpl implements TimesheetRepository {
 
   @override
   Future<List<GeneratedPdfModel>> getGeneratedPdfs() {
-   return datasource.getGeneratedPdfs();
+    return datasource.getGeneratedPdfs();
   }
 
   @override
@@ -72,5 +74,30 @@ class TimesheetRepositoryImpl implements TimesheetRepository {
   @override
   Future<void> deleteGeneratedPdf(int pdfId) {
     return datasource.deleteGeneratedPdf(pdfId);
+  }
+
+  @override
+  Future<TimesheetEntry?> getTimesheetEntryForDate(String date) async {
+    final entries = await datasource.getTimesheetEntries();
+    final TimeSheetEntryModel entry = entries.firstWhere(
+      (entry) => DateFormat("dd-MMM-yy").format(entry.dayDate) == date,
+      orElse: () {
+        final model = TimeSheetEntryModel(
+          dayDate: DateTime.now(),
+          dayOfWeekDate: '',
+        );
+        return model;
+      },
+    );
+
+    // Si l'entrée est celle par défaut, retourne null
+    if (DateFormat("dd-MMM-yy").format(entry.dayDate) != date) {
+      return null;
+    }
+    if (entry.dayOfWeekDate.isEmpty) {
+      return null;
+    }
+
+    return TimesheetEntryMapper.fromModel(entry);
   }
 }

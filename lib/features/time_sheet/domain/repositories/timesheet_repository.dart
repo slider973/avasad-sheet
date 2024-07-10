@@ -17,4 +17,5 @@ abstract class TimesheetRepository {
   Future<List<GeneratedPdfModel>> getGeneratedPdfs();
 
   Future<void> deleteGeneratedPdf(int pdfId);
+  Future<TimesheetEntry?> getTimesheetEntryForDate(String date);
 }

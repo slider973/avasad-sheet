@@ -5,6 +5,7 @@ import 'package:equatable/equatable.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../../domain/entities/timesheet_entry.dart';
+import '../../../../../domain/use_cases/get_today_timesheet_entry_use_case.dart';
 import '../../../../../domain/use_cases/save_timesheet_entry_usecase.dart';
 
 part 'time_sheet_event.dart';
@@ -13,9 +14,11 @@ part 'time_sheet_state.dart';
 
 class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
   final SaveTimesheetEntryUseCase saveTimesheetEntryUseCase;
+  final GetTodayTimesheetEntryUseCase getTodayTimesheetEntryUseCase;
 
   TimeSheetBloc({
     required this.saveTimesheetEntryUseCase,
+    required this.getTodayTimesheetEntryUseCase
   }) : super(TimeSheetDataState(TimesheetEntry(
           DateFormat("dd-MMM-yy").format(DateTime.now()),
           DateFormat.EEEE().format(DateTime.now()),
@@ -28,9 +31,11 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
     on<TimeSheetStartBreakEvent>(_updateStartBreak);
     on<TimeSheetEndBreakEvent>(_updateEndBreak);
     on<TimeSheetOutEvent>(_updateUpdate);
+    on<LoadTimeSheetDataEvent>(_loadData);
+    add(LoadTimeSheetDataEvent());
   }
 
-  _updateEnter(event, Emitter<TimeSheetState> emit) {
+  _updateEnter(event, Emitter<TimeSheetState> emit) async {
     if (state is TimeSheetDataState) {
       TimesheetEntry currentEntry = (state as TimeSheetDataState).entry;
       TimesheetEntry updatedEntry = TimesheetEntry(
@@ -41,7 +46,8 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
         currentEntry.startAfternoon,
         currentEntry.endAfternoon,
       );
-      // await saveTimesheetEntryUseCase.execute(updatedEntry); ;
+      updatedEntry.id = currentEntry.id;
+       await saveTimesheetEntryUseCase.execute(updatedEntry);
       emit(TimeSheetDataState(updatedEntry));
     } else {
       print('non implémenté');
@@ -59,6 +65,7 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
         currentEntry.startAfternoon,
         currentEntry.endAfternoon,
       );
+      updatedEntry.id = currentEntry.id;
       await saveTimesheetEntryUseCase.execute(updatedEntry);
       emit(TimeSheetDataState(updatedEntry));
     } else {
@@ -66,7 +73,7 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
     }
   }
 
-  _updateStartBreak(event, Emitter<TimeSheetState> emit) {
+  _updateStartBreak(event, Emitter<TimeSheetState> emit) async {
     if (state is TimeSheetDataState) {
       TimesheetEntry currentEntry = (state as TimeSheetDataState).entry;
       TimesheetEntry updatedEntry = TimesheetEntry(
@@ -77,7 +84,8 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
         DateFormat('HH:mm').format(event.startBreakTime),
         currentEntry.endAfternoon,
       );
-
+      updatedEntry.id = currentEntry.id;
+      await saveTimesheetEntryUseCase.execute(updatedEntry);
       emit(TimeSheetDataState(updatedEntry));
     } else {
       print('non implémenté');
@@ -95,10 +103,27 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
         currentEntry.startAfternoon,
         DateFormat('HH:mm').format(event.endBreakTime),
       );
+      updatedEntry.id = currentEntry.id;
+      await saveTimesheetEntryUseCase.execute(updatedEntry);
       emit(TimeSheetDataState(updatedEntry));
     } else {
       print('non implémenté');
     }
+  }
+  Future<void> _loadData(LoadTimeSheetDataEvent event, Emitter<TimeSheetState> emit) async {
+      final entry = await getTodayTimesheetEntryUseCase.execute();
+      if (entry != null) {
+        emit(TimeSheetDataState(entry));
+      } else {
+        emit(TimeSheetDataState(TimesheetEntry(
+          DateFormat("dd-MMM-yy").format(DateTime.now()),
+          DateFormat.EEEE().format(DateTime.now()),
+          '',
+          '',
+          '',
+          '',
+        )));
+      }
   }
 
 

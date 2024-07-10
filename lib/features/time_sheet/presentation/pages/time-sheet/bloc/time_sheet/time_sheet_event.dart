@@ -50,3 +50,8 @@ class GetTimesheetEntriesForWeekEvent extends TimeSheetEvent {
 }
 
 
+class LoadTimeSheetDataEvent extends TimeSheetEvent {
+  @override
+  List<Object> get props => [];
+}
+

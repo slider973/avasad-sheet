@@ -1,5 +1,6 @@
 import 'package:isar/isar.dart';
 import 'package:time_sheet/features/time_sheet/data/models/timesheet_entry/timesheet_entry.dart';
+import 'package:time_sheet/features/time_sheet/domain/entities/timesheet_entry.dart';
 import 'package:time_sheet/services/logger_service.dart';
 
 import '../../domain/data_source/time_sheet.dart';
@@ -74,5 +75,11 @@ class LocalDatasourceImpl implements LocalDataSource {
     return isar.writeTxn(() async {
       await isar.generatedPdfModels.delete(pdfId);
     });
+  }
+
+  @override
+  Future<TimesheetEntry?> getTimesheetEntryForDate(String date) {
+    // TODO: implement getTimesheetEntryForDate
+    throw UnimplementedError();
   }
 }

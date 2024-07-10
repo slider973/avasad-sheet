@@ -18,5 +18,12 @@ class TimeSheetDataState extends TimeSheetState {
   List<Object> get props => [entry];
 }
 
+class TimeSheetErrorState extends TimeSheetState {
+  final String message;
+  const TimeSheetErrorState(this.message);
+  @override
+  List<Object> get props => [message];
+}
+
 
 

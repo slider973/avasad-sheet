@@ -97,14 +97,15 @@ TimeSheetEntryModel _timeSheetEntryModelDeserialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  final object = TimeSheetEntryModel();
-  object.dayDate = reader.readDateTime(offsets[0]);
-  object.dayOfWeekDate = reader.readString(offsets[1]);
-  object.endAfternoon = reader.readString(offsets[2]);
-  object.endMorning = reader.readString(offsets[3]);
+  final object = TimeSheetEntryModel(
+    dayDate: reader.readDateTime(offsets[0]),
+    dayOfWeekDate: reader.readString(offsets[1]),
+    endAfternoon: reader.readStringOrNull(offsets[2]) ?? '',
+    endMorning: reader.readStringOrNull(offsets[3]) ?? '',
+    startAfternoon: reader.readStringOrNull(offsets[4]) ?? '',
+    startMorning: reader.readStringOrNull(offsets[5]) ?? '',
+  );
   object.id = id;
-  object.startAfternoon = reader.readString(offsets[4]);
-  object.startMorning = reader.readString(offsets[5]);
   return object;
 }
 
@@ -120,13 +121,13 @@ P _timeSheetEntryModelDeserializeProp<P>(
     case 1:
       return (reader.readString(offset)) as P;
     case 2:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset) ?? '') as P;
     case 3:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset) ?? '') as P;
     case 4:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset) ?? '') as P;
     case 5:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset) ?? '') as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }

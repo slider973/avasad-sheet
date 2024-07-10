@@ -14,7 +14,7 @@ class TimeSheetPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Time sheet')),
+      appBar: AppBar(title: const Text('Pointage')),
       backgroundColor: Colors.teal[50],
       body: SingleChildScrollView(
         child: Column(
@@ -27,60 +27,3 @@ class TimeSheetPage extends StatelessWidget {
   }
 }
 
-class SecondLineButton extends StatelessWidget {
-  const SecondLineButton({
-    super.key,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        AdaptiveButton(
-          onPressed: () {
-            DateTime now = DateTime.now();
-            context.read<TimeSheetBloc>().add(TimeSheetStartBreakEvent(now));
-          },
-          text: 'Début pause',
-        ),
-        AdaptiveButton(
-          onPressed: () {
-            DateTime now = DateTime.now();
-            context.read<TimeSheetBloc>().add(TimeSheetEndBreakEvent(now));
-          },
-          text: 'Fin pause',
-        ),
-      ],
-    );
-  }
-}
-
-class FirstLineButton extends StatelessWidget {
-  const FirstLineButton({
-    super.key,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        AdaptiveButton(
-          onPressed: () {
-            // Obtenez l'heure actuelle ou les données pertinentes pour TimesheetEntry
-            DateTime now = DateTime.now();
-            context.read<TimeSheetBloc>().add(TimeSheetEnterEvent(now));
-          },
-          text: 'Entrer',
-        ),
-        AdaptiveButton(
-          onPressed: () {
-            DateTime now = DateTime.now();
-            context.read<TimeSheetBloc>().add(TimeSheetOutEvent(now));
-          },
-          text: 'Sortir',
-        ),
-      ],
-    );
-  }
-}
