@@ -32,7 +32,32 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
     on<TimeSheetEndBreakEvent>(_updateEndBreak);
     on<TimeSheetOutEvent>(_updateEndDay);
     on<LoadTimeSheetDataEvent>(_loadData);
+    on<TimeSheetUpdatePointageEvent>(_updatePointage);
     add(LoadTimeSheetDataEvent());
+  }
+
+  void _updatePointage(TimeSheetUpdatePointageEvent event, Emitter<TimeSheetState> emit) {
+    if (state is TimeSheetDataState) {
+      final currentEntry = (state as TimeSheetDataState).entry;
+      final updatedEntry = _updateEntryTime(currentEntry, event.type, event.newDateTime);
+      saveTimesheetEntryUseCase.execute(updatedEntry);
+      emit(TimeSheetDataState(updatedEntry));
+    }
+  }
+  TimesheetEntry _updateEntryTime(TimesheetEntry entry, String type, DateTime newDateTime) {
+    final newTime = DateFormat('HH:mm').format(newDateTime);
+    switch (type) {
+      case 'Entrée':
+        return entry.copyWith(startMorning: newTime);
+      case 'Début pause':
+        return entry.copyWith(endMorning: newTime);
+      case 'Fin pause':
+        return entry.copyWith(startAfternoon: newTime);
+      case 'Fin de journée':
+        return entry.copyWith(endAfternoon: newTime);
+      default:
+        return entry;
+    }
   }
 
   _updateEnter(event, Emitter<TimeSheetState> emit) async {
@@ -48,7 +73,8 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
         endAfternoon: currentEntry.endAfternoon,
       );
 
-      await saveTimesheetEntryUseCase.execute(updatedEntry);
+      final id = await saveTimesheetEntryUseCase.execute(updatedEntry);
+      updatedEntry = updatedEntry.copyWith(id: id);
       emit(TimeSheetDataState(updatedEntry));
     } else {
       print('non implémenté');

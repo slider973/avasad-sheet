@@ -15,10 +15,10 @@ class TimesheetRepositoryImpl implements TimesheetRepository {
   TimesheetRepositoryImpl(this.datasource);
 
   @override
-  Future<void> saveTimesheetEntry(TimesheetEntry entry) async {
+  Future<int> saveTimesheetEntry(TimesheetEntry entry) async {
     logger.i('inserting ${entry.toString()}');
     final entryModel = TimesheetEntryMapper.toModel(entry);
-    await datasource.saveTimeSheet(entryModel);
+    return await datasource.saveTimeSheet(entryModel);
   }
 
   @override

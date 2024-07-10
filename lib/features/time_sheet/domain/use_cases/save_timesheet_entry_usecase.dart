@@ -6,7 +6,7 @@ class SaveTimesheetEntryUseCase {
 
   SaveTimesheetEntryUseCase(this.repository);
 
-  Future<void> execute(TimesheetEntry entry) async {
-    await repository.saveTimesheetEntry(entry);
+  Future<int> execute(TimesheetEntry entry) async {
+    return await repository.saveTimesheetEntry(entry);
   }
 }

@@ -48,4 +48,46 @@ class TimesheetEntry {
     if (startMorning.isNotEmpty) return format.parse('$dayDate $startMorning');
     return null;
   }
+  List<Map<String, dynamic>> get pointagesList {
+    List<Map<String, dynamic>> list = [];
+    if (startMorning.isNotEmpty) {
+      list.add({'type': 'Entrée', 'heure': _parseDateTime(dayDate, startMorning)});
+    }
+    if (endMorning.isNotEmpty) {
+      list.add({'type': 'Début pause', 'heure': _parseDateTime(dayDate, endMorning)});
+    }
+    if (startAfternoon.isNotEmpty) {
+      list.add({'type': 'Fin pause', 'heure': _parseDateTime(dayDate, startAfternoon)});
+    }
+    if (endAfternoon.isNotEmpty) {
+      list.add({'type': 'Fin de journée', 'heure': _parseDateTime(dayDate, endAfternoon)});
+    }
+    return list;
+  }
+
+  DateTime _parseDateTime(String date, String time) {
+    return DateFormat('dd-MMM-yy HH:mm').parse('$date $time');
+  }
+
+
+  // Ajoutez cette méthode
+  TimesheetEntry copyWith({
+    int? id,
+    String? dayDate,
+    String? dayOfWeekDate,
+    String? startMorning,
+    String? endMorning,
+    String? startAfternoon,
+    String? endAfternoon,
+  }) {
+    return TimesheetEntry(
+      id: id ?? this.id,
+      dayDate: dayDate ?? this.dayDate,
+      dayOfWeekDate: dayOfWeekDate ?? this.dayOfWeekDate,
+      startMorning: startMorning ?? this.startMorning,
+      endMorning: endMorning ?? this.endMorning,
+      startAfternoon: startAfternoon ?? this.startAfternoon,
+      endAfternoon: endAfternoon ?? this.endAfternoon,
+    );
+  }
 }

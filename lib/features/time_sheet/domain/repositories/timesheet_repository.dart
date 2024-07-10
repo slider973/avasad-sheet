@@ -2,7 +2,7 @@ import '../../data/models/generated_pdf/generated_pdf.dart';
 import '../entities/timesheet_entry.dart';
 
 abstract class TimesheetRepository {
-  Future<void> saveTimesheetEntry(TimesheetEntry entry);
+  Future<int> saveTimesheetEntry(TimesheetEntry entry);
 
   Future<List<TimesheetEntry>> getTimesheetEntries();
 

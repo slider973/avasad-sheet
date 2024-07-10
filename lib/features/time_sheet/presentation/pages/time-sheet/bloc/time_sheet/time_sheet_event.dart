@@ -55,3 +55,12 @@ class LoadTimeSheetDataEvent extends TimeSheetEvent {
   List<Object> get props => [];
 }
 
+class TimeSheetUpdatePointageEvent extends TimeSheetEvent {
+  final String type;
+  final DateTime newDateTime;
+
+  const TimeSheetUpdatePointageEvent(this.type, this.newDateTime);
+
+  @override
+  List<Object> get props => [type, newDateTime];
+}

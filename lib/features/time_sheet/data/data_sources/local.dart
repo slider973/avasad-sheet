@@ -12,10 +12,11 @@ class LocalDatasourceImpl implements LocalDataSource {
   LocalDatasourceImpl(this.isar);
 
   @override
-  Future<void> saveTimeSheet(TimeSheetEntryModel entryModel) async {
-    isar.writeTxn(
+  Future<int> saveTimeSheet(TimeSheetEntryModel entryModel) async {
+    int id = await isar.writeTxn(
       () async => await isar.timeSheetEntryModels.put(entryModel),
     );
+    return id;
   }
 
   @override

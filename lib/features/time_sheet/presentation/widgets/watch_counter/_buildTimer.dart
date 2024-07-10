@@ -59,6 +59,7 @@ void _chargerDonneesPersistees() {
             _dernierPointage = state.entry.lastPointage;
             _progression = state.entry.progression;
             _animerProgression(_progression);
+            pointages = state.entry.pointagesList;
           });
         }
       },
@@ -181,15 +182,15 @@ void _chargerDonneesPersistees() {
       initialTime: TimeOfDay.fromDateTime(pointage['heure']),
     ).then((nouvelleHeure) {
       if (nouvelleHeure != null) {
-        setState(() {
-          pointage['heure'] = DateTime(
-            pointage['heure'].year,
-            pointage['heure'].month,
-            pointage['heure'].day,
-            nouvelleHeure.hour,
-            nouvelleHeure.minute,
-          );
-        });
+        final bloc = context.read<TimeSheetBloc>();
+        final nouveauDateTime = DateTime(
+          pointage['heure'].year,
+          pointage['heure'].month,
+          pointage['heure'].day,
+          nouvelleHeure.hour,
+          nouvelleHeure.minute,
+        );
+        bloc.add(TimeSheetUpdatePointageEvent(pointage['type'], nouveauDateTime));
       }
     });
   }
@@ -246,6 +247,8 @@ void _chargerDonneesPersistees() {
     _controller.forward(from: 0);
   }
 }
+
+
 
 class TimerPainter extends CustomPainter {
   final double progression;

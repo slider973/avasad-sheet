@@ -3,7 +3,7 @@ import '../../data/models/timesheet_entry/timesheet_entry.dart';
 import '../entities/timesheet_entry.dart';
 
 abstract class LocalDataSource {
-  Future<void> saveTimeSheet(TimeSheetEntryModel entryModel);
+  Future<int> saveTimeSheet(TimeSheetEntryModel entryModel);
 
   Future<List<TimeSheetEntryModel>> getTimesheetEntries();
 
