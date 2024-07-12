@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../preference/presentation/pages/preference.dart';
 import '../../../time_sheet/presentation/pages/pdf_document.dart';
 import '../../../time_sheet/presentation/pages/time-sheet/bloc/time_sheet_list/time_sheet_list_bloc.dart';
+import '../../../time_sheet/presentation/pages/time-sheet/bloc/watch_connectivity/watch_connectivity_bloc.dart';
 import '../../../time_sheet/presentation/pages/time_sheet_page.dart';
 import '../../../time_sheet/presentation/pdf_document_page.dart';
 import '../../../time_sheet/presentation/widgets/timesheet_calendar_widget/timesheet_calendar_widget.dart';
@@ -23,6 +24,7 @@ class BottomNavigationBarPage extends StatelessWidget {
         context
             .read<TimeSheetListBloc>()
             .add(const FindTimesheetEntriesEvent());
+        context.read<WatchConnectivityBloc>().add(InitializeWatchConnectivity());
         switch (currentIndex) {
           case 0:
             currentScreen = const TimeSheetPage();

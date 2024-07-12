@@ -14,6 +14,7 @@ import '../features/time_sheet/domain/use_cases/save_timesheet_entry_usecase.dar
 import '../features/time_sheet/presentation/pages/pdf/bloc/pdf_bloc.dart';
 import '../features/time_sheet/presentation/pages/time-sheet/bloc/time_sheet/time_sheet_bloc.dart';
 import '../features/time_sheet/presentation/pages/time-sheet/bloc/time_sheet_list/time_sheet_list_bloc.dart';
+import '../features/time_sheet/presentation/pages/time-sheet/bloc/watch_connectivity/watch_connectivity_bloc.dart';
 
 class ServiceFactory extends StatelessWidget {
   final getIt = GetIt.instance;
@@ -23,6 +24,10 @@ class ServiceFactory extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final timeSheetBloc =TimeSheetBloc(
+        saveTimesheetEntryUseCase: getIt<SaveTimesheetEntryUseCase>(),
+        getTodayTimesheetEntryUseCase: getIt<GetTodayTimesheetEntryUseCase>()
+    );
     return MultiBlocProvider(providers: [
       BlocProvider(
         create: (context) => PreferencesBloc(
@@ -31,10 +36,7 @@ class ServiceFactory extends StatelessWidget {
         )..add(LoadPreferences()),
       ),
       BlocProvider<TimeSheetBloc>(
-          create: (context) => TimeSheetBloc(
-                saveTimesheetEntryUseCase: getIt<SaveTimesheetEntryUseCase>(),
-            getTodayTimesheetEntryUseCase: getIt<GetTodayTimesheetEntryUseCase>()
-              )),
+          create: (context) => timeSheetBloc ),
       BlocProvider<TimeSheetListBloc>(
         create: (context) => TimeSheetListBloc(
           findPointedListUseCase: getIt<FindPointedListUseCase>(),
@@ -46,6 +48,11 @@ class ServiceFactory extends StatelessWidget {
       BlocProvider<PdfBloc>(
         create: (context) => PdfBloc(
             getIt<TimesheetRepositoryImpl>(), getIt<GetSignatureUseCase>()),
+      ),
+      BlocProvider<WatchConnectivityBloc>(
+        create: (context) => WatchConnectivityBloc(
+          timeSheetBloc: timeSheetBloc
+        ),
       ),
     ], child: child);
   }
