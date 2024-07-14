@@ -15,7 +15,7 @@ class PointageCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return  Card(
       child: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Row(
@@ -24,13 +24,13 @@ class PointageCard extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(type, style: TextStyle(fontWeight: FontWeight.bold)),
+                Text(type, style: const TextStyle(fontWeight: FontWeight.bold)),
                 Text(DateFormat('HH:mm').format(heure)),
               ],
             ),
             ElevatedButton(
               onPressed: onModifier,
-              child: Text('Modifier'),
+              child: const Text('Modifier'),
             ),
           ],
         ),

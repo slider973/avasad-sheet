@@ -6,6 +6,8 @@ import '../../../time_sheet/presentation/pages/pdf_document.dart';
 import '../../../time_sheet/presentation/pages/time-sheet/bloc/time_sheet_list/time_sheet_list_bloc.dart';
 import '../../../time_sheet/presentation/pages/time_sheet_page.dart';
 import '../../../time_sheet/presentation/pdf_document_page.dart';
+import '../../../time_sheet/presentation/widgets/pointage/pointage_layout.dart';
+import '../../../time_sheet/presentation/widgets/pointage/pointage_widget.dart';
 import '../../../time_sheet/presentation/widgets/timesheet_calendar_widget/timesheet_calendar_widget.dart';
 import '../../../time_sheet/presentation/widgets/timesheet_entries_view.dart';
 import '../widgets/bottom_navigation_bar_widget.dart';
@@ -19,13 +21,9 @@ class BottomNavigationBarPage extends StatelessWidget {
     return Scaffold(body: BlocBuilder<BottomNavigationBarBloc, int>(
       builder: (context, currentIndex) {
         Widget currentScreen;
-        // fetch timesheet entries
-        context
-            .read<TimeSheetListBloc>()
-            .add(const FindTimesheetEntriesEvent());
         switch (currentIndex) {
           case 0:
-            currentScreen = const TimeSheetPage();
+            currentScreen = const PointageWidget();
             break;
           case 1:
             currentScreen = PdfDocumentPage();

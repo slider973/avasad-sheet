@@ -1,12 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../widgets/adaptive_boutton.dart';
-import '../widgets/watch_counter/_buildTimer.dart';
-import '../widgets/watch_counter/countrer.dart';
-import '../widgets/days_pointed_list.dart';
-import '../widgets/timesheet_display_widget/timesheet_display_widget.dart';
-import 'time-sheet/bloc/time_sheet/time_sheet_bloc.dart';
+import '../widgets/pointage_widget/pointage_widget.dart';
 
 class TimeSheetPage extends StatelessWidget {
   const TimeSheetPage({super.key});
@@ -16,7 +10,7 @@ class TimeSheetPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Pointage')),
       backgroundColor: Colors.teal[50],
-      body: SingleChildScrollView(
+      body: const SingleChildScrollView(
         child: Column(
           children: [
             PointageWidget(),

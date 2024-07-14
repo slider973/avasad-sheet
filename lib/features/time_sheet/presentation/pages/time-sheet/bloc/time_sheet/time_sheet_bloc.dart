@@ -31,19 +31,11 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
     on<TimeSheetStartBreakEvent>(_updateStartBreak);
     on<TimeSheetEndBreakEvent>(_updateEndBreak);
     on<TimeSheetOutEvent>(_updateEndDay);
-    on<LoadTimeSheetDataEvent>(_loadData);
+    on<LoadTimeSheetDataEvent>(_loadDataTimeSheetData);
     on<TimeSheetUpdatePointageEvent>(_updatePointage);
     add(LoadTimeSheetDataEvent());
   }
 
-  void _updatePointage(TimeSheetUpdatePointageEvent event, Emitter<TimeSheetState> emit) {
-    if (state is TimeSheetDataState) {
-      final currentEntry = (state as TimeSheetDataState).entry;
-      final updatedEntry = _updateEntryTime(currentEntry, event.type, event.newDateTime);
-      saveTimesheetEntryUseCase.execute(updatedEntry);
-      emit(TimeSheetDataState(updatedEntry));
-    }
-  }
   TimesheetEntry _updateEntryTime(TimesheetEntry entry, String type, DateTime newDateTime) {
     final newTime = DateFormat('HH:mm').format(newDateTime);
     switch (type) {
@@ -60,7 +52,17 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
     }
   }
 
-  _updateEnter(event, Emitter<TimeSheetState> emit) async {
+  void _updatePointage(TimeSheetUpdatePointageEvent event, Emitter<TimeSheetState> emit) {
+    if (state is TimeSheetDataState) {
+      final currentEntry = (state as TimeSheetDataState).entry;
+      final updatedEntry = _updateEntryTime(currentEntry, event.type, event.newDateTime);
+      saveTimesheetEntryUseCase.execute(updatedEntry);
+      emit(TimeSheetDataState(updatedEntry));
+    }
+  }
+
+
+  void _updateEnter(event, Emitter<TimeSheetState> emit) async {
     if (state is TimeSheetDataState) {
       TimesheetEntry currentEntry = (state as TimeSheetDataState).entry;
       TimesheetEntry updatedEntry = TimesheetEntry(
@@ -81,7 +83,7 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
     }
   }
 
-  _updateEndDay(event, Emitter<TimeSheetState> emit) async {
+  void _updateEndDay(event, Emitter<TimeSheetState> emit) async {
     if (state is TimeSheetDataState) {
       TimesheetEntry currentEntry = (state as TimeSheetDataState).entry;
       TimesheetEntry updatedEntry = TimesheetEntry(
@@ -100,7 +102,7 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
     }
   }
 
-  _updateStartBreak(event, Emitter<TimeSheetState> emit) async {
+  void _updateStartBreak(event, Emitter<TimeSheetState> emit) async {
     if (state is TimeSheetDataState) {
       TimesheetEntry currentEntry = (state as TimeSheetDataState).entry;
       TimesheetEntry updatedEntry = TimesheetEntry(
@@ -120,7 +122,7 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
     }
   }
 
-  _updateEndBreak(event, Emitter<TimeSheetState> emit) async {
+  void _updateEndBreak(event, Emitter<TimeSheetState> emit) async {
     if (state is TimeSheetDataState) {
       TimesheetEntry currentEntry = (state as TimeSheetDataState).entry;
       TimesheetEntry updatedEntry = TimesheetEntry(
@@ -139,7 +141,7 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
     }
   }
 
-  Future<void> _loadData(
+  Future<void> _loadDataTimeSheetData(
       LoadTimeSheetDataEvent event, Emitter<TimeSheetState> emit) async {
     final entry = await getTodayTimesheetEntryUseCase.execute();
     if (entry != null) {
