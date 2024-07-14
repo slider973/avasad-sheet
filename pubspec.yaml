@@ -41,6 +41,7 @@ dependencies:
   table_calendar: ^3.1.2
   get_it: ^7.7.0
   isar: ^3.1.0+1
+  sentry_flutter: ^8.3.0
 
 
 
@@ -54,6 +55,7 @@ dependencies:
   flutter_pdfview: ^1.3.2
   signature: ^5.5.0
   flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.4.1
 
 dev_dependencies:
   flutter_test:
@@ -62,6 +64,7 @@ dev_dependencies:
   isar_generator: ^3.1.0+1
   mockito: ^5.4.4
   build_runner: any
+  flutter_native_splash: ^2.4.1
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -130,3 +133,7 @@ flutter_launcher_icons:
   macos:
     generate: true
     image_path: "assets/images/logo-app.webp"
+
+flutter_native_splash:
+  color: "#42a5f5"
+  background_image: "assets/images/logo-app.webp"

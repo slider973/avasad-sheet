@@ -46,3 +46,5 @@ class SignPdfEvent extends PdfEvent {
   List<Object> get props => [filePath, signature];
 }
 
+class ClosePdfEvent extends PdfEvent {}
+

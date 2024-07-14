@@ -37,6 +37,10 @@ class PdfBloc extends Bloc<PdfEvent, PdfState> {
     on<DeletePdfEvent>(_onDeletePdfEvent);
     on<OpenPdfEvent>(_onOpenPdfEvent);
     on<SignPdfEvent>(_onSignPdfEvent);
+    on<ClosePdfEvent>((event, emit) {
+      emit(PdfClosed());
+      add(LoadGeneratedPdfsEvent());
+    });
   }
 
   Future<void> _onGeneratePdfEvent(

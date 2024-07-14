@@ -8,9 +8,12 @@ class PointagePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Pointage')),
+      appBar: AppBar(
+        title: const Text('Pointage'),
+        elevation: 0,
+      ),
       backgroundColor: Colors.teal[50],
-      body:  SingleChildScrollView(
+      body: SingleChildScrollView(
         child: Column(
           children: [
             PointageWidget(selectedDate: DateTime.now()),
@@ -20,4 +23,3 @@ class PointagePage extends StatelessWidget {
     );
   }
 }
-

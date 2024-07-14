@@ -97,3 +97,5 @@ class PdfSignError extends PdfState {
   @override
   List<Object> get props => [error];
 }
+
+class PdfClosed extends PdfState {}
