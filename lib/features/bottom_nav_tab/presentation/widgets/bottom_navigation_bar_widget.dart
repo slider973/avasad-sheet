@@ -46,11 +46,11 @@ class BottomNavigationBarWidget extends StatelessWidget {
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.business),
-              label: 'Liste de pointage',
+              label: 'Pdf',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.list_alt),
-              label: 'Pdf',
+              icon: Icon(Icons.calendar_today),
+              label: 'Calendrier',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.school),

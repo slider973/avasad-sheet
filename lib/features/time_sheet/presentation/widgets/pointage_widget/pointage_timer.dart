@@ -17,8 +17,8 @@ class PointageTimer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 300,
-      height: 300,
+      width: 200,
+      height: 200,
       child: CustomPaint(
         painter: TimerPainter(progression: progression),
         child: Center(

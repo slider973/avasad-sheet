@@ -51,8 +51,10 @@ class GetTimesheetEntriesForWeekEvent extends TimeSheetEvent {
 
 
 class LoadTimeSheetDataEvent extends TimeSheetEvent {
+  final String dateStr;
+  const LoadTimeSheetDataEvent(this.dateStr);
   @override
-  List<Object> get props => [];
+  List<Object> get props => [dateStr];
 }
 
 class TimeSheetUpdatePointageEvent extends TimeSheetEvent {
@@ -63,4 +65,12 @@ class TimeSheetUpdatePointageEvent extends TimeSheetEvent {
 
   @override
   List<Object> get props => [type, newDateTime];
+}
+
+class UpdateTimeSheetDataEvent extends TimeSheetEvent {
+  final TimesheetEntry entry;
+  const UpdateTimeSheetDataEvent(this.entry);
+
+  @override
+  List<Object?> get props => [entry];
 }

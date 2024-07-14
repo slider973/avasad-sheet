@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:time_sheet/features/time_sheet/presentation/widgets/pointage_widget/pointage_layout.dart';
 
+import '../../../domain/entities/timesheet_entry.dart';
 import '../../pages/time-sheet/bloc/time_sheet/time_sheet_bloc.dart';
 
 class PointageWidget extends StatefulWidget {
-  const PointageWidget({super.key});
+  final TimesheetEntry? entry;
+  final DateTime selectedDate;
+
+  const PointageWidget({super.key, this.entry, required this.selectedDate});
 
   @override
   State<PointageWidget> createState() => _PointageWidgetState();
 }
 
-class _PointageWidgetState extends State<PointageWidget>  with SingleTickerProviderStateMixin {
+class _PointageWidgetState extends State<PointageWidget>
+    with SingleTickerProviderStateMixin {
   String _etatActuel = 'Non commencé';
   DateTime? _dernierPointage;
   double _progression = 0.0;
@@ -24,13 +30,29 @@ class _PointageWidgetState extends State<PointageWidget>  with SingleTickerProvi
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 1000),
       vsync: this,
     );
     _progressionAnimation = Tween<double>(begin: 0, end: 0).animate(_controller)
       ..addListener(() {
         setState(() {});
       });
+    if (widget.entry != null) {
+      // Initialisez les données avec celles de l'entrée
+      _etatActuel = widget.entry!.currentState;
+      _dernierPointage = widget.entry!.lastPointage;
+      _progression = widget.entry!.progression;
+      pointages = widget.entry!.pointagesList;
+      _animerProgression(_progression);
+      _updateBlocWithEntry(widget.entry!);
+      print('Chargement des données persistées du jour ${widget.selectedDate}');
+    } else {
+      // Charger les données au démarrage
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        print('Chargement des données persistées du jour ${widget.selectedDate}');
+        _chargerDonneesPersistees(widget.selectedDate);
+      });
+    }
   }
 
   @override
@@ -45,6 +67,7 @@ class _PointageWidgetState extends State<PointageWidget>  with SingleTickerProvi
           pointages: pointages,
           onActionPointage: _actionPointage,
           onModifierPointage: _modifierPointage,
+          selectedDate: widget.selectedDate,
         );
       },
     );
@@ -63,7 +86,14 @@ class _PointageWidgetState extends State<PointageWidget>  with SingleTickerProvi
   }
 
   void _actionPointage() {
-    final maintenant = DateTime.now();
+    final maintenant = DateTime(
+      widget.selectedDate.year,
+      widget.selectedDate.month,
+      widget.selectedDate.day,
+      DateTime.now().hour,
+      DateTime.now().minute,
+      DateTime.now().second,
+    );
     final bloc = context.read<TimeSheetBloc>();
 
     setState(() {
@@ -130,7 +160,8 @@ class _PointageWidgetState extends State<PointageWidget>  with SingleTickerProvi
           nouvelleHeure.hour,
           nouvelleHeure.minute,
         );
-        bloc.add(TimeSheetUpdatePointageEvent(pointage['type'], nouveauDateTime));
+        bloc.add(
+            TimeSheetUpdatePointageEvent(pointage['type'], nouveauDateTime));
       }
     });
   }
@@ -139,5 +170,15 @@ class _PointageWidgetState extends State<PointageWidget>  with SingleTickerProvi
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  void _chargerDonneesPersistees(DateTime date) {
+    String formattedDate = DateFormat("dd-MMM-yy").format(date);
+    final bloc = context.read<TimeSheetBloc>();
+    bloc.add(LoadTimeSheetDataEvent(formattedDate));
+  }
+  void _updateBlocWithEntry(TimesheetEntry entry) {
+    final bloc = context.read<TimeSheetBloc>();
+    bloc.add(UpdateTimeSheetDataEvent(entry));
   }
 }

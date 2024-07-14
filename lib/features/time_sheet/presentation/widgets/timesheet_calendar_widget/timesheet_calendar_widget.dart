@@ -1,6 +1,5 @@
 import 'dart:collection';
 
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:table_calendar/table_calendar.dart';
@@ -8,16 +7,19 @@ import 'package:intl/intl.dart';
 
 import '../../../domain/entities/timesheet_entry.dart';
 import '../../pages/time-sheet/bloc/time_sheet_list/time_sheet_list_bloc.dart';
+import '../pointage_widget/pointage_widget.dart';
 import 'events.dart';
 
 final kToday = DateTime.now();
 final kFirstDay = DateTime(kToday.year - 1, kToday.month - 3, kToday.day);
 final kLastDay = DateTime(kToday.year, kToday.month + 3, kToday.day);
+
 class TimesheetCalendarWidget extends StatefulWidget {
   const TimesheetCalendarWidget({super.key});
 
   @override
-  _TimesheetCalendarWidgetState createState() => _TimesheetCalendarWidgetState();
+  _TimesheetCalendarWidgetState createState() =>
+      _TimesheetCalendarWidgetState();
 }
 
 class _TimesheetCalendarWidgetState extends State<TimesheetCalendarWidget> {
@@ -48,6 +50,7 @@ class _TimesheetCalendarWidgetState extends State<TimesheetCalendarWidget> {
   void _loadEvents() {
     context.read<TimeSheetListBloc>().add(const FindTimesheetEntriesEvent());
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -114,7 +117,28 @@ class _TimesheetCalendarWidgetState extends State<TimesheetCalendarWidget> {
                           borderRadius: BorderRadius.circular(12.0),
                         ),
                         child: ListTile(
-                          onTap: () => print('${value[index]}'),
+                          onTap: () {
+                            // Récupérez l'entrée TimesheetEntry correspondante
+                            TimesheetEntry entry = value[index].entry;
+                            final dateFormat = DateFormat('dd-MMM-yy', 'en_US');
+                            // Ouvrez une nouvelle page ou une boîte de dialogue avec PointageWidget
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => Scaffold(
+                                  appBar: AppBar(
+                                      title: Text('Détails du pointage')),
+                                  body: PointageWidget(
+                                    entry: entry,
+                                    selectedDate: dateFormat.parse(entry.dayDate),
+                                  ),
+                                ),
+                              ),
+                            ).then(
+                              (value) {
+                                _loadEvents();
+                              },
+                            );
+                          },
                           title: Text('${value[index]}'),
                         ),
                       );
@@ -128,9 +152,6 @@ class _TimesheetCalendarWidgetState extends State<TimesheetCalendarWidget> {
       ),
     );
   }
-
-
-
 
   void _onDaySelected(DateTime selectedDay, DateTime focusedDay) {
     if (!isSameDay(_selectedDay, selectedDay)) {
@@ -146,22 +167,23 @@ class _TimesheetCalendarWidgetState extends State<TimesheetCalendarWidget> {
     return _events[day] ?? [];
   }
 
-  LinkedHashMap<DateTime, List<Event>> _groupEntries(List<TimesheetEntry> entries) {
-    LinkedHashMap<DateTime, List<Event>> map = LinkedHashMap<DateTime, List<Event>>(
+  LinkedHashMap<DateTime, List<Event>> _groupEntries(
+      List<TimesheetEntry> entries) {
+    LinkedHashMap<DateTime, List<Event>> map =
+        LinkedHashMap<DateTime, List<Event>>(
       equals: isSameDay,
       hashCode: getHashCode,
     );
     for (var entry in entries) {
       final dateStrToDate = DateFormat("dd-MMM-yy").parse(entry.dayDate);
-      final date = DateTime(dateStrToDate.year, dateStrToDate.month, dateStrToDate.day);
+      final date =
+          DateTime(dateStrToDate.year, dateStrToDate.month, dateStrToDate.day);
       if (map[date] == null) map[date] = [];
       map[date]!.add(Event(entry));
     }
     return map;
   }
 }
-
-
 
 int getHashCode(DateTime key) {
   return key.day * 1000000 + key.month * 10000 + key.year;

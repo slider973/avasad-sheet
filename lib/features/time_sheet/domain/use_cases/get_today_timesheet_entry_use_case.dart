@@ -8,8 +8,8 @@ class GetTodayTimesheetEntryUseCase {
 
   GetTodayTimesheetEntryUseCase(this.repository);
 
-  Future<TimesheetEntry?> execute() async {
-    final today = DateFormat("dd-MMM-yy").format(DateTime.now());
+  Future<TimesheetEntry?> execute([String? dateStr]) async {
+    final today = dateStr ?? DateFormat("dd-MMM-yy").format(DateTime.now());
     return await repository.getTimesheetEntryForDate(today);
   }
 }

@@ -19,21 +19,14 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
   TimeSheetBloc(
       {required this.saveTimesheetEntryUseCase,
       required this.getTodayTimesheetEntryUseCase})
-      : super(TimeSheetDataState(TimesheetEntry(
-          dayDate: DateFormat("dd-MMM-yy").format(DateTime.now()),
-          dayOfWeekDate: DateFormat.EEEE().format(DateTime.now()),
-          startMorning: '',
-          endMorning: '',
-          startAfternoon: '',
-          endAfternoon: '',
-        ))) {
+      : super(TimeSheetInitial()) {
     on<TimeSheetEnterEvent>(_updateEnter);
     on<TimeSheetStartBreakEvent>(_updateStartBreak);
     on<TimeSheetEndBreakEvent>(_updateEndBreak);
     on<TimeSheetOutEvent>(_updateEndDay);
     on<LoadTimeSheetDataEvent>(_loadDataTimeSheetData);
     on<TimeSheetUpdatePointageEvent>(_updatePointage);
-    add(LoadTimeSheetDataEvent());
+    on<UpdateTimeSheetDataEvent>(_updateTimeSheetData);
   }
 
   TimesheetEntry _updateEntryTime(TimesheetEntry entry, String type, DateTime newDateTime) {
@@ -143,7 +136,7 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
 
   Future<void> _loadDataTimeSheetData(
       LoadTimeSheetDataEvent event, Emitter<TimeSheetState> emit) async {
-    final entry = await getTodayTimesheetEntryUseCase.execute();
+    final entry = await getTodayTimesheetEntryUseCase.execute(event.dateStr);
     if (entry != null) {
       emit(TimeSheetDataState(entry));
     } else {
@@ -156,5 +149,9 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
         endAfternoon: '',
       )));
     }
+  }
+
+  void _updateTimeSheetData(UpdateTimeSheetDataEvent event, Emitter<TimeSheetState> emit) {
+    emit(TimeSheetDataState(event.entry));
   }
 }

@@ -8,6 +8,7 @@ import 'pointage_timer.dart';
 class PointageLayout extends StatelessWidget {
   final String etatActuel;
   final DateTime? dernierPointage;
+  final DateTime selectedDate;
   final double progression;
   final List<Map<String, dynamic>> pointages;
   final VoidCallback onActionPointage;
@@ -21,39 +22,34 @@ class PointageLayout extends StatelessWidget {
     required this.pointages,
     required this.onActionPointage,
     required this.onModifierPointage,
+    required this.selectedDate,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Pointage')),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-
-              const PointageHeader(),
-              const SizedBox(height: 20),
-              PointageTimer(
-                etatActuel: etatActuel,
-                dernierPointage: dernierPointage,
-                progression: progression,
-              ),
-              const SizedBox(height: 20),
-              PointageButton(
-                etatActuel: etatActuel,
-                onPressed: onActionPointage,
-              ),
-              const SizedBox(height: 20),
-              PointageList(
-                pointages: pointages,
-                onModifier: onModifierPointage,
-              ),
-            ],
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          PointageHeader(selectedDate: selectedDate),
+          const SizedBox(height: 20),
+          PointageTimer(
+            etatActuel: etatActuel,
+            dernierPointage: dernierPointage,
+            progression: progression,
           ),
-        ),
+          const SizedBox(height: 20),
+          PointageButton(
+            etatActuel: etatActuel,
+            onPressed: onActionPointage,
+          ),
+          const SizedBox(height: 20),
+          PointageList(
+            pointages: pointages,
+            onModifier: onModifierPointage,
+          ),
+        ],
       ),
     );
   }
