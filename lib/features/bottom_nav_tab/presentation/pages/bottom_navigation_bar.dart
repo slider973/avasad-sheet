@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../preference/presentation/pages/preference.dart';
-import '../../../time_sheet/presentation/pages/pointage_page.dart';
+import '../../../time_sheet/presentation/pages/pointage/pointage_page.dart';
 import '../../../time_sheet/presentation/pages/pdf/pages/pdf_document_page_old.dart';
 import '../../../time_sheet/presentation/widgets/pointage_widget/pointage_widget.dart';
 import '../../../time_sheet/presentation/widgets/timesheet_calendar_widget/timesheet_calendar_widget.dart';
@@ -22,7 +22,7 @@ class BottomNavigationBarPage extends StatelessWidget {
             currentScreen = const PointagePage();
             break;
           case 1:
-            currentScreen = PdfDocumentPage();
+            currentScreen =  PdfDocumentPage();
             break;
           case 2:
             currentScreen = const TimesheetCalendarWidget();

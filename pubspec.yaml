@@ -55,7 +55,7 @@ dependencies:
   flutter_pdfview: ^1.3.2
   signature: ^5.5.0
   flutter_launcher_icons: ^0.13.1
-  flutter_native_splash: ^2.4.1
+
 
 dev_dependencies:
   flutter_test:
@@ -88,6 +88,7 @@ flutter:
   assets:
   - assets/images/logo-heytalent.png
   - assets/images/logo-app.webp
+  - assets/images/logo-app.png
   - assets/images/logo-sonrysa.png
   - assets/images/undraw_in_no_time_6igu.png
   #   - images/a_dot_ham.jpeg
@@ -133,7 +134,12 @@ flutter_launcher_icons:
   macos:
     generate: true
     image_path: "assets/images/logo-app.webp"
-
 flutter_native_splash:
-  color: "#42a5f5"
-  background_image: "assets/images/logo-app.webp"
+  color: "#DED9D3"  # Couleur d'arrière-plan principale
+  image: assets/images/logo-app.png  # Chemin vers l'image principale
+  android: true
+  ios: true
+  web: true
+  android_12:
+    image: assets/images/logo-app.png  # Chemin vers l'image pour Android 12
+    icon_background_color: "#DED9D3"  # Couleur de fond pour l'icône Android 12

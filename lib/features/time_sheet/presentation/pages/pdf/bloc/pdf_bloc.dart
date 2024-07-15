@@ -12,6 +12,7 @@ import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:time_sheet/features/time_sheet/domain/entities/work_day.dart';
 import 'package:time_sheet/features/time_sheet/domain/repositories/timesheet_repository.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -47,11 +48,14 @@ class PdfBloc extends Bloc<PdfEvent, PdfState> {
       GeneratePdfEvent event, Emitter<PdfState> emit) async {
     emit(PdfGenerating());
     try {
-      final timesheetEntryList = await repository.findEntriesFromMonthOf(event.monthNumber);
+      print('object 1');
+      final timesheetEntryList =
+          await repository.findEntriesFromMonthOf(event.monthNumber);
       List<WorkWeek> weekDay =
           WeekGeneratorUseCase().execute(timesheetEntryList);
+      print('object 2');
       final signature = await getSignatureUseCase.execute();
-      final pdfFile = await generatePdf(weekDay, signature);
+      final pdfFile = await generatePdf(weekDay, signature, event.monthNumber);
 
       // Sauvegarder les informations du PDF généré
       final generatedPdf = GeneratedPdfModel(
@@ -63,8 +67,13 @@ class PdfBloc extends Bloc<PdfEvent, PdfState> {
 
       emit(PdfGenerated(pdfFile.path));
       add(LoadGeneratedPdfsEvent());
-    } catch (e) {
-      emit(PdfGenerationError(e.toString()));
+    } catch (exception, stackTrace) {
+      await Sentry.captureException(
+        exception,
+        stackTrace: stackTrace,
+      );
+      print(exception.toString());
+      emit(PdfGenerationError(exception.toString()));
     }
   }
 
@@ -118,7 +127,7 @@ Future<Uint8List> _loadImage() async {
   return byteData.buffer.asUint8List();
 }
 
-Future<File> generatePdf(List<WorkWeek> weeks, Uint8List? signature) async {
+Future<File> generatePdf(List<WorkWeek> weeks, Uint8List? signature, int monthNumber) async {
   logger.i('start generatedPdf');
   final pdf = pw.Document();
 
@@ -135,6 +144,10 @@ Future<File> generatePdf(List<WorkWeek> weeks, Uint8List? signature) async {
     signatureImage = pw.Image(pw.MemoryImage(signature));
   }
 
+  final totalDays = weeks.fold(0, (sum, week) => sum + week.workday.where((day) => day.calculateTotalHours().inMinutes > 0).length);
+  final totalHours = weeks.fold(Duration.zero, (sum, week) => sum + week.calculateTotalWeekHours());
+
+
   pdf.addPage(
     pw.MultiPage(
       pageFormat: PdfPageFormat.a4.copyWith(
@@ -145,8 +158,9 @@ Future<File> generatePdf(List<WorkWeek> weeks, Uint8List? signature) async {
       ),
       build: (pw.Context context) => [
         _buildHeader(logoImage),
-        _buildInfoTable(),
+        _buildInfoTable(monthNumber),
         ...weeks.map((week) => _buildWeekTable(week)),
+        _buildMonthTotal(totalHours, totalDays),
         _buildFooter(signatureImage),
       ],
       theme: pw.ThemeData.withFont(
@@ -160,12 +174,19 @@ Future<File> generatePdf(List<WorkWeek> weeks, Uint8List? signature) async {
   final random = Random();
   final randomNumber =
       random.nextInt(100); // Génère un nombre aléatoire entre 0 et 99
-  final file = File('$path/exemple$randomNumber.pdf');
+  // Obtenir le nom du mois en français
+  final monthName = DateFormat('MMMM', 'fr_FR').format(DateTime(DateTime.now().year, monthNumber));
+  // Créer le nom du fichier avec le mois et l'année
+  final fileName = '${monthName}_${DateTime.now().year}.pdf';
+  final file = File('$path/$fileName');
   logger.i('end generatedPdf ${file.path}');
   return file.writeAsBytes(await pdf.save());
 }
 
-pw.Widget _buildInfoTable() {
+pw.Widget _buildInfoTable(int monthNumber) {
+  final monthName = DateFormat('MMMM', 'fr_FR').format(DateTime(DateTime.now().year, monthNumber));
+  final year = DateTime.now().year;
+
   return pw.Table(
     border: pw.TableBorder.all(),
     children: [
@@ -187,7 +208,7 @@ pw.Widget _buildInfoTable() {
         children: [
           pw.Padding(
             padding: const pw.EdgeInsets.all(5),
-            child: pw.Text('Mois: mai-2024',
+            child: pw.Text('Mois: $monthName-$year',
                 style: const pw.TextStyle(fontSize: 8)),
           ),
           pw.Container(),
@@ -256,6 +277,8 @@ pw.TableRow _buildTableHeader() {
 pw.TableRow _buildDayRow(Workday day) {
   String formattedDate = _formatDate(day.entry.dayDate);
   String dayOfWeek = _dayOfWeek(day.entry.dayDate);
+  String formattedHours = _formatDuration(day.calculateTotalHours());
+
   return pw.TableRow(
     children: [
       pw.Center(
@@ -282,14 +305,13 @@ pw.TableRow _buildDayRow(Workday day) {
           child: pw.Text(day.entry.endAfternoon,
               style: const pw.TextStyle(fontSize: 6))),
       pw.Center(
-          child: pw.Text(day.formatDuration(day.calculateTotalHours()),
+          child: pw.Text(formattedHours,
               style: const pw.TextStyle(fontSize: 6))),
       pw.Center(child: pw.Text('', style: const pw.TextStyle(fontSize: 6))),
       pw.Center(child: pw.Text('', style: const pw.TextStyle(fontSize: 6))),
-      // Commentaires non implémentés
     ]
         .map((widget) =>
-            pw.Padding(padding: const pw.EdgeInsets.all(3), child: widget))
+        pw.Padding(padding: const pw.EdgeInsets.all(3), child: widget))
         .toList(),
   );
 }
@@ -315,6 +337,20 @@ pw.TableRow _buildWeekTotal(WorkWeek week) {
         .toList(),
   );
 }
+pw.Widget _buildMonthTotal(Duration totalHours, int totalDays) {
+  return pw.Container(
+    margin: const pw.EdgeInsets.only(top: 10),
+    child: pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text('Total du mois: ${_formatDuration(totalHours)}',
+            style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
+        pw.Text('Nombre de jours facturés: $totalDays',
+            style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
+      ],
+    ),
+  );
+}
 
 pw.Widget _buildFooter(pw.Image? signatureImage) {
   return pw.Container(
@@ -326,7 +362,8 @@ pw.Widget _buildFooter(pw.Image? signatureImage) {
           children: [
             pw.TableRow(
               children: [
-                _buildSignatureColumn('Travailleur', 'Jonathan LEMAINE', signatureImage),
+                _buildSignatureColumn(
+                    'Travailleur', 'Jonathan LEMAINE', signatureImage),
                 _buildSignatureColumn(
                     'Entreprise de mission', 'François Longchamp'),
                 _buildSignatureColumn('Delivery manager', 'Sovattha Sok'),
@@ -338,7 +375,7 @@ pw.Widget _buildFooter(pw.Image? signatureImage) {
         pw.Row(
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           children: [
-            pw.Text('Date: ${DateFormat('dd.MM.yyyy').format(DateTime.now())}',
+            pw.Text('Date: ${DateFormat('dd/MM/yyyy').format(DateTime.now())}',
                 style: const pw.TextStyle(fontSize: 8)),
             pw.Text(
                 'Je certifie sur l\'honneur que j\'ai travaillé durant ces horaires et heures travaillées',
@@ -349,6 +386,7 @@ pw.Widget _buildFooter(pw.Image? signatureImage) {
     ),
   );
 }
+
 
 pw.Widget _buildSignatureColumn(String title, String name,
     [pw.Image? signatureImage]) {
@@ -361,8 +399,8 @@ pw.Widget _buildSignatureColumn(String title, String name,
             style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
         if (signatureImage != null)
           pw.Container(
-            height: 25, // Ajustez la taille selon vos besoins
-            width: 100, // Ajustez la taille selon vos besoins
+            height: 30, // Ajustez la taille selon vos besoins
+            width: 300, // Ajustez la taille selon vos besoins
             child: signatureImage,
           )
         else
@@ -388,17 +426,20 @@ String _dayOfWeek(String dateString) {
     return dateString;
   }
 }
-
 String _formatDate(String dateString) {
   try {
     final date = DateFormat('dd-MMM-yy', 'en_US').parse(dateString);
-    return DateFormat('dd-MMM-yy', 'fr_FR').format(date);
+    return DateFormat('dd-MMM-yy', 'fr_FR').format(date).toLowerCase();
   } catch (e) {
     print('Erreur lors du formatage de la date: $e');
     return dateString;
   }
 }
-
+String _formatDuration(Duration duration) {
+  final hours = duration.inHours;
+  final minutes = duration.inMinutes.remainder(60);
+  return '${hours}h ${minutes}min';
+}
 pw.Widget _centeredHeaderText(String text) {
   return pw.Padding(
     padding: const pw.EdgeInsets.all(2),

@@ -1,4 +1,3 @@
-
 import '../entities/timesheet_entry.dart';
 import '../entities/timesheet_organizer.dart';
 import '../entities/work_week.dart';
@@ -14,7 +13,7 @@ class WeekGeneratorUseCase {
       print(
           'Total hours for the week: ${week.calculateTotalWeekHours().toString()}');
     }
-
+    print('WeekGeneratorUseCase.execute() ${weeks.length} weeks generated.');
     return weeks;
   }
 }

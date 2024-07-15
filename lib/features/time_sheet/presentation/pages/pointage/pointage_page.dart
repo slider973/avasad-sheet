@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../widgets/pointage_widget/pointage_widget.dart';
+import '../../widgets/pointage_widget/pointage_widget.dart';
 
 class PointagePage extends StatelessWidget {
   const PointagePage({super.key});

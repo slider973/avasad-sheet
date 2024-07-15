@@ -9,6 +9,7 @@ class Workday {
 
   // Helper function to parse time string to DateTime
   DateTime _parseTime(String time) {
+    print('time: $time');
     DateFormat format = DateFormat.Hm(); // Assuming time is in HH:mm format
     return format.parse(time);
   }
