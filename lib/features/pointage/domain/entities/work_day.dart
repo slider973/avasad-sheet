@@ -8,24 +8,44 @@ class Workday {
   Workday(this.entry);
 
   // Helper function to parse time string to DateTime
-  DateTime _parseTime(String time) {
-    print('time: $time');
-    DateFormat format = DateFormat.Hm(); // Assuming time is in HH:mm format
-    return format.parse(time);
+  DateTime? _parseTime(String time) {
+    if (time.isEmpty) {
+      print('Temps vide reçu');
+      return null;
+    }
+    try {
+      DateFormat format = DateFormat.Hm(); // Assuming time is in HH:mm format
+      return format.parse(time);
+    } catch (e) {
+      print('Erreur lors du parsing du temps: $time. Erreur: $e');
+      return null;
+    }
   }
 
   Duration calculateTotalHours() {
+    if (entry.absenceReason != null && entry.absenceReason!.isNotEmpty) {
+      // Si c'est une absence, retourner une durée de 0
+      return Duration.zero;
+    }
     // Parse start and end times to DateTime
-    DateTime startMorning = _parseTime(entry.startMorning);
-    DateTime endMorning = _parseTime(entry.endMorning);
-    DateTime startAfternoon = _parseTime(entry.startAfternoon);
-    DateTime endAfternoon = _parseTime(entry.endAfternoon);
+    DateTime? startMorning = _parseTime(entry.startMorning);
+    DateTime? endMorning = _parseTime(entry.endMorning);
+    DateTime? startAfternoon = _parseTime(entry.startAfternoon);
+    DateTime? endAfternoon = _parseTime(entry.endAfternoon);
 
-    // Calculate durations
-    Duration morningDuration = endMorning.difference(startMorning);
-    Duration afternoonDuration = endAfternoon.difference(startAfternoon);
+    Duration totalDuration = Duration.zero;
 
-    return morningDuration + afternoonDuration;
+    // Calculate morning duration if both start and end times are available
+    if (startMorning != null && endMorning != null) {
+      totalDuration += endMorning.difference(startMorning);
+    }
+
+    // Calculate afternoon duration if both start and end times are available
+    if (startAfternoon != null && endAfternoon != null) {
+      totalDuration += endAfternoon.difference(startAfternoon);
+    }
+
+    return totalDuration;
   }
 
   String formatDuration(Duration duration) {
@@ -33,6 +53,9 @@ class Workday {
     String hours = twoDigits(duration.inHours);
     String minutes = twoDigits(duration.inMinutes.remainder(60));
     return "$hours:$minutes";
+  }
+  bool isAbsence() {
+    return entry.absenceReason != null && entry.absenceReason!.isNotEmpty;
   }
 
   Workday disable() {

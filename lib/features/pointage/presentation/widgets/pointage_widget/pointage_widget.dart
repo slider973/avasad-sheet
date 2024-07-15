@@ -68,6 +68,7 @@ class _PointageWidgetState extends State<PointageWidget>
           onActionPointage: _actionPointage,
           onModifierPointage: _modifierPointage,
           selectedDate: widget.selectedDate,
+          onSignalerAbsencePeriode: _signalerAbsencePeriode,
         );
       },
     );
@@ -181,4 +182,10 @@ class _PointageWidgetState extends State<PointageWidget>
     final bloc = context.read<TimeSheetBloc>();
     bloc.add(UpdateTimeSheetDataEvent(entry));
   }
+
+  void _signalerAbsencePeriode(DateTime dateDebut, DateTime dateFin, String type, String raison) {
+    final bloc = context.read<TimeSheetBloc>();
+    bloc.add(TimeSheetSignalerAbsencePeriodeEvent(dateDebut, dateFin, type, raison));
+  }
+
 }

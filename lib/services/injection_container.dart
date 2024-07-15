@@ -1,6 +1,7 @@
 import 'package:get_it/get_it.dart';
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
+import '../features/pointage/domain/use_cases/generate_monthly_timesheet_usease.dart';
 import '../features/preference/data/models/user_preference.dart';
 import '../features/preference/data/repositories/user_preference_repository.impl.dart';
 import '../features/preference/domain/use_cases/get_signature_usecase.dart';
@@ -37,4 +38,5 @@ Future<void> setup() async {
   getIt.registerLazySingleton<SetUserPreferenceUseCase>(() => SetUserPreferenceUseCase(getIt<UserPreferencesRepositoryImpl>()));
   getIt.registerLazySingleton<GetSignatureUseCase>(() => GetSignatureUseCase(getIt<UserPreferencesRepositoryImpl>()));
   getIt.registerLazySingleton<GetTodayTimesheetEntryUseCase>(() => GetTodayTimesheetEntryUseCase(getIt<TimesheetRepositoryImpl>()));
+  getIt.registerLazySingleton<GenerateMonthlyTimesheetUseCase>(() => GenerateMonthlyTimesheetUseCase(getIt<TimesheetRepositoryImpl>()));
 }

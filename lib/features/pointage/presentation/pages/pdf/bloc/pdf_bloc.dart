@@ -1,21 +1,17 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
 import 'package:equatable/equatable.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:time_sheet/features/pointage/domain/entities/work_day.dart';
 import 'package:time_sheet/features/pointage/domain/repositories/timesheet_repository.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../../../services/logger_service.dart';
 import '../../../../../preference/domain/entities/user.dart';
@@ -26,7 +22,6 @@ import '../../../../domain/entities/work_week.dart';
 import '../../../../domain/use_cases/generate_week_usecase.dart';
 
 part 'pdf_event.dart';
-
 part 'pdf_state.dart';
 
 final headerColor = PdfColor.fromHex('#D9D9D9'); // Gris clair pour l'en-tête
@@ -185,9 +180,6 @@ Future<File> generatePdf(List<WorkWeek> weeks, int monthNumber, User user) async
   Directory directory = await getApplicationDocumentsDirectory();
   final path = directory.path;
   await Directory(path).create(recursive: true);
-  final random = Random();
-  final randomNumber =
-      random.nextInt(100); // Génère un nombre aléatoire entre 0 et 99
   // Obtenir le nom du mois en français
   final monthName = DateFormat('MMMM', 'fr_FR').format(DateTime(DateTime.now().year, monthNumber));
   // Créer le nom du fichier avec le mois et l'année
@@ -311,9 +303,9 @@ pw.TableRow _buildDayRow(Workday day, bool isWeekday) {
       pw.Center(child: pw.Text(day.entry.endMorning, style: const pw.TextStyle(fontSize: 6))),
       pw.Center(child: pw.Text(day.entry.startAfternoon, style: const pw.TextStyle(fontSize: 6))),
       pw.Center(child: pw.Text(day.entry.endAfternoon, style: const pw.TextStyle(fontSize: 6))),
-      pw.Center(child: pw.Text(_formatDuration(day.calculateTotalHours()), style: const pw.TextStyle(fontSize: 6))),
+      pw.Center(child: pw.Text(day.isAbsence() ? '0:00' : _formatDuration(day.calculateTotalHours()), style: const pw.TextStyle(fontSize: 6))),
       pw.Center(child: pw.Text('', style: const pw.TextStyle(fontSize: 6))),
-      pw.Center(child: pw.Text('', style: const pw.TextStyle(fontSize: 6))),
+      pw.Center(child: pw.Text(day.entry.absenceReason ?? '', style: const pw.TextStyle(fontSize: 6))),
     ]
         .map((widget) =>
         pw.Padding(padding: const pw.EdgeInsets.all(3), child: widget))

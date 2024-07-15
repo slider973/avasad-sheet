@@ -31,3 +31,12 @@ class SaveSignature extends PreferencesEvent {
   @override
   List<Object> get props => [signature];
 }
+
+class SaveLastGenerationDate extends PreferencesEvent {
+  final DateTime date;
+
+  const SaveLastGenerationDate(this.date);
+
+  @override
+  List<Object> get props => [date];
+}

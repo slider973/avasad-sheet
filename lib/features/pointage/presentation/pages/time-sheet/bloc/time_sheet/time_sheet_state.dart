@@ -25,5 +25,24 @@ class TimeSheetErrorState extends TimeSheetState {
   List<Object> get props => [message];
 }
 
+class TimeSheetLoading extends TimeSheetState {
+  @override
+  List<Object> get props => [];
+}
+
+class TimeSheetGenerationCompleted extends TimeSheetState {
+  @override
+  List<Object> get props => [];
+}
+class TimeSheetGenerationAvailable extends TimeSheetState {
+  @override
+  List<Object> get props => [];
+}
+
+class TimeSheetAbsenceSignalee extends TimeSheetState {
+  @override
+  List<Object> get props => [];
+}
+
 
 

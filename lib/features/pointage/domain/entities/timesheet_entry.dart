@@ -8,19 +8,21 @@ class TimesheetEntry {
   String endMorning;
   String startAfternoon;
   String endAfternoon;
+  final String? absenceReason;
 
-  TimesheetEntry(
-      {this.id,
-      required this.dayDate,
-      required this.dayOfWeekDate,
-      required this.startMorning,
-      required this.endMorning,
-      required this.startAfternoon,
-      required this.endAfternoon});
+  TimesheetEntry({this.id,
+    required this.dayDate,
+    required this.dayOfWeekDate,
+    required this.startMorning,
+    required this.endMorning,
+    required this.startAfternoon,
+    required this.endAfternoon,
+    this.absenceReason
+  });
 
   @override
   String toString() {
-    return 'TimesheetEntry{id: $id, dayDate: $dayDate, dayOfWeekDate: $dayOfWeekDate, startMorning: $startMorning, endMorning: $endMorning, startAfternoon: $startAfternoon, endAfternoon: $endAfternoon}';
+    return 'TimesheetEntry{id: $id, dayDate: $dayDate, dayOfWeekDate: $dayOfWeekDate, startMorning: $startMorning, endMorning: $endMorning, startAfternoon: $startAfternoon, endAfternoon: $endAfternoon, absenceReason: $absenceReason}';
   }
 
   String get currentState {
@@ -48,19 +50,30 @@ class TimesheetEntry {
     if (startMorning.isNotEmpty) return format.parse('$dayDate $startMorning');
     return null;
   }
+
   List<Map<String, dynamic>> get pointagesList {
     List<Map<String, dynamic>> list = [];
     if (startMorning.isNotEmpty) {
-      list.add({'type': 'Entrée', 'heure': _parseDateTime(dayDate, startMorning)});
+      list.add(
+          {'type': 'Entrée', 'heure': _parseDateTime(dayDate, startMorning)});
     }
     if (endMorning.isNotEmpty) {
-      list.add({'type': 'Début pause', 'heure': _parseDateTime(dayDate, endMorning)});
+      list.add({
+        'type': 'Début pause',
+        'heure': _parseDateTime(dayDate, endMorning)
+      });
     }
     if (startAfternoon.isNotEmpty) {
-      list.add({'type': 'Fin pause', 'heure': _parseDateTime(dayDate, startAfternoon)});
+      list.add({
+        'type': 'Fin pause',
+        'heure': _parseDateTime(dayDate, startAfternoon)
+      });
     }
     if (endAfternoon.isNotEmpty) {
-      list.add({'type': 'Fin de journée', 'heure': _parseDateTime(dayDate, endAfternoon)});
+      list.add({
+        'type': 'Fin de journée',
+        'heure': _parseDateTime(dayDate, endAfternoon)
+      });
     }
     return list;
   }
@@ -79,6 +92,7 @@ class TimesheetEntry {
     String? endMorning,
     String? startAfternoon,
     String? endAfternoon,
+    String? absenceReason,
   }) {
     return TimesheetEntry(
       id: id ?? this.id,
@@ -88,6 +102,8 @@ class TimesheetEntry {
       endMorning: endMorning ?? this.endMorning,
       startAfternoon: startAfternoon ?? this.startAfternoon,
       endAfternoon: endAfternoon ?? this.endAfternoon,
+      absenceReason: absenceReason ?? this.absenceReason,
+
     );
   }
 }

@@ -21,6 +21,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
     on<LoadPreferences>(_onLoadPreferences);
     on<SavePreferences>(_onSavePreferences);
     on<SaveSignature>(_onSaveSignature);
+    on<SaveLastGenerationDate>(_onSaveLastGenerationDate);
   }
 
   Future<void> _onLoadPreferences(
@@ -32,10 +33,15 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
       final firstName = await getUserPreferenceUseCase.execute('firstName') ?? '';
       final lastName = await getUserPreferenceUseCase.execute('lastName') ?? '';
       final signatureBase64 = await getUserPreferenceUseCase.execute('signature');
+      final lastGenerationDateString = await getUserPreferenceUseCase.execute('lastGenerationDate');
+      final lastGenerationDate = lastGenerationDateString != null
+          ? DateTime.parse(lastGenerationDateString)
+          : null;
       emit(PreferencesLoaded(
         firstName: firstName,
         lastName: lastName,
         signatureBase64: signatureBase64,
+        lastGenerationDate: lastGenerationDate
       ));
     } catch (e) {
       emit(PreferencesError(e.toString()));
@@ -79,5 +85,29 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
       return updatedState.signature;
     }
     return null;
+  }
+
+
+  Future<void> _onSaveLastGenerationDate(
+      SaveLastGenerationDate event,
+      Emitter<PreferencesState> emit,
+      ) async {
+    if (state is PreferencesLoaded) {
+      final currentState = state as PreferencesLoaded;
+      try {
+        await setUserPreferenceUseCase.execute(
+            'lastGenerationDate',
+            event.date.toIso8601String()
+        );
+        emit(PreferencesLoaded(
+          firstName: currentState.firstName,
+          lastName: currentState.lastName,
+          signature: currentState.signature,
+          lastGenerationDate: event.date,
+        ));
+      } catch (e) {
+        emit(PreferencesError('Erreur lors de la sauvegarde de la date de dernière génération: $e'));
+      }
+    }
   }
 }

@@ -1,7 +1,6 @@
 import '../entities/timesheet_entry.dart';
 import '../entities/timesheet_organizer.dart';
 import '../entities/work_week.dart';
-import 'generate_date_usecase.dart';
 
 class WeekGeneratorUseCase {
   execute(List<TimesheetEntry> timesheetEntryList) {

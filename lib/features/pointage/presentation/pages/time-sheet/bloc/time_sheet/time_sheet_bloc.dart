@@ -4,7 +4,9 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../../../preference/presentation/manager/preferences_bloc.dart';
 import '../../../../../domain/entities/timesheet_entry.dart';
+import '../../../../../domain/use_cases/generate_monthly_timesheet_usease.dart';
 import '../../../../../domain/use_cases/get_today_timesheet_entry_use_case.dart';
 import '../../../../../domain/use_cases/save_timesheet_entry_usecase.dart';
 
@@ -15,11 +17,16 @@ part 'time_sheet_state.dart';
 class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
   final SaveTimesheetEntryUseCase saveTimesheetEntryUseCase;
   final GetTodayTimesheetEntryUseCase getTodayTimesheetEntryUseCase;
+  final GenerateMonthlyTimesheetUseCase generateMonthlyTimesheetUseCase;
+  final PreferencesBloc preferencesBloc;
 
-  TimeSheetBloc(
-      {required this.saveTimesheetEntryUseCase,
-      required this.getTodayTimesheetEntryUseCase})
-      : super(TimeSheetInitial()) {
+
+  TimeSheetBloc({
+    required this.saveTimesheetEntryUseCase,
+    required this.getTodayTimesheetEntryUseCase,
+    required this.generateMonthlyTimesheetUseCase,
+    required this.preferencesBloc,
+  }) : super(TimeSheetInitial()) {
     on<TimeSheetEnterEvent>(_updateEnter);
     on<TimeSheetStartBreakEvent>(_updateStartBreak);
     on<TimeSheetEndBreakEvent>(_updateEndBreak);
@@ -27,9 +34,28 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
     on<LoadTimeSheetDataEvent>(_loadDataTimeSheetData);
     on<TimeSheetUpdatePointageEvent>(_updatePointage);
     on<UpdateTimeSheetDataEvent>(_updateTimeSheetData);
+    on<GenerateMonthlyTimesheetEvent>(_generateMonthlyTimesheet);
+    on<CheckGenerationStatusEvent>(_checkGenerationStatus);
+    on<TimeSheetSignalerAbsencePeriodeEvent>(_onSignalerAbsencePeriode);
   }
 
-  TimesheetEntry _updateEntryTime(TimesheetEntry entry, String type, DateTime newDateTime) {
+  void _checkGenerationStatus(CheckGenerationStatusEvent event, Emitter<TimeSheetState> emit) {
+    final preferencesState = preferencesBloc.state;
+    if (preferencesState is PreferencesLoaded) {
+      final lastGenerationDate = preferencesState.lastGenerationDate;
+      final currentDate = DateTime.now();
+      if (lastGenerationDate == null ||
+          currentDate.month != lastGenerationDate.month ||
+          currentDate.year != lastGenerationDate.year) {
+        emit(TimeSheetGenerationAvailable());
+      } else {
+        emit(TimeSheetGenerationCompleted());
+      }
+    }
+  }
+
+  TimesheetEntry _updateEntryTime(
+      TimesheetEntry entry, String type, DateTime newDateTime) {
     final newTime = DateFormat('HH:mm').format(newDateTime);
     switch (type) {
       case 'Entrée':
@@ -45,15 +71,16 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
     }
   }
 
-  void _updatePointage(TimeSheetUpdatePointageEvent event, Emitter<TimeSheetState> emit) {
+  void _updatePointage(
+      TimeSheetUpdatePointageEvent event, Emitter<TimeSheetState> emit) {
     if (state is TimeSheetDataState) {
       final currentEntry = (state as TimeSheetDataState).entry;
-      final updatedEntry = _updateEntryTime(currentEntry, event.type, event.newDateTime);
+      final updatedEntry =
+          _updateEntryTime(currentEntry, event.type, event.newDateTime);
       saveTimesheetEntryUseCase.execute(updatedEntry);
       emit(TimeSheetDataState(updatedEntry));
     }
   }
-
 
   void _updateEnter(event, Emitter<TimeSheetState> emit) async {
     if (state is TimeSheetDataState) {
@@ -151,7 +178,57 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
     }
   }
 
-  void _updateTimeSheetData(UpdateTimeSheetDataEvent event, Emitter<TimeSheetState> emit) {
+  void _updateTimeSheetData(
+      UpdateTimeSheetDataEvent event, Emitter<TimeSheetState> emit) {
     emit(TimeSheetDataState(event.entry));
+  }
+
+  Future<void> _generateMonthlyTimesheet(
+    GenerateMonthlyTimesheetEvent event,
+    Emitter<TimeSheetState> emit,
+  ) async {
+    emit(TimeSheetLoading());
+    try {
+      await generateMonthlyTimesheetUseCase.execute();
+      final currentDate = DateTime.now();
+      preferencesBloc.add(SaveLastGenerationDate(currentDate));
+      emit(TimeSheetGenerationCompleted());
+    } catch (e) {
+      emit(TimeSheetErrorState(e.toString()));
+    }
+  }
+  void _onSignalerAbsencePeriode(TimeSheetSignalerAbsencePeriodeEvent event, Emitter<TimeSheetState> emit) async {
+    emit(TimeSheetLoading());
+    try {
+      // Utilisez DateTime.utc pour éviter les problèmes de fuseau horaire
+      for (DateTime date = DateTime.utc(event.dateDebut.year, event.dateDebut.month, event.dateDebut.day);
+      date.isBefore(event.dateFin.add(Duration(days: 1)));
+      date = date.add(Duration(days: 1))) {
+
+        final formattedDate = DateFormat("dd-MMM-yy").format(date);
+        final entry = await getTodayTimesheetEntryUseCase.execute(formattedDate);
+
+        final updatedEntry = entry?.copyWith(
+          absenceReason: "${event.type}: ${event.raison}",
+          startMorning: '',
+          endMorning: '',
+          startAfternoon: '',
+          endAfternoon: '',
+        ) ?? TimesheetEntry(
+          dayDate: formattedDate,
+          dayOfWeekDate: DateFormat.EEEE().format(date),
+          startMorning: '',
+          endMorning: '',
+          startAfternoon: '',
+          endAfternoon: '',
+          absenceReason: "${event.type}: ${event.raison}",
+        );
+
+        await saveTimesheetEntryUseCase.execute(updatedEntry);
+      }
+      emit(TimeSheetAbsenceSignalee());
+    } catch (e) {
+      emit(TimeSheetErrorState(e.toString()));
+    }
   }
 }

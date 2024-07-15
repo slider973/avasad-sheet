@@ -9,28 +9,27 @@ sealed class PreferencesState extends Equatable {
 
 final class PreferencesInitial extends PreferencesState {}
 
-
-
 class PreferencesLoading extends PreferencesState {}
 
 class PreferencesLoaded extends PreferencesState {
   final String firstName;
   final String lastName;
   final String? signatureBase64;
+  final DateTime? lastGenerationDate;
 
   const PreferencesLoaded({
     required this.firstName,
     required this.lastName,
     this.signatureBase64,
+    this.lastGenerationDate,
+    Uint8List? signature,
   });
 
-
-  Uint8List? get signature => signatureBase64 != null
-      ? base64Decode(signatureBase64!)
-      : null;
+  Uint8List? get signature =>
+      signatureBase64 != null ? base64Decode(signatureBase64!) : null;
 
   @override
-  List<Object?> get props => [firstName, lastName, signatureBase64];
+  List<Object?> get props => [firstName, lastName, signatureBase64, lastGenerationDate];
 }
 
 class PreferencesSaved extends PreferencesState {}

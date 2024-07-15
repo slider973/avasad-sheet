@@ -12,6 +12,7 @@ class TimeSheetEntryModel {
   late String endMorning;
   late String startAfternoon;
   late String endAfternoon;
+  late String absenceReason;
 
   TimeSheetEntryModel({
     required this.dayDate,
@@ -20,5 +21,6 @@ class TimeSheetEntryModel {
     this.endMorning = '',
     this.startAfternoon = '',
     this.endAfternoon = '',
+    this.absenceReason = '',
   });
 }
