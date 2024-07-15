@@ -28,6 +28,9 @@ part 'pdf_event.dart';
 
 part 'pdf_state.dart';
 
+final headerColor = PdfColor.fromHex('#D9D9D9'); // Gris clair pour l'en-tête
+final totalRowColor = PdfColor.fromHex('#F2F2F2'); // Gris très clair pour les totaux
+
 class PdfBloc extends Bloc<PdfEvent, PdfState> {
   final TimesheetRepository repository;
   final GetSignatureUseCase getSignatureUseCase;
@@ -220,9 +223,11 @@ pw.Widget _buildInfoTable(int monthNumber) {
 
 pw.Widget _buildHeader(pw.MemoryImage logoImage) {
   return pw.Container(
+
     padding: const pw.EdgeInsets.all(10),
     decoration: pw.BoxDecoration(
       border: pw.Border.all(),
+      color: headerColor,
     ),
     child: pw.Row(
       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -339,6 +344,7 @@ pw.TableRow _buildWeekTotal(WorkWeek week) {
 }
 pw.Widget _buildMonthTotal(Duration totalHours, int totalDays) {
   return pw.Container(
+    color: totalRowColor,
     margin: const pw.EdgeInsets.only(top: 10),
     child: pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
