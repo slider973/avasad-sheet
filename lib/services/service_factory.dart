@@ -32,9 +32,9 @@ class ServiceFactory extends StatelessWidget {
       ),
       BlocProvider<TimeSheetBloc>(
           create: (context) => TimeSheetBloc(
-                saveTimesheetEntryUseCase: getIt<SaveTimesheetEntryUseCase>(),
-            getTodayTimesheetEntryUseCase: getIt<GetTodayTimesheetEntryUseCase>()
-              )),
+              saveTimesheetEntryUseCase: getIt<SaveTimesheetEntryUseCase>(),
+              getTodayTimesheetEntryUseCase:
+                  getIt<GetTodayTimesheetEntryUseCase>())),
       BlocProvider<TimeSheetListBloc>(
         create: (context) => TimeSheetListBloc(
           findPointedListUseCase: getIt<FindPointedListUseCase>(),
@@ -45,7 +45,9 @@ class ServiceFactory extends StatelessWidget {
       ),
       BlocProvider<PdfBloc>(
         create: (context) => PdfBloc(
-            getIt<TimesheetRepositoryImpl>(), getIt<GetSignatureUseCase>()),
+            getIt<TimesheetRepositoryImpl>(),
+            getIt<GetSignatureUseCase>(),
+            BlocProvider.of<PreferencesBloc>(context)),
       ),
     ], child: child);
   }

@@ -18,6 +18,7 @@ import 'package:time_sheet/features/time_sheet/domain/repositories/timesheet_rep
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../../../services/logger_service.dart';
+import '../../../../../preference/domain/entities/user.dart';
 import '../../../../../preference/domain/use_cases/get_signature_usecase.dart';
 import '../../../../../preference/presentation/manager/preferences_bloc.dart';
 import '../../../../data/models/generated_pdf/generated_pdf.dart';
@@ -34,8 +35,9 @@ final totalRowColor = PdfColor.fromHex('#F2F2F2'); // Gris très clair pour les 
 class PdfBloc extends Bloc<PdfEvent, PdfState> {
   final TimesheetRepository repository;
   final GetSignatureUseCase getSignatureUseCase;
+  final PreferencesBloc preferencesBloc;
 
-  PdfBloc(this.repository, this.getSignatureUseCase) : super(PdfInitial()) {
+  PdfBloc(this.repository, this.getSignatureUseCase, this.preferencesBloc) : super(PdfInitial()) {
     on<GeneratePdfEvent>(_onGeneratePdfEvent);
     on<LoadGeneratedPdfsEvent>(_onLoadGeneratedPdfsEvent);
     on<DeletePdfEvent>(_onDeletePdfEvent);
@@ -57,8 +59,19 @@ class PdfBloc extends Bloc<PdfEvent, PdfState> {
       List<WorkWeek> weekDay =
           WeekGeneratorUseCase().execute(timesheetEntryList);
       print('object 2');
-      final signature = await getSignatureUseCase.execute();
-      final pdfFile = await generatePdf(weekDay, signature, event.monthNumber);
+      // Récupérer les préférences de l'utilisateur
+      final preferenceState = preferencesBloc.state;
+      if (preferenceState is! PreferencesLoaded) {
+        throw Exception("Les préférences utilisateur n'ont pas été chargées");
+      }
+
+      final user = User(
+        firstName: preferenceState.firstName,
+        lastName: preferenceState.lastName,
+        company: 'Avasad', // Vous pouvez ajouter cela aux préférences si nécessaire
+        signature: preferenceState.signature,
+      );
+      final pdfFile = await generatePdf(weekDay,  event.monthNumber, user);
 
       // Sauvegarder les informations du PDF généré
       final generatedPdf = GeneratedPdfModel(
@@ -130,7 +143,7 @@ Future<Uint8List> _loadImage() async {
   return byteData.buffer.asUint8List();
 }
 
-Future<File> generatePdf(List<WorkWeek> weeks, Uint8List? signature, int monthNumber) async {
+Future<File> generatePdf(List<WorkWeek> weeks, int monthNumber, User user) async {
   logger.i('start generatedPdf');
   final pdf = pw.Document();
 
@@ -143,8 +156,8 @@ Future<File> generatePdf(List<WorkWeek> weeks, Uint8List? signature, int monthNu
 
   // Convertissez la signature en pw.Image si elle existe
   pw.Image? signatureImage;
-  if (signature != null) {
-    signatureImage = pw.Image(pw.MemoryImage(signature));
+  if (user.signature != null) {
+    signatureImage = pw.Image(pw.MemoryImage(user.signature!));
   }
 
   final totalDays = weeks.fold(0, (sum, week) => sum + week.workday.where((day) => day.calculateTotalHours().inMinutes > 0).length);
@@ -161,10 +174,10 @@ Future<File> generatePdf(List<WorkWeek> weeks, Uint8List? signature, int monthNu
       ),
       build: (pw.Context context) => [
         _buildHeader(logoImage),
-        _buildInfoTable(monthNumber),
+        _buildInfoTable(monthNumber, user),
         ...weeks.map((week) => _buildWeekTable(week)),
         _buildMonthTotal(totalHours, totalDays),
-        _buildFooter(signatureImage),
+        _buildFooter(signatureImage, user),
       ],
       theme: pw.ThemeData.withFont(
         base: ttf,
@@ -186,7 +199,7 @@ Future<File> generatePdf(List<WorkWeek> weeks, Uint8List? signature, int monthNu
   return file.writeAsBytes(await pdf.save());
 }
 
-pw.Widget _buildInfoTable(int monthNumber) {
+pw.Widget _buildInfoTable(int monthNumber, User user) {
   final monthName = DateFormat('MMMM', 'fr_FR').format(DateTime(DateTime.now().year, monthNumber));
   final year = DateTime.now().year;
 
@@ -197,12 +210,12 @@ pw.Widget _buildInfoTable(int monthNumber) {
         children: [
           pw.Padding(
             padding: const pw.EdgeInsets.all(5),
-            child: pw.Text('Entreprise de mission (Company): Avasad',
+            child: pw.Text('Entreprise de mission (Company): ${user.company}',
                 style: const pw.TextStyle(fontSize: 8)),
           ),
           pw.Padding(
             padding: const pw.EdgeInsets.all(5),
-            child: pw.Text('Travailleur: Jonathan LEMAINE',
+            child: pw.Text('Travailleur: ${user.fullName}',
                 style: const pw.TextStyle(fontSize: 8)),
           ),
         ],
@@ -257,7 +270,7 @@ pw.Widget _buildWeekTable(WorkWeek week) {
       },
       children: [
         _buildTableHeader(),
-        ...week.workday.map(_buildDayRow),
+        ...week.workday.map((day) => _buildDayRow(day, _isWeekday(day.entry.dayDate))),
         _buildWeekTotal(week),
       ],
     ),
@@ -279,12 +292,11 @@ pw.TableRow _buildTableHeader() {
       ]);
 }
 
-pw.TableRow _buildDayRow(Workday day) {
-  String formattedDate = _formatDate(day.entry.dayDate);
-  String dayOfWeek = _dayOfWeek(day.entry.dayDate);
-  String formattedHours = _formatDuration(day.calculateTotalHours());
+pw.TableRow _buildDayRow(Workday day, bool isWeekday) {
+  final backgroundColor = isWeekday ? PdfColor.fromHex('#FFFFCC') : PdfColors.white; // Jaune clair pour les jours ouvrés
 
   return pw.TableRow(
+    decoration: pw.BoxDecoration(color: backgroundColor),
     children: [
       pw.Center(
         child: pw.Padding(
@@ -292,26 +304,16 @@ pw.TableRow _buildDayRow(Workday day) {
             child: pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
               children: [
-                pw.Text(dayOfWeek, style: const pw.TextStyle(fontSize: 6)),
-                pw.Text(formattedDate, style: const pw.TextStyle(fontSize: 6)),
+                pw.Text(_dayOfWeek(day.entry.dayDate), style: const pw.TextStyle(fontSize: 6)),
+                pw.Text(_formatDate(day.entry.dayDate), style: const pw.TextStyle(fontSize: 6)),
               ],
             )),
       ),
-      pw.Center(
-          child: pw.Text(day.entry.startMorning,
-              style: const pw.TextStyle(fontSize: 6))),
-      pw.Center(
-          child: pw.Text(day.entry.endMorning,
-              style: const pw.TextStyle(fontSize: 6))),
-      pw.Center(
-          child: pw.Text(day.entry.startAfternoon,
-              style: const pw.TextStyle(fontSize: 6))),
-      pw.Center(
-          child: pw.Text(day.entry.endAfternoon,
-              style: const pw.TextStyle(fontSize: 6))),
-      pw.Center(
-          child: pw.Text(formattedHours,
-              style: const pw.TextStyle(fontSize: 6))),
+      pw.Center(child: pw.Text(day.entry.startMorning, style: const pw.TextStyle(fontSize: 6))),
+      pw.Center(child: pw.Text(day.entry.endMorning, style: const pw.TextStyle(fontSize: 6))),
+      pw.Center(child: pw.Text(day.entry.startAfternoon, style: const pw.TextStyle(fontSize: 6))),
+      pw.Center(child: pw.Text(day.entry.endAfternoon, style: const pw.TextStyle(fontSize: 6))),
+      pw.Center(child: pw.Text(_formatDuration(day.calculateTotalHours()), style: const pw.TextStyle(fontSize: 6))),
       pw.Center(child: pw.Text('', style: const pw.TextStyle(fontSize: 6))),
       pw.Center(child: pw.Text('', style: const pw.TextStyle(fontSize: 6))),
     ]
@@ -358,7 +360,7 @@ pw.Widget _buildMonthTotal(Duration totalHours, int totalDays) {
   );
 }
 
-pw.Widget _buildFooter(pw.Image? signatureImage) {
+pw.Widget _buildFooter(pw.Image? signatureImage, User user) {
   return pw.Container(
     margin: const pw.EdgeInsets.only(top: 15),
     child: pw.Column(
@@ -369,7 +371,7 @@ pw.Widget _buildFooter(pw.Image? signatureImage) {
             pw.TableRow(
               children: [
                 _buildSignatureColumn(
-                    'Travailleur', 'Jonathan LEMAINE', signatureImage),
+                    'Travailleur', user.fullName, signatureImage),
                 _buildSignatureColumn(
                     'Entreprise de mission', 'François Longchamp'),
                 _buildSignatureColumn('Delivery manager', 'Sovattha Sok'),
@@ -457,6 +459,10 @@ pw.Widget _centeredHeaderText(String text) {
       ),
     ),
   );
+}
+bool _isWeekday(String dateString) {
+  final date = DateFormat('dd-MMM-yy', 'en_US').parse(dateString);
+  return date.weekday >= 1 && date.weekday <= 5; // Du lundi (1) au vendredi (5)
 }
 
 Future<String> signPdf(String filePath, Uint8List signature) async {
