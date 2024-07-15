@@ -6,14 +6,14 @@ import '../features/preference/data/repositories/user_preference_repository.impl
 import '../features/preference/domain/use_cases/get_signature_usecase.dart';
 import '../features/preference/domain/use_cases/get_user_preference_use_case.dart';
 import '../features/preference/domain/use_cases/set_user_preference_use_case.dart';
-import '../features/time_sheet/data/data_sources/local.dart';
-import '../features/time_sheet/data/data_sources/test_data_inserter.dart';
-import '../features/time_sheet/data/models/generated_pdf/generated_pdf.dart';
-import '../features/time_sheet/data/models/timesheet_entry/timesheet_entry.dart';
-import '../features/time_sheet/data/repositories/timesheet_repository_impl.dart';
-import '../features/time_sheet/domain/use_cases/find_pointed_list_usecase.dart';
-import '../features/time_sheet/domain/use_cases/get_today_timesheet_entry_use_case.dart';
-import '../features/time_sheet/domain/use_cases/save_timesheet_entry_usecase.dart';
+import '../features/pointage/data/data_sources/local.dart';
+import '../features/pointage/data/data_sources/test_data_inserter.dart';
+import '../features/pointage/data/models/generated_pdf/generated_pdf.dart';
+import '../features/pointage/data/models/timesheet_entry/timesheet_entry.dart';
+import '../features/pointage/data/repositories/timesheet_repository_impl.dart';
+import '../features/pointage/domain/use_cases/find_pointed_list_usecase.dart';
+import '../features/pointage/domain/use_cases/get_today_timesheet_entry_use_case.dart';
+import '../features/pointage/domain/use_cases/save_timesheet_entry_usecase.dart';
 
 final getIt = GetIt.instance;
 

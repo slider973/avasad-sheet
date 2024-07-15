@@ -13,8 +13,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:sentry_flutter/sentry_flutter.dart';
-import 'package:time_sheet/features/time_sheet/domain/entities/work_day.dart';
-import 'package:time_sheet/features/time_sheet/domain/repositories/timesheet_repository.dart';
+import 'package:time_sheet/features/pointage/domain/entities/work_day.dart';
+import 'package:time_sheet/features/pointage/domain/repositories/timesheet_repository.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../../../services/logger_service.dart';
@@ -53,12 +53,10 @@ class PdfBloc extends Bloc<PdfEvent, PdfState> {
       GeneratePdfEvent event, Emitter<PdfState> emit) async {
     emit(PdfGenerating());
     try {
-      print('object 1');
       final timesheetEntryList =
           await repository.findEntriesFromMonthOf(event.monthNumber);
       List<WorkWeek> weekDay =
           WeekGeneratorUseCase().execute(timesheetEntryList);
-      print('object 2');
       // Récupérer les préférences de l'utilisateur
       final preferenceState = preferencesBloc.state;
       if (preferenceState is! PreferencesLoaded) {

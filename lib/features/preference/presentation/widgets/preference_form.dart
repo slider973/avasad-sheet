@@ -2,7 +2,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:time_sheet/features/time_sheet/presentation/pages/pdf/pages/signature_page.dart';
+import 'package:time_sheet/features/pointage/presentation/pages/pdf/pages/signature_page.dart';
 
 import '../../../../services/logger_service.dart';
 import '../manager/preferences_bloc.dart';

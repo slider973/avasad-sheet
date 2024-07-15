@@ -1,6 +1,6 @@
 import 'package:intl/intl.dart';
-import 'package:time_sheet/features/time_sheet/data/models/generated_pdf/generated_pdf.dart';
-import 'package:time_sheet/features/time_sheet/data/models/timesheet_entry/timesheet_entry.dart';
+import 'package:time_sheet/features/pointage/data/models/generated_pdf/generated_pdf.dart';
+import 'package:time_sheet/features/pointage/data/models/timesheet_entry/timesheet_entry.dart';
 import 'package:time_sheet/services/logger_service.dart';
 
 import '../../domain/data_source/time_sheet.dart';

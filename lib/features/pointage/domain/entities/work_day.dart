@@ -1,5 +1,5 @@
 import 'package:intl/intl.dart';
-import 'package:time_sheet/features/time_sheet/domain/entities/timesheet_entry.dart';
+import 'package:time_sheet/features/pointage/domain/entities/timesheet_entry.dart';
 
 class Workday {
   TimesheetEntry entry;

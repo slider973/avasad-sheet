@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:time_sheet/features/time_sheet/presentation/pages/pdf/bloc/pdf_bloc.dart';
+import 'package:time_sheet/features/pointage/presentation/pages/pdf/bloc/pdf_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:time_sheet/features/time_sheet/presentation/pages/pdf/pages/pdf_viewer.dart';
+import 'package:time_sheet/features/pointage/presentation/pages/pdf/pages/pdf_viewer.dart';
 
 import '../../../../../../services/logger_service.dart';
 

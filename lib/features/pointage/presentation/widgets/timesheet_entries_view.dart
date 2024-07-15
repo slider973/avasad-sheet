@@ -12,13 +12,13 @@ class TimesheetEntriesWidget extends StatelessWidget {
     return Scaffold(
 
       appBar: AppBar(
-        title: Text('Heures enregistrées'),
+        title: const Text('Heures enregistrées'),
         actions: [
           IconButton(
-            icon: Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh),
             onPressed: () {
               // Déclencher un nouveau fetch lorsque l'utilisateur appuie sur le bouton de rafraîchissement
-              context.read<TimeSheetListBloc>().add(FindTimesheetEntriesEvent());
+              context.read<TimeSheetListBloc>().add(const FindTimesheetEntriesEvent());
             },
           ),
         ],
@@ -26,7 +26,7 @@ class TimesheetEntriesWidget extends StatelessWidget {
       body: BlocBuilder<TimeSheetListBloc, TimeSheetListState>(
         builder: (context, state) {
           if (state is TimeSheetListInitial) {
-            return Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator());
           } else if (state is TimeSheetListFetchedState) {
             return ListView.builder(
               itemCount: state.entries.length,
@@ -40,7 +40,7 @@ class TimesheetEntriesWidget extends StatelessWidget {
               },
             );
           } else {
-            return Center(child: Text('Une erreur est survenue'));
+            return const Center(child: Text('Une erreur est survenue'));
           }
         },
       ),

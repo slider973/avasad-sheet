@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:time_sheet/features/time_sheet/presentation/widgets/pointage_widget/pointage_painter.dart';
+import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_painter.dart';
 
 class PointageTimer extends StatelessWidget {
   final String etatActuel;

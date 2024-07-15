@@ -7,13 +7,13 @@ import '../features/preference/domain/use_cases/get_signature_usecase.dart';
 import '../features/preference/domain/use_cases/get_user_preference_use_case.dart';
 import '../features/preference/domain/use_cases/set_user_preference_use_case.dart';
 import '../features/preference/presentation/manager/preferences_bloc.dart';
-import '../features/time_sheet/data/repositories/timesheet_repository_impl.dart';
-import '../features/time_sheet/domain/use_cases/find_pointed_list_usecase.dart';
-import '../features/time_sheet/domain/use_cases/get_today_timesheet_entry_use_case.dart';
-import '../features/time_sheet/domain/use_cases/save_timesheet_entry_usecase.dart';
-import '../features/time_sheet/presentation/pages/pdf/bloc/pdf_bloc.dart';
-import '../features/time_sheet/presentation/pages/time-sheet/bloc/time_sheet/time_sheet_bloc.dart';
-import '../features/time_sheet/presentation/pages/time-sheet/bloc/time_sheet_list/time_sheet_list_bloc.dart';
+import '../features/pointage/data/repositories/timesheet_repository_impl.dart';
+import '../features/pointage/domain/use_cases/find_pointed_list_usecase.dart';
+import '../features/pointage/domain/use_cases/get_today_timesheet_entry_use_case.dart';
+import '../features/pointage/domain/use_cases/save_timesheet_entry_usecase.dart';
+import '../features/pointage/presentation/pages/pdf/bloc/pdf_bloc.dart';
+import '../features/pointage/presentation/pages/time-sheet/bloc/time_sheet/time_sheet_bloc.dart';
+import '../features/pointage/presentation/pages/time-sheet/bloc/time_sheet_list/time_sheet_list_bloc.dart';
 
 class ServiceFactory extends StatelessWidget {
   final getIt = GetIt.instance;

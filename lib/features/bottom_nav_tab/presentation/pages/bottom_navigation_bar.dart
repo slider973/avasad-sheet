@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+
 import '../../../preference/presentation/pages/preference.dart';
-import '../../../time_sheet/presentation/pages/pointage/pointage_page.dart';
-import '../../../time_sheet/presentation/pages/pdf/pages/pdf_document_page_old.dart';
-import '../../../time_sheet/presentation/widgets/pointage_widget/pointage_widget.dart';
-import '../../../time_sheet/presentation/widgets/timesheet_calendar_widget/timesheet_calendar_widget.dart';
+import '../../../pointage/presentation/pages/pointage/pointage_page.dart';
+import '../../../pointage/presentation/pages/pdf/pages/pdf_document_page_old.dart';
+import '../../../pointage/presentation/widgets/pointage_widget/pointage_widget.dart';
+import '../../../pointage/presentation/widgets/timesheet_calendar_widget/timesheet_calendar_widget.dart';
 import '../widgets/bottom_navigation_bar_widget.dart';
 import 'bloc/bottom_navigation_bar_bloc.dart';
 

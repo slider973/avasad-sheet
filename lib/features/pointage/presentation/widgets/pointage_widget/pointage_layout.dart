@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:time_sheet/features/time_sheet/presentation/widgets/pointage_widget/pointage_boutton.dart';
-import 'package:time_sheet/features/time_sheet/presentation/widgets/pointage_widget/pointage_list.dart';
+import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_boutton.dart';
+import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_list.dart';
 
 import 'pointage_header.dart';
 import 'pointage_timer.dart';
