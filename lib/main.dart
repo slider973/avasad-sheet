@@ -9,11 +9,28 @@ import 'package:flutter_native_splash/flutter_native_splash.dart';
 
 import './services/injection_container.dart' as di;
 import './services/request_permission_handler.dart' as permission;
+import 'package:window_manager/window_manager.dart';
 
 void main() async {
   logger.i('main');
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('fr_CH', null);
+  // Must add this line.
+  await windowManager.ensureInitialized();
+
+  WindowOptions windowOptions = const WindowOptions(
+    size: Size(500, 800),
+    center: true,
+    backgroundColor: Colors.transparent,
+    skipTaskbar: false,
+    maximumSize: Size(500, 800),
+    minimumSize: Size(500, 800),
+    titleBarStyle: TitleBarStyle.normal,
+  );
+  windowManager.waitUntilReadyToShow(windowOptions, () async {
+    await windowManager.show();
+    await windowManager.focus();
+  });
   await SentryFlutter.init(
           (options) {
         options.dsn = 'https://881fc425e6497d1454c99fe537d80968@o4507600245817344.ingest.de.sentry.io/4507600249159760';
