@@ -14,6 +14,8 @@ class PointageLayout extends StatelessWidget {
   final VoidCallback onActionPointage;
   final Function(Map<String, dynamic>) onModifierPointage;
   final Function(DateTime, DateTime, String, String) onSignalerAbsencePeriode;
+  final Duration totalDayHours;
+  final String monthlyHoursStatus;
 
   const PointageLayout({
     Key? key,
@@ -25,6 +27,8 @@ class PointageLayout extends StatelessWidget {
     required this.onModifierPointage,
     required this.selectedDate,
     required this.onSignalerAbsencePeriode,
+    required this.totalDayHours,
+    required this.monthlyHoursStatus,
   }) : super(key: key);
 
   @override
@@ -40,6 +44,16 @@ class PointageLayout extends StatelessWidget {
             etatActuel: etatActuel,
             dernierPointage: dernierPointage,
             progression: progression,
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Total du jour : ${_formatDuration(totalDayHours)}',
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            monthlyHoursStatus,
+            style: const TextStyle(fontSize: 14, color: Colors.blue),
           ),
           const SizedBox(height: 20),
           PointageButton(
@@ -130,5 +144,10 @@ class PointageLayout extends StatelessWidget {
         );
       },
     );
+  }
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, "0");
+    String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
+    return "${twoDigits(duration.inHours)}:$twoDigitMinutes";
   }
 }

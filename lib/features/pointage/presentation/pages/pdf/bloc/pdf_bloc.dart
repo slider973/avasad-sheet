@@ -22,17 +22,20 @@ import '../../../../domain/entities/work_week.dart';
 import '../../../../domain/use_cases/generate_week_usecase.dart';
 
 part 'pdf_event.dart';
+
 part 'pdf_state.dart';
 
 final headerColor = PdfColor.fromHex('#D9D9D9'); // Gris clair pour l'en-tête
-final totalRowColor = PdfColor.fromHex('#F2F2F2'); // Gris très clair pour les totaux
+final totalRowColor =
+    PdfColor.fromHex('#F2F2F2'); // Gris très clair pour les totaux
 
 class PdfBloc extends Bloc<PdfEvent, PdfState> {
   final TimesheetRepository repository;
   final GetSignatureUseCase getSignatureUseCase;
   final PreferencesBloc preferencesBloc;
 
-  PdfBloc(this.repository, this.getSignatureUseCase, this.preferencesBloc) : super(PdfInitial()) {
+  PdfBloc(this.repository, this.getSignatureUseCase, this.preferencesBloc)
+      : super(PdfInitial()) {
     on<GeneratePdfEvent>(_onGeneratePdfEvent);
     on<LoadGeneratedPdfsEvent>(_onLoadGeneratedPdfsEvent);
     on<DeletePdfEvent>(_onDeletePdfEvent);
@@ -61,10 +64,11 @@ class PdfBloc extends Bloc<PdfEvent, PdfState> {
       final user = User(
         firstName: preferenceState.firstName,
         lastName: preferenceState.lastName,
-        company: 'Avasad', // Vous pouvez ajouter cela aux préférences si nécessaire
+        company: 'Avasad',
+        // Vous pouvez ajouter cela aux préférences si nécessaire
         signature: preferenceState.signature,
       );
-      final pdfFile = await generatePdf(weekDay,  event.monthNumber, user);
+      final pdfFile = await generatePdf(weekDay, event.monthNumber, user);
 
       // Sauvegarder les informations du PDF généré
       final generatedPdf = GeneratedPdfModel(
@@ -136,7 +140,8 @@ Future<Uint8List> _loadImage() async {
   return byteData.buffer.asUint8List();
 }
 
-Future<File> generatePdf(List<WorkWeek> weeks, int monthNumber, User user) async {
+Future<File> generatePdf(
+    List<WorkWeek> weeks, int monthNumber, User user) async {
   logger.i('start generatedPdf');
   final pdf = pw.Document();
 
@@ -153,9 +158,15 @@ Future<File> generatePdf(List<WorkWeek> weeks, int monthNumber, User user) async
     signatureImage = pw.Image(pw.MemoryImage(user.signature!));
   }
 
-  final totalDays = weeks.fold(0, (sum, week) => sum + week.workday.where((day) => day.calculateTotalHours().inMinutes > 0).length);
-  final totalHours = weeks.fold(Duration.zero, (sum, week) => sum + week.calculateTotalWeekHours());
-
+  final totalDays = weeks.fold(
+      0,
+      (sum, week) =>
+          sum +
+          week.workday
+              .where((day) => day.calculateTotalHours().inMinutes > 0)
+              .length);
+  final totalHours = weeks.fold(
+      Duration.zero, (sum, week) => sum + week.calculateTotalWeekHours());
 
   pdf.addPage(
     pw.MultiPage(
@@ -178,10 +189,11 @@ Future<File> generatePdf(List<WorkWeek> weeks, int monthNumber, User user) async
     ),
   );
   Directory directory = await getApplicationDocumentsDirectory();
-  final path = directory.path;
+  final path = '${directory.path}/extract-time-sheet/${user.company}';
   await Directory(path).create(recursive: true);
   // Obtenir le nom du mois en français
-  final monthName = DateFormat('MMMM', 'fr_FR').format(DateTime(DateTime.now().year, monthNumber));
+  final monthName = DateFormat('MMMM', 'fr_FR')
+      .format(DateTime(DateTime.now().year, monthNumber));
   // Créer le nom du fichier avec le mois et l'année
   final fileName = '${monthName}_${DateTime.now().year}.pdf';
   final file = File('$path/$fileName');
@@ -190,7 +202,8 @@ Future<File> generatePdf(List<WorkWeek> weeks, int monthNumber, User user) async
 }
 
 pw.Widget _buildInfoTable(int monthNumber, User user) {
-  final monthName = DateFormat('MMMM', 'fr_FR').format(DateTime(DateTime.now().year, monthNumber));
+  final monthName = DateFormat('MMMM', 'fr_FR')
+      .format(DateTime(DateTime.now().year, monthNumber));
   final year = DateTime.now().year;
 
   return pw.Table(
@@ -226,7 +239,6 @@ pw.Widget _buildInfoTable(int monthNumber, User user) {
 
 pw.Widget _buildHeader(pw.MemoryImage logoImage) {
   return pw.Container(
-
     padding: const pw.EdgeInsets.all(10),
     decoration: pw.BoxDecoration(
       border: pw.Border.all(),
@@ -256,11 +268,12 @@ pw.Widget _buildWeekTable(WorkWeek week) {
         4: const pw.FlexColumnWidth(1),
         5: const pw.FlexColumnWidth(1.5),
         6: const pw.FlexColumnWidth(1.5),
-        7: const pw.FlexColumnWidth(2),
+        7: const pw.FlexColumnWidth(2.5),
       },
       children: [
         _buildTableHeader(),
-        ...week.workday.map((day) => _buildDayRow(day, _isWeekday(day.entry.dayDate))),
+        ...week.workday
+            .map((day) => _buildDayRow(day, _isWeekday(day.entry.dayDate))),
         _buildWeekTotal(week),
       ],
     ),
@@ -279,14 +292,13 @@ pw.TableRow _buildTableHeader() {
         _centeredHeaderText('Total heures\ntravaillées'),
         _centeredHeaderText('Dont heures\nsupplémentaires'),
         _centeredHeaderText('Commentaires'),
+        _centeredHeaderText('Jour\ntravaillé'),
       ]);
 }
 
 pw.TableRow _buildDayRow(Workday day, bool isWeekday) {
-  final backgroundColor = isWeekday ? PdfColor.fromHex('#FFFFCC') : PdfColors.white; // Jaune clair pour les jours ouvrés
 
   return pw.TableRow(
-    decoration: pw.BoxDecoration(color: backgroundColor),
     children: [
       pw.Center(
         child: pw.Padding(
@@ -294,26 +306,47 @@ pw.TableRow _buildDayRow(Workday day, bool isWeekday) {
             child: pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
               children: [
-                pw.Text(_dayOfWeek(day.entry.dayDate), style: const pw.TextStyle(fontSize: 6)),
-                pw.Text(_formatDate(day.entry.dayDate), style: const pw.TextStyle(fontSize: 6)),
+                pw.Text(_dayOfWeek(day.entry.dayDate),
+                    style: const pw.TextStyle(fontSize: 6)),
+                pw.Text(_formatDate(day.entry.dayDate),
+                    style: const pw.TextStyle(fontSize: 6)),
               ],
             )),
       ),
-      pw.Center(child: pw.Text(day.entry.startMorning, style: const pw.TextStyle(fontSize: 6))),
-      pw.Center(child: pw.Text(day.entry.endMorning, style: const pw.TextStyle(fontSize: 6))),
-      pw.Center(child: pw.Text(day.entry.startAfternoon, style: const pw.TextStyle(fontSize: 6))),
-      pw.Center(child: pw.Text(day.entry.endAfternoon, style: const pw.TextStyle(fontSize: 6))),
-      pw.Center(child: pw.Text(day.isAbsence() ? '0:00' : _formatDuration(day.calculateTotalHours()), style: const pw.TextStyle(fontSize: 6))),
+      pw.Center(
+          child: pw.Text(day.entry.startMorning,
+              style: const pw.TextStyle(fontSize: 6))),
+      pw.Center(
+          child: pw.Text(day.entry.endMorning,
+              style: const pw.TextStyle(fontSize: 6))),
+      pw.Center(
+          child: pw.Text(day.entry.startAfternoon,
+              style: const pw.TextStyle(fontSize: 6))),
+      pw.Center(
+          child: pw.Text(day.entry.endAfternoon,
+              style: const pw.TextStyle(fontSize: 6))),
+      pw.Center(
+          child: pw.Text(
+              day.isAbsence()
+                  ? '0:00'
+                  : _formatDuration(day.calculateTotalHours()),
+              style: const pw.TextStyle(fontSize: 6))),
       pw.Center(child: pw.Text('', style: const pw.TextStyle(fontSize: 6))),
-      pw.Center(child: pw.Text(day.entry.absenceReason ?? '', style: const pw.TextStyle(fontSize: 6))),
+      pw.Center(
+          child: pw.Text(day.entry.absenceReason ?? '',
+              style: const pw.TextStyle(fontSize: 6))),
+      pw.Center(
+          child: pw.Text(day.isAbsence() ? '0' : '1',
+              style: const pw.TextStyle(fontSize: 6))),
     ]
         .map((widget) =>
-        pw.Padding(padding: const pw.EdgeInsets.all(3), child: widget))
+            pw.Padding(padding: const pw.EdgeInsets.all(3), child: widget))
         .toList(),
   );
 }
 
 pw.TableRow _buildWeekTotal(WorkWeek week) {
+  int daysWorked = week.workday.where((day) => !day.isAbsence()).length;
   return pw.TableRow(
     decoration: const pw.BoxDecoration(color: PdfColors.grey200),
     children: [
@@ -328,23 +361,41 @@ pw.TableRow _buildWeekTotal(WorkWeek week) {
               style:
                   pw.TextStyle(fontSize: 6, fontWeight: pw.FontWeight.bold))),
       pw.Text(''),
+      pw.Text(''),
+      pw.Center(
+          child: pw.Text('$daysWorked jour${daysWorked > 1 ? 's' : ''}',
+              style:
+              pw.TextStyle(fontSize: 6, fontWeight: pw.FontWeight.bold))),
     ]
         .map((widget) =>
             pw.Padding(padding: const pw.EdgeInsets.all(5), child: widget))
         .toList(),
   );
 }
+
 pw.Widget _buildMonthTotal(Duration totalHours, int totalDays) {
   return pw.Container(
     color: totalRowColor,
     margin: const pw.EdgeInsets.only(top: 10),
-    child: pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
+    child: pw.Row(
+      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
       children: [
-        pw.Text('Total du mois: ${_formatDuration(totalHours)}',
-            style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
-        pw.Text('Nombre de jours facturés: $totalDays',
-            style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
+        pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Text('Total du mois: ${_formatDuration(totalHours)}',
+                style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
+          ],
+        ),
+        pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.end,
+          children: [
+            pw.Text('Jours travaillés:',
+                style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+            pw.Text('$totalDays',
+                style: pw.TextStyle(fontSize: 15, fontWeight: pw.FontWeight.bold)),
+          ],
+        ),
       ],
     ),
   );
@@ -385,7 +436,6 @@ pw.Widget _buildFooter(pw.Image? signatureImage, User user) {
   );
 }
 
-
 pw.Widget _buildSignatureColumn(String title, String name,
     [pw.Image? signatureImage]) {
   return pw.Container(
@@ -424,6 +474,7 @@ String _dayOfWeek(String dateString) {
     return dateString;
   }
 }
+
 String _formatDate(String dateString) {
   try {
     final date = DateFormat('dd-MMM-yy', 'en_US').parse(dateString);
@@ -433,11 +484,13 @@ String _formatDate(String dateString) {
     return dateString;
   }
 }
+
 String _formatDuration(Duration duration) {
   final hours = duration.inHours;
   final minutes = duration.inMinutes.remainder(60);
   return '${hours}h ${minutes}min';
 }
+
 pw.Widget _centeredHeaderText(String text) {
   return pw.Padding(
     padding: const pw.EdgeInsets.all(2),
@@ -450,6 +503,7 @@ pw.Widget _centeredHeaderText(String text) {
     ),
   );
 }
+
 bool _isWeekday(String dateString) {
   final date = DateFormat('dd-MMM-yy', 'en_US').parse(dateString);
   return date.weekday >= 1 && date.weekday <= 5; // Du lundi (1) au vendredi (5)

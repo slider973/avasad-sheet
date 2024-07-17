@@ -22,6 +22,8 @@ class _PointageWidgetState extends State<PointageWidget>
   DateTime? _dernierPointage;
   double _progression = 0.0;
   List<Map<String, dynamic>> pointages = [];
+   Duration _totalDayHours = Duration.zero;
+   String _monthlyHoursStatus = '';
 
   late AnimationController _controller;
   late Animation<double> _progressionAnimation;
@@ -69,6 +71,8 @@ class _PointageWidgetState extends State<PointageWidget>
           onModifierPointage: _modifierPointage,
           selectedDate: widget.selectedDate,
           onSignalerAbsencePeriode: _signalerAbsencePeriode,
+          totalDayHours: _totalDayHours,
+          monthlyHoursStatus: _monthlyHoursStatus,
         );
       },
     );
@@ -82,6 +86,11 @@ class _PointageWidgetState extends State<PointageWidget>
         _progression = state.entry.progression;
         pointages = state.entry.pointagesList;
         _animerProgression(_progression);
+        // Calculer les heures totales de la journée
+        _totalDayHours = _calculateTotalDayHours(pointages);
+
+        // Calculer le statut mensuel
+        _monthlyHoursStatus = _calculateMonthlyHoursStatus(state.entry);
       });
     }
   }
@@ -186,6 +195,43 @@ class _PointageWidgetState extends State<PointageWidget>
   void _signalerAbsencePeriode(DateTime dateDebut, DateTime dateFin, String type, String raison) {
     final bloc = context.read<TimeSheetBloc>();
     bloc.add(TimeSheetSignalerAbsencePeriodeEvent(dateDebut, dateFin, type, raison));
+  }
+  Duration _calculateTotalDayHours(List<Map<String, dynamic>> pointages) {
+    if (pointages.length < 2) return Duration.zero;
+
+    DateTime start = pointages.first['heure'];
+    DateTime end = pointages.last['heure'];
+
+    return end.difference(start);
+  }
+
+
+
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, "0");
+    String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
+    return "${twoDigits(duration.inHours)}:$twoDigitMinutes";
+  }
+  String _calculateMonthlyHoursStatus(TimesheetEntry entry) {
+    // Nous allons utiliser la méthode calculateDailyTotal de l'entrée
+    Duration dailyTotal = entry.calculateDailyTotal();
+
+    // Supposons que nous avons un objectif mensuel de 160 heures
+    Duration monthlyTarget = Duration(hours: 160);
+
+    // Calculons le nombre de jours ouvrés dans le mois (approximativement 22 jours)
+    int workingDaysInMonth = 22;
+
+    // Calculons l'objectif quotidien
+    Duration dailyTarget = Duration(minutes: monthlyTarget.inMinutes ~/ workingDaysInMonth);
+
+    Duration difference = dailyTarget - dailyTotal;
+
+    if (difference.isNegative) {
+      return "Vous avez dépassé l'objectif quotidien de ${_formatDuration(difference.abs())}";
+    } else {
+      return "Il vous reste ${_formatDuration(difference)} pour atteindre l'objectif quotidien";
+    }
   }
 
 }

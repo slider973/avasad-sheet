@@ -50,6 +50,28 @@ class TimesheetEntry {
     if (startMorning.isNotEmpty) return format.parse('$dayDate $startMorning');
     return null;
   }
+  Duration calculateDailyTotal() {
+    final format = DateFormat('HH:mm');
+    Duration total = Duration.zero;
+
+    if (startMorning.isNotEmpty && endMorning.isNotEmpty) {
+      final start = format.parse(startMorning);
+      final end = format.parse(endMorning);
+      total += end.difference(start);
+    }
+
+    if (startAfternoon.isNotEmpty && endAfternoon.isNotEmpty) {
+      final start = format.parse(startAfternoon);
+      final end = format.parse(endAfternoon);
+      total += end.difference(start);
+    }
+
+    return total;
+  }
+
+  static Duration calculateMonthlyTotal(List<TimesheetEntry> entries) {
+    return entries.fold(Duration.zero, (total, entry) => total + entry.calculateDailyTotal());
+  }
 
   List<Map<String, dynamic>> get pointagesList {
     List<Map<String, dynamic>> list = [];
