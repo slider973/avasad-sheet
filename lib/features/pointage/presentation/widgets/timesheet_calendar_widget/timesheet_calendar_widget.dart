@@ -108,9 +108,11 @@ class _TimesheetCalendarWidgetState extends State<TimesheetCalendarWidget> {
       MaterialPageRoute(
         builder: (context) => Scaffold(
           appBar: AppBar(title: const Text('Détails du pointage')),
-          body: PointageWidget(
-            entry: entry,
-            selectedDate: dateFormat.parse(entry.dayDate),
+          body: SingleChildScrollView(
+            child: PointageWidget(
+              entry: entry,
+              selectedDate: dateFormat.parse(entry.dayDate),
+            ),
           ),
         ),
       ),

@@ -19,12 +19,12 @@ void main() async {
   await windowManager.ensureInitialized();
 
   WindowOptions windowOptions = const WindowOptions(
-    size: Size(500, 800),
+    size: Size(500, 1000),
     center: true,
     backgroundColor: Colors.transparent,
     skipTaskbar: false,
-    maximumSize: Size(500, 800),
-    minimumSize: Size(500, 800),
+    maximumSize: Size(500, 1000),
+    minimumSize: Size(500, 1000),
     titleBarStyle: TitleBarStyle.normal,
   );
   windowManager.waitUntilReadyToShow(windowOptions, () async {

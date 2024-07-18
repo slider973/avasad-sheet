@@ -46,7 +46,7 @@ class BottomNavigationBarWidget extends StatelessWidget {
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.business),
-              label: 'Pdf',
+              label: 'Time Sheet',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.calendar_today),
