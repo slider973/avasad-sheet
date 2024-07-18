@@ -6,12 +6,12 @@ import 'package:time_sheet/features/pointage/presentation/pages/pdf/pages/pdf_vi
 
 import '../../../../../../services/logger_service.dart';
 
-class PdfDocumentPage extends StatefulWidget {
+class PdfDocumentPageOld extends StatefulWidget {
   @override
   _PdfDocumentPageState createState() => _PdfDocumentPageState();
 }
 
-class _PdfDocumentPageState extends State<PdfDocumentPage> {
+class _PdfDocumentPageState extends State<PdfDocumentPageOld> {
   @override
   void initState() {
     super.initState();

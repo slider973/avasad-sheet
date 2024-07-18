@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 
+import '../../../pointage/presentation/pages/pdf/pages/pdf_document_page.dart';
 import '../../../preference/presentation/pages/preference.dart';
 import '../../../pointage/presentation/pages/pointage/pointage_page.dart';
 import '../../../pointage/presentation/pages/pdf/pages/pdf_document_page_old.dart';

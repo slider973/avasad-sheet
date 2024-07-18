@@ -5,6 +5,8 @@ import 'package:time_sheet/features/pointage/presentation/pages/pdf/bloc/pdf_blo
 import 'package:time_sheet/features/pointage/presentation/pages/pdf/pages/pdf_document_layout.dart';
 import 'package:time_sheet/features/pointage/presentation/pages/pdf/pages/pdf_viewer.dart';
 
+import '../../../widgets/pdf_document/show_month_picker.dart';
+
 class PdfDocumentPage extends StatefulWidget {
   @override
   _PdfDocumentPageState createState() => _PdfDocumentPageState();
@@ -30,7 +32,7 @@ class _PdfDocumentPageState extends State<PdfDocumentPage> {
             onGenerateCurrentMonth: () => context
                 .read<PdfBloc>()
                 .add(GeneratePdfEvent(DateTime.now().month)),
-            onChooseMonth: () => _showMonthPicker(context),
+            onChooseMonth: () => showMonthPicker(context),
             onOpenPdf: (filePath) =>
                 context.read<PdfBloc>().add(OpenPdfEvent(filePath)),
             onDeletePdf: (id) =>
@@ -56,83 +58,6 @@ class _PdfDocumentPageState extends State<PdfDocumentPage> {
           return Center(child: Text('Erreur d\'ouverture: ${state.error}'));
         }
         return const Center(child: Text('Aucun PDF généré'));
-      },
-    );
-  }
-
-  void _showMonthPicker(BuildContext context) {
-    final currentDate = DateTime.now();
-    int selectedYear = currentDate.year;
-    int selectedMonth = currentDate.month;
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Sélectionner un mois'),
-          content: StatefulBuilder(
-            builder: (BuildContext context, StateSetter setState) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  DropdownButton<int>(
-                    value: selectedYear,
-                    items: List.generate(
-                            3, (index) => currentDate.year - 1 + index)
-                        .map((int year) {
-                      return DropdownMenuItem<int>(
-                        value: year,
-                        child: Text(year.toString()),
-                      );
-                    }).toList(),
-                    onChanged: (int? newValue) {
-                      if (newValue != null) {
-                        setState(() {
-                          selectedYear = newValue;
-                        });
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 20),
-                  Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: List.generate(12, (index) {
-                      return ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              selectedMonth == index + 1 ? Colors.teal : null,
-                        ),
-                        child: Text(DateFormat('MMM')
-                            .format(DateTime(2022, index + 1))),
-                        onPressed: () {
-                          setState(() {
-                            selectedMonth = index + 1;
-                          });
-                        },
-                      );
-                    }),
-                  ),
-                ],
-              );
-            },
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Annuler'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            TextButton(
-              child: const Text('OK'),
-              onPressed: () {
-                Navigator.of(context).pop();
-                context.read<PdfBloc>().add(GeneratePdfEvent(selectedMonth));
-              },
-            ),
-          ],
-        );
       },
     );
   }

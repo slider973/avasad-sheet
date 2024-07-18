@@ -24,6 +24,7 @@ class _PointageWidgetState extends State<PointageWidget>
   List<Map<String, dynamic>> pointages = [];
    Duration _totalDayHours = Duration.zero;
    String _monthlyHoursStatus = '';
+  String? _absenceReason;
 
   late AnimationController _controller;
   late Animation<double> _progressionAnimation;
@@ -73,6 +74,7 @@ class _PointageWidgetState extends State<PointageWidget>
           onSignalerAbsencePeriode: _signalerAbsencePeriode,
           totalDayHours: _totalDayHours,
           monthlyHoursStatus: _monthlyHoursStatus,
+          absenceReason: _absenceReason,
         );
       },
     );
@@ -91,6 +93,7 @@ class _PointageWidgetState extends State<PointageWidget>
 
         // Calculer le statut mensuel
         _monthlyHoursStatus = _calculateMonthlyHoursStatus(state.entry);
+        _absenceReason = state.entry.absenceReason;
       });
     }
   }
@@ -197,8 +200,16 @@ class _PointageWidgetState extends State<PointageWidget>
     bloc.add(TimeSheetSignalerAbsencePeriodeEvent(dateDebut, dateFin, type, raison));
   }
   Duration _calculateTotalDayHours(List<Map<String, dynamic>> pointages) {
-    if (pointages.length < 2) return Duration.zero;
+    if (pointages.isEmpty) return Duration.zero;
 
+    if (pointages.length == 1) {
+      // S'il n'y a qu'un seul pointage, calculons la durée depuis ce pointage jusqu'à maintenant
+      DateTime start = pointages.first['heure'];
+      DateTime now = DateTime.now();
+      return now.difference(start);
+    }
+
+    // S'il y a plus d'un pointage, calculons la durée entre le premier et le dernier
     DateTime start = pointages.first['heure'];
     DateTime end = pointages.last['heure'];
 
@@ -233,5 +244,6 @@ class _PointageWidgetState extends State<PointageWidget>
       return "Il vous reste ${_formatDuration(difference)} pour atteindre l'objectif quotidien";
     }
   }
+
 
 }

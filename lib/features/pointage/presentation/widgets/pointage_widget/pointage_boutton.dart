@@ -21,6 +21,7 @@ class PointageButton extends StatelessWidget {
      child: ElevatedButton(
        onPressed: onPressed,
        style: ElevatedButton.styleFrom(
+         elevation: 0,
          backgroundColor: _getButtonColor(etatActuel),
          shape: RoundedRectangleBorder(
            borderRadius: BorderRadius.circular(15),

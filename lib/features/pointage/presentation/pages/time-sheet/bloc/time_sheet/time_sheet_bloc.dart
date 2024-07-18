@@ -200,32 +200,36 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
   void _onSignalerAbsencePeriode(TimeSheetSignalerAbsencePeriodeEvent event, Emitter<TimeSheetState> emit) async {
     emit(TimeSheetLoading());
     try {
-      // Utilisez DateTime.utc pour éviter les problèmes de fuseau horaire
-      for (DateTime date = DateTime.utc(event.dateDebut.year, event.dateDebut.month, event.dateDebut.day);
-      date.isBefore(event.dateFin.add(Duration(days: 1)));
-      date = date.add(Duration(days: 1))) {
+      DateTime currentDate = DateTime.utc(event.dateDebut.year, event.dateDebut.month, event.dateDebut.day);
+      DateTime endDate = DateTime.utc(event.dateFin.year, event.dateFin.month, event.dateFin.day);
 
-        final formattedDate = DateFormat("dd-MMM-yy").format(date);
-        final entry = await getTodayTimesheetEntryUseCase.execute(formattedDate);
+      while (currentDate.isBefore(endDate.add(Duration(days: 1)))) {
+        // Vérifier si le jour actuel est un jour de semaine (lundi à vendredi)
+        if (currentDate.weekday >= DateTime.monday && currentDate.weekday <= DateTime.friday) {
+          final formattedDate = DateFormat("dd-MMM-yy").format(currentDate);
+          final entry = await getTodayTimesheetEntryUseCase.execute(formattedDate);
 
-        final updatedEntry = entry?.copyWith(
-          absenceReason: "${event.type}: ${event.raison}",
-          startMorning: '',
-          endMorning: '',
-          startAfternoon: '',
-          endAfternoon: '',
-        ) ?? TimesheetEntry(
-          dayDate: formattedDate,
-          dayOfWeekDate: DateFormat.EEEE().format(date),
-          startMorning: '',
-          endMorning: '',
-          startAfternoon: '',
-          endAfternoon: '',
-          absenceReason: "${event.type}: ${event.raison}",
-        );
+          final updatedEntry = entry?.copyWith(
+            absenceReason: "${event.type}: ${event.raison}",
+            startMorning: '',
+            endMorning: '',
+            startAfternoon: '',
+            endAfternoon: '',
+          ) ?? TimesheetEntry(
+            dayDate: formattedDate,
+            dayOfWeekDate: DateFormat.EEEE().format(currentDate),
+            startMorning: '',
+            endMorning: '',
+            startAfternoon: '',
+            endAfternoon: '',
+            absenceReason: "${event.type}: ${event.raison}",
+          );
 
-        await saveTimesheetEntryUseCase.execute(updatedEntry);
+          await saveTimesheetEntryUseCase.execute(updatedEntry);
+        }
+        currentDate = currentDate.add(Duration(days: 1));
       }
+
       emit(TimeSheetAbsenceSignalee());
     } catch (e) {
       emit(TimeSheetErrorState(e.toString()));
