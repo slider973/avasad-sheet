@@ -19,4 +19,6 @@ abstract class LocalDataSource {
   Future<TimesheetEntry?> getTimesheetEntryForDate(String date);
 
   Future<void> deleteTimeSheet(int id) async {}
+
+  getTimesheetEntry(String formattedDate) {}
 }

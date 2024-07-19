@@ -34,7 +34,8 @@ class PointageLayout extends StatelessWidget {
     required this.selectedDate,
     required this.onSignalerAbsencePeriode,
     required this.totalDayHours,
-    required this.monthlyHoursStatus, this.absenceReason,
+    required this.monthlyHoursStatus,
+    this.absenceReason,
     required this.onDeleteEntry,
   }) : super(key: key);
 
@@ -42,7 +43,11 @@ class PointageLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     if (absenceReason != null && absenceReason!.isNotEmpty) {
       // Vue pour une journée d'absence
-      return PointageAbsence(absenceReason: absenceReason,);
+      return PointageAbsence(
+        absenceReason: absenceReason,
+        onDeleteEntry: onDeleteEntry,
+        etatActuel: etatActuel,
+      );
     }
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -72,9 +77,10 @@ class PointageLayout extends StatelessWidget {
             onSignalerAbsencePeriode: onSignalerAbsencePeriode,
           ),
           const SizedBox(height: 10),
-           PointageRemoveTimesheetDay(
+          PointageRemoveTimesheetDay(
             etatActuel: etatActuel,
             onDeleteEntry: onDeleteEntry,
+            isDisabled: etatActuel == 'Non commencé',
           ),
           const SizedBox(height: 20),
           PointageList(
@@ -85,6 +91,7 @@ class PointageLayout extends StatelessWidget {
       ),
     );
   }
+
   String _formatDuration(Duration duration) {
     String twoDigits(int n) => n.toString().padLeft(2, "0");
     String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));

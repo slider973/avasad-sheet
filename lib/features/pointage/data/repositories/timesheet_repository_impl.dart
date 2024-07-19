@@ -105,4 +105,14 @@ class TimesheetRepositoryImpl implements TimesheetRepository {
   Future<void> deleteTimeSheet(int id) {
     return datasource.deleteTimeSheet(id);
   }
+
+  @override
+  Future<TimesheetEntry?> getTimesheetEntry(String formattedDate) {
+    return datasource.getTimesheetEntry(formattedDate).then((entry) {
+      if (entry == null) {
+        return null;
+      }
+      return TimesheetEntryMapper.fromModel(entry);
+    });
+  }
 }

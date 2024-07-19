@@ -37,10 +37,19 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
       final lastGenerationDate = lastGenerationDateString != null
           ? DateTime.parse(lastGenerationDateString)
           : null;
+
+      Uint8List? signature;
+      if (signatureBase64 != null) {
+        try {
+          signature = base64Decode(signatureBase64);
+        } catch (e) {
+          print('Erreur lors du décodage de la signature: $e');
+        }
+      }
       emit(PreferencesLoaded(
         firstName: firstName,
         lastName: lastName,
-        signatureBase64: signatureBase64,
+          signature: signature,
         lastGenerationDate: lastGenerationDate
       ));
     } catch (e) {
@@ -56,18 +65,52 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
     try {
       await setUserPreferenceUseCase.execute('firstName', event.firstName);
       await setUserPreferenceUseCase.execute('lastName', event.lastName);
+
+      // Charger les préférences mises à jour
+      final signatureBase64 = await getUserPreferenceUseCase.execute('signature');
+      final lastGenerationDateString = await getUserPreferenceUseCase.execute('lastGenerationDate');
+      final lastGenerationDate = lastGenerationDateString != null
+          ? DateTime.parse(lastGenerationDateString)
+          : null;
       emit(PreferencesSaved());
+      emit(PreferencesLoaded(
+        firstName: event.firstName,
+        lastName: event.lastName,
+        signatureBase64: signatureBase64,
+        lastGenerationDate: lastGenerationDate,
+      ));
     } catch (e) {
+      print(e);
       emit(PreferencesError(e.toString()));
     }
   }
   Future<void> _onSaveSignature(SaveSignature event, Emitter<PreferencesState> emit) async {
     emit(PreferencesLoading());
     try {
+      // Encodez la signature en base64 pour le stockage
       final signatureBase64 = base64Encode(event.signature);
+
+      // Sauvegardez la signature encodée
       await setUserPreferenceUseCase.execute('signature', signatureBase64);
+
+      // Récupérez les autres préférences actuelles
+      final firstName = await getUserPreferenceUseCase.execute('firstName') ?? '';
+      final lastName = await getUserPreferenceUseCase.execute('lastName') ?? '';
+      final lastGenerationDateString = await getUserPreferenceUseCase.execute('lastGenerationDate');
+      final lastGenerationDate = lastGenerationDateString != null
+          ? DateTime.parse(lastGenerationDateString)
+          : null;
+      // Émettez un état indiquant que la sauvegarde a réussi
       emit(PreferencesSaved());
+      // Émettez le nouvel état avec toutes les données à jour
+      emit(PreferencesLoaded(
+        firstName: firstName,
+        lastName: lastName,
+        signature: event.signature, // Utilisez la signature non encodée pour l'état
+        lastGenerationDate: lastGenerationDate,
+      ));
     } catch (e) {
+      print('Erreur lors de la sauvegarde de la signature: $e');
       emit(PreferencesError(e.toString()));
     }
   }
@@ -106,6 +149,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
           lastGenerationDate: event.date,
         ));
       } catch (e) {
+        print(e);
         emit(PreferencesError('Erreur lors de la sauvegarde de la date de dernière génération: $e'));
       }
     }

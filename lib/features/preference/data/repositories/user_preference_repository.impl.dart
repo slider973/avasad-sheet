@@ -14,9 +14,23 @@ class UserPreferencesRepositoryImpl implements UserPreferencesRepository {
     if (value == null) {
       return;
     }
-    final preference = UserPreferences(key: key, value: value);
+
     await isar.writeTxn(() async {
-      await isar.userPreferences.put(preference);
+      // Recherche d'une préférence existante avec la même clé
+      final existingPreference = await isar.userPreferences
+          .filter()
+          .keyEqualTo(key)
+          .findFirst();
+
+      if (existingPreference != null) {
+        // Si une préférence existe déjà, mettez à jour sa valeur
+        existingPreference.value = value;
+        await isar.userPreferences.put(existingPreference);
+      } else {
+        // Si aucune préférence n'existe, créez-en une nouvelle
+        final preference = UserPreferences(key: key, value: value);
+        await isar.userPreferences.put(preference);
+      }
     });
   }
 

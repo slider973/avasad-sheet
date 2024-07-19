@@ -95,4 +95,14 @@ class LocalDatasourceImpl implements LocalDataSource {
       await isar.timeSheetEntryModels.delete(id);
     });
   }
+
+  @override
+  getTimesheetEntry(String formattedDate) {
+    return isar.timeSheetEntryModels
+        .filter()
+        .dayDateEqualTo(DateTime.parse(formattedDate))
+        .findFirst()
+        .then((value) =>
+            value == null ? null : TimesheetEntryMapper.fromModel(value));
+  }
 }

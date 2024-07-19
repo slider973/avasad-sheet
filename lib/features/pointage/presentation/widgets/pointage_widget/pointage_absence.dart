@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
+import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_remove_timesheet_day.dart';
 
 class PointageAbsence extends StatelessWidget {
   final String? absenceReason;
+  final VoidCallback onDeleteEntry;
+  final String etatActuel;
 
-  const PointageAbsence({super.key, this.absenceReason});
+  const PointageAbsence(
+      {super.key, this.absenceReason, required this.onDeleteEntry, required this.etatActuel});
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +23,10 @@ class PointageAbsence extends StatelessWidget {
           if (isVacation)
             Text(
               'En mode détente !',
-              style: Theme.of(context).textTheme.headlineMedium,
+              style: Theme
+                  .of(context)
+                  .textTheme
+                  .headlineMedium,
             )
           else
             const Text(
@@ -40,14 +47,26 @@ class PointageAbsence extends StatelessWidget {
           SizedBox(height: 10),
           Text(
             isVacation ? _getRandomVacationPhrase() : 'Prenez soin de vous !',
-            style: Theme.of(context).textTheme.titleLarge,
+            style: Theme
+                .of(context)
+                .textTheme
+                .titleLarge,
             textAlign: TextAlign.center,
           ),
           SizedBox(height: 10),
           Text(
             absenceReason!,
-            style: Theme.of(context).textTheme.bodySmall,
+            style: Theme
+                .of(context)
+                .textTheme
+                .bodySmall,
           ),
+          SizedBox(height: 20),
+          PointageRemoveTimesheetDay(
+            etatActuel: etatActuel,
+            onDeleteEntry: onDeleteEntry,
+            isDisabled: false,
+          )
         ],
       ),
     );
@@ -61,6 +80,8 @@ class PointageAbsence extends StatelessWidget {
       "Aujourd'hui, mon seul objectif est de ne rien faire !",
       "En mission spéciale : tester tous les cocktails du bar de la plage.",
     ];
-    return phrases[DateTime.now().microsecond % phrases.length];
+    return phrases[DateTime
+        .now()
+        .microsecond % phrases.length];
   }
 }

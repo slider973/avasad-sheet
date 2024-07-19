@@ -78,7 +78,9 @@ class _PointageWidgetState extends State<PointageWidget>
           monthlyHoursStatus: _monthlyHoursStatus,
           absenceReason: _absenceReason,
           onDeleteEntry:  () {
-            if (_currentEntry != null) _deleteEntry(_currentEntry!);
+            if (_currentEntry != null) {
+              _deleteEntry(_currentEntry!);
+            }
           },
         );
       },
