@@ -4,6 +4,7 @@ import 'package:time_sheet/features/pointage/domain/entities/timesheet_entry.dar
 import 'package:time_sheet/services/logger_service.dart';
 
 import '../../domain/data_source/time_sheet.dart';
+import '../../domain/mapper/timesheetEntry.mapper.dart';
 import '../models/generated_pdf/generated_pdf.dart';
 
 class LocalDatasourceImpl implements LocalDataSource {
@@ -80,7 +81,18 @@ class LocalDatasourceImpl implements LocalDataSource {
 
   @override
   Future<TimesheetEntry?> getTimesheetEntryForDate(String date) {
-    // TODO: implement getTimesheetEntryForDate
-    throw UnimplementedError();
+    return isar.timeSheetEntryModels
+        .filter()
+        .dayDateEqualTo(DateTime.parse(date))
+        .findFirst()
+        .then((value) =>
+            value == null ? null : TimesheetEntryMapper.fromModel(value));
+  }
+
+  @override
+  Future<void> deleteTimeSheet(int id) {
+    return isar.writeTxn(() async {
+      await isar.timeSheetEntryModels.delete(id);
+    });
   }
 }

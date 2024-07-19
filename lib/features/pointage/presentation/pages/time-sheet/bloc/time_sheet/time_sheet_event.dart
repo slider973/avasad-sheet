@@ -98,3 +98,11 @@ class TimeSheetSignalerAbsencePeriodeEvent extends TimeSheetEvent {
   @override
   List<Object> get props => [dateDebut, dateFin, type, raison];
 }
+
+class TimeSheetDeleteEntryEvent extends TimeSheetEvent {
+  final int entryId;
+  const TimeSheetDeleteEntryEvent(this.entryId);
+
+  @override
+  List<Object> get props => [entryId];
+}

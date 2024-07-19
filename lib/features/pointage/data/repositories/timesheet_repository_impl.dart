@@ -100,4 +100,9 @@ class TimesheetRepositoryImpl implements TimesheetRepository {
 
     return TimesheetEntryMapper.fromModel(entry);
   }
+
+  @override
+  Future<void> deleteTimeSheet(int id) {
+    return datasource.deleteTimeSheet(id);
+  }
 }

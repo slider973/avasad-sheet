@@ -3,7 +3,9 @@ import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widge
 import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_absence_bouton.dart';
 import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_boutton.dart';
 import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_list.dart';
+import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_remove_timesheet_day.dart';
 
+import '../../../domain/entities/timesheet_entry.dart';
 import 'pointage_header.dart';
 import 'pointage_timer.dart';
 
@@ -16,6 +18,7 @@ class PointageLayout extends StatelessWidget {
   final VoidCallback onActionPointage;
   final Function(Map<String, dynamic>) onModifierPointage;
   final Function(DateTime, DateTime, String, String) onSignalerAbsencePeriode;
+  final VoidCallback onDeleteEntry;
   final Duration totalDayHours;
   final String monthlyHoursStatus;
   final String? absenceReason;
@@ -32,6 +35,7 @@ class PointageLayout extends StatelessWidget {
     required this.onSignalerAbsencePeriode,
     required this.totalDayHours,
     required this.monthlyHoursStatus, this.absenceReason,
+    required this.onDeleteEntry,
   }) : super(key: key);
 
   @override
@@ -64,7 +68,13 @@ class PointageLayout extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           PointageAbsenceBouton(
+            etatActuel: etatActuel,
             onSignalerAbsencePeriode: onSignalerAbsencePeriode,
+          ),
+          const SizedBox(height: 10),
+           PointageRemoveTimesheetDay(
+            etatActuel: etatActuel,
+            onDeleteEntry: onDeleteEntry,
           ),
           const SizedBox(height: 20),
           PointageList(

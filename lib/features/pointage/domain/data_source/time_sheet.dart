@@ -17,4 +17,6 @@ abstract class LocalDataSource {
 
   Future<void> deleteGeneratedPdf(int pdfId);
   Future<TimesheetEntry?> getTimesheetEntryForDate(String date);
+
+  Future<void> deleteTimeSheet(int id) async {}
 }

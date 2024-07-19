@@ -10,7 +10,8 @@ class PointageWidget extends StatefulWidget {
   final TimesheetEntry? entry;
   final DateTime selectedDate;
 
-  const PointageWidget({super.key, this.entry, required this.selectedDate});
+
+   const PointageWidget({super.key, this.entry, required this.selectedDate});
 
   @override
   State<PointageWidget> createState() => _PointageWidgetState();
@@ -25,6 +26,7 @@ class _PointageWidgetState extends State<PointageWidget>
    Duration _totalDayHours = Duration.zero;
    String _monthlyHoursStatus = '';
   String? _absenceReason;
+  TimesheetEntry? _currentEntry;
 
   late AnimationController _controller;
   late Animation<double> _progressionAnimation;
@@ -75,6 +77,9 @@ class _PointageWidgetState extends State<PointageWidget>
           totalDayHours: _totalDayHours,
           monthlyHoursStatus: _monthlyHoursStatus,
           absenceReason: _absenceReason,
+          onDeleteEntry:  () {
+            if (_currentEntry != null) _deleteEntry(_currentEntry!);
+          },
         );
       },
     );
@@ -94,6 +99,7 @@ class _PointageWidgetState extends State<PointageWidget>
         // Calculer le statut mensuel
         _monthlyHoursStatus = _calculateMonthlyHoursStatus(state.entry);
         _absenceReason = state.entry.absenceReason;
+        _currentEntry = state.entry;
       });
     }
   }
@@ -199,6 +205,12 @@ class _PointageWidgetState extends State<PointageWidget>
     final bloc = context.read<TimeSheetBloc>();
     bloc.add(TimeSheetSignalerAbsencePeriodeEvent(dateDebut, dateFin, type, raison));
   }
+
+  void _deleteEntry(TimesheetEntry entry) {
+    final bloc = context.read<TimeSheetBloc>();
+    bloc.add(TimeSheetDeleteEntryEvent(entry.id!));
+  }
+
   Duration _calculateTotalDayHours(List<Map<String, dynamic>> pointages) {
     if (pointages.isEmpty) return Duration.zero;
 

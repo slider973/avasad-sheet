@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 
 import '../features/bottom_nav_tab/presentation/pages/bloc/bottom_navigation_bar_bloc.dart';
+import '../features/pointage/domain/use_cases/delete_timesheet_entry_usecase.dart';
 import '../features/pointage/domain/use_cases/generate_monthly_timesheet_usease.dart';
 import '../features/preference/domain/use_cases/get_signature_usecase.dart';
 import '../features/preference/domain/use_cases/get_user_preference_use_case.dart';
@@ -33,6 +34,8 @@ class ServiceFactory extends StatelessWidget {
       ),
       BlocProvider<TimeSheetBloc>(
           create: (context) => TimeSheetBloc(
+              deleteTimesheetEntryUsecase:
+                  getIt<DeleteTimesheetEntryUsecase>(),
               saveTimesheetEntryUseCase: getIt<SaveTimesheetEntryUseCase>(),
               getTodayTimesheetEntryUseCase:
                   getIt<GetTodayTimesheetEntryUseCase>(),

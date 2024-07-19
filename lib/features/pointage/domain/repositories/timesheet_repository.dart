@@ -5,6 +5,7 @@ abstract class TimesheetRepository {
   Future<int> saveTimesheetEntry(TimesheetEntry entry);
 
   Future<List<TimesheetEntry>> getTimesheetEntries();
+  Future<void> deleteTimeSheet(int id);
 
   Future<List<TimesheetEntry>> getTimesheetEntriesForWeek(int weekNumber);
 

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:intl/intl.dart';
+import 'package:time_sheet/features/pointage/domain/use_cases/delete_timesheet_entry_usecase.dart';
 
 import '../../../../../../preference/presentation/manager/preferences_bloc.dart';
 import '../../../../../domain/entities/timesheet_entry.dart';
@@ -16,6 +17,7 @@ part 'time_sheet_state.dart';
 
 class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
   final SaveTimesheetEntryUseCase saveTimesheetEntryUseCase;
+  final DeleteTimesheetEntryUsecase deleteTimesheetEntryUsecase;
   final GetTodayTimesheetEntryUseCase getTodayTimesheetEntryUseCase;
   final GenerateMonthlyTimesheetUseCase generateMonthlyTimesheetUseCase;
   final PreferencesBloc preferencesBloc;
@@ -25,6 +27,7 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
     required this.saveTimesheetEntryUseCase,
     required this.getTodayTimesheetEntryUseCase,
     required this.generateMonthlyTimesheetUseCase,
+    required this.deleteTimesheetEntryUsecase,
     required this.preferencesBloc,
   }) : super(TimeSheetInitial()) {
     on<TimeSheetEnterEvent>(_updateEnter);
@@ -37,6 +40,7 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
     on<GenerateMonthlyTimesheetEvent>(_generateMonthlyTimesheet);
     on<CheckGenerationStatusEvent>(_checkGenerationStatus);
     on<TimeSheetSignalerAbsencePeriodeEvent>(_onSignalerAbsencePeriode);
+    on<TimeSheetDeleteEntryEvent>(_onDeleteEntry);
   }
 
   void _checkGenerationStatus(CheckGenerationStatusEvent event, Emitter<TimeSheetState> emit) {
@@ -158,6 +162,19 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
       emit(TimeSheetDataState(updatedEntry));
     } else {
       print('non implémenté');
+    }
+  }
+  void _onDeleteEntry(TimeSheetDeleteEntryEvent event, Emitter<TimeSheetState> emit) async {
+    if (state is TimeSheetDataState) {
+      final currentEntry = (state as TimeSheetDataState).entry;
+      await deleteTimesheetEntryUsecase.execute(currentEntry);
+      emit(TimeSheetDataState(currentEntry.copyWith(
+        startMorning: '',
+        endMorning: '',
+        startAfternoon: '',
+        endAfternoon: '',
+        absenceReason: '',
+      )));
     }
   }
 

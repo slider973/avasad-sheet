@@ -2,14 +2,19 @@ import 'package:flutter/material.dart';
 
 class PointageAbsenceBouton extends StatelessWidget {
   final Function(DateTime, DateTime, String, String) onSignalerAbsencePeriode;
+  final String etatActuel;
 
   const PointageAbsenceBouton({
     Key? key,
     required this.onSignalerAbsencePeriode,
+    required this.etatActuel,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    if (etatActuel == 'Sortie') {
+      return const SizedBox.shrink();
+    }
     return SizedBox(
       width: 320,
       height: 40,
@@ -53,7 +58,8 @@ class PointageAbsenceBouton extends StatelessWidget {
                         type = newValue!;
                       });
                     },
-                    items: ['Vacances', 'Maladie'].map<DropdownMenuItem<String>>((String value) {
+                    items: ['Vacances', 'Maladie']
+                        .map<DropdownMenuItem<String>>((String value) {
                       return DropdownMenuItem<String>(
                         value: value,
                         child: Text(value),
@@ -74,7 +80,8 @@ class PointageAbsenceBouton extends StatelessWidget {
                         });
                       }
                     },
-                    child: Text('Période: ${dateDebut.toString().substring(0, 10)} - ${dateFin.toString().substring(0, 10)}'),
+                    child: Text(
+                        'Période: ${dateDebut.toString().substring(0, 10)} - ${dateFin.toString().substring(0, 10)}'),
                   ),
                   TextField(
                     onChanged: (value) {
@@ -82,7 +89,8 @@ class PointageAbsenceBouton extends StatelessWidget {
                         raison = value;
                       });
                     },
-                    decoration: const InputDecoration(hintText: "Motif de l'absence"),
+                    decoration:
+                        const InputDecoration(hintText: "Motif de l'absence"),
                   ),
                 ],
               ),
