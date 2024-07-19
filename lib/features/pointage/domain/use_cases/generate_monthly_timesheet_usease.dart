@@ -13,14 +13,25 @@ class GenerateMonthlyTimesheetUseCase {
     DateTime now = DateTime.now();
     DateTime startDate = DateTime(now.year, now.month - 1, 21);
     DateTime endDate = DateTime(now.year, now.month, 20);
+    List<TimesheetEntry> existingEntries = await repository.getTimesheetEntriesForMonth(now.month);
+    Set<String> existingDates = existingEntries.map((e) => e.dayDate).toSet();
 
-    for (DateTime date = startDate;
-        date.isBefore(endDate.add(const Duration(days: 1)));
-        date = date.add(const Duration(days: 1))) {
-      if (date.weekday >= DateTime.monday && date.weekday <= DateTime.friday) {
-        TimesheetEntry entry = _generateDayEntry(date);
-        await repository.saveTimesheetEntry(entry);
+    try {
+      for (DateTime date = startDate; date.isBefore(endDate.add(const Duration(days: 1))); date = date.add(const Duration(days: 1))) {
+        if (date.weekday >= DateTime.monday && date.weekday <= DateTime.friday) {
+          String formattedDate = DateFormat('dd-MMM-yy').format(date);  // Utilisez le même format que dans _generateDayEntry
+          if (!existingDates.contains(formattedDate)) {
+            print("Generating entry for: $formattedDate");
+            TimesheetEntry entry = _generateDayEntry(date);
+            await repository.saveTimesheetEntry(entry);
+            print("Entry saved for: $formattedDate");
+          } else {
+            print("Entry already exists for: $formattedDate");
+          }
+        }
       }
+    } catch (e) {
+      print('Error while generating monthly timesheet: $e');
     }
   }
 
