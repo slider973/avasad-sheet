@@ -65,6 +65,13 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
     try {
       await setUserPreferenceUseCase.execute('firstName', event.firstName);
       await setUserPreferenceUseCase.execute('lastName', event.lastName);
+      // Récupérer la signature existante
+      final currentState = state;
+      Uint8List? signature;
+      if (currentState is PreferencesLoaded) {
+        signature = currentState.signature;
+      }
+
 
       // Charger les préférences mises à jour
       final signatureBase64 = await getUserPreferenceUseCase.execute('signature');
@@ -78,6 +85,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
         lastName: event.lastName,
         signatureBase64: signatureBase64,
         lastGenerationDate: lastGenerationDate,
+
       ));
     } catch (e) {
       print(e);

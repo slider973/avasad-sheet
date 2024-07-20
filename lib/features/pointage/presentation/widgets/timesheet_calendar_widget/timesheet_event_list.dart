@@ -60,28 +60,31 @@ class TimesheetEventList extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       color: cardColor,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(eventIcon, color: Colors.black87, size: 28),
-                const SizedBox(width: 8),
-                Text(
-                  eventTitle,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _formatTimeRange(event.entry),
-              style: const TextStyle(fontSize: 16, color: Colors.black87),
-            ),
+      child: InkWell(
+        onTap: () => onEventTap(event.entry),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(eventIcon, color: Colors.black87, size: 28),
+                  const SizedBox(width: 8),
+                  Text(
+                    eventTitle,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _formatTimeRange(event.entry),
+                style: const TextStyle(fontSize: 16, color: Colors.black87),
+              ),
 
-          ],
+            ],
+          ),
         ),
       ),
     );

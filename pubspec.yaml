@@ -60,6 +60,7 @@ dependencies:
   flutter_native_splash: ^2.4.1
   window_manager: ^0.3.9
   lottie: ^3.1.2
+  share_plus: ^9.0.0
 
 
 dev_dependencies:

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:time_sheet/features/pointage/presentation/pages/pdf/pages/share_pdf.dart';
 
 class PdfDocumentLayout extends StatelessWidget {
   final List<dynamic> pdfs;
@@ -67,9 +68,20 @@ class PdfDocumentLayout extends StatelessWidget {
                   child: ListTile(
                     title: Text(pdf.fileName, style: TextStyle(fontWeight: FontWeight.bold)),
                     subtitle: Text(DateFormat('dd/MM/yyyy HH:mm').format(pdf.generatedDate)),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () => onDeletePdf(pdf.id),
+                    trailing: Container(
+                      width: 100,
+                      child: Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.share, color: Colors.blue),
+                            onPressed: () => sharePdf(pdf.filePath),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () => onDeletePdf(pdf.id),
+                          ),
+                        ],
+                      ),
                     ),
                     onTap: () => onOpenPdf(pdf.filePath),
                   ),

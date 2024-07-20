@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -11,14 +12,16 @@ class PreferencesForm extends StatefulWidget {
 }
 
 class _PreferencesFormState extends State<PreferencesForm> {
-  final _formKey = GlobalKey<FormState>();
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
+  bool _isAlreadyGenerateForThisMonth = false;
   Uint8List? _signature;
 
   @override
   void initState() {
     super.initState();
+    _firstNameController.text = '';
+    _lastNameController.text = '';
     context.read<PreferencesBloc>().add(LoadPreferences());
   }
 
@@ -50,13 +53,15 @@ class _PreferencesFormState extends State<PreferencesForm> {
             } else if (state is PreferencesLoaded) {
               _firstNameController.text = state.firstName;
               _lastNameController.text = state.lastName;
-              _signature = state.signature;
+              _signature = state.signature ?? base64Decode(state.signatureBase64 ?? '');
+              // Ajoutez cette vérification
+              _isAlreadyGenerateForThisMonth = _isGeneratedThisMonth(state.lastGenerationDate);
+
               return SingleChildScrollView(
                 padding: const EdgeInsets.all(20),
                 child: _buildForm(context),
               );
             } else {
-              print(state);
               return const Center(child: Text('Une erreur s\'est produite'));
             }
           },
@@ -90,7 +95,9 @@ class _PreferencesFormState extends State<PreferencesForm> {
         const SizedBox(height: 30),
         Center(
           child: Column(children: [
-            _buildButton('Ajouter/Modifier la signature', _navigateToSignatureScreen, isPrimary: false),
+            _buildButton(
+                'Ajouter/Modifier la signature', _navigateToSignatureScreen,
+                isPrimary: false),
             const SizedBox(height: 10),
             _buildButton('Enregistrer les informations', _savePreferences),
             const SizedBox(height: 10),
@@ -98,7 +105,8 @@ class _PreferencesFormState extends State<PreferencesForm> {
               context
                   .read<TimeSheetBloc>()
                   .add(const GenerateMonthlyTimesheetEvent());
-            }, isPrimary: false),
+              context.read<PreferencesBloc>().add(SaveLastGenerationDate(DateTime.now()));
+            }, isPrimary: false , disabled: _isAlreadyGenerateForThisMonth),
           ]),
         ),
       ],
@@ -119,7 +127,8 @@ class _PreferencesFormState extends State<PreferencesForm> {
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide.none,
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         ),
       ),
     );
@@ -156,12 +165,12 @@ class _PreferencesFormState extends State<PreferencesForm> {
   }
 
   Widget _buildButton(String text, VoidCallback onPressed,
-      {bool isPrimary = true}) {
+      {disabled = false, bool isPrimary = true}) {
     return SizedBox(
       width: 340,
       height: 40,
       child: ElevatedButton(
-        onPressed: onPressed,
+        onPressed: disabled ? null :  onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: isPrimary ? Colors.orange : Colors.teal,
           foregroundColor: isPrimary ? Colors.white : Colors.white,
@@ -173,6 +182,13 @@ class _PreferencesFormState extends State<PreferencesForm> {
         child: Text(text, style: const TextStyle(fontSize: 15)),
       ),
     );
+  }
+
+  // Ajoutez cette méthode pour vérifier si le timesheet a été généré ce mois-ci
+  bool _isGeneratedThisMonth(DateTime? lastGenerationDate) {
+    if (lastGenerationDate == null) return false;
+    final now = DateTime.now();
+    return lastGenerationDate.year == now.year && lastGenerationDate.month == now.month;
   }
 
   void _navigateToSignatureScreen() async {
@@ -196,11 +212,16 @@ class _PreferencesFormState extends State<PreferencesForm> {
   }
 
   void _savePreferences() {
-    if (_formKey.currentState!.validate()) {
+    if (_firstNameController.text.isNotEmpty &&
+        _lastNameController.text.isNotEmpty) {
       context.read<PreferencesBloc>().add(SavePreferences(
             firstName: _firstNameController.text,
             lastName: _lastNameController.text,
           ));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Veuillez remplir tous les champs')),
+      );
     }
   }
 
