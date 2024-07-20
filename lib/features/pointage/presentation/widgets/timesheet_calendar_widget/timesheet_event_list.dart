@@ -31,31 +31,103 @@ class TimesheetEventList extends StatelessWidget {
         return ListView.builder(
           itemCount: value.length,
           itemBuilder: (context, index) {
-            return Container(
-              margin: const EdgeInsets.symmetric(
-                horizontal: 12.0,
-                vertical: 4.0,
-              ),
-              decoration: BoxDecoration(
-                border: Border.all(),
-                borderRadius: BorderRadius.circular(12.0),
-              ),
-              child: ListTile(
-                onTap: () => onEventTap(value[index].entry),
-                title: Text('${value[index]}'),
-              ),
-            );
+            final event = value[index];
+            return _buildEventCard(context, event);
           },
         );
       },
     );
   }
 
+  Widget _buildEventCard(BuildContext context, Event event) {
+    Color cardColor;
+    IconData eventIcon;
+    String eventTitle;
+
+    if (event.entry.startMorning.isEmpty && event.entry.endMorning.isEmpty &&
+        event.entry.startAfternoon.isEmpty && event.entry.endAfternoon.isEmpty) {
+      cardColor = Colors.orange.shade100.withOpacity(0.7);
+      eventIcon = Icons.event_busy;
+      eventTitle = "Absence";
+    } else {
+      cardColor = Colors.teal.shade200.withOpacity(0.3);
+      eventIcon = Icons.work;
+      eventTitle = "Journée de travail";
+    }
+
+    return Card(
+      elevation: 0,
+      margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: cardColor,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(eventIcon, color: Colors.black87, size: 28),
+                const SizedBox(width: 8),
+                Text(
+                  eventTitle,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _formatTimeRange(event.entry),
+              style: const TextStyle(fontSize: 16, color: Colors.black87),
+            ),
+
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatTimeRange(TimesheetEntry entry) {
+    if (entry.startMorning.isNotEmpty && entry.endAfternoon.isNotEmpty) {
+      return "${entry.startMorning} - ${entry.endAfternoon}";
+    } else {
+      return "Pas de travail";
+    }
+  }
+
+  Widget _buildAvatars() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        CircleAvatar(
+          radius: 12,
+          backgroundColor: Colors.grey.shade300,
+          child: Icon(Icons.person, size: 16, color: Colors.grey.shade700),
+        ),
+        const SizedBox(width: 4),
+        CircleAvatar(
+          radius: 12,
+          backgroundColor: Colors.grey.shade300,
+          child: Icon(Icons.person, size: 16, color: Colors.grey.shade700),
+        ),
+      ],
+    );
+  }
+
   Widget _buildCreatePointageButton(BuildContext context) {
     return Center(
-      child: ElevatedButton(
+      child: ElevatedButton.icon(
+        icon: const Icon(Icons.add),
+        label: const Text('Créer un pointage'),
+        style: ElevatedButton.styleFrom(
+          elevation: 0,
+          backgroundColor: Colors.teal,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+        ),
         onPressed: () => _createNewPointage(context),
-        child: const Text('Créer un pointage pour ce jour'),
       ),
     );
   }
@@ -91,7 +163,7 @@ class TimesheetEventList extends StatelessWidget {
       ),
     )
         .then(
-      (value) {
+          (value) {
         onEventsUpdated();
       },
     );

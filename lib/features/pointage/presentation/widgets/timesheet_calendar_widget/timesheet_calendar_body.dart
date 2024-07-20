@@ -39,7 +39,33 @@ class TimesheetCalendarBody extends StatelessWidget {
       calendarFormat: calendarFormat,
       eventLoader: (day) => events[day] ?? [],
       startingDayOfWeek: StartingDayOfWeek.monday,
+      calendarBuilders: CalendarBuilders(
+        markerBuilder: (context, date, events) {
+          if (events.isEmpty) return const SizedBox();
+          return ListView.builder(
+            shrinkWrap: true,
+            scrollDirection: Axis.horizontal,
+            itemCount: events.length,
+            itemBuilder: (context, index) {
+              final event = events[index];
+              return Container(
+                margin: const EdgeInsets.only(top: 20),
+                padding: const EdgeInsets.all(1),
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: event.isAbsence ? Colors.red : Colors.green,
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      ),
       calendarStyle: const CalendarStyle(
+        markersAlignment: Alignment.bottomCenter,
         selectedDecoration: BoxDecoration(
           color: Colors.teal,
           shape: BoxShape.circle,

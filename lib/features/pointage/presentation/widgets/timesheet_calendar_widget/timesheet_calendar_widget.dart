@@ -136,7 +136,9 @@ class _TimesheetCalendarWidgetState extends State<TimesheetCalendarWidget> {
       final dateStrToDate = DateFormat("dd-MMM-yy").parse(entry.dayDate);
       final date = DateTime(dateStrToDate.year, dateStrToDate.month, dateStrToDate.day);
       if (map[date] == null) map[date] = [];
-      map[date]!.add(Event(entry));
+      bool isAbsence = entry.startMorning.isEmpty && entry.endMorning.isEmpty &&
+          entry.startAfternoon.isEmpty && entry.endAfternoon.isEmpty;
+      map[date]!.add(Event(entry, isAbsence: isAbsence));
     }
     return map;
   }
