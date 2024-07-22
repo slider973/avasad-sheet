@@ -10,8 +10,7 @@ class PointageWidget extends StatefulWidget {
   final TimesheetEntry? entry;
   final DateTime selectedDate;
 
-
-   const PointageWidget({super.key, this.entry, required this.selectedDate});
+  const PointageWidget({super.key, this.entry, required this.selectedDate});
 
   @override
   State<PointageWidget> createState() => _PointageWidgetState();
@@ -23,10 +22,15 @@ class _PointageWidgetState extends State<PointageWidget>
   DateTime? _dernierPointage;
   double _progression = 0.0;
   List<Map<String, dynamic>> pointages = [];
-   Duration _totalDayHours = Duration.zero;
-   String _monthlyHoursStatus = '';
+  Duration _totalDayHours = Duration.zero;
+  Duration _totalBreakTime = Duration.zero;
+  String _monthlyHoursStatus = '';
   String? _absenceReason;
   TimesheetEntry? _currentEntry;
+  Duration _weeklyWorkTime = Duration.zero;
+  int _remainingVacationDays = 0;
+  Duration _weeklyTarget = const Duration(hours: 41, minutes: 30);
+  Duration _overtimeHours = Duration.zero;
 
   late AnimationController _controller;
   late Animation<double> _progressionAnimation;
@@ -54,10 +58,38 @@ class _PointageWidgetState extends State<PointageWidget>
     } else {
       // Charger les données au démarrage
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        print('Chargement des données persistées du jour ${widget.selectedDate}');
+        print(
+            'Chargement des données persistées du jour ${widget.selectedDate}');
         _chargerDonneesPersistees(widget.selectedDate);
       });
     }
+    _loadWeeklyData();
+    _loadVacationData();
+  }
+
+  Future<void> _loadWeeklyData() async {
+    final bloc = context.read<TimeSheetBloc>();
+    final DateTime selectedDate = widget.selectedDate;
+    final DateTime startOfWeek = selectedDate.subtract(Duration(days: selectedDate.weekday - 1));
+    Duration weeklyWorkTime = Duration.zero;
+
+    for (int i = 0; i < 7; i++) {
+      final date = startOfWeek.add(Duration(days: i));
+      final formattedDate = DateFormat("dd-MMM-yy").format(date);
+      final entry = await bloc.getTodayTimesheetEntryUseCase.execute(formattedDate);
+      if (entry != null) {
+        weeklyWorkTime += entry.calculateDailyTotal();
+      }
+    }
+
+    setState(() {
+      _weeklyWorkTime = weeklyWorkTime;
+    });
+  }
+
+  void _loadVacationData() {
+    final bloc = context.read<TimeSheetBloc>();
+    bloc.add(LoadVacationDaysEvent());
   }
 
   @override
@@ -77,17 +109,23 @@ class _PointageWidgetState extends State<PointageWidget>
           totalDayHours: _totalDayHours,
           monthlyHoursStatus: _monthlyHoursStatus,
           absenceReason: _absenceReason,
-          onDeleteEntry:  () {
+          totalBreakTime: _totalBreakTime,
+          onDeleteEntry: () {
             if (_currentEntry != null) {
               _deleteEntry(_currentEntry!);
             }
           },
+          weeklyWorkTime: _weeklyWorkTime,
+          remainingVacationDays: _remainingVacationDays,
+          weeklyTarget: _weeklyTarget,
+          overtimeHours: _overtimeHours,
         );
       },
     );
   }
 
   void _timeSheetListener(BuildContext context, TimeSheetState state) {
+    print('State: $state');
     if (state is TimeSheetDataState) {
       setState(() {
         _etatActuel = state.entry.currentState;
@@ -97,11 +135,18 @@ class _PointageWidgetState extends State<PointageWidget>
         _animerProgression(_progression);
         // Calculer les heures totales de la journée
         _totalDayHours = _calculateTotalDayHours(pointages);
+        // Calculer le temps de pause
+        _totalBreakTime = _calculateBreakTime(pointages);
 
         // Calculer le statut mensuel
         _monthlyHoursStatus = _calculateMonthlyHoursStatus(state.entry);
         _absenceReason = state.entry.absenceReason;
         _currentEntry = state.entry;
+        _loadWeeklyData();
+      });
+    }  else if (state is TimeSheetVacationDataState) {
+      setState(() {
+        _remainingVacationDays = state.remainingVacationDays;
       });
     }
   }
@@ -124,6 +169,7 @@ class _PointageWidgetState extends State<PointageWidget>
           _etatActuel = 'Entrée';
           _animerProgression(0.25);
           pointages.add({'type': 'Entrée', 'heure': maintenant});
+          print('Pointage entrée: $maintenant');
           bloc.add(TimeSheetEnterEvent(maintenant));
           break;
         case 'Entrée':
@@ -198,14 +244,17 @@ class _PointageWidgetState extends State<PointageWidget>
     final bloc = context.read<TimeSheetBloc>();
     bloc.add(LoadTimeSheetDataEvent(formattedDate));
   }
+
   void _updateBlocWithEntry(TimesheetEntry entry) {
     final bloc = context.read<TimeSheetBloc>();
     bloc.add(UpdateTimeSheetDataEvent(entry));
   }
 
-  void _signalerAbsencePeriode(DateTime dateDebut, DateTime dateFin, String type, String raison) {
+  void _signalerAbsencePeriode(
+      DateTime dateDebut, DateTime dateFin, String type, String raison) {
     final bloc = context.read<TimeSheetBloc>();
-    bloc.add(TimeSheetSignalerAbsencePeriodeEvent(dateDebut, dateFin, type, raison));
+    bloc.add(
+        TimeSheetSignalerAbsencePeriodeEvent(dateDebut, dateFin, type, raison));
   }
 
   void _deleteEntry(TimesheetEntry entry) {
@@ -214,29 +263,69 @@ class _PointageWidgetState extends State<PointageWidget>
   }
 
   Duration _calculateTotalDayHours(List<Map<String, dynamic>> pointages) {
-    if (pointages.isEmpty) return Duration.zero;
+    if (pointages.length < 2) return Duration.zero;
 
-    if (pointages.length == 1) {
-      // S'il n'y a qu'un seul pointage, calculons la durée depuis ce pointage jusqu'à maintenant
-      DateTime start = pointages.first['heure'];
-      DateTime now = DateTime.now();
-      return now.difference(start);
+    Duration totalDuration = Duration.zero;
+    DateTime? workStart;
+    DateTime? pauseStart;
+
+    for (int i = 0; i < pointages.length; i++) {
+      String type = pointages[i]['type'];
+      DateTime time = pointages[i]['heure'];
+
+      switch (type) {
+        case 'Entrée':
+          workStart = time;
+          break;
+        case 'Début pause':
+          if (workStart != null) {
+            totalDuration += time.difference(workStart);
+          }
+          pauseStart = time;
+          break;
+        case 'Fin pause':
+          workStart = time;
+          break;
+        case 'Fin de journée':
+          if (workStart != null) {
+            totalDuration += time.difference(workStart);
+          }
+          break;
+      }
     }
 
-    // S'il y a plus d'un pointage, calculons la durée entre le premier et le dernier
-    DateTime start = pointages.first['heure'];
-    DateTime end = pointages.last['heure'];
-
-    return end.difference(start);
+    return totalDuration;
   }
 
+  Duration _calculateBreakTime(List<Map<String, dynamic>> pointages) {
+    Duration totalBreakDuration = Duration.zero;
+    DateTime? pauseStart;
 
+    for (var pointage in pointages) {
+      String type = pointage['type'];
+      DateTime time = pointage['heure'];
+
+      switch (type) {
+        case 'Début pause':
+          pauseStart = time;
+          break;
+        case 'Fin pause':
+          if (pauseStart != null) {
+            totalBreakDuration += time.difference(pauseStart);
+          }
+          break;
+      }
+    }
+
+    return totalBreakDuration;
+  }
 
   String _formatDuration(Duration duration) {
     String twoDigits(int n) => n.toString().padLeft(2, "0");
     String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
     return "${twoDigits(duration.inHours)}:$twoDigitMinutes";
   }
+
   String _calculateMonthlyHoursStatus(TimesheetEntry entry) {
     // Nous allons utiliser la méthode calculateDailyTotal de l'entrée
     Duration dailyTotal = entry.calculateDailyTotal();
@@ -248,7 +337,8 @@ class _PointageWidgetState extends State<PointageWidget>
     int workingDaysInMonth = 22;
 
     // Calculons l'objectif quotidien
-    Duration dailyTarget = Duration(minutes: monthlyTarget.inMinutes ~/ workingDaysInMonth);
+    Duration dailyTarget =
+        Duration(minutes: monthlyTarget.inMinutes ~/ workingDaysInMonth);
 
     Duration difference = dailyTarget - dailyTotal;
 
@@ -258,6 +348,4 @@ class _PointageWidgetState extends State<PointageWidget>
       return "Il vous reste ${_formatDuration(difference)} pour atteindre l'objectif quotidien";
     }
   }
-
-
 }

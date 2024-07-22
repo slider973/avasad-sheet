@@ -106,3 +106,16 @@ class TimeSheetDeleteEntryEvent extends TimeSheetEvent {
   @override
   List<Object> get props => [entryId];
 }
+
+class CalculateWeeklyDataEvent extends TimeSheetEvent {
+  final DateTime selectedDate;
+
+  const CalculateWeeklyDataEvent(this.selectedDate);
+
+  @override
+  List<Object> get props => [selectedDate];
+}
+class LoadVacationDaysEvent extends TimeSheetEvent {
+  @override
+  List<Object?> get props => [];
+}

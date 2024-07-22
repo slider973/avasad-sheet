@@ -8,7 +8,10 @@ import 'package:time_sheet/features/pointage/domain/use_cases/delete_timesheet_e
 import '../../../../../../preference/presentation/manager/preferences_bloc.dart';
 import '../../../../../domain/entities/timesheet_entry.dart';
 import '../../../../../domain/use_cases/generate_monthly_timesheet_usease.dart';
+import '../../../../../domain/use_cases/get_overtime_hours_usecase.dart';
+import '../../../../../domain/use_cases/get_remaining_vacation_days_usecase.dart';
 import '../../../../../domain/use_cases/get_today_timesheet_entry_use_case.dart';
+import '../../../../../domain/use_cases/get_weekly_work_time_usecase.dart';
 import '../../../../../domain/use_cases/save_timesheet_entry_usecase.dart';
 
 part 'time_sheet_event.dart';
@@ -21,6 +24,9 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
   final GetTodayTimesheetEntryUseCase getTodayTimesheetEntryUseCase;
   final GenerateMonthlyTimesheetUseCase generateMonthlyTimesheetUseCase;
   final PreferencesBloc preferencesBloc;
+  final GetWeeklyWorkTimeUseCase getWeeklyWorkTimeUseCase;
+  final GetRemainingVacationDaysUseCase getRemainingVacationDaysUseCase;
+  final GetOvertimeHoursUseCase getOvertimeHoursUseCase;
 
 
   TimeSheetBloc({
@@ -29,6 +35,9 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
     required this.generateMonthlyTimesheetUseCase,
     required this.deleteTimesheetEntryUsecase,
     required this.preferencesBloc,
+    required this.getWeeklyWorkTimeUseCase,
+    required this.getRemainingVacationDaysUseCase,
+    required this.getOvertimeHoursUseCase,
   }) : super(TimeSheetInitial()) {
     on<TimeSheetEnterEvent>(_updateEnter);
     on<TimeSheetStartBreakEvent>(_updateStartBreak);
@@ -41,6 +50,8 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
     on<CheckGenerationStatusEvent>(_checkGenerationStatus);
     on<TimeSheetSignalerAbsencePeriodeEvent>(_onSignalerAbsencePeriode);
     on<TimeSheetDeleteEntryEvent>(_onDeleteEntry);
+    on<CalculateWeeklyDataEvent>(_calculateWeeklyData);
+    on<LoadVacationDaysEvent>(_loadVacationDays);
   }
 
   void _checkGenerationStatus(CheckGenerationStatusEvent event, Emitter<TimeSheetState> emit) {
@@ -250,6 +261,45 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
       emit(TimeSheetAbsenceSignalee());
     } catch (e) {
       emit(TimeSheetErrorState(e.toString()));
+    }
+  }
+  Future<void> _calculateWeeklyData(CalculateWeeklyDataEvent event, Emitter<TimeSheetState> emit) async {
+    final DateTime selectedDate = event.selectedDate;
+    final DateTime startOfWeek = selectedDate.subtract(Duration(days: selectedDate.weekday - 1));
+    Duration weeklyWorkTime = Duration.zero;
+
+    for (int i = 0; i < 7; i++) {
+      final date = startOfWeek.add(Duration(days: i));
+      final formattedDate = DateFormat("dd-MMM-yy").format(date);
+      final entry = await getTodayTimesheetEntryUseCase.execute(formattedDate);
+      if (entry != null) {
+        weeklyWorkTime += entry.calculateDailyTotal();
+      }
+    }
+
+    const weeklyTarget = Duration(hours: 41, minutes: 30);
+    final overtimeHours = weeklyWorkTime > weeklyTarget ? weeklyWorkTime - weeklyTarget : Duration.zero;
+
+    if (state is TimeSheetDataState) {
+      final currentEntry = (state as TimeSheetDataState).entry;
+      emit(TimeSheetWeeklyDataState(
+        entry: currentEntry,
+        weeklyWorkTime: weeklyWorkTime,
+        weeklyTarget: weeklyTarget,
+        overtimeHours: overtimeHours,
+      ));
+    }
+  }
+
+  Future<void> _loadVacationDays(LoadVacationDaysEvent event, Emitter<TimeSheetState> emit) async {
+    if (state is TimeSheetDataState) {
+      final currentEntry = (state as TimeSheetDataState).entry;
+      final remainingVacationDays = await getRemainingVacationDaysUseCase.execute();
+
+      emit(TimeSheetVacationDataState(
+        entry: currentEntry,
+        remainingVacationDays: remainingVacationDays,
+      ));
     }
   }
 }

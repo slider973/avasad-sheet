@@ -44,6 +44,36 @@ class TimeSheetAbsenceSignalee extends TimeSheetState {
   List<Object> get props => [];
 }
 
+class TimeSheetWeeklyDataState extends TimeSheetState {
+  final TimesheetEntry entry;
+  final Duration weeklyWorkTime;
+  final Duration weeklyTarget;
+  final Duration overtimeHours;
+
+  const TimeSheetWeeklyDataState({
+    required this.entry,
+    required this.weeklyWorkTime,
+    required this.weeklyTarget,
+    required this.overtimeHours,
+  });
+
+  @override
+  List<Object> get props => [entry, weeklyWorkTime, weeklyTarget, overtimeHours];
+}
+
+class TimeSheetVacationDataState extends TimeSheetState {
+  final TimesheetEntry entry;
+  final int remainingVacationDays;
+
+  const TimeSheetVacationDataState({
+    required this.entry,
+    required this.remainingVacationDays,
+  });
+
+  @override
+  List<Object> get props => [entry, remainingVacationDays];
+}
+
 
 
 

@@ -43,6 +43,7 @@ class PdfBloc extends Bloc<PdfEvent, PdfState> {
     on<SignPdfEvent>(_onSignPdfEvent);
     on<ClosePdfEvent>((event, emit) {
       emit(PdfClosed());
+      emit(PdfInitial());
       add(LoadGeneratedPdfsEvent());
     });
   }
@@ -86,7 +87,15 @@ class PdfBloc extends Bloc<PdfEvent, PdfState> {
         stackTrace: stackTrace,
       );
       print(exception.toString());
-      emit(PdfGenerationError(exception.toString()));
+      String errorMessage = "Une erreur s'est produite lors de la génération du PDF.";
+
+      if (exception is PathAccessException) {
+        if (exception.osError?.errorCode == 32) {
+          errorMessage = "Impossible de générer le PDF car le fichier est déjà ouvert ou utilisé par un autre programme. Veuillez fermer toutes les applications qui pourraient utiliser ce fichier et réessayer.";
+        }
+      }
+
+      emit(PdfGenerationError(errorMessage));
     }
   }
 

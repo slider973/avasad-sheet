@@ -1,7 +1,10 @@
+import 'dart:async';
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
-import 'package:share_plus/share_plus.dart';
+import 'package:open_file/open_file.dart';
 import 'package:time_sheet/features/pointage/presentation/pages/pdf/bloc/pdf_bloc.dart';
 import 'package:time_sheet/features/pointage/presentation/pages/pdf/pages/pdf_document_layout.dart';
 import 'package:time_sheet/features/pointage/presentation/pages/pdf/pages/pdf_viewer.dart';
@@ -21,10 +24,19 @@ class _PdfDocumentPageState extends State<PdfDocumentPage> {
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
-    return BlocBuilder<PdfBloc, PdfState>(
+    return BlocConsumer<PdfBloc, PdfState>(
+      listener: (context, state) {
+        if (state is PdfGenerationError) {
+          _showErrorDialog(context, state.error, isPdfGeneration: true);
+        } else if (state is PdfOpenError) {
+          _showErrorDialog(context, state.error, isPdfGeneration: false);
+        } else if (state is PdfOpened) {
+          _handlePdfOpened(context, state.filePath);
+        }
+      },
       builder: (context, state) {
-        print(state);
         if (state is PdfLoading) {
           return const Center(child: CircularProgressIndicator());
         } else if (state is PdfListLoaded) {
@@ -39,29 +51,99 @@ class _PdfDocumentPageState extends State<PdfDocumentPage> {
             onDeletePdf: (id) =>
                 context.read<PdfBloc>().add(DeletePdfEvent(id)),
           );
-        } else if (state is PdfLoadError) {
-          return Center(child: Text('Erreur de chargement: ${state.error}'));
+        } else if (state is PdfGenerationError || state is PdfOpenError) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('Erreur: ${(state as dynamic).error}'),
+                ElevatedButton(
+                  onPressed: () => context.read<PdfBloc>().add(LoadGeneratedPdfsEvent()),
+                  child: Text('Réessayer'),
+                ),
+              ],
+            ),
+          );
         } else if (state is PdfOpened) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            Navigator.of(context)
-                .push(
-              MaterialPageRoute(
-                builder: (context) => PdfViewerPage(filePath: state.filePath),
-              ),
-            );
+            if (!kIsWeb && Platform.isWindows) {
+              // Sur Windows, ouvrir directement avec l'application par défaut
+              OpenFile.open(state.filePath);
+            } else {
+              // Pour les autres plateformes, utiliser PdfViewerPage
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => PdfViewerPage(filePath: state.filePath),
+                ),
+              );
+            }
           });
           return const Center(child: Text("Ouverture du PDF"));
-        } else if (state is PdfDeleteError) {
-          return Center(child: Text('Erreur de suppression: ${state.error}'));
         } else if (state is PdfOpening) {
           return const Center(child: CircularProgressIndicator());
-        } else if (state is PdfOpenError) {
-          return Center(child: Text('Erreur d\'ouverture: ${state.error}'));
         }
         return const Center(child: Text('Aucun PDF généré'));
       },
     );
   }
 
+  void _showErrorDialog(BuildContext context, String errorMessage, {required bool isPdfGeneration}) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(isPdfGeneration ? 'Erreur de génération du PDF' : 'Erreur d\'ouverture du PDF'),
+          content: Text(errorMessage),
+          actions: <Widget>[
+            TextButton(
+              child: Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            if (isPdfGeneration)
+              TextButton(
+                child: Text('Réessayer'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  context.read<PdfBloc>().add(GeneratePdfEvent(DateTime.now().month));
+                },
+              ),
+          ],
+        );
+      },
+    );
+  }
+  void _handlePdfOpened(BuildContext context, String filePath) {
+    if (!kIsWeb && Platform.isWindows) {
+      OpenFile.open(filePath).then((_) {
+        // Créer un Timer pour vérifier périodiquement si le fichier est toujours ouvert
+        Timer.periodic(const Duration(seconds: 2), (timer) {
+          if (!_isFileOpen(filePath)) {
+            timer.cancel();
+            context.read<PdfBloc>().add(ClosePdfEvent());
+          }
+        });
+      });
+    } else {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => PdfViewerPage(filePath: filePath),
+        ),
+      );
+    }
+  }
+
+  bool _isFileOpen(String filePath) {
+    try {
+      final file = File(filePath);
+      final randomAccessFile = file.openSync(mode: FileMode.read);
+      randomAccessFile.closeSync();
+      return false;
+    } on FileSystemException {
+      // Si une exception est levée, cela signifie que le fichier est probablement ouvert par une autre application
+      return true;
+    }
+  }
 
 }
