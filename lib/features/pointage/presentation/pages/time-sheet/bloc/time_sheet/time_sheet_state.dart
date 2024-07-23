@@ -11,11 +11,12 @@ class TimeSheetInitial extends TimeSheetState {
 
 class TimeSheetDataState extends TimeSheetState {
   final TimesheetEntry entry;
+  final int remainingVacationDays;
 
-  const TimeSheetDataState(this.entry);
+   TimeSheetDataState(this.entry, {this.remainingVacationDays = 0});
 
   @override
-  List<Object> get props => [entry];
+  List<Object> get props => [entry , remainingVacationDays];
 }
 
 class TimeSheetErrorState extends TimeSheetState {

@@ -35,8 +35,8 @@ class TimesheetEntry {
 
   double get progression {
     if (startMorning.isEmpty) return 0.0;
-    if (endMorning.isEmpty) return 0.25;
-    if (startAfternoon.isEmpty) return 0.5;
+    if (endMorning.isEmpty) return 0.20;
+    if (startAfternoon.isEmpty) return 0.4;
     if (endAfternoon.isEmpty) return 0.75;
     return 1.0;
   }

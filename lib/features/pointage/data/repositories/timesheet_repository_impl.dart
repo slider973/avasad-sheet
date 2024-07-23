@@ -115,4 +115,18 @@ class TimesheetRepositoryImpl implements TimesheetRepository {
       return TimesheetEntryMapper.fromModel(entry);
     });
   }
+
+  @override
+  Future<TimesheetEntry?> getTimesheetEntryWhitFrenchFormat(String formattedDate) async {
+    final entry = await datasource.getTimesheetEntryWhitFrenchFormat(formattedDate);
+    if (entry == null) {
+      return null;
+    }
+    return TimesheetEntryMapper.fromModel(entry);
+  }
+
+  @override
+  Future<int> getVacationDaysCount() {
+    return datasource.getVacationDaysCount();
+  }
 }

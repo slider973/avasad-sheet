@@ -38,7 +38,7 @@ class PointageAbsenceBouton extends StatelessWidget {
   void _showAbsencePeriodeDialog(BuildContext context) {
     DateTime dateDebut = DateTime.now();
     DateTime dateFin = DateTime.now();
-    String type = 'Vacances';
+    String type = 'Congés';
     String raison = '';
 
     showDialog(
@@ -58,7 +58,7 @@ class PointageAbsenceBouton extends StatelessWidget {
                         type = newValue!;
                       });
                     },
-                    items: ['Vacances', 'Maladie']
+                    items: ['Congés', 'Maladie']
                         .map<DropdownMenuItem<String>>((String value) {
                       return DropdownMenuItem<String>(
                         value: value,

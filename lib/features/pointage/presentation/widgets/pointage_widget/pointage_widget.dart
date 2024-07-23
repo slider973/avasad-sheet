@@ -64,19 +64,21 @@ class _PointageWidgetState extends State<PointageWidget>
       });
     }
     _loadWeeklyData();
-    _loadVacationData();
+    //  _loadVacationData();
   }
 
   Future<void> _loadWeeklyData() async {
     final bloc = context.read<TimeSheetBloc>();
     final DateTime selectedDate = widget.selectedDate;
-    final DateTime startOfWeek = selectedDate.subtract(Duration(days: selectedDate.weekday - 1));
+    final DateTime startOfWeek =
+        selectedDate.subtract(Duration(days: selectedDate.weekday - 1));
     Duration weeklyWorkTime = Duration.zero;
 
     for (int i = 0; i < 7; i++) {
       final date = startOfWeek.add(Duration(days: i));
       final formattedDate = DateFormat("dd-MMM-yy").format(date);
-      final entry = await bloc.getTodayTimesheetEntryUseCase.execute(formattedDate);
+      final entry =
+          await bloc.getTodayTimesheetEntryUseCase.execute(formattedDate);
       if (entry != null) {
         weeklyWorkTime += entry.calculateDailyTotal();
       }
@@ -143,9 +145,6 @@ class _PointageWidgetState extends State<PointageWidget>
         _absenceReason = state.entry.absenceReason;
         _currentEntry = state.entry;
         _loadWeeklyData();
-      });
-    }  else if (state is TimeSheetVacationDataState) {
-      setState(() {
         _remainingVacationDays = state.remainingVacationDays;
       });
     }
