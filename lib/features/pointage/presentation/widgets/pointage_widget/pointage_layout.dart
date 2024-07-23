@@ -139,7 +139,7 @@ class PointageLayout extends StatelessWidget {
                   ? (weeklyWorkTime.inMinutes / weeklyTarget.inMinutes).clamp(0.0, 1.0)
                   : 0.0,
               backgroundColor: Colors.grey[200],
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+              valueColor: const AlwaysStoppedAnimation<Color>(Colors.teal),
             ),
             SizedBox(height: 8),
             Text('${_formatDuration(weeklyWorkTime)} / ${_formatDuration(weeklyTarget)}'),

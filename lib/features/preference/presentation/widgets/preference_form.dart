@@ -2,8 +2,11 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
 import 'package:time_sheet/features/pointage/presentation/pages/pdf/pages/signature_page.dart';
 import '../../../pointage/presentation/pages/time-sheet/bloc/time_sheet/time_sheet_bloc.dart';
+import '../../domain/services/RestartService.dart';
+import '../../domain/services/backup.dart';
 import '../manager/preferences_bloc.dart';
 
 class PreferencesForm extends StatefulWidget {
@@ -32,7 +35,8 @@ class _PreferencesFormState extends State<PreferencesForm> {
       appBar: AppBar(
         elevation: 0,
         title: const Text('Réglages',
-            style: TextStyle(color: Colors.white, fontSize: 18)),
+            style: TextStyle(color: Colors.white, fontSize: 20)),
+        backgroundColor: Colors.teal,
       ),
       body: SafeArea(
         child: BlocConsumer<PreferencesBloc, PreferencesState>(
@@ -54,12 +58,22 @@ class _PreferencesFormState extends State<PreferencesForm> {
               _firstNameController.text = state.firstName;
               _lastNameController.text = state.lastName;
               _signature = state.signature ?? base64Decode(state.signatureBase64 ?? '');
-              // Ajoutez cette vérification
               _isAlreadyGenerateForThisMonth = _isGeneratedThisMonth(state.lastGenerationDate);
 
               return SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: _buildForm(context),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildPersonalInfoCard(),
+                    SizedBox(height: 16),
+                    _buildSignatureCard(),
+                    SizedBox(height: 16),
+                    _buildActionButtons(),
+                    SizedBox(height: 16),
+                    _buildDatabaseActionsCard(),
+                  ],
+                ),
               );
             } else {
               return const Center(child: Text('Une erreur s\'est produite'));
@@ -70,121 +84,140 @@ class _PreferencesFormState extends State<PreferencesForm> {
     );
   }
 
-  Widget _buildForm(BuildContext context) {
+  Widget _buildPersonalInfoCard() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Informations personnelles',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.teal),
+            ),
+            SizedBox(height: 16),
+            _buildTextField(_firstNameController, 'Prénom'),
+            SizedBox(height: 12),
+            _buildTextField(_lastNameController, 'Nom'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSignatureCard() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Signature',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.teal),
+            ),
+            SizedBox(height: 16),
+            _buildSignatureSection(),
+            SizedBox(height: 16),
+            _buildButton('Ajouter/Modifier la signature', _navigateToSignatureScreen, isPrimary: false),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButtons() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          margin: const EdgeInsets.only(bottom: 20),
-          child: const Text(
-            'Informations personnelles',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-        ),
-        _buildTextField(_firstNameController, 'Prénom'),
-        _buildTextField(_lastNameController, 'Nom'),
-        const SizedBox(height: 20),
-        Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          child: const Text(
-            'Signature',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-        ),
-        _buildSignatureSection(),
-        const SizedBox(height: 30),
-        Center(
-          child: Column(children: [
-            _buildButton(
-                'Ajouter/Modifier la signature', _navigateToSignatureScreen,
-                isPrimary: false),
-            const SizedBox(height: 10),
-            _buildButton('Enregistrer les informations', _savePreferences),
-            const SizedBox(height: 10),
-            _buildButton('Générer le timesheet du mois', () {
-              context
-                  .read<TimeSheetBloc>()
-                  .add(const GenerateMonthlyTimesheetEvent());
-              context.read<PreferencesBloc>().add(SaveLastGenerationDate(DateTime.now()));
-            }, isPrimary: false , disabled: _isAlreadyGenerateForThisMonth),
-          ]),
-        ),
+        _buildButton('Enregistrer les informations', _savePreferences),
+        SizedBox(height: 10),
+        _buildButton('Générer le timesheet du mois', () {
+          context.read<TimeSheetBloc>().add(const GenerateMonthlyTimesheetEvent());
+          context.read<PreferencesBloc>().add(SaveLastGenerationDate(DateTime.now()));
+        }, isPrimary: false, disabled: _isAlreadyGenerateForThisMonth),
       ],
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String label) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      child: TextField(
-        controller: controller,
-        decoration: InputDecoration(
-          labelText: label,
-          labelStyle: const TextStyle(color: Colors.grey),
-          filled: true,
-          fillColor: Colors.white,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
-          ),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+  Widget _buildDatabaseActionsCard() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Actions sur la base de données',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.teal),
+            ),
+            SizedBox(height: 16),
+            _buildButton('Sauvegarder la base de données', _backupDatabase),
+            SizedBox(height: 10),
+            _buildButton('Importer une sauvegarde', _importDatabase, isPrimary: false),
+          ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildTextField(TextEditingController controller, String label) {
+    return TextField(
+      controller: controller,
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(color: Colors.grey),
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       ),
     );
   }
 
   Widget _buildSignatureSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const SizedBox(height: 10),
-        if (_signature != null)
-          Container(
-            height: 100,
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey),
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(15),
-              child: Image.memory(_signature!, fit: BoxFit.contain),
-            ),
-          )
-        else
-          Container(
-            height: 100,
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey),
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: const Center(child: Text('Aucune signature')),
-          ),
-      ],
+    return Container(
+      height: 100,
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey),
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: _signature != null
+          ? ClipRRect(
+        borderRadius: BorderRadius.circular(15),
+        child: Image.memory(_signature!, fit: BoxFit.contain),
+      )
+          : Center(child: Text('Aucune signature')),
     );
   }
 
   Widget _buildButton(String text, VoidCallback onPressed,
-      {disabled = false, bool isPrimary = true}) {
+      {bool disabled = false, bool isPrimary = true}) {
     return SizedBox(
-      width: 340,
+      width: double.infinity,
       height: 40,
       child: ElevatedButton(
-        onPressed: disabled ? null :  onPressed,
+        onPressed: disabled ? null : onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: isPrimary ? Colors.orange : Colors.teal,
-          foregroundColor: isPrimary ? Colors.white : Colors.white,
+          foregroundColor: Colors.white, backgroundColor: isPrimary ? Colors.orange : Colors.teal,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15),
           ),
           elevation: 0,
         ),
-        child: Text(text, style: const TextStyle(fontSize: 15)),
+        child: Text(text, style: TextStyle(fontSize: 15)),
       ),
     );
   }
 
-  // Ajoutez cette méthode pour vérifier si le timesheet a été généré ce mois-ci
   bool _isGeneratedThisMonth(DateTime? lastGenerationDate) {
     if (lastGenerationDate == null) return false;
     final now = DateTime.now();
@@ -197,9 +230,7 @@ class _PreferencesFormState extends State<PreferencesForm> {
       MaterialPageRoute(
         builder: (context) => SignatureScreen(
           onSigned: (Uint8List signature) {
-            context
-                .read<PreferencesBloc>()
-                .add(SaveSignature(signature: signature));
+            context.read<PreferencesBloc>().add(SaveSignature(signature: signature));
           },
         ),
       ),
@@ -212,15 +243,72 @@ class _PreferencesFormState extends State<PreferencesForm> {
   }
 
   void _savePreferences() {
-    if (_firstNameController.text.isNotEmpty &&
-        _lastNameController.text.isNotEmpty) {
+    if (_firstNameController.text.isNotEmpty && _lastNameController.text.isNotEmpty) {
       context.read<PreferencesBloc>().add(SavePreferences(
-            firstName: _firstNameController.text,
-            lastName: _lastNameController.text,
-          ));
+        firstName: _firstNameController.text,
+        lastName: _lastNameController.text,
+      ));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Veuillez remplir tous les champs')),
+      );
+    }
+  }
+
+  void _backupDatabase() async {
+    try {
+      final backupService = GetIt.instance<BackupService>();
+      final backupPath = await backupService.backupDatabase();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Sauvegarde réussie : $backupPath')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur lors de la sauvegarde : ${e.toString()}')),
+      );
+    }
+  }
+
+  void _importDatabase() async {
+    try {
+      final backupService = GetIt.instance<BackupService>();
+      bool importSuccessful = await backupService.importDatabase();
+      if (importSuccessful) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text('Importation réussie'),
+              content: Text('L\'importation a réussi. L\'application doit être redémarrée pour appliquer les changements.'),
+              actions: <Widget>[
+                TextButton(
+                  child: Text('Redémarrer'),
+                  onPressed: () async {
+                    Navigator.of(context).pop();
+                    await RestartService.restartApp();
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      }
+    } catch (e) {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('Erreur d\'importation'),
+            content: Text('Une erreur s\'est produite lors de l\'importation : ${e.toString()}'),
+            actions: <Widget>[
+              TextButton(
+                child: Text('OK'),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ],
+          );
+        },
       );
     }
   }

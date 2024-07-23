@@ -11,11 +11,11 @@ import '../features/pointage/domain/use_cases/get_remaining_vacation_days_usecas
 import '../features/pointage/domain/use_cases/get_weekly_work_time_usecase.dart';
 import '../features/preference/data/models/user_preference.dart';
 import '../features/preference/data/repositories/user_preference_repository.impl.dart';
+import '../features/preference/domain/services/backup.dart';
 import '../features/preference/domain/use_cases/get_signature_usecase.dart';
 import '../features/preference/domain/use_cases/get_user_preference_use_case.dart';
 import '../features/preference/domain/use_cases/set_user_preference_use_case.dart';
 import '../features/pointage/data/data_sources/local.dart';
-import '../features/pointage/data/data_sources/test_data_inserter.dart';
 import '../features/pointage/data/models/generated_pdf/generated_pdf.dart';
 import '../features/pointage/data/models/timesheet_entry/timesheet_entry.dart';
 import '../features/pointage/data/repositories/timesheet_repository_impl.dart';
@@ -29,18 +29,25 @@ Future<String> getInstallationPath() async {
     String localAppData = Platform.environment['LOCALAPPDATA'] ?? '';
     String configDir = path.join(localAppData, 'TimeSheet');
     String configPath = path.join(configDir, 'config.txt');
+    String databaseDir = path.join(configDir, 'Database');
 
-    Directory(configDir).createSync(recursive: true);
-
-    if (File(configPath).existsSync()) {
-      String installPath = await File(configPath).readAsString();
-      return path.join(installPath, 'Database');
+    if (await Directory(configDir).exists()) {
+      // Le répertoire de configuration existe déjà
+      return databaseDir;
     } else {
-      // L'application est lancée pour la première fois, on utilise le chemin d'exécution
+      // Première exécution de l'application
       String exePath = Platform.resolvedExecutable;
       String installDir = path.dirname(exePath);
+
+      // Créer le répertoire de configuration
+      await Directory(configDir).create(recursive: true);
+
+      // Écrire le chemin d'installation dans le fichier de configuration
       await File(configPath).writeAsString(installDir);
-      return path.join(installDir, 'Database');
+
+      // Créer le répertoire de la base de données
+      await Directory(databaseDir).create();
+      return databaseDir;
     }
   } else {
     // Pour les autres plateformes, utilisez le dossier de documents par défaut
@@ -52,15 +59,42 @@ Future<String> getInstallationPath() async {
 Future<void> setup() async {
   final dir = await getInstallationPath();
   Directory(dir).createSync(recursive: true);
-  final isar = await Isar.open(
-    [TimeSheetEntryModelSchema, GeneratedPdfModelSchema, UserPreferencesSchema],
-    directory: dir,
-  );
-  // a decommenter pour insérer des données de test
+  // Fonction pour obtenir l'instance Isar
+  Future<Isar> getIsarInstance() async {
+    if (!getIt.isRegistered<Isar>()) {
+      final isar = await Isar.open(
+        [TimeSheetEntryModelSchema, GeneratedPdfModelSchema, UserPreferencesSchema],
+        directory: dir,
+      );
+      getIt.registerSingleton<Isar>(isar);
+    }
+    return getIt<Isar>();
+  }
 
-  //TestDataInserter(isar).insertTestData();
+  // Fonction pour fermer l'instance Isar
+  Future<void> closeIsarInstance() async {
+    if (getIt.isRegistered<Isar>()) {
+      final isar = getIt<Isar>();
+      await isar.close();
+      getIt.unregister<Isar>();
+    }
+  }
 
-  getIt.registerSingleton<Isar>(isar);
+  // Fonction pour rouvrir l'instance Isar
+  Future<Isar> reopenIsarInstance() async {
+    await closeIsarInstance();
+    return await getIsarInstance();
+  }
+
+  // Enregistrer le BackupService avec les nouvelles fonctions
+  getIt.registerLazySingleton<BackupService>(() => BackupService(
+    getIsarInstance: getIsarInstance,
+    closeIsarInstance: closeIsarInstance,
+    reopenIsarInstance: reopenIsarInstance,
+  ));
+
+  // Initialiser l'instance Isar
+  await getIsarInstance();
   getIt.registerLazySingleton<LocalDatasourceImpl>(() => LocalDatasourceImpl(getIt<Isar>()));
   getIt.registerLazySingleton<UserPreferencesRepositoryImpl>(() => UserPreferencesRepositoryImpl(getIt<Isar>()));
   getIt.registerLazySingleton<TimesheetRepositoryImpl>(() => TimesheetRepositoryImpl(getIt<LocalDatasourceImpl>()));
@@ -75,4 +109,5 @@ Future<void> setup() async {
   getIt.registerLazySingleton<GetRemainingVacationDaysUseCase>(() => GetRemainingVacationDaysUseCase(getIt<TimesheetRepositoryImpl>()));
   getIt.registerLazySingleton<GetWeeklyWorkTimeUseCase>(() => GetWeeklyWorkTimeUseCase(getIt<TimesheetRepositoryImpl>()));
   getIt.registerLazySingleton<GetOvertimeHoursUseCase>(() => GetOvertimeHoursUseCase());
+
 }
