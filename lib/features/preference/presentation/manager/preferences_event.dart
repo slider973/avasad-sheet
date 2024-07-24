@@ -40,3 +40,11 @@ class SaveLastGenerationDate extends PreferencesEvent {
   @override
   List<Object> get props => [date];
 }
+class ToggleNotifications extends PreferencesEvent {
+  final bool enabled;
+
+  const ToggleNotifications(this.enabled);
+
+  @override
+  List<Object> get props => [enabled];
+}

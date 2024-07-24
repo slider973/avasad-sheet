@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
@@ -20,6 +21,7 @@ class _PreferencesFormState extends State<PreferencesForm> {
   final _lastNameController = TextEditingController();
   bool _isAlreadyGenerateForThisMonth = false;
   Uint8List? _signature;
+  bool _notificationsEnabled = true;
 
   @override
   void initState() {
@@ -60,19 +62,22 @@ class _PreferencesFormState extends State<PreferencesForm> {
               _lastNameController.text = state.lastName;
               _signature = state.signature ?? base64Decode(state.signatureBase64 ?? '');
               _isAlreadyGenerateForThisMonth = _isGeneratedThisMonth(state.lastGenerationDate);
-
+              _notificationsEnabled = state.notificationsEnabled;
               return SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     _buildPersonalInfoCard(),
-                    SizedBox(height: 16),
+
+                    const SizedBox(height: 16),
                     _buildSignatureCard(),
-                    SizedBox(height: 16),
-                    _buildActionButtons(),
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
+                    _buildNotificationsCard(),
+                    const SizedBox(height: 16),
                     _buildDatabaseActionsCard(),
+                    const SizedBox(height: 16),
+                    _buildGenereLeTimeSheetDuMois()
                   ],
                 ),
               );
@@ -94,14 +99,16 @@ class _PreferencesFormState extends State<PreferencesForm> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            const Text(
               'Informations personnelles',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.teal),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             _buildTextField(_firstNameController, 'Prénom'),
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
             _buildTextField(_lastNameController, 'Nom'),
+            const SizedBox(height: 16),
+            _buildActionButtons(),
           ],
         ),
       ),
@@ -117,13 +124,13 @@ class _PreferencesFormState extends State<PreferencesForm> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            const Text(
               'Signature',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.teal),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             _buildSignatureSection(),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             _buildButton('Ajouter/Modifier la signature', _navigateToSignatureScreen, isPrimary: false),
           ],
         ),
@@ -135,7 +142,13 @@ class _PreferencesFormState extends State<PreferencesForm> {
     return Column(
       children: [
         _buildButton('Enregistrer les informations', _savePreferences),
-        SizedBox(height: 10),
+      ],
+    );
+  }
+
+  Widget _buildGenereLeTimeSheetDuMois() {
+    return Column(
+      children: [
         _buildButton('Générer le timesheet du mois', () {
           context.read<TimeSheetBloc>().add(const GenerateMonthlyTimesheetEvent());
           context.read<PreferencesBloc>().add(SaveLastGenerationDate(DateTime.now()));
@@ -153,14 +166,45 @@ class _PreferencesFormState extends State<PreferencesForm> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            const Text(
               'Actions sur la base de données',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.teal),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             _buildButton('Sauvegarder la base de données', _backupDatabase),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             _buildButton('Importer une sauvegarde', _importDatabase, isPrimary: false),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNotificationsCard() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Notifications',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.teal),
+            ),
+            const SizedBox(height: 16),
+            SwitchListTile(
+              title: const Text('Activer les notifications'),
+              value: _notificationsEnabled,
+              onChanged: (bool value) {
+                setState(() {
+                  _notificationsEnabled = value;
+                });
+                context.read<PreferencesBloc>().add(ToggleNotifications(value));
+              },
+              activeColor: Colors.teal,
+            ),
           ],
         ),
       ),
@@ -172,14 +216,14 @@ class _PreferencesFormState extends State<PreferencesForm> {
       controller: controller,
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(color: Colors.grey),
+        labelStyle: const TextStyle(color: Colors.grey),
         filled: true,
         fillColor: Colors.white,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
-        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       ),
     );
   }
@@ -187,6 +231,7 @@ class _PreferencesFormState extends State<PreferencesForm> {
   Widget _buildSignatureSection() {
     return Container(
       height: 100,
+      width: double.infinity,
       decoration: BoxDecoration(
         border: Border.all(color: Colors.grey),
         borderRadius: BorderRadius.circular(15),
@@ -196,7 +241,7 @@ class _PreferencesFormState extends State<PreferencesForm> {
         borderRadius: BorderRadius.circular(15),
         child: Image.memory(_signature!, fit: BoxFit.contain),
       )
-          : Center(child: Text('Aucune signature')),
+          : const Center(child: Text('Aucune signature')),
     );
   }
 
@@ -214,7 +259,7 @@ class _PreferencesFormState extends State<PreferencesForm> {
           ),
           elevation: 0,
         ),
-        child: Text(text, style: TextStyle(fontSize: 15)),
+        child: Text(text, style: const TextStyle(fontSize: 15)),
       ),
     );
   }
@@ -280,11 +325,11 @@ class _PreferencesFormState extends State<PreferencesForm> {
           barrierDismissible: false,
           builder: (BuildContext context) {
             return AlertDialog(
-              title: Text('Importation réussie'),
-              content: Text('L\'importation a réussi. L\'application doit être redémarrée pour appliquer les changements.'),
+              title: const Text('Importation réussie'),
+              content: const Text('L\'importation a réussi. L\'application doit être redémarrée pour appliquer les changements.'),
               actions: <Widget>[
                 TextButton(
-                  child: Text('Redémarrer'),
+                  child: const Text('Redémarrer'),
                   onPressed: () async {
                     Navigator.of(context).pop();
                     await RestartService.restartApp();
@@ -300,11 +345,11 @@ class _PreferencesFormState extends State<PreferencesForm> {
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
-            title: Text('Erreur d\'importation'),
+            title: const Text('Erreur d\'importation'),
             content: Text('Une erreur s\'est produite lors de l\'importation : ${e.toString()}'),
             actions: <Widget>[
               TextButton(
-                child: Text('OK'),
+                child: const Text('OK'),
                 onPressed: () => Navigator.of(context).pop(),
               ),
             ],

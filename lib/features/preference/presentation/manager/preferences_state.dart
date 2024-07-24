@@ -17,20 +17,22 @@ class PreferencesLoaded extends PreferencesState {
   final String? signatureBase64;
   final DateTime? lastGenerationDate;
   Uint8List? signature;
+  final bool notificationsEnabled;
 
    PreferencesLoaded({
     required this.firstName,
     required this.lastName,
     this.signatureBase64,
     this.lastGenerationDate,
-    this.signature
+    this.signature,
+     required this.notificationsEnabled,
 
   });
 
 
 
   @override
-  List<Object?> get props => [firstName, lastName, signature, lastGenerationDate];
+  List<Object?> get props => [firstName, lastName, signature, lastGenerationDate, notificationsEnabled];
 }
 
 class PreferencesSaved extends PreferencesState {}

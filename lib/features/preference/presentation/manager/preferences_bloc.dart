@@ -22,6 +22,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
     on<SavePreferences>(_onSavePreferences);
     on<SaveSignature>(_onSaveSignature);
     on<SaveLastGenerationDate>(_onSaveLastGenerationDate);
+    on<ToggleNotifications>(_onToggleNotifications);
   }
 
   Future<void> _onLoadPreferences(
@@ -34,6 +35,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
       final lastName = await getUserPreferenceUseCase.execute('lastName') ?? '';
       final signatureBase64 = await getUserPreferenceUseCase.execute('signature');
       final lastGenerationDateString = await getUserPreferenceUseCase.execute('lastGenerationDate');
+      final notificationsEnabled = await getUserPreferenceUseCase.execute('notificationsEnabled') ?? 'true';
       final lastGenerationDate = lastGenerationDateString != null
           ? DateTime.parse(lastGenerationDateString)
           : null;
@@ -50,7 +52,8 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
         firstName: firstName,
         lastName: lastName,
           signature: signature,
-        lastGenerationDate: lastGenerationDate
+        lastGenerationDate: lastGenerationDate,
+        notificationsEnabled: notificationsEnabled == 'true',
       ));
     } catch (e) {
       emit(PreferencesError(e.toString()));
@@ -85,6 +88,8 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
         lastName: event.lastName,
         signatureBase64: signatureBase64,
         lastGenerationDate: lastGenerationDate,
+        signature: signature,
+        notificationsEnabled: currentState is PreferencesLoaded ? currentState.notificationsEnabled : true,
 
       ));
     } catch (e) {
@@ -116,6 +121,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
         lastName: lastName,
         signature: event.signature, // Utilisez la signature non encodée pour l'état
         lastGenerationDate: lastGenerationDate,
+        notificationsEnabled: state is PreferencesLoaded ? (state as PreferencesLoaded).notificationsEnabled : true,
       ));
     } catch (e) {
       print('Erreur lors de la sauvegarde de la signature: $e');
@@ -155,10 +161,37 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
           lastName: currentState.lastName,
           signature: currentState.signature,
           lastGenerationDate: event.date,
+          notificationsEnabled: currentState.notificationsEnabled,
         ));
       } catch (e) {
         print(e);
         emit(PreferencesError('Erreur lors de la sauvegarde de la date de dernière génération: $e'));
+      }
+    }
+  }
+
+
+  Future<void> _onToggleNotifications(
+      ToggleNotifications event,
+      Emitter<PreferencesState> emit,
+      ) async {
+    if (state is PreferencesLoaded) {
+      final currentState = state as PreferencesLoaded;
+      try {
+        await setUserPreferenceUseCase.execute(
+          'notificationsEnabled',
+          event.enabled.toString(),
+        );
+        emit(PreferencesLoaded(
+          firstName: currentState.firstName,
+          lastName: currentState.lastName,
+          signature: currentState.signature,
+          lastGenerationDate: currentState.lastGenerationDate,
+          notificationsEnabled: event.enabled,
+        ));
+      } catch (e) {
+        print(e);
+        emit(PreferencesError('Erreur lors de la modification des paramètres de notification: $e'));
       }
     }
   }
