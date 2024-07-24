@@ -4,9 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:time_sheet/features/pointage/presentation/pages/pdf/pages/signature_page.dart';
+import '../../../../services/restart_service.dart';
 import '../../../pointage/presentation/pages/time-sheet/bloc/time_sheet/time_sheet_bloc.dart';
-import '../../domain/services/RestartService.dart';
-import '../../domain/services/backup.dart';
+
+import '../../../../services/backup.dart';
 import '../manager/preferences_bloc.dart';
 
 class PreferencesForm extends StatefulWidget {

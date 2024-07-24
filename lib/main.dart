@@ -1,10 +1,16 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
+import 'package:time_sheet/services/ios_notification_service.dart';
 import 'package:time_sheet/services/logger_service.dart';
 import 'package:time_sheet/services/service_factory.dart';
 import 'dart:io';
+import 'package:timezone/data/latest_all.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
 
 import 'features/bottom_nav_tab/presentation/pages/bottom_navigation_bar.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
@@ -16,6 +22,7 @@ import 'package:window_manager/window_manager.dart';
 void main() async {
   logger.i('main');
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  await _configureLocalTimeZone();
   await initializeDateFormatting('fr_CH', null);
   // Must add this line.
   if (Platform.isWindows) {
@@ -34,9 +41,13 @@ void main() async {
       options.profilesSampleRate = 1.0;
     },
   );
+
   await di.setup();
   await permission.handlePermission();
+
+
   initializeDateFormatting().then((_) => runApp(const MyApp()));
+
 }
 
 Future<void> configWindows() async {
@@ -55,7 +66,10 @@ Future<void> configWindows() async {
     await windowManager.show();
     await windowManager.focus();
   });
+
 }
+
+
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -73,4 +87,13 @@ class MyApp extends StatelessWidget {
       home: const BottomNavigationBarPage(),
     ));
   }
+}
+
+Future<void> _configureLocalTimeZone() async {
+  if (kIsWeb || Platform.isLinux) {
+    return;
+  }
+  tz.initializeTimeZones();
+  final String timeZoneName = await FlutterTimezone.getLocalTimezone();
+  tz.setLocalLocation(tz.getLocation(timeZoneName));
 }

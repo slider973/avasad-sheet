@@ -7,6 +7,8 @@ Future<void> handlePermission()  async {
     List<Permission> permissionsToRequest = [
       Permission.storage,
       Permission.manageExternalStorage,
+      Permission.notification,
+      Permission.audio,
     ];
 
     Map<Permission, bool> statuses = await requestPermissions(permissionsToRequest);

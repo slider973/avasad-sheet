@@ -19,6 +19,7 @@ import '../features/pointage/domain/use_cases/save_timesheet_entry_usecase.dart'
 import '../features/pointage/presentation/pages/pdf/bloc/pdf_bloc.dart';
 import '../features/pointage/presentation/pages/time-sheet/bloc/time_sheet/time_sheet_bloc.dart';
 import '../features/pointage/presentation/pages/time-sheet/bloc/time_sheet_list/time_sheet_list_bloc.dart';
+import 'ios_notification_service.dart';
 
 class ServiceFactory extends StatelessWidget {
   final getIt = GetIt.instance;
@@ -28,40 +29,54 @@ class ServiceFactory extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(providers: [
-      BlocProvider(
-        create: (context) => PreferencesBloc(
-          getUserPreferenceUseCase: getIt<GetUserPreferenceUseCase>(),
-          setUserPreferenceUseCase: getIt<SetUserPreferenceUseCase>(),
-        )..add(LoadPreferences()),
-      ),
-      BlocProvider<TimeSheetBloc>(
-          create: (context) => TimeSheetBloc(
-              deleteTimesheetEntryUsecase: getIt<DeleteTimesheetEntryUsecase>(),
-              saveTimesheetEntryUseCase: getIt<SaveTimesheetEntryUseCase>(),
-              getTodayTimesheetEntryUseCase:
-                  getIt<GetTodayTimesheetEntryUseCase>(),
-              generateMonthlyTimesheetUseCase:
-                  getIt<GenerateMonthlyTimesheetUseCase>(),
-              preferencesBloc: BlocProvider.of<PreferencesBloc>(context),
-              getWeeklyWorkTimeUseCase: getIt<GetWeeklyWorkTimeUseCase>(),
-              getRemainingVacationDaysUseCase:
-                  getIt<GetRemainingVacationDaysUseCase>(),
-              getOvertimeHoursUseCase: getIt<GetOvertimeHoursUseCase>())),
-      BlocProvider<TimeSheetListBloc>(
-        create: (context) => TimeSheetListBloc(
-          findPointedListUseCase: getIt<FindPointedListUseCase>(),
-        ),
-      ),
-      BlocProvider<BottomNavigationBarBloc>(
-        create: (context) => BottomNavigationBarBloc(),
-      ),
-      BlocProvider<PdfBloc>(
-        create: (context) => PdfBloc(
-            getIt<TimesheetRepositoryImpl>(),
-            getIt<GetSignatureUseCase>(),
-            BlocProvider.of<PreferencesBloc>(context)),
-      ),
-    ], child: child);
+    return MultiBlocProvider(
+        providers: [
+          BlocProvider(
+            create: (context) => PreferencesBloc(
+              getUserPreferenceUseCase: getIt<GetUserPreferenceUseCase>(),
+              setUserPreferenceUseCase: getIt<SetUserPreferenceUseCase>(),
+            )..add(LoadPreferences()),
+          ),
+          BlocProvider<TimeSheetBloc>(
+              create: (context) => TimeSheetBloc(
+                  deleteTimesheetEntryUsecase:
+                      getIt<DeleteTimesheetEntryUsecase>(),
+                  saveTimesheetEntryUseCase: getIt<SaveTimesheetEntryUseCase>(),
+                  getTodayTimesheetEntryUseCase:
+                      getIt<GetTodayTimesheetEntryUseCase>(),
+                  generateMonthlyTimesheetUseCase:
+                      getIt<GenerateMonthlyTimesheetUseCase>(),
+                  preferencesBloc: BlocProvider.of<PreferencesBloc>(context),
+                  getWeeklyWorkTimeUseCase: getIt<GetWeeklyWorkTimeUseCase>(),
+                  getRemainingVacationDaysUseCase:
+                      getIt<GetRemainingVacationDaysUseCase>(),
+                  getOvertimeHoursUseCase: getIt<GetOvertimeHoursUseCase>())),
+          BlocProvider<TimeSheetListBloc>(
+            create: (context) => TimeSheetListBloc(
+              findPointedListUseCase: getIt<FindPointedListUseCase>(),
+            ),
+          ),
+          BlocProvider<BottomNavigationBarBloc>(
+            create: (context) => BottomNavigationBarBloc(),
+          ),
+          BlocProvider<PdfBloc>(
+            create: (context) => PdfBloc(
+                getIt<TimesheetRepositoryImpl>(),
+                getIt<GetSignatureUseCase>(),
+                BlocProvider.of<PreferencesBloc>(context)),
+          ),
+        ],
+        child: Builder(builder: (context) {
+          final timeSheetBloc = BlocProvider.of<TimeSheetBloc>(context);
+          final multiplatformNotificationService =
+              MultiplatformNotificationService(timeSheetBloc: timeSheetBloc);
+          multiplatformNotificationService.initNotifications().then(
+                (_) {
+                  multiplatformNotificationService.schedulePointageNotifications();
+                }
+              );
+
+          return child;
+        }));
   }
 }

@@ -345,4 +345,9 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
       emit(TimeSheetErrorState(e.toString()));
     }
   }
+  Future<bool> hasCheckedInForDate(DateTime date) async {
+    final formattedDate = DateFormat("dd-MMM-yy").format(date);
+    final entry = await getTodayTimesheetEntryUseCase.execute(formattedDate);
+    return entry != null && entry.startMorning.isNotEmpty;
+  }
 }

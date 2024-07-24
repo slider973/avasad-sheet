@@ -63,6 +63,11 @@ dependencies:
   share_plus: ^9.0.0
   process_run: ^1.0.0+1
   file_picker: ^8.0.6
+  flutter_local_notifications: ^17.2.1+2
+  timezone: ^0.9.4
+  flutter_timezone: ^2.1.0
+  win32: ^5.5.1
+  ffi: ^2.1.2
 
 
 dev_dependencies:

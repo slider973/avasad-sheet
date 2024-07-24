@@ -29,8 +29,8 @@ class _PointageWidgetState extends State<PointageWidget>
   TimesheetEntry? _currentEntry;
   Duration _weeklyWorkTime = Duration.zero;
   int _remainingVacationDays = 0;
-  Duration _weeklyTarget = const Duration(hours: 41, minutes: 30);
-  Duration _overtimeHours = Duration.zero;
+  final Duration _weeklyTarget = const Duration(hours: 41, minutes: 30);
+  final Duration _overtimeHours = Duration.zero;
 
   late AnimationController _controller;
   late Animation<double> _progressionAnimation;
