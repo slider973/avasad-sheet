@@ -21,24 +21,15 @@ class BackupService {
       throw UnsupportedError('Backup is not supported on web platform');
     }
 
-    String? selectedDirectory;
-    if (Platform.isWindows) {
-      selectedDirectory = await FilePicker.platform.getDirectoryPath();
-      if (selectedDirectory == null) {
-        throw Exception('No directory selected');
-      }
-    } else {
-      final directory = await getExternalStorageDirectory();
-      selectedDirectory = directory?.path;
-      if (selectedDirectory == null) {
-        throw Exception('Could not access external storage');
-      }
-    }
-
     final isar = await getIsarInstance();
     final backupFileName = 'isar_backup_${DateTime.now().millisecondsSinceEpoch}.isar';
-    final backupPath = path.join(selectedDirectory, backupFileName);
 
+    String? selectedDirectory = await FilePicker.platform.getDirectoryPath();
+    if (selectedDirectory == null) {
+      throw Exception('No directory selected');
+    }
+
+    final backupPath = path.join(selectedDirectory, backupFileName);
     await isar.copyToFile(backupPath);
 
     return backupPath;
@@ -49,10 +40,7 @@ class BackupService {
       throw UnsupportedError('Import is not supported on web platform');
     }
 
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['isar'],
-    );
+    FilePickerResult? result = await FilePicker.platform.pickFiles();
 
     if (result != null && result.files.single.path != null) {
       String importPath = result.files.single.path!;
@@ -65,25 +53,18 @@ class BackupService {
       final isar = await getIsarInstance();
       final dbPath = isar.path;
 
-      // Fermer l'instance Isar
-      await closeIsarInstance();
       await closeIsarInstance();
 
       try {
-        // Supprimer le fichier de base de données existant s'il existe
         if (await File(dbPath!).exists()) {
           await File(dbPath).delete();
         }
 
-        // Copier le fichier de sauvegarde vers l'emplacement de la base de données
         await importFile.copy(dbPath);
-
-        // Rouvrir l'instance Isar
         await reopenIsarInstance();
 
         return true;
       } catch (e) {
-        // En cas d'erreur, essayer de rouvrir l'instance Isar
         await reopenIsarInstance();
         throw Exception('Error during import: $e');
       }

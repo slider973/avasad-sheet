@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get_it/get_it.dart';
 
 import '../features/bottom_nav_tab/presentation/pages/bloc/bottom_navigation_bar_bloc.dart';
@@ -68,13 +69,13 @@ class ServiceFactory extends StatelessWidget {
         ],
         child: Builder(builder: (context) {
           final timeSheetBloc = BlocProvider.of<TimeSheetBloc>(context);
-          final multiplatformNotificationService =
-              MultiplatformNotificationService(timeSheetBloc: timeSheetBloc);
-          multiplatformNotificationService.initNotifications().then(
-                (_) {
-                  multiplatformNotificationService.schedulePointageNotifications();
-                }
-              );
+          final dynamicMultiplatformNotificationService =
+          DynamicMultiplatformNotificationService(
+            flutterLocalNotificationsPlugin: FlutterLocalNotificationsPlugin(),
+            timeSheetBloc: timeSheetBloc,
+          );
+          dynamicMultiplatformNotificationService.initNotifications();
+
 
           return child;
         }));

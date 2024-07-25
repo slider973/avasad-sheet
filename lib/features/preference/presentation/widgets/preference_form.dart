@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -75,7 +76,7 @@ class _PreferencesFormState extends State<PreferencesForm> {
                     const SizedBox(height: 16),
                     _buildNotificationsCard(),
                     const SizedBox(height: 16),
-                    _buildDatabaseActionsCard(),
+                    _buildBackupRestoreCard(),
                     const SizedBox(height: 16),
                     _buildGenereLeTimeSheetDuMois()
                   ],
@@ -157,28 +158,7 @@ class _PreferencesFormState extends State<PreferencesForm> {
     );
   }
 
-  Widget _buildDatabaseActionsCard() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Actions sur la base de données',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.teal),
-            ),
-            const SizedBox(height: 16),
-            _buildButton('Sauvegarder la base de données', _backupDatabase),
-            const SizedBox(height: 10),
-            _buildButton('Importer une sauvegarde', _importDatabase, isPrimary: false),
-          ],
-        ),
-      ),
-    );
-  }
+
 
   Widget _buildNotificationsCard() {
     return Card(
@@ -301,9 +281,44 @@ class _PreferencesFormState extends State<PreferencesForm> {
     }
   }
 
-  void _backupDatabase() async {
+
+
+
+  @override
+  void dispose() {
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    super.dispose();
+  }
+
+
+
+  Widget _buildBackupRestoreCard() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Sauvegarde et Restauration',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.teal),
+            ),
+            const SizedBox(height: 16),
+            _buildButton('Sauvegarder', _performBackup),
+            const SizedBox(height: 8),
+            _buildButton('Restaurer', _performRestore, isPrimary: false),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _performBackup() async {
+    final backupService = GetIt.instance<BackupService>();
     try {
-      final backupService = GetIt.instance<BackupService>();
       final backupPath = await backupService.backupDatabase();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Sauvegarde réussie : $backupPath')),
@@ -315,18 +330,18 @@ class _PreferencesFormState extends State<PreferencesForm> {
     }
   }
 
-  void _importDatabase() async {
+  void _performRestore() async {
+    final backupService = GetIt.instance<BackupService>();
     try {
-      final backupService = GetIt.instance<BackupService>();
-      bool importSuccessful = await backupService.importDatabase();
-      if (importSuccessful) {
+      final importSuccess = await backupService.importDatabase();
+      if (importSuccess) {
         showDialog(
           context: context,
           barrierDismissible: false,
           builder: (BuildContext context) {
             return AlertDialog(
-              title: const Text('Importation réussie'),
-              content: const Text('L\'importation a réussi. L\'application doit être redémarrée pour appliquer les changements.'),
+              title: const Text('Restauration réussie'),
+              content: const Text('La restauration a réussi. L\'application doit être redémarrée pour appliquer les changements.'),
               actions: <Widget>[
                 TextButton(
                   child: const Text('Redémarrer'),
@@ -341,28 +356,10 @@ class _PreferencesFormState extends State<PreferencesForm> {
         );
       }
     } catch (e) {
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Text('Erreur d\'importation'),
-            content: Text('Une erreur s\'est produite lors de l\'importation : ${e.toString()}'),
-            actions: <Widget>[
-              TextButton(
-                child: const Text('OK'),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ],
-          );
-        },
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur lors de la restauration : ${e.toString()}')),
       );
     }
   }
 
-  @override
-  void dispose() {
-    _firstNameController.dispose();
-    _lastNameController.dispose();
-    super.dispose();
-  }
 }
