@@ -22,8 +22,7 @@ class TimerPainter extends CustomPainter {
     // Liste des couleurs pour chaque segment
     final colors = [
       Colors.teal,
-      Color(0xFF365E32),
-      Color(0xFF81A263),
+
       Color(0xFFE7D37F),
       Color(0xFFFD9B63),
     ];

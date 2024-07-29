@@ -166,32 +166,27 @@ class _PointageWidgetState extends State<PointageWidget>
       switch (_etatActuel) {
         case 'Non commencé':
           _etatActuel = 'Entrée';
-          _animerProgression(0.25);
           pointages.add({'type': 'Entrée', 'heure': maintenant});
           print('Pointage entrée: $maintenant');
           bloc.add(TimeSheetEnterEvent(maintenant));
           break;
         case 'Entrée':
           _etatActuel = 'Pause';
-          _animerProgression(0.5);
           pointages.add({'type': 'Début pause', 'heure': maintenant});
           bloc.add(TimeSheetStartBreakEvent(maintenant));
           break;
         case 'Pause':
           _etatActuel = 'Reprise';
-          _animerProgression(0.75);
           pointages.add({'type': 'Fin pause', 'heure': maintenant});
           bloc.add(TimeSheetEndBreakEvent(maintenant));
           break;
         case 'Reprise':
           _etatActuel = 'Sortie';
-          _animerProgression(1.0);
           pointages.add({'type': 'Fin de journée', 'heure': maintenant});
           bloc.add(TimeSheetOutEvent(maintenant));
           break;
         case 'Sortie':
           _etatActuel = 'Non commencé';
-          _animerProgression(0.0);
           pointages.clear();
           break;
       }
