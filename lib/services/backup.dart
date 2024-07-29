@@ -4,6 +4,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:path/path.dart' as path;
+import 'package:share_plus/share_plus.dart';
+import 'package:time_sheet/services/logger_service.dart';
 
 class BackupService {
   final Future<Isar> Function() getIsarInstance;
@@ -16,24 +18,56 @@ class BackupService {
     required this.reopenIsarInstance,
   });
 
-  Future<String> backupDatabase() async {
-    if (kIsWeb) {
-      throw UnsupportedError('Backup is not supported on web platform');
+  Future<ShareResult> backupDatabase() async {
+    late final Isar isar;
+    try {
+      if (kIsWeb) {
+        throw UnsupportedError('Backup is not supported on web platform');
+      }
+
+      isar = await getIsarInstance();
+      final backupFileName = 'isar_backup_${DateTime.now().millisecondsSinceEpoch}.isar';
+
+      // Get the app's temporary directory
+      final tempDir = await getTemporaryDirectory();
+      final backupPath = path.join(tempDir.path, backupFileName);
+      final sourcePath = isar.path!;
+
+      // Close the database before backup
+      await closeIsarInstance();
+
+      try {
+        // Perform the backup
+        await File(sourcePath).copy(backupPath);
+
+        logger.i('Backup completed successfully: $backupPath');
+
+        // Share the backup file
+        final result = await Share.shareXFiles(
+          [XFile(backupPath)],
+          subject: 'Database Backup',
+          text: 'Here is your database backup file.',
+        );
+
+        // Clean up the temporary file
+        await File(backupPath).delete();
+
+        return result;
+      } catch (e) {
+        logger.e('Error during file copy or sharing: $e');
+        throw Exception('Failed to copy or share database file: $e');
+      } finally {
+        // Reopen the database
+        await reopenIsarInstance();
+      }
+    } catch (e) {
+      logger.e('Error during backup: $e');
+      // Ensure we attempt to reopen the database even if an error occurred
+      await reopenIsarInstance();
+      throw Exception('Error during backup: $e');
     }
-
-    final isar = await getIsarInstance();
-    final backupFileName = 'isar_backup_${DateTime.now().millisecondsSinceEpoch}.isar';
-
-    String? selectedDirectory = await FilePicker.platform.getDirectoryPath();
-    if (selectedDirectory == null) {
-      throw Exception('No directory selected');
-    }
-
-    final backupPath = path.join(selectedDirectory, backupFileName);
-    await isar.copyToFile(backupPath);
-
-    return backupPath;
   }
+
 
   Future<bool> importDatabase() async {
     if (kIsWeb) {

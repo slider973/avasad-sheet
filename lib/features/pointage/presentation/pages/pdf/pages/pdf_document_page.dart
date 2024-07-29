@@ -64,21 +64,6 @@ class _PdfDocumentPageState extends State<PdfDocumentPage> {
               ],
             ),
           );
-        } else if (state is PdfOpened) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!kIsWeb && Platform.isWindows) {
-              // Sur Windows, ouvrir directement avec l'application par défaut
-              OpenFile.open(state.filePath);
-            } else {
-              // Pour les autres plateformes, utiliser PdfViewerPage
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => PdfViewerPage(filePath: state.filePath),
-                ),
-              );
-            }
-          });
-          return const Center(child: Text("Ouverture du PDF"));
         } else if (state is PdfOpening) {
           return const Center(child: CircularProgressIndicator());
         }
@@ -117,7 +102,6 @@ class _PdfDocumentPageState extends State<PdfDocumentPage> {
   void _handlePdfOpened(BuildContext context, String filePath) {
     if (!kIsWeb && Platform.isWindows) {
       OpenFile.open(filePath).then((_) {
-        // Créer un Timer pour vérifier périodiquement si le fichier est toujours ouvert
         Timer.periodic(const Duration(seconds: 2), (timer) {
           if (!_isFileOpen(filePath)) {
             timer.cancel();
@@ -126,11 +110,13 @@ class _PdfDocumentPageState extends State<PdfDocumentPage> {
         });
       });
     } else {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) => PdfViewerPage(filePath: filePath),
-        ),
-      );
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => PdfViewerPage(filePath: filePath),
+          ),
+        );
+      });
     }
   }
 

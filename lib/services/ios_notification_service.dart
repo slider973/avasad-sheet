@@ -30,8 +30,10 @@ class DynamicMultiplatformNotificationService {
     const DarwinInitializationSettings initializationSettingsIOS =
     DarwinInitializationSettings(
       requestSoundPermission: true,
-      requestBadgePermission: true,
+      requestBadgePermission: false,
       requestAlertPermission: true,
+      defaultPresentBadge: false,
+
     );
 
     const InitializationSettings initializationSettings =
@@ -41,6 +43,8 @@ class DynamicMultiplatformNotificationService {
       initializationSettings,
       onDidReceiveNotificationResponse: _onDidReceiveNotificationResponse,
     );
+    await flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation()?.cancelAll();
   }
 
   Future<void> testNotification() async {
@@ -55,6 +59,7 @@ class DynamicMultiplatformNotificationService {
         testBody,
         const NotificationDetails(
           iOS: DarwinNotificationDetails(
+            badgeNumber: 0,
             presentAlert: true,
             presentBadge: false,
             presentSound: true,
@@ -69,7 +74,8 @@ class DynamicMultiplatformNotificationService {
     print("Notification de test envoyée. Vérifiez votre appareil.");
   }
 
-  Future<void> _onDidReceiveNotificationResponse(NotificationResponse response) async {
+  Future<void> _onDidReceiveNotificationResponse(
+      NotificationResponse response) async {
     final String? payload = response.payload;
     if (payload != null) {
       await _handlePointageAction(payload);
@@ -146,13 +152,11 @@ class DynamicMultiplatformNotificationService {
     }
   }
 
-  Future<void> _scheduleIOSNotification(
-      int id,
+  Future<void> _scheduleIOSNotification(int id,
       tz.TZDateTime scheduledDate,
       String title,
       String body,
-      String payload,
-      ) async {
+      String payload,) async {
     await flutterLocalNotificationsPlugin.zonedSchedule(
       id,
       title,
@@ -164,7 +168,6 @@ class DynamicMultiplatformNotificationService {
           presentBadge: false,
           presentSound: true,
           sound: 'default',
-          badgeNumber: 1,
           categoryIdentifier: 'pointage',
         ),
       ),
@@ -175,12 +178,10 @@ class DynamicMultiplatformNotificationService {
     );
   }
 
-  void _scheduleWindowsNotification(
-      int id,
+  void _scheduleWindowsNotification(int id,
       tz.TZDateTime scheduledDate,
       String title,
-      String body,
-      ) {
+      String body,) {
     final now = tz.TZDateTime.now(tz.local);
     final delay = scheduledDate.difference(now);
 
@@ -236,7 +237,8 @@ class DynamicMultiplatformNotificationService {
 
   tz.TZDateTime _timeFor(int hour, int minute) {
     final now = tz.TZDateTime.now(tz.local);
-    var scheduledDate = tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
+    var scheduledDate = tz.TZDateTime(
+        tz.local, now.year, now.month, now.day, hour, minute);
     if (scheduledDate.isBefore(now)) {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
