@@ -190,7 +190,6 @@ class MultiplatformNotificationService {
       body,
       scheduledDate,
       platformChannelSpecifics,
-      androidAllowWhileIdle: true,
       uiLocalNotificationDateInterpretation:
       UILocalNotificationDateInterpretation.absoluteTime,
       matchDateTimeComponents: DateTimeComponents.time,
@@ -232,7 +231,7 @@ class MultiplatformNotificationService {
       0,
       className,
       windowName,
-      WS_OVERLAPPEDWINDOW,
+      WINDOW_STYLE.WS_OVERLAPPEDWINDOW,
       CW_USEDEFAULT,
       CW_USEDEFAULT,
       CW_USEDEFAULT,
@@ -252,7 +251,7 @@ class MultiplatformNotificationService {
     nid.ref.szInfoTitle = title.toString();
     nid.ref.szInfo = body.toString();
 
-    Shell_NotifyIcon(NIM_ADD, nid);
+    Shell_NotifyIcon(NOTIFY_ICON_MESSAGE.NIM_ADD, nid);
 
     free(className);
     free(windowName);

@@ -387,6 +387,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.4.1"
+  flutter_native_timezone:
+    dependency: "direct main"
+    description:
+      name: flutter_native_timezone
+      sha256: ed7bfb982f036243de1c068e269182a877100c994f05143c8b26a325e28c1b02
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.0"
   flutter_pdfview:
     dependency: "direct main"
     description:
@@ -416,14 +424,6 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  flutter_timezone:
-    dependency: "direct main"
-    description:
-      name: flutter_timezone
-      sha256: "0cb5498dedfaac615c779138194052f04524c31d958fab33d378f22b6cc14686"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.1.0"
   flutter_web_plugins:
     dependency: transitive
     description: flutter
@@ -593,10 +593,10 @@ packages:
     dependency: "direct main"
     description:
       name: logger
-      sha256: af05cc8714f356fd1f3888fb6741cbe9fbe25cdb6eedbab80e1a6db21047d4a4
+      sha256: "697d067c60c20999686a0add96cf6aba723b3aa1f83ecf806a8097231529ec32"
       url: "https://pub.dev"
     source: hosted
-    version: "2.3.0"
+    version: "2.4.0"
   logging:
     dependency: transitive
     description:
@@ -978,14 +978,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.10.0"
-  sprintf:
-    dependency: transitive
-    description:
-      name: sprintf
-      sha256: "1fc9ffe69d4df602376b52949af107d8f5703b77cda567c4d7d86a0693120f23"
-      url: "https://pub.dev"
-    source: hosted
-    version: "7.0.0"
   stack_trace:
     dependency: transitive
     description:
@@ -1026,6 +1018,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.1.0+1"
+  system_tray:
+    dependency: "direct main"
+    description:
+      name: system_tray
+      sha256: "40444e5de8ed907822a98694fd031b8accc3cb3c0baa547634ce76189cf3d9cf"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.3"
   table_calendar:
     dependency: "direct main"
     description:
@@ -1158,10 +1158,10 @@ packages:
     dependency: transitive
     description:
       name: uuid
-      sha256: "83d37c7ad7aaf9aa8e275490669535c8080377cfa7a7004c24dfac53afffaa90"
+      sha256: "648e103079f7c64a36dc7d39369cabb358d377078a051d6ae2ad3aa539519313"
       url: "https://pub.dev"
     source: hosted
-    version: "4.4.2"
+    version: "3.0.7"
   vector_graphics:
     dependency: transitive
     description:

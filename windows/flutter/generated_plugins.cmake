@@ -3,12 +3,12 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
-  flutter_timezone
   isar_flutter_libs
   permission_handler_windows
   screen_retriever
   sentry_flutter
   share_plus
+  system_tray
   url_launcher_windows
   window_manager
 )
