@@ -44,8 +44,9 @@ class TimesheetEntry {
   DateTime? get lastPointage {
     final format = DateFormat('dd-MMM-yy HH:mm');
     if (endAfternoon.isNotEmpty) return format.parse('$dayDate $endAfternoon');
-    if (startAfternoon.isNotEmpty)
+    if (startAfternoon.isNotEmpty) {
       return format.parse('$dayDate $startAfternoon');
+    }
     if (endMorning.isNotEmpty) return format.parse('$dayDate $endMorning');
     if (startMorning.isNotEmpty) return format.parse('$dayDate $startMorning');
     return null;

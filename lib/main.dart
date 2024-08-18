@@ -43,7 +43,7 @@ void main() async {
   );
 
   await di.setup();
-  await permission.handlePermission();
+
 
 
   initializeDateFormatting().then((_) => runApp(const MyApp()));

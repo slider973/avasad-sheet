@@ -62,20 +62,20 @@ class ServiceFactory extends StatelessWidget {
           ),
           BlocProvider<PdfBloc>(
             create: (context) => PdfBloc(
-                getIt<TimesheetRepositoryImpl>(),
-                getIt<GetSignatureUseCase>(),
-                BlocProvider.of<PreferencesBloc>(context)),
+              getIt<TimesheetRepositoryImpl>(),
+              getIt<GetSignatureUseCase>(),
+              BlocProvider.of<PreferencesBloc>(context),
+            ),
           ),
         ],
         child: Builder(builder: (context) {
           final timeSheetBloc = BlocProvider.of<TimeSheetBloc>(context);
           final dynamicMultiplatformNotificationService =
-          DynamicMultiplatformNotificationService(
+              DynamicMultiplatformNotificationService(
             flutterLocalNotificationsPlugin: FlutterLocalNotificationsPlugin(),
             timeSheetBloc: timeSheetBloc,
           );
           dynamicMultiplatformNotificationService.initNotifications();
-
 
           return child;
         }));
