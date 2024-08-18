@@ -27,6 +27,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
     on<SaveLastGenerationDate>(_onSaveLastGenerationDate);
     on<ToggleNotifications>(_onToggleNotifications);
     on<ToggleDeliveryManager>(_onToggleDeliveryManager);
+    on<SaveBadgeCount>(_onSaveBadgeCount);
   }
 
   Future<void> _onLoadPreferences(
@@ -52,6 +53,8 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
       final lastGenerationDate = lastGenerationDateString != null
           ? DateTime.parse(lastGenerationDateString)
           : null;
+      final badgeCountString =
+          await getUserPreferenceUseCase.execute('badgeCount');
 
       Uint8List? signature;
       if (signatureBase64 != null) {
@@ -68,6 +71,8 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
         lastGenerationDate: lastGenerationDate,
         notificationsEnabled: notificationsEnabled == 'true',
         isDeliveryManager: isDeliveryManager == 'true',
+        badgeCount: int.tryParse(badgeCountString ?? '0') ?? 0,
+
       ));
     } catch (e) {
       emit(PreferencesError(e.toString()));
@@ -101,6 +106,8 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
       final lastGenerationDate = lastGenerationDateString != null
           ? DateTime.parse(lastGenerationDateString)
           : null;
+      final badgeCountString =
+          await getUserPreferenceUseCase.execute('badgeCount');
       emit(PreferencesSaved());
       emit(PreferencesLoaded(
         firstName: event.firstName,
@@ -110,6 +117,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
         signature: signature,
         notificationsEnabled: notificationsEnabled,
         isDeliveryManager: isDeliveryManager,
+        badgeCount: int.tryParse(badgeCountString ?? '0') ?? 0,
       ));
     } catch (e) {
       print(e);
@@ -136,6 +144,8 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
       final lastGenerationDate = lastGenerationDateString != null
           ? DateTime.parse(lastGenerationDateString)
           : null;
+      final badgeCountString =
+          await getUserPreferenceUseCase.execute('badgeCount');
       // Émettez un état indiquant que la sauvegarde a réussi
       emit(PreferencesSaved());
       // Émettez le nouvel état avec toutes les données à jour
@@ -151,6 +161,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
         isDeliveryManager: state is PreferencesLoaded
             ? (state as PreferencesLoaded).isDeliveryManager
             : false,
+        badgeCount: int.tryParse(badgeCountString ?? '0') ?? 0,
       ));
     } catch (e) {
       print('Erreur lors de la sauvegarde de la signature: $e');
@@ -190,6 +201,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
           lastGenerationDate: event.date,
           notificationsEnabled: currentState.notificationsEnabled,
           isDeliveryManager: currentState.isDeliveryManager,
+          badgeCount: currentState.badgeCount,
         ));
       } catch (e) {
         print(e);
@@ -217,6 +229,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
           lastGenerationDate: currentState.lastGenerationDate,
           notificationsEnabled: event.enabled,
           isDeliveryManager: currentState.isDeliveryManager,
+          badgeCount: currentState.badgeCount,
         ));
       } catch (e) {
         print(e);
@@ -244,6 +257,36 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
           lastGenerationDate: currentState.lastGenerationDate,
           notificationsEnabled: currentState.notificationsEnabled,
           isDeliveryManager: event.enabled,
+          badgeCount: currentState.badgeCount,
+        ));
+      } catch (e) {
+        print(e);
+        emit(PreferencesError(
+            'Erreur lors de la modification des paramètres de notification: $e'));
+      }
+    }
+  }
+
+  Future<void> _onSaveBadgeCount(
+    SaveBadgeCount event,
+    Emitter<PreferencesState> emit,
+  ) async {
+    if (state is PreferencesLoaded) {
+      final currentState = state as PreferencesLoaded;
+      try {
+        await setUserPreferenceUseCase.execute(
+          'badgeCount',
+          event.count.toString(),
+        );
+        emit(PreferencesLoaded(
+          firstName: currentState.firstName,
+          lastName: currentState.lastName,
+          signature: currentState.signature,
+          lastGenerationDate: currentState.lastGenerationDate,
+          notificationsEnabled: currentState.notificationsEnabled,
+          isDeliveryManager: currentState.isDeliveryManager,
+          badgeCount: event.count,
+
         ));
       } catch (e) {
         print(e);

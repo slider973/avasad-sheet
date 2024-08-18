@@ -19,22 +19,29 @@ class PreferencesLoaded extends PreferencesState {
   Uint8List? signature;
   final bool notificationsEnabled;
   final bool isDeliveryManager;
+  final int badgeCount;
 
-   PreferencesLoaded({
+  PreferencesLoaded({
     required this.firstName,
     required this.lastName,
     this.signatureBase64,
     this.lastGenerationDate,
     this.signature,
-     required this.notificationsEnabled,
-      required this.isDeliveryManager,
-
+    required this.notificationsEnabled,
+    required this.isDeliveryManager,
+    required this.badgeCount,
   });
 
-
-
   @override
-  List<Object?> get props => [firstName, lastName, signature, lastGenerationDate, notificationsEnabled, isDeliveryManager];
+  List<Object?> get props => [
+        firstName,
+        lastName,
+        signature,
+        lastGenerationDate,
+        notificationsEnabled,
+        isDeliveryManager,
+        badgeCount
+      ];
 }
 
 class PreferencesSaved extends PreferencesState {}

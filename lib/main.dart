@@ -13,15 +13,12 @@ import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
 import 'features/bottom_nav_tab/presentation/pages/bottom_navigation_bar.dart';
-import 'package:flutter_native_splash/flutter_native_splash.dart';
-
 import './services/injection_container.dart' as di;
-import './services/request_permission_handler.dart' as permission;
 import 'package:window_manager/window_manager.dart';
 
 void main() async {
   logger.i('main');
-  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+ WidgetsFlutterBinding.ensureInitialized();
   await _configureLocalTimeZone();
   await initializeDateFormatting('fr_CH', null);
   // Must add this line.

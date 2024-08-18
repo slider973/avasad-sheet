@@ -1,19 +1,23 @@
 import 'dart:ffi';
 import 'dart:io';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:time_sheet/services/logger_service.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:ffi/ffi.dart';
 import 'package:win32/win32.dart';
 
 import '../features/pointage/presentation/pages/time-sheet/bloc/time_sheet/time_sheet_bloc.dart';
+import '../features/preference/presentation/manager/preferences_bloc.dart';
 
 class DynamicMultiplatformNotificationService {
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
   final TimeSheetBloc timeSheetBloc;
+  final PreferencesBloc preferencesBloc;
 
   DynamicMultiplatformNotificationService({
     required this.flutterLocalNotificationsPlugin,
     required this.timeSheetBloc,
+    required this.preferencesBloc,
   }) {
     timeSheetBloc.stream.listen((_) => _updateNotifications());
   }
@@ -32,7 +36,7 @@ class DynamicMultiplatformNotificationService {
       requestSoundPermission: true,
       requestBadgePermission: true,
       requestAlertPermission: true,
-      defaultPresentBadge: true,
+      defaultPresentBadge: false,
     );
 
     const InitializationSettings initializationSettings =
@@ -45,8 +49,32 @@ class DynamicMultiplatformNotificationService {
     await flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation()
         ?.cancelAll();
+
+    await _resetBadge();
   }
 
+  Future<void> _resetBadge() async {
+    if (Platform.isIOS) {
+      _updateBadgeCount(0);
+    }
+  }
+
+  Future<void> _updateBadgeCount(int count) async {
+    await flutterLocalNotificationsPlugin.show(
+      0,
+      null,
+      null,
+      NotificationDetails(
+        iOS: DarwinNotificationDetails(
+          presentAlert: false,
+          presentBadge: true,
+          presentSound: false,
+          badgeNumber: count,
+        ),
+      ),
+    );
+    preferencesBloc.add(SaveBadgeCount(count));
+  }
 
   Future<void> testNotification() async {
     const int testId = 0;
@@ -82,7 +110,20 @@ class DynamicMultiplatformNotificationService {
     if (payload != null) {
       await _handlePointageAction(payload);
     }
+    await _resetBadge();
   }
+  // Méthode à appeler lorsque l'application est fermée
+  Future<void> onAppClosed() async {
+    await _resetBadge();
+  }
+  // Méthode à appeler lorsque l'application est ouverte
+  Future<void> onAppOpened() async {
+    final currentState = preferencesBloc.state;
+    if (currentState is PreferencesLoaded) {
+      await _updateBadgeCount(currentState.badgeCount);
+    }
+  }
+
 
   Future<void> _updateNotifications() async {
     if (Platform.isIOS) {
@@ -135,6 +176,16 @@ class DynamicMultiplatformNotificationService {
       }
     }
   }
+  Future<void> _incrementBadge() async {
+    if (Platform.isIOS) {
+      final currentState = preferencesBloc.state;
+      if (currentState is PreferencesLoaded) {
+        final newBadgeCount = currentState.badgeCount + 1;
+        await _updateBadgeCount(newBadgeCount);
+      }
+    }
+  }
+
 
   Future<void> _scheduleNotification({
     required int id,
@@ -160,18 +211,25 @@ class DynamicMultiplatformNotificationService {
     String body,
     String payload,
   ) async {
+    final currentState = preferencesBloc.state;
+    int currentBadgeCount = 0;
+    if (currentState is PreferencesLoaded) {
+      currentBadgeCount = currentState.badgeCount;
+    }
+    logger.i('Scheduling notification with id $id at $scheduledDate with payload $payload and current badge count $currentBadgeCount');
     await flutterLocalNotificationsPlugin.zonedSchedule(
       id,
       title,
       body,
       scheduledDate,
-      const NotificationDetails(
+      NotificationDetails(
         iOS: DarwinNotificationDetails(
           presentAlert: true,
           presentBadge: false,
           presentSound: true,
           sound: 'default',
           categoryIdentifier: 'pointage',
+          badgeNumber: currentBadgeCount,
         ),
       ),
       uiLocalNotificationDateInterpretation:
@@ -179,7 +237,9 @@ class DynamicMultiplatformNotificationService {
       matchDateTimeComponents: DateTimeComponents.time,
       payload: payload,
     );
+    await _incrementBadge();
   }
+
 
   void _scheduleWindowsNotification(
     int id,

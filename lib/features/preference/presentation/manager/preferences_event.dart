@@ -31,7 +31,6 @@ class SaveSignature extends PreferencesEvent {
   @override
   List<Object> get props => [signature];
 }
-
 class SaveLastGenerationDate extends PreferencesEvent {
   final DateTime date;
 
@@ -40,6 +39,15 @@ class SaveLastGenerationDate extends PreferencesEvent {
   @override
   List<Object> get props => [date];
 }
+class SaveBadgeCount extends PreferencesEvent {
+  final int count;
+
+  const SaveBadgeCount(this.count);
+
+  @override
+  List<Object> get props => [count];
+}
+
 class ToggleNotifications extends PreferencesEvent {
   final bool enabled;
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get_it/get_it.dart';
@@ -74,9 +75,18 @@ class ServiceFactory extends StatelessWidget {
               DynamicMultiplatformNotificationService(
             flutterLocalNotificationsPlugin: FlutterLocalNotificationsPlugin(),
             timeSheetBloc: timeSheetBloc,
+            preferencesBloc: BlocProvider.of<PreferencesBloc>(context),
           );
           dynamicMultiplatformNotificationService.initNotifications();
 
+          SystemChannels.lifecycle.setMessageHandler((msg) async {
+            if (msg == AppLifecycleState.paused.toString()) {
+              await dynamicMultiplatformNotificationService.onAppClosed();
+            } else if (msg == AppLifecycleState.resumed.toString()) {
+              await dynamicMultiplatformNotificationService.onAppOpened();
+            }
+            return null;
+          });
           return child;
         }));
   }
