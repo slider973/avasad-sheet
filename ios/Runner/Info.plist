@@ -27,9 +27,9 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSDocumentsFolderUsageDescription</key>
-	<string>Cette application nécessite l'accès aux documents pour lire et écrire des fichiers.</string>
+	<string>Cette application nécessite l&apos;accès aux documents pour lire et écrire des fichiers.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Cette application nécessite l'accès à la galerie pour sélectionner des photos.</string>
+	<string>Cette application nécessite l&apos;accès à la galerie pour sélectionner des photos.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIBackgroundModes</key>
@@ -48,5 +48,25 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+	  
+    <key>NSUserNotificationUsageDescription</key>
+    <string>Nous avons besoin d'envoyer des notifications pour vous informer des événements importants.</string>
+    
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>fetch</string>
+        <string>remote-notification</string>
+    </array>
+    
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>timesheet</string>
+            </array>
+        </dict>
+    </array>
+    
 </dict>
 </plist>

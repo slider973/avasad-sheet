@@ -28,29 +28,31 @@ class DynamicMultiplatformNotificationService {
 
   Future<void> _initIOSNotifications() async {
     const DarwinInitializationSettings initializationSettingsIOS =
-    DarwinInitializationSettings(
+        DarwinInitializationSettings(
       requestSoundPermission: true,
-      requestBadgePermission: false,
+      requestBadgePermission: true,
       requestAlertPermission: true,
-      defaultPresentBadge: false,
-
+      defaultPresentBadge: true,
     );
 
     const InitializationSettings initializationSettings =
-    InitializationSettings(iOS: initializationSettingsIOS);
+        InitializationSettings(iOS: initializationSettingsIOS);
 
     await flutterLocalNotificationsPlugin.initialize(
       initializationSettings,
       onDidReceiveNotificationResponse: _onDidReceiveNotificationResponse,
     );
     await flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation()?.cancelAll();
+        .resolvePlatformSpecificImplementation()
+        ?.cancelAll();
   }
+
 
   Future<void> testNotification() async {
     const int testId = 0;
     const String testTitle = "Test de notification";
-    const String testBody = "Si vous voyez ceci, les notifications fonctionnent !";
+    const String testBody =
+        "Si vous voyez ceci, les notifications fonctionnent !";
 
     if (Platform.isIOS) {
       await flutterLocalNotificationsPlugin.show(
@@ -93,7 +95,6 @@ class DynamicMultiplatformNotificationService {
     final state = timeSheetBloc.state;
     if (state is TimeSheetDataState) {
       final entry = state.entry;
-      final now = DateTime.now();
 
       if (entry.startMorning.isEmpty) {
         await _scheduleNotification(
@@ -152,11 +153,13 @@ class DynamicMultiplatformNotificationService {
     }
   }
 
-  Future<void> _scheduleIOSNotification(int id,
-      tz.TZDateTime scheduledDate,
-      String title,
-      String body,
-      String payload,) async {
+  Future<void> _scheduleIOSNotification(
+    int id,
+    tz.TZDateTime scheduledDate,
+    String title,
+    String body,
+    String payload,
+  ) async {
     await flutterLocalNotificationsPlugin.zonedSchedule(
       id,
       title,
@@ -172,16 +175,18 @@ class DynamicMultiplatformNotificationService {
         ),
       ),
       uiLocalNotificationDateInterpretation:
-      UILocalNotificationDateInterpretation.absoluteTime,
+          UILocalNotificationDateInterpretation.absoluteTime,
       matchDateTimeComponents: DateTimeComponents.time,
       payload: payload,
     );
   }
 
-  void _scheduleWindowsNotification(int id,
-      tz.TZDateTime scheduledDate,
-      String title,
-      String body,) {
+  void _scheduleWindowsNotification(
+    int id,
+    tz.TZDateTime scheduledDate,
+    String title,
+    String body,
+  ) {
     final now = tz.TZDateTime.now(tz.local);
     final delay = scheduledDate.difference(now);
 
@@ -237,8 +242,8 @@ class DynamicMultiplatformNotificationService {
 
   tz.TZDateTime _timeFor(int hour, int minute) {
     final now = tz.TZDateTime.now(tz.local);
-    var scheduledDate = tz.TZDateTime(
-        tz.local, now.year, now.month, now.day, hour, minute);
+    var scheduledDate =
+        tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
     if (scheduledDate.isBefore(now)) {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }

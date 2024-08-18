@@ -3,17 +3,30 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 
 import '../../../pointage/presentation/pages/pdf/pages/pdf_document_page.dart';
-import '../../../preference/presentation/pages/preference.dart';
+import '../../../preference/presentation/pages/preference.dart'   ;
 import '../../../pointage/presentation/pages/pointage/pointage_page.dart';
-import '../../../pointage/presentation/pages/pdf/pages/pdf_document_page_old.dart';
-import '../../../pointage/presentation/widgets/pointage_widget/pointage_widget.dart';
 import '../../../pointage/presentation/widgets/timesheet_calendar_widget/timesheet_calendar_widget.dart';
 import '../widgets/bottom_navigation_bar_widget.dart';
 import 'bloc/bottom_navigation_bar_bloc.dart';
+import '../../../../services/request_permission_handler.dart' as permission;
 
-class BottomNavigationBarPage extends StatelessWidget {
+class BottomNavigationBarPage extends StatefulWidget {
   const BottomNavigationBarPage({super.key});
 
+  @override
+  State<BottomNavigationBarPage> createState() => _BottomNavigationBarPageState();
+}
+
+class _BottomNavigationBarPageState extends State<BottomNavigationBarPage> {
+  @override
+  void initState() {
+    super.initState();
+    _checkPermissions();
+  }
+
+  Future<void> _checkPermissions() async {
+    await permission.handlePermission(context);
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(body: BlocBuilder<BottomNavigationBarBloc, int>(
