@@ -68,6 +68,7 @@ class PdfBloc extends Bloc<PdfEvent, PdfState> {
         company: 'Avasad',
         // Vous pouvez ajouter cela aux préférences si nécessaire
         signature: preferenceState.signature,
+        isDeliveryManager: preferenceState.isDeliveryManager,
       );
       final pdfFile = await generatePdf(weekDay, event.monthNumber, user);
 
@@ -424,7 +425,7 @@ pw.Widget _buildFooter(pw.Image? signatureImage, User user) {
                     'Travailleur', user.fullName, signatureImage),
                 _buildSignatureColumn(
                     'Entreprise de mission', 'François Longchamp'),
-                _buildSignatureColumn('Delivery manager', 'Sovattha Sok'),
+                _buildSignatureColumn('Delivery manager', 'Sovattha Sok', user.isDeliveryManager ? signatureImage : null),
               ],
             ),
           ],

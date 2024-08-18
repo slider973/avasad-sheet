@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:time_sheet/features/pointage/presentation/pages/pdf/pages/signature_page.dart';
@@ -23,6 +24,7 @@ class _PreferencesFormState extends State<PreferencesForm> {
   bool _isAlreadyGenerateForThisMonth = false;
   Uint8List? _signature;
   bool _notificationsEnabled = true;
+  bool _isDeliveryManager = false;
 
   @override
   void initState() {
@@ -61,20 +63,24 @@ class _PreferencesFormState extends State<PreferencesForm> {
             } else if (state is PreferencesLoaded) {
               _firstNameController.text = state.firstName;
               _lastNameController.text = state.lastName;
-              _signature = state.signature ?? base64Decode(state.signatureBase64 ?? '');
-              _isAlreadyGenerateForThisMonth = _isGeneratedThisMonth(state.lastGenerationDate);
+              _signature =
+                  state.signature ?? base64Decode(state.signatureBase64 ?? '');
+              _isAlreadyGenerateForThisMonth =
+                  _isGeneratedThisMonth(state.lastGenerationDate);
               _notificationsEnabled = state.notificationsEnabled;
+              _isDeliveryManager = state.isDeliveryManager;
               return SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     _buildPersonalInfoCard(),
-
                     const SizedBox(height: 16),
                     _buildSignatureCard(),
                     const SizedBox(height: 16),
                     _buildNotificationsCard(),
+                    const SizedBox(height: 16),
+                    _buildDeliveryManagerCard(),
                     const SizedBox(height: 16),
                     _buildBackupRestoreCard(),
                     const SizedBox(height: 16),
@@ -102,7 +108,10 @@ class _PreferencesFormState extends State<PreferencesForm> {
           children: [
             const Text(
               'Informations personnelles',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.teal),
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.teal),
             ),
             const SizedBox(height: 16),
             _buildTextField(_firstNameController, 'Prénom'),
@@ -127,12 +136,17 @@ class _PreferencesFormState extends State<PreferencesForm> {
           children: [
             const Text(
               'Signature',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.teal),
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.teal),
             ),
             const SizedBox(height: 16),
             _buildSignatureSection(),
             const SizedBox(height: 16),
-            _buildButton('Ajouter/Modifier la signature', _navigateToSignatureScreen, isPrimary: false),
+            _buildButton(
+                'Ajouter/Modifier la signature', _navigateToSignatureScreen,
+                isPrimary: false),
           ],
         ),
       ),
@@ -151,14 +165,16 @@ class _PreferencesFormState extends State<PreferencesForm> {
     return Column(
       children: [
         _buildButton('Générer le timesheet du mois', () {
-          context.read<TimeSheetBloc>().add(const GenerateMonthlyTimesheetEvent());
-          context.read<PreferencesBloc>().add(SaveLastGenerationDate(DateTime.now()));
+          context
+              .read<TimeSheetBloc>()
+              .add(const GenerateMonthlyTimesheetEvent());
+          context
+              .read<PreferencesBloc>()
+              .add(SaveLastGenerationDate(DateTime.now()));
         }, isPrimary: false, disabled: _isAlreadyGenerateForThisMonth),
       ],
     );
   }
-
-
 
   Widget _buildNotificationsCard() {
     return Card(
@@ -171,7 +187,10 @@ class _PreferencesFormState extends State<PreferencesForm> {
           children: [
             const Text(
               'Notifications',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.teal),
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.teal),
             ),
             const SizedBox(height: 16),
             SwitchListTile(
@@ -182,6 +201,42 @@ class _PreferencesFormState extends State<PreferencesForm> {
                   _notificationsEnabled = value;
                 });
                 context.read<PreferencesBloc>().add(ToggleNotifications(value));
+              },
+              activeColor: Colors.teal,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDeliveryManagerCard() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Manager de livraison',
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.teal),
+            ),
+            const SizedBox(height: 16),
+            SwitchListTile(
+              title: const Text('Activer le manager de livraison'),
+              value: _isDeliveryManager,
+              onChanged: (bool value) {
+                setState(() {
+                  _isDeliveryManager = value;
+                });
+                context
+                    .read<PreferencesBloc>()
+                    .add(ToggleDeliveryManager(value));
               },
               activeColor: Colors.teal,
             ),
@@ -203,7 +258,8 @@ class _PreferencesFormState extends State<PreferencesForm> {
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       ),
     );
   }
@@ -218,9 +274,9 @@ class _PreferencesFormState extends State<PreferencesForm> {
       ),
       child: _signature != null
           ? ClipRRect(
-        borderRadius: BorderRadius.circular(15),
-        child: Image.memory(_signature!, fit: BoxFit.contain),
-      )
+              borderRadius: BorderRadius.circular(15),
+              child: Image.memory(_signature!, fit: BoxFit.contain),
+            )
           : const Center(child: Text('Aucune signature')),
     );
   }
@@ -233,7 +289,8 @@ class _PreferencesFormState extends State<PreferencesForm> {
       child: ElevatedButton(
         onPressed: disabled ? null : onPressed,
         style: ElevatedButton.styleFrom(
-          foregroundColor: Colors.white, backgroundColor: isPrimary ? Colors.orange : Colors.teal,
+          foregroundColor: Colors.white,
+          backgroundColor: isPrimary ? Colors.orange : Colors.teal,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15),
           ),
@@ -247,7 +304,8 @@ class _PreferencesFormState extends State<PreferencesForm> {
   bool _isGeneratedThisMonth(DateTime? lastGenerationDate) {
     if (lastGenerationDate == null) return false;
     final now = DateTime.now();
-    return lastGenerationDate.year == now.year && lastGenerationDate.month == now.month;
+    return lastGenerationDate.year == now.year &&
+        lastGenerationDate.month == now.month;
   }
 
   void _navigateToSignatureScreen() async {
@@ -256,7 +314,9 @@ class _PreferencesFormState extends State<PreferencesForm> {
       MaterialPageRoute(
         builder: (context) => SignatureScreen(
           onSigned: (Uint8List signature) {
-            context.read<PreferencesBloc>().add(SaveSignature(signature: signature));
+            context
+                .read<PreferencesBloc>()
+                .add(SaveSignature(signature: signature));
           },
         ),
       ),
@@ -269,11 +329,12 @@ class _PreferencesFormState extends State<PreferencesForm> {
   }
 
   void _savePreferences() {
-    if (_firstNameController.text.isNotEmpty && _lastNameController.text.isNotEmpty) {
+    if (_firstNameController.text.isNotEmpty &&
+        _lastNameController.text.isNotEmpty) {
       context.read<PreferencesBloc>().add(SavePreferences(
-        firstName: _firstNameController.text,
-        lastName: _lastNameController.text,
-      ));
+            firstName: _firstNameController.text,
+            lastName: _lastNameController.text,
+          ));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Veuillez remplir tous les champs')),
@@ -281,17 +342,12 @@ class _PreferencesFormState extends State<PreferencesForm> {
     }
   }
 
-
-
-
   @override
   void dispose() {
     _firstNameController.dispose();
     _lastNameController.dispose();
     super.dispose();
   }
-
-
 
   Widget _buildBackupRestoreCard() {
     return Card(
@@ -304,7 +360,10 @@ class _PreferencesFormState extends State<PreferencesForm> {
           children: [
             const Text(
               'Sauvegarde et Restauration',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.teal),
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.teal),
             ),
             const SizedBox(height: 16),
             _buildButton('Sauvegarder', _performBackup),
@@ -325,7 +384,8 @@ class _PreferencesFormState extends State<PreferencesForm> {
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur lors de la sauvegarde : ${e.toString()}')),
+        SnackBar(
+            content: Text('Erreur lors de la sauvegarde : ${e.toString()}')),
       );
     }
   }
@@ -341,7 +401,8 @@ class _PreferencesFormState extends State<PreferencesForm> {
           builder: (BuildContext context) {
             return AlertDialog(
               title: const Text('Restauration réussie'),
-              content: const Text('La restauration a réussi. L\'application doit être redémarrée pour appliquer les changements.'),
+              content: const Text(
+                  'La restauration a réussi. L\'application doit être redémarrée pour appliquer les changements.'),
               actions: <Widget>[
                 TextButton(
                   child: const Text('Redémarrer'),
@@ -357,9 +418,9 @@ class _PreferencesFormState extends State<PreferencesForm> {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur lors de la restauration : ${e.toString()}')),
+        SnackBar(
+            content: Text('Erreur lors de la restauration : ${e.toString()}')),
       );
     }
   }
-
 }

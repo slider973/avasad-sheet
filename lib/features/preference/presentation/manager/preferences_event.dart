@@ -48,3 +48,11 @@ class ToggleNotifications extends PreferencesEvent {
   @override
   List<Object> get props => [enabled];
 }
+class ToggleDeliveryManager extends PreferencesEvent {
+  final bool enabled;
+
+  const ToggleDeliveryManager(this.enabled);
+
+  @override
+  List<Object> get props => [enabled];
+}

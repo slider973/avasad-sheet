@@ -5,11 +5,14 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:time_sheet/features/preference/domain/use_cases/get_signature_usecase.dart';
 
+import '../../../../services/logger_service.dart';
 import '../../domain/use_cases/get_user_preference_use_case.dart';
 import '../../domain/use_cases/set_user_preference_use_case.dart';
 
 part 'preferences_event.dart';
+
 part 'preferences_state.dart';
+
 class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
   final GetUserPreferenceUseCase getUserPreferenceUseCase;
   final SetUserPreferenceUseCase setUserPreferenceUseCase;
@@ -23,19 +26,29 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
     on<SaveSignature>(_onSaveSignature);
     on<SaveLastGenerationDate>(_onSaveLastGenerationDate);
     on<ToggleNotifications>(_onToggleNotifications);
+    on<ToggleDeliveryManager>(_onToggleDeliveryManager);
   }
 
   Future<void> _onLoadPreferences(
-      LoadPreferences event,
-      Emitter<PreferencesState> emit,
-      ) async {
+    LoadPreferences event,
+    Emitter<PreferencesState> emit,
+  ) async {
+    logger.i('Chargement des préférences');
     emit(PreferencesLoading());
     try {
-      final firstName = await getUserPreferenceUseCase.execute('firstName') ?? '';
+      final firstName =
+          await getUserPreferenceUseCase.execute('firstName') ?? '';
       final lastName = await getUserPreferenceUseCase.execute('lastName') ?? '';
-      final signatureBase64 = await getUserPreferenceUseCase.execute('signature');
-      final lastGenerationDateString = await getUserPreferenceUseCase.execute('lastGenerationDate');
-      final notificationsEnabled = await getUserPreferenceUseCase.execute('notificationsEnabled') ?? 'true';
+      final signatureBase64 =
+          await getUserPreferenceUseCase.execute('signature');
+      final lastGenerationDateString =
+          await getUserPreferenceUseCase.execute('lastGenerationDate');
+      final notificationsEnabled =
+          await getUserPreferenceUseCase.execute('notificationsEnabled') ??
+              'true';
+      final isDeliveryManager =
+          await getUserPreferenceUseCase.execute('isDeliveryManager') ??
+              'false';
       final lastGenerationDate = lastGenerationDateString != null
           ? DateTime.parse(lastGenerationDateString)
           : null;
@@ -51,9 +64,10 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
       emit(PreferencesLoaded(
         firstName: firstName,
         lastName: lastName,
-          signature: signature,
+        signature: signature,
         lastGenerationDate: lastGenerationDate,
         notificationsEnabled: notificationsEnabled == 'true',
+        isDeliveryManager: isDeliveryManager == 'true',
       ));
     } catch (e) {
       emit(PreferencesError(e.toString()));
@@ -61,9 +75,9 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
   }
 
   Future<void> _onSavePreferences(
-      SavePreferences event,
-      Emitter<PreferencesState> emit,
-      ) async {
+    SavePreferences event,
+    Emitter<PreferencesState> emit,
+  ) async {
     emit(PreferencesLoading());
     try {
       await setUserPreferenceUseCase.execute('firstName', event.firstName);
@@ -71,14 +85,19 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
       // Récupérer la signature existante
       final currentState = state;
       Uint8List? signature;
+      bool notificationsEnabled = true;
+      bool isDeliveryManager = false;
       if (currentState is PreferencesLoaded) {
         signature = currentState.signature;
+        notificationsEnabled = currentState.notificationsEnabled;
+        isDeliveryManager = currentState.isDeliveryManager;
       }
 
-
       // Charger les préférences mises à jour
-      final signatureBase64 = await getUserPreferenceUseCase.execute('signature');
-      final lastGenerationDateString = await getUserPreferenceUseCase.execute('lastGenerationDate');
+      final signatureBase64 =
+          await getUserPreferenceUseCase.execute('signature');
+      final lastGenerationDateString =
+          await getUserPreferenceUseCase.execute('lastGenerationDate');
       final lastGenerationDate = lastGenerationDateString != null
           ? DateTime.parse(lastGenerationDateString)
           : null;
@@ -89,15 +108,17 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
         signatureBase64: signatureBase64,
         lastGenerationDate: lastGenerationDate,
         signature: signature,
-        notificationsEnabled: currentState is PreferencesLoaded ? currentState.notificationsEnabled : true,
-
+        notificationsEnabled: notificationsEnabled,
+        isDeliveryManager: isDeliveryManager,
       ));
     } catch (e) {
       print(e);
       emit(PreferencesError(e.toString()));
     }
   }
-  Future<void> _onSaveSignature(SaveSignature event, Emitter<PreferencesState> emit) async {
+
+  Future<void> _onSaveSignature(
+      SaveSignature event, Emitter<PreferencesState> emit) async {
     emit(PreferencesLoading());
     try {
       // Encodez la signature en base64 pour le stockage
@@ -107,9 +128,11 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
       await setUserPreferenceUseCase.execute('signature', signatureBase64);
 
       // Récupérez les autres préférences actuelles
-      final firstName = await getUserPreferenceUseCase.execute('firstName') ?? '';
+      final firstName =
+          await getUserPreferenceUseCase.execute('firstName') ?? '';
       final lastName = await getUserPreferenceUseCase.execute('lastName') ?? '';
-      final lastGenerationDateString = await getUserPreferenceUseCase.execute('lastGenerationDate');
+      final lastGenerationDateString =
+          await getUserPreferenceUseCase.execute('lastGenerationDate');
       final lastGenerationDate = lastGenerationDateString != null
           ? DateTime.parse(lastGenerationDateString)
           : null;
@@ -119,15 +142,22 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
       emit(PreferencesLoaded(
         firstName: firstName,
         lastName: lastName,
-        signature: event.signature, // Utilisez la signature non encodée pour l'état
+        signature: event.signature,
+        // Utilisez la signature non encodée pour l'état
         lastGenerationDate: lastGenerationDate,
-        notificationsEnabled: state is PreferencesLoaded ? (state as PreferencesLoaded).notificationsEnabled : true,
+        notificationsEnabled: state is PreferencesLoaded
+            ? (state as PreferencesLoaded).notificationsEnabled
+            : true,
+        isDeliveryManager: state is PreferencesLoaded
+            ? (state as PreferencesLoaded).isDeliveryManager
+            : false,
       ));
     } catch (e) {
       print('Erreur lors de la sauvegarde de la signature: $e');
       emit(PreferencesError(e.toString()));
     }
   }
+
   Future<Uint8List?> getCurrentSignature() async {
     final currentState = state;
     if (currentState is PreferencesLoaded) {
@@ -144,37 +174,35 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
     return null;
   }
 
-
   Future<void> _onSaveLastGenerationDate(
-      SaveLastGenerationDate event,
-      Emitter<PreferencesState> emit,
-      ) async {
+    SaveLastGenerationDate event,
+    Emitter<PreferencesState> emit,
+  ) async {
     if (state is PreferencesLoaded) {
       final currentState = state as PreferencesLoaded;
       try {
         await setUserPreferenceUseCase.execute(
-            'lastGenerationDate',
-            event.date.toIso8601String()
-        );
+            'lastGenerationDate', event.date.toIso8601String());
         emit(PreferencesLoaded(
           firstName: currentState.firstName,
           lastName: currentState.lastName,
           signature: currentState.signature,
           lastGenerationDate: event.date,
           notificationsEnabled: currentState.notificationsEnabled,
+          isDeliveryManager: currentState.isDeliveryManager,
         ));
       } catch (e) {
         print(e);
-        emit(PreferencesError('Erreur lors de la sauvegarde de la date de dernière génération: $e'));
+        emit(PreferencesError(
+            'Erreur lors de la sauvegarde de la date de dernière génération: $e'));
       }
     }
   }
 
-
   Future<void> _onToggleNotifications(
-      ToggleNotifications event,
-      Emitter<PreferencesState> emit,
-      ) async {
+    ToggleNotifications event,
+    Emitter<PreferencesState> emit,
+  ) async {
     if (state is PreferencesLoaded) {
       final currentState = state as PreferencesLoaded;
       try {
@@ -188,10 +216,39 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
           signature: currentState.signature,
           lastGenerationDate: currentState.lastGenerationDate,
           notificationsEnabled: event.enabled,
+          isDeliveryManager: currentState.isDeliveryManager,
         ));
       } catch (e) {
         print(e);
-        emit(PreferencesError('Erreur lors de la modification des paramètres de notification: $e'));
+        emit(PreferencesError(
+            'Erreur lors de la modification des paramètres de notification: $e'));
+      }
+    }
+  }
+
+  Future<void> _onToggleDeliveryManager(
+    ToggleDeliveryManager event,
+    Emitter<PreferencesState> emit,
+  ) async {
+    if (state is PreferencesLoaded) {
+      final currentState = state as PreferencesLoaded;
+      try {
+        await setUserPreferenceUseCase.execute(
+          'isDeliveryManager',
+          event.enabled.toString(),
+        );
+        emit(PreferencesLoaded(
+          firstName: currentState.firstName,
+          lastName: currentState.lastName,
+          signature: currentState.signature,
+          lastGenerationDate: currentState.lastGenerationDate,
+          notificationsEnabled: currentState.notificationsEnabled,
+          isDeliveryManager: event.enabled,
+        ));
+      } catch (e) {
+        print(e);
+        emit(PreferencesError(
+            'Erreur lors de la modification des paramètres de notification: $e'));
       }
     }
   }
