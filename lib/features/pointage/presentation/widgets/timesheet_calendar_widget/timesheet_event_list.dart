@@ -94,7 +94,7 @@ class TimesheetEventList extends StatelessWidget {
     if (entry.startMorning.isNotEmpty && entry.endAfternoon.isNotEmpty) {
       return "${entry.startMorning} - ${entry.endAfternoon}";
     } else {
-      return "Pas de travail";
+      return "${entry.absenceReason}";
     }
   }
 

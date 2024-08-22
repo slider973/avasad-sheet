@@ -58,7 +58,7 @@ class PointageAbsenceBouton extends StatelessWidget {
                         type = newValue!;
                       });
                     },
-                    items: ['Congés', 'Maladie']
+                    items: ['Congés', 'Maladie', 'Jour férié']
                         .map<DropdownMenuItem<String>>((String value) {
                       return DropdownMenuItem<String>(
                         value: value,

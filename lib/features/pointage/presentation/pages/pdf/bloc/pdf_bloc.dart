@@ -521,7 +521,6 @@ bool _isWeekday(String dateString) {
 
 Future<String> signPdf(String filePath, Uint8List signature) async {
   final file = File(filePath);
-  final pdfBytes = await file.readAsBytes();
   final pdfDocument = pw.Document();
 
   final signatureImage = pw.MemoryImage(signature);

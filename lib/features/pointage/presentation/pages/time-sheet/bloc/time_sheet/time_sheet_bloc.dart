@@ -261,7 +261,7 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
           final entry =
               await getTodayTimesheetEntryUseCase.execute(formattedDate);
           print(event.type);
-          if (event.type == 'Congés') {
+          if (event.type == 'Congés' || event.type == 'Jour férié') {
             absenceReason = event.type;
           } else {
             absenceReason = "${event.type}: ${event.raison}";

@@ -164,7 +164,7 @@ class _PreferencesFormState extends State<PreferencesForm> {
   Widget _buildGenereLeTimeSheetDuMois() {
     return Column(
       children: [
-        _buildButton('Générer le timesheet du mois', () {
+        _buildButton('Générer les heures de timesheet pour le mois', () {
           context
               .read<TimeSheetBloc>()
               .add(const GenerateMonthlyTimesheetEvent());
