@@ -11,15 +11,18 @@ class PointagePage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.teal,
         title: const Text('Pointage'),
         elevation: 0,
       ),
       backgroundColor: Colors.teal[50],
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            PointageWidget(selectedDate: DateTime.now()),
-          ],
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              PointageWidget(selectedDate: DateTime.now()),
+            ],
+          ),
         ),
       ),
     );

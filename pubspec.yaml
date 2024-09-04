@@ -44,6 +44,7 @@ dependencies:
   get_it: ^7.7.0
   isar: ^3.1.0+1
   sentry_flutter: ^8.3.0
+  syncfusion_flutter_calendar: ^26.2.10
 
 
 
@@ -64,7 +65,7 @@ dependencies:
   process_run: ^1.0.0+1
   file_picker: ^8.0.6
   flutter_local_notifications: ^17.2.1+2
-  timezone: ^0.9.4
+  timezone: ^0.9.3
   flutter_timezone: ^2.1.0
   win32: ^5.5.1
   ffi: ^2.1.2

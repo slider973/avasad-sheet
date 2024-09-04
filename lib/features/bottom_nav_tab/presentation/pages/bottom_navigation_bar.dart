@@ -29,7 +29,8 @@ class _BottomNavigationBarPageState extends State<BottomNavigationBarPage> {
   }
   @override
   Widget build(BuildContext context) {
-    return Scaffold(body: BlocBuilder<BottomNavigationBarBloc, int>(
+    return Scaffold(
+        body: BlocBuilder<BottomNavigationBarBloc, int>(
       builder: (context, currentIndex) {
         Widget currentScreen;
         switch (currentIndex) {
