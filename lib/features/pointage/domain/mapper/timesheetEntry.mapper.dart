@@ -13,6 +13,7 @@ class TimesheetEntryMapper {
       startAfternoon: model.startAfternoon,
       endAfternoon: model.endAfternoon,
       absenceReason: model.absenceReason,
+      period: model.period,
     );
   }
 
@@ -25,6 +26,7 @@ class TimesheetEntryMapper {
       startAfternoon: entity.startAfternoon,
       endAfternoon: entity.endAfternoon,
       absenceReason: entity.absenceReason ?? '',
+      period: entity.period ?? '',
     );
     if (entity.id != null) {
       model.id = entity.id!;

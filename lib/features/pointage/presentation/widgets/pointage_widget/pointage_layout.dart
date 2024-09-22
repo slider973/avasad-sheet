@@ -5,7 +5,6 @@ import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widge
 import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_list.dart';
 import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_remove_timesheet_day.dart';
 
-import '../../../domain/entities/timesheet_entry.dart';
 import 'pointage_header.dart';
 import 'pointage_timer.dart';
 
@@ -17,7 +16,7 @@ class PointageLayout extends StatelessWidget {
   final List<Map<String, dynamic>> pointages;
   final VoidCallback onActionPointage;
   final Function(Map<String, dynamic>) onModifierPointage;
-  final Function(DateTime, DateTime, String, String) onSignalerAbsencePeriode;
+  final Function(DateTime, DateTime, String, String, String?) onSignalerAbsencePeriode;
   final VoidCallback onDeleteEntry;
   final Duration totalDayHours;
   final String monthlyHoursStatus;
@@ -29,7 +28,7 @@ class PointageLayout extends StatelessWidget {
   final Duration overtimeHours;
 
   const PointageLayout({
-    Key? key,
+    super.key,
     required this.etatActuel,
     required this.dernierPointage,
     required this.progression,
@@ -43,7 +42,7 @@ class PointageLayout extends StatelessWidget {
     this.absenceReason,
     required this.onDeleteEntry,
     required this.totalBreakTime, required this.weeklyWorkTime, required this.weeklyTarget, required this.remainingVacationDays, required this.overtimeHours
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -101,6 +100,7 @@ class PointageLayout extends StatelessWidget {
             PointageAbsenceBouton(
               etatActuel: etatActuel,
               onSignalerAbsencePeriode: onSignalerAbsencePeriode,
+              selectedDate: selectedDate,
             ),
             const SizedBox(height: 10),
             PointageRemoveTimesheetDay(
@@ -128,12 +128,12 @@ class PointageLayout extends StatelessWidget {
   Widget _buildWeeklySummary() {
     return Card(
       child: Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Résumé hebdomadaire', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            SizedBox(height: 8),
+            const Text('Résumé hebdomadaire', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
             LinearProgressIndicator(
               value: weeklyTarget.inMinutes > 0
                   ? (weeklyWorkTime.inMinutes / weeklyTarget.inMinutes).clamp(0.0, 1.0)
@@ -141,7 +141,7 @@ class PointageLayout extends StatelessWidget {
               backgroundColor: Colors.grey[200],
               valueColor: const AlwaysStoppedAnimation<Color>(Colors.teal),
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text('${_formatDuration(weeklyWorkTime)} / ${_formatDuration(weeklyTarget)}'),
           ],
         ),
@@ -152,12 +152,12 @@ class PointageLayout extends StatelessWidget {
   Widget _buildAdditionalInfo() {
     return Card(
       child: Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Informations complémentaires', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            SizedBox(height: 8),
+            const Text('Informations complémentaires', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
             Text('Heures supplémentaires: ${_formatDuration(overtimeHours)}'),
             Text('Jours de congés restants: $remainingVacationDays'),
           ],

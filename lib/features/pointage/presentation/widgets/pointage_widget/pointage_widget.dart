@@ -245,10 +245,14 @@ class _PointageWidgetState extends State<PointageWidget>
   }
 
   void _signalerAbsencePeriode(
-      DateTime dateDebut, DateTime dateFin, String type, String raison) {
+      DateTime dateDebut, DateTime dateFin, String type, String raison, String? periode) {
     final bloc = context.read<TimeSheetBloc>();
     bloc.add(
-        TimeSheetSignalerAbsencePeriodeEvent(dateDebut, dateFin, type, raison));
+        TimeSheetSignalerAbsencePeriodeEvent(dateDebut, dateFin, type, raison, periode));
+
+    // Optionnel : Log pour le débogage
+    print('Absence signalée : du ${dateDebut.toString().substring(0, 10)} au ${dateFin.toString().substring(0, 10)}');
+    print('Type: $type, Raison: $raison, Période: $periode');
   }
 
   void _deleteEntry(TimesheetEntry entry) {

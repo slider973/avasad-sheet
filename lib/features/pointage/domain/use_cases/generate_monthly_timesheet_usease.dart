@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:intl/intl.dart';
+import '../../../../enum/absence_period.dart';
 import '../entities/timesheet_entry.dart';
 import '../repositories/timesheet_repository.dart';
 
@@ -79,6 +80,7 @@ class GenerateMonthlyTimesheetUseCase {
       endMorning: DateFormat('HH:mm').format(lunchStart),
       startAfternoon: DateFormat('HH:mm').format(lunchEnd),
       endAfternoon: DateFormat('HH:mm').format(endTime),
+      period: AbsencePeriod.fullDay.value,
     );
   }
 }

@@ -13,6 +13,7 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:time_sheet/features/pointage/domain/entities/work_day.dart';
 import 'package:time_sheet/features/pointage/domain/repositories/timesheet_repository.dart';
 
+import '../../../../../../enum/absence_period.dart';
 import '../../../../../../services/logger_service.dart';
 import '../../../../../preference/domain/entities/user.dart';
 import '../../../../../preference/domain/use_cases/get_signature_usecase.dart';
@@ -168,13 +169,14 @@ Future<File> generatePdf(
     signatureImage = pw.Image(pw.MemoryImage(user.signature!));
   }
 
-  final totalDays = weeks.fold(
-      0,
-      (sum, week) =>
-          sum +
-          week.workday
-              .where((day) => day.calculateTotalHours().inMinutes > 0)
-              .length);
+  double totalDays = weeks.fold(0.0, (sum, week) => sum + week.workday.fold(0.0, (daySum, day) {
+    if (day.entry.period == AbsencePeriod.halfDay.value) {
+      return daySum + 0.5;
+    } else if (!day.isAbsence()) {
+      return daySum + 1;
+    }
+    return daySum;
+  }));
   final totalHours = weeks.fold(
       Duration.zero, (sum, week) => sum + week.calculateTotalWeekHours());
 
@@ -307,7 +309,12 @@ pw.TableRow _buildTableHeader() {
 }
 
 pw.TableRow _buildDayRow(Workday day, bool isWeekday) {
+  bool isHalfDayAbsence = day.entry.period == AbsencePeriod.halfDay.value;
+  bool isFullDayAbsence = day.isAbsence() && !isHalfDayAbsence;
+  Duration workDuration = day.calculateTotalHours();
+  String formattedDuration = isFullDayAbsence ? '0h00' : _formatDuration(workDuration);
 
+  String daysWorked = isFullDayAbsence ? '0' : (isHalfDayAbsence ? '0.5' : '1');
   return pw.TableRow(
     children: [
       pw.Center(
@@ -337,16 +344,14 @@ pw.TableRow _buildDayRow(Workday day, bool isWeekday) {
               style: const pw.TextStyle(fontSize: 6))),
       pw.Center(
           child: pw.Text(
-              day.isAbsence()
-                  ? '0:00'
-                  : _formatDuration(day.calculateTotalHours()),
+              formattedDuration,
               style: const pw.TextStyle(fontSize: 6))),
       pw.Center(child: pw.Text('', style: const pw.TextStyle(fontSize: 6))),
       pw.Center(
           child: pw.Text(day.entry.absenceReason ?? '',
               style: const pw.TextStyle(fontSize: 6))),
       pw.Center(
-          child: pw.Text(day.isAbsence() ? '0' : '1',
+          child: pw.Text(daysWorked,
               style: const pw.TextStyle(fontSize: 6))),
     ]
         .map((widget) =>
@@ -356,7 +361,17 @@ pw.TableRow _buildDayRow(Workday day, bool isWeekday) {
 }
 
 pw.TableRow _buildWeekTotal(WorkWeek week) {
-  int daysWorked = week.workday.where((day) => !day.isAbsence()).length;
+  double daysWorked = week.workday.fold(0.0, (sum, day) {
+    if (day.entry.period == AbsencePeriod.halfDay.value) {
+      return sum + 0.5;
+    } else if (!day.isAbsence()) {
+      return sum + 1;
+    }
+    return sum;
+  });
+  String formattedDaysWorked = daysWorked.truncateToDouble() == daysWorked
+      ? daysWorked.toStringAsFixed(0)
+      : daysWorked.toStringAsFixed(1);
   return pw.TableRow(
     decoration: const pw.BoxDecoration(color: PdfColors.grey200),
     children: [
@@ -373,9 +388,8 @@ pw.TableRow _buildWeekTotal(WorkWeek week) {
       pw.Text(''),
       pw.Text(''),
       pw.Center(
-          child: pw.Text('$daysWorked jour${daysWorked > 1 ? 's' : ''}',
-              style:
-              pw.TextStyle(fontSize: 6, fontWeight: pw.FontWeight.bold))),
+          child: pw.Text('$formattedDaysWorked jour${daysWorked > 1 ? 's' : ''}',
+              style: pw.TextStyle(fontSize: 6, fontWeight: pw.FontWeight.bold))),
     ]
         .map((widget) =>
             pw.Padding(padding: const pw.EdgeInsets.all(5), child: widget))
@@ -383,7 +397,10 @@ pw.TableRow _buildWeekTotal(WorkWeek week) {
   );
 }
 
-pw.Widget _buildMonthTotal(Duration totalHours, int totalDays) {
+pw.Widget _buildMonthTotal(Duration totalHours, double totalDays) {
+  String formattedTotalDays = totalDays.truncateToDouble() == totalDays
+      ? totalDays.toStringAsFixed(0)
+      : totalDays.toStringAsFixed(1);
   return pw.Container(
     color: totalRowColor,
     margin: const pw.EdgeInsets.only(top: 10),
@@ -402,7 +419,7 @@ pw.Widget _buildMonthTotal(Duration totalHours, int totalDays) {
           children: [
             pw.Text('Jours travaillés:',
                 style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
-            pw.Text('$totalDays',
+            pw.Text(formattedTotalDays,
                 style: pw.TextStyle(fontSize: 15, fontWeight: pw.FontWeight.bold)),
           ],
         ),

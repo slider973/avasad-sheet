@@ -9,6 +9,7 @@ class TimesheetCalendarHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppBar(
       title: Text(title),
+      backgroundColor: Theme.of(context).primaryColor,
     );
   }
 }

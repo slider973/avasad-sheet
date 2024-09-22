@@ -1,6 +1,8 @@
 import 'package:intl/intl.dart';
 import 'package:time_sheet/features/pointage/domain/entities/timesheet_entry.dart';
 
+import '../../../../enum/absence_period.dart';
+
 class Workday {
   TimesheetEntry entry;
   bool isEnabled = true;
@@ -23,8 +25,8 @@ class Workday {
   }
 
   Duration calculateTotalHours() {
-    if (entry.absenceReason != null && entry.absenceReason!.isNotEmpty) {
-      // Si c'est une absence, retourner une durée de 0
+    // Si c'est une absence complète, retourner une durée de 0
+    if (entry.absenceReason != null && entry.absenceReason!.isNotEmpty && entry.period == AbsencePeriod.fullDay.value) {
       return Duration.zero;
     }
     // Parse start and end times to DateTime
@@ -34,17 +36,22 @@ class Workday {
     DateTime? endAfternoon = _parseTime(entry.endAfternoon);
 
     Duration totalDuration = Duration.zero;
-
-    // Calculate morning duration if both start and end times are available
-    if (startMorning != null && endMorning != null) {
-      totalDuration += endMorning.difference(startMorning);
+    // Si c'est une demi-journée, calculer seulement pour la partie travaillée
+    if (entry.period == AbsencePeriod.halfDay.value) {
+      if (startMorning != null && endMorning != null) {
+        totalDuration += endMorning.difference(startMorning);
+      } else if (startAfternoon != null && endAfternoon != null) {
+        totalDuration += endAfternoon.difference(startAfternoon);
+      }
+    } else {
+      // Pour une journée complète ou si le period n'est pas spécifié, calculer pour toute la journée
+      if (startMorning != null && endMorning != null) {
+        totalDuration += endMorning.difference(startMorning);
+      }
+      if (startAfternoon != null && endAfternoon != null) {
+        totalDuration += endAfternoon.difference(startAfternoon);
+      }
     }
-
-    // Calculate afternoon duration if both start and end times are available
-    if (startAfternoon != null && endAfternoon != null) {
-      totalDuration += endAfternoon.difference(startAfternoon);
-    }
-
     return totalDuration;
   }
 

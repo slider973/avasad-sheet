@@ -9,6 +9,7 @@ class TimesheetEntry {
   String startAfternoon;
   String endAfternoon;
   final String? absenceReason;
+  final String? period;
 
   TimesheetEntry({this.id,
     required this.dayDate,
@@ -17,12 +18,13 @@ class TimesheetEntry {
     required this.endMorning,
     required this.startAfternoon,
     required this.endAfternoon,
-    this.absenceReason
+    this.absenceReason,
+    this.period
   });
 
   @override
   String toString() {
-    return 'TimesheetEntry{id: $id, dayDate: $dayDate, dayOfWeekDate: $dayOfWeekDate, startMorning: $startMorning, endMorning: $endMorning, startAfternoon: $startAfternoon, endAfternoon: $endAfternoon, absenceReason: $absenceReason}';
+    return 'TimesheetEntry{id: $id, dayDate: $dayDate, dayOfWeekDate: $dayOfWeekDate, startMorning: $startMorning, endMorning: $endMorning, startAfternoon: $startAfternoon, endAfternoon: $endAfternoon, absenceReason: $absenceReason, period: $period}';
   }
 
   String get currentState {
@@ -116,6 +118,7 @@ class TimesheetEntry {
     String? startAfternoon,
     String? endAfternoon,
     String? absenceReason,
+    String? period,
   }) {
     return TimesheetEntry(
       id: id ?? this.id,
@@ -126,6 +129,7 @@ class TimesheetEntry {
       startAfternoon: startAfternoon ?? this.startAfternoon,
       endAfternoon: endAfternoon ?? this.endAfternoon,
       absenceReason: absenceReason ?? this.absenceReason,
+      period: period ?? this.period,
 
     );
   }

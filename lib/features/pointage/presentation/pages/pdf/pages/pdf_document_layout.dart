@@ -23,6 +23,7 @@ class PdfDocumentLayout extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Gérer les PDFs'),
+        backgroundColor: Theme.of(context).primaryColor,
         elevation: 0,
       ),
       body: Column(

@@ -101,7 +101,7 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
     if (state is TimeSheetDataState) {
       TimesheetEntry currentEntry = (state as TimeSheetDataState).entry;
       final remainingVacationDays =
-      await getRemainingVacationDaysUseCase.execute();
+          await getRemainingVacationDaysUseCase.execute();
       TimesheetEntry updatedEntry = TimesheetEntry(
         id: currentEntry.id,
         dayDate: currentEntry.dayDate,
@@ -114,7 +114,8 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
 
       final id = await saveTimesheetEntryUseCase.execute(updatedEntry);
       updatedEntry = updatedEntry.copyWith(id: id);
-      emit(TimeSheetDataState(updatedEntry, remainingVacationDays: remainingVacationDays));
+      emit(TimeSheetDataState(updatedEntry,
+          remainingVacationDays: remainingVacationDays));
     } else {
       print('non implémenté');
     }
@@ -124,7 +125,7 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
     if (state is TimeSheetDataState) {
       TimesheetEntry currentEntry = (state as TimeSheetDataState).entry;
       final remainingVacationDays =
-      await getRemainingVacationDaysUseCase.execute();
+          await getRemainingVacationDaysUseCase.execute();
       TimesheetEntry updatedEntry = TimesheetEntry(
         dayDate: currentEntry.dayDate,
         dayOfWeekDate: currentEntry.dayOfWeekDate,
@@ -135,7 +136,8 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
         id: currentEntry.id,
       );
       await saveTimesheetEntryUseCase.execute(updatedEntry);
-      emit(TimeSheetDataState(updatedEntry, remainingVacationDays: remainingVacationDays));
+      emit(TimeSheetDataState(updatedEntry,
+          remainingVacationDays: remainingVacationDays));
     } else {
       print('non implémenté');
     }
@@ -145,7 +147,7 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
     if (state is TimeSheetDataState) {
       TimesheetEntry currentEntry = (state as TimeSheetDataState).entry;
       final remainingVacationDays =
-      await getRemainingVacationDaysUseCase.execute();
+          await getRemainingVacationDaysUseCase.execute();
       TimesheetEntry updatedEntry = TimesheetEntry(
         id: currentEntry.id,
         dayDate: currentEntry.dayDate,
@@ -157,7 +159,8 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
       );
       updatedEntry.id = currentEntry.id;
       await saveTimesheetEntryUseCase.execute(updatedEntry);
-      emit(TimeSheetDataState(updatedEntry, remainingVacationDays: remainingVacationDays));
+      emit(TimeSheetDataState(updatedEntry,
+          remainingVacationDays: remainingVacationDays));
     } else {
       print('non implémenté');
     }
@@ -167,7 +170,7 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
     if (state is TimeSheetDataState) {
       TimesheetEntry currentEntry = (state as TimeSheetDataState).entry;
       final remainingVacationDays =
-      await getRemainingVacationDaysUseCase.execute();
+          await getRemainingVacationDaysUseCase.execute();
       TimesheetEntry updatedEntry = TimesheetEntry(
         id: currentEntry.id,
         dayDate: currentEntry.dayDate,
@@ -178,7 +181,8 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
         endAfternoon: currentEntry.endAfternoon,
       );
       await saveTimesheetEntryUseCase.execute(updatedEntry);
-      emit(TimeSheetDataState(updatedEntry, remainingVacationDays: remainingVacationDays));
+      emit(TimeSheetDataState(updatedEntry,
+          remainingVacationDays: remainingVacationDays));
     } else {
       print('non implémenté');
     }
@@ -189,15 +193,17 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
     if (state is TimeSheetDataState) {
       final currentEntry = (state as TimeSheetDataState).entry;
       final remainingVacationDays =
-      await getRemainingVacationDaysUseCase.execute();
+          await getRemainingVacationDaysUseCase.execute();
       await deleteTimesheetEntryUsecase.execute(currentEntry);
-      emit(TimeSheetDataState(currentEntry.copyWith(
-        startMorning: '',
-        endMorning: '',
-        startAfternoon: '',
-        endAfternoon: '',
-        absenceReason: '',
-      ), remainingVacationDays: remainingVacationDays));
+      emit(TimeSheetDataState(
+          currentEntry.copyWith(
+            startMorning: '',
+            endMorning: '',
+            startAfternoon: '',
+            endAfternoon: '',
+            absenceReason: '',
+          ),
+          remainingVacationDays: remainingVacationDays));
     }
   }
 
@@ -205,18 +211,21 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
       LoadTimeSheetDataEvent event, Emitter<TimeSheetState> emit) async {
     final entry = await getTodayTimesheetEntryUseCase.execute(event.dateStr);
     final remainingVacationDays =
-    await getRemainingVacationDaysUseCase.execute();
+        await getRemainingVacationDaysUseCase.execute();
     if (entry != null) {
-      emit(TimeSheetDataState(entry, remainingVacationDays: remainingVacationDays));
+      emit(TimeSheetDataState(entry,
+          remainingVacationDays: remainingVacationDays));
     } else {
-      emit(TimeSheetDataState(TimesheetEntry(
-        dayDate: DateFormat("dd-MMM-yy").format(DateTime.now()),
-        dayOfWeekDate: DateFormat.EEEE().format(DateTime.now()),
-        startMorning: '',
-        endMorning: '',
-        startAfternoon: '',
-        endAfternoon: '',
-      ), remainingVacationDays: remainingVacationDays));
+      emit(TimeSheetDataState(
+          TimesheetEntry(
+            dayDate: DateFormat("dd-MMM-yy").format(DateTime.now()),
+            dayOfWeekDate: DateFormat.EEEE().format(DateTime.now()),
+            startMorning: '',
+            endMorning: '',
+            startAfternoon: '',
+            endAfternoon: '',
+          ),
+          remainingVacationDays: remainingVacationDays));
     }
   }
 
@@ -224,7 +233,8 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
       UpdateTimeSheetDataEvent event, Emitter<TimeSheetState> emit) async {
     final remainingVacationDays =
         await getRemainingVacationDaysUseCase.execute();
-    emit(TimeSheetDataState(event.entry, remainingVacationDays: remainingVacationDays));
+    emit(TimeSheetDataState(event.entry,
+        remainingVacationDays: remainingVacationDays));
   }
 
   Future<void> _generateMonthlyTimesheet(
@@ -233,7 +243,6 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
   ) async {
     emit(TimeSheetLoading());
     try {
-
       await generateMonthlyTimesheetUseCase.execute();
       final currentDate = DateTime.now();
       preferencesBloc.add(SaveLastGenerationDate(currentDate));
@@ -267,11 +276,8 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
             absenceReason = "${event.type}: ${event.raison}";
           }
           final updatedEntry = entry?.copyWith(
-                absenceReason:  absenceReason,
-                startMorning: '',
-                endMorning: '',
-                startAfternoon: '',
-                endAfternoon: '',
+                absenceReason: absenceReason,
+                period: event.period,
               ) ??
               TimesheetEntry(
                 dayDate: formattedDate,
@@ -281,6 +287,7 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
                 startAfternoon: '',
                 endAfternoon: '',
                 absenceReason: absenceReason,
+                period: event.period,
               );
 
           await saveTimesheetEntryUseCase.execute(updatedEntry);
@@ -345,6 +352,7 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
       emit(TimeSheetErrorState(e.toString()));
     }
   }
+
   Future<bool> hasCheckedInForDate(DateTime date) async {
     final formattedDate = DateFormat("dd-MMM-yy").format(date);
     final entry = await getTodayTimesheetEntryUseCase.execute(formattedDate);

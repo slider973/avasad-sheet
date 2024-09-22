@@ -43,13 +43,18 @@ const TimeSheetEntryModelSchema = CollectionSchema(
       name: r'endMorning',
       type: IsarType.string,
     ),
-    r'startAfternoon': PropertySchema(
+    r'period': PropertySchema(
       id: 5,
+      name: r'period',
+      type: IsarType.string,
+    ),
+    r'startAfternoon': PropertySchema(
+      id: 6,
       name: r'startAfternoon',
       type: IsarType.string,
     ),
     r'startMorning': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'startMorning',
       type: IsarType.string,
     )
@@ -78,6 +83,7 @@ int _timeSheetEntryModelEstimateSize(
   bytesCount += 3 + object.dayOfWeekDate.length * 3;
   bytesCount += 3 + object.endAfternoon.length * 3;
   bytesCount += 3 + object.endMorning.length * 3;
+  bytesCount += 3 + object.period.length * 3;
   bytesCount += 3 + object.startAfternoon.length * 3;
   bytesCount += 3 + object.startMorning.length * 3;
   return bytesCount;
@@ -94,8 +100,9 @@ void _timeSheetEntryModelSerialize(
   writer.writeString(offsets[2], object.dayOfWeekDate);
   writer.writeString(offsets[3], object.endAfternoon);
   writer.writeString(offsets[4], object.endMorning);
-  writer.writeString(offsets[5], object.startAfternoon);
-  writer.writeString(offsets[6], object.startMorning);
+  writer.writeString(offsets[5], object.period);
+  writer.writeString(offsets[6], object.startAfternoon);
+  writer.writeString(offsets[7], object.startMorning);
 }
 
 TimeSheetEntryModel _timeSheetEntryModelDeserialize(
@@ -110,8 +117,9 @@ TimeSheetEntryModel _timeSheetEntryModelDeserialize(
     dayOfWeekDate: reader.readString(offsets[2]),
     endAfternoon: reader.readStringOrNull(offsets[3]) ?? '',
     endMorning: reader.readStringOrNull(offsets[4]) ?? '',
-    startAfternoon: reader.readStringOrNull(offsets[5]) ?? '',
-    startMorning: reader.readStringOrNull(offsets[6]) ?? '',
+    period: reader.readStringOrNull(offsets[5]) ?? '',
+    startAfternoon: reader.readStringOrNull(offsets[6]) ?? '',
+    startMorning: reader.readStringOrNull(offsets[7]) ?? '',
   );
   object.id = id;
   return object;
@@ -137,6 +145,8 @@ P _timeSheetEntryModelDeserializeProp<P>(
     case 5:
       return (reader.readStringOrNull(offset) ?? '') as P;
     case 6:
+      return (reader.readStringOrNull(offset) ?? '') as P;
+    case 7:
       return (reader.readStringOrNull(offset) ?? '') as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -896,6 +906,142 @@ extension TimeSheetEntryModelQueryFilter on QueryBuilder<TimeSheetEntryModel,
   }
 
   QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterFilterCondition>
+      periodEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'period',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterFilterCondition>
+      periodGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'period',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterFilterCondition>
+      periodLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'period',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterFilterCondition>
+      periodBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'period',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterFilterCondition>
+      periodStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'period',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterFilterCondition>
+      periodEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'period',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterFilterCondition>
+      periodContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'period',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterFilterCondition>
+      periodMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'period',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterFilterCondition>
+      periodIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'period',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterFilterCondition>
+      periodIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'period',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterFilterCondition>
       startAfternoonEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -1247,6 +1393,20 @@ extension TimeSheetEntryModelQuerySortBy
   }
 
   QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterSortBy>
+      sortByPeriod() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'period', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterSortBy>
+      sortByPeriodDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'period', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterSortBy>
       sortByStartAfternoon() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'startAfternoon', Sort.asc);
@@ -1362,6 +1522,20 @@ extension TimeSheetEntryModelQuerySortThenBy
   }
 
   QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterSortBy>
+      thenByPeriod() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'period', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterSortBy>
+      thenByPeriodDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'period', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterSortBy>
       thenByStartAfternoon() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'startAfternoon', Sort.asc);
@@ -1430,6 +1604,13 @@ extension TimeSheetEntryModelQueryWhereDistinct
   }
 
   QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QDistinct>
+      distinctByPeriod({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'period', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QDistinct>
       distinctByStartAfternoon({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'startAfternoon',
@@ -1485,6 +1666,12 @@ extension TimeSheetEntryModelQueryProperty
       endMorningProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'endMorning');
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, String, QQueryOperations> periodProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'period');
     });
   }
 

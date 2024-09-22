@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -18,7 +19,7 @@ import 'package:window_manager/window_manager.dart';
 
 void main() async {
   logger.i('main');
- WidgetsFlutterBinding.ensureInitialized();
+  WidgetsFlutterBinding.ensureInitialized();
   await _configureLocalTimeZone();
   await initializeDateFormatting('fr_CH', null);
   // Must add this line.
@@ -41,10 +42,7 @@ void main() async {
 
   await di.setup();
 
-
-
   initializeDateFormatting().then((_) => runApp(const MyApp()));
-
 }
 
 Future<void> configWindows() async {
@@ -63,10 +61,7 @@ Future<void> configWindows() async {
     await windowManager.show();
     await windowManager.focus();
   });
-
 }
-
-
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -75,14 +70,22 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ServiceFactory(
-        child: MaterialApp(
-      title: 'Planet Time ',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
-        useMaterial3: false,
+      child: MaterialApp(
+        title: 'Planet Time Sheet ',
+          locale: const Locale('fr', 'CH'),
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
+          primaryColor: Colors.teal,
+          useMaterial3: false,
+        ),
+        home: const BottomNavigationBarPage(),
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
       ),
-      home: const BottomNavigationBarPage(),
-    ));
+    );
   }
 }
 

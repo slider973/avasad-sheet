@@ -44,8 +44,7 @@ class TimesheetEventList extends StatelessWidget {
     IconData eventIcon;
     String eventTitle;
 
-    if (event.entry.startMorning.isEmpty && event.entry.endMorning.isEmpty &&
-        event.entry.startAfternoon.isEmpty && event.entry.endAfternoon.isEmpty) {
+    if (event.isAbsence) {
       cardColor = Colors.orange.shade100.withOpacity(0.7);
       eventIcon = Icons.event_busy;
       eventTitle = "Absence";
@@ -73,16 +72,16 @@ class TimesheetEventList extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(
                     eventTitle,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 18),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
               Text(
-                _formatTimeRange(event.entry),
+                _formatTimeRange(event.entry, isAbsence: event.isAbsence),
                 style: const TextStyle(fontSize: 16, color: Colors.black87),
               ),
-
             ],
           ),
         ),
@@ -90,9 +89,9 @@ class TimesheetEventList extends StatelessWidget {
     );
   }
 
-  String _formatTimeRange(TimesheetEntry entry) {
-    if (entry.startMorning.isNotEmpty && entry.endAfternoon.isNotEmpty) {
-      return "${entry.startMorning} - ${entry.endAfternoon}";
+  String _formatTimeRange(TimesheetEntry entry, {bool isAbsence = false}) {
+    if (!isAbsence) {
+      return "${entry.startMorning} - ${entry.endAfternoon.isEmpty ? entry.endMorning : entry.endAfternoon }";
     } else {
       return "${entry.absenceReason}";
     }
@@ -157,7 +156,11 @@ class TimesheetEventList extends StatelessWidget {
         .push(
       MaterialPageRoute(
         builder: (context) => Scaffold(
-          appBar: AppBar(title: const Text('Nouveau pointage')),
+          appBar: AppBar(
+            title: const Text('Nouveau pointage'),
+            backgroundColor: Theme.of(context).primaryColor,
+            elevation: 0,
+          ),
           body: PointageWidget(
             entry: newEntry,
             selectedDate: selectedDay,
@@ -166,7 +169,7 @@ class TimesheetEventList extends StatelessWidget {
       ),
     )
         .then(
-          (value) {
+      (value) {
         onEventsUpdated();
       },
     );

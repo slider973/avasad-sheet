@@ -92,8 +92,9 @@ class TimeSheetSignalerAbsencePeriodeEvent extends TimeSheetEvent {
   final DateTime dateFin;
   final String type; // 'Vacances' ou 'Maladie'
   final String raison;
+  final String? period;
 
-  const TimeSheetSignalerAbsencePeriodeEvent(this.dateDebut, this.dateFin, this.type, this.raison);
+  const TimeSheetSignalerAbsencePeriodeEvent(this.dateDebut, this.dateFin, this.type, this.raison, this.period);
 
   @override
   List<Object> get props => [dateDebut, dateFin, type, raison];

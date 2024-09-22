@@ -13,7 +13,7 @@ class PointageAbsence extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     bool isVacation =
-        absenceReason?.toLowerCase().contains('Congés') ?? false;
+        absenceReason?.toLowerCase().contains('congés') ?? false;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,

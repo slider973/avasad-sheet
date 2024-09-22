@@ -11,7 +11,7 @@ class PointagePage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.teal,
+        backgroundColor: Theme.of(context).primaryColor,
         title: const Text('Pointage'),
         elevation: 0,
       ),

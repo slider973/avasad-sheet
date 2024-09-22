@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
+import '../../../../../enum/absence_period.dart';
 import '../../../domain/entities/timesheet_entry.dart';
 import '../../pages/time-sheet/bloc/time_sheet_list/time_sheet_list_bloc.dart';
 import '../pointage_widget/pointage_widget.dart';
@@ -18,7 +19,8 @@ class TimesheetCalendarWidget extends StatefulWidget {
   const TimesheetCalendarWidget({super.key});
 
   @override
-  _TimesheetCalendarWidgetState createState() => _TimesheetCalendarWidgetState();
+  _TimesheetCalendarWidgetState createState() =>
+      _TimesheetCalendarWidgetState();
 }
 
 class _TimesheetCalendarWidgetState extends State<TimesheetCalendarWidget> {
@@ -104,7 +106,8 @@ class _TimesheetCalendarWidgetState extends State<TimesheetCalendarWidget> {
 
   void _onEventTap(TimesheetEntry entry) {
     final dateFormat = DateFormat('dd-MMM-yy', 'en_US');
-    Navigator.of(context).push(
+    Navigator.of(context)
+        .push(
       MaterialPageRoute(
         builder: (context) => Scaffold(
           appBar: AppBar(title: const Text('Détails du pointage')),
@@ -116,8 +119,9 @@ class _TimesheetCalendarWidgetState extends State<TimesheetCalendarWidget> {
           ),
         ),
       ),
-    ).then(
-          (value) {
+    )
+        .then(
+      (value) {
         _loadEvents();
       },
     );
@@ -127,18 +131,61 @@ class _TimesheetCalendarWidgetState extends State<TimesheetCalendarWidget> {
     return _events[day] ?? [];
   }
 
-  LinkedHashMap<DateTime, List<Event>> _groupEntries(List<TimesheetEntry> entries) {
-    LinkedHashMap<DateTime, List<Event>> map = LinkedHashMap<DateTime, List<Event>>(
+  LinkedHashMap<DateTime, List<Event>> _groupEntries(
+      List<TimesheetEntry> entries) {
+    LinkedHashMap<DateTime, List<Event>> map =
+        LinkedHashMap<DateTime, List<Event>>(
       equals: isSameDay,
       hashCode: getHashCode,
     );
     for (var entry in entries) {
       final dateStrToDate = DateFormat("dd-MMM-yy").parse(entry.dayDate);
-      final date = DateTime(dateStrToDate.year, dateStrToDate.month, dateStrToDate.day);
+      final date =
+          DateTime(dateStrToDate.year, dateStrToDate.month, dateStrToDate.day);
       if (map[date] == null) map[date] = [];
-      bool isAbsence = entry.startMorning.isEmpty && entry.endMorning.isEmpty &&
-          entry.startAfternoon.isEmpty && entry.endAfternoon.isEmpty;
-      map[date]!.add(Event(entry, isAbsence: isAbsence));
+      bool isAbsence = entry.startMorning.isEmpty &&
+          entry.endMorning.isEmpty &&
+          entry.startAfternoon.isEmpty &&
+          entry.endAfternoon.isEmpty;
+
+      bool hasAbsencePeriodHalfDay =
+          entry.period == AbsencePeriod.halfDay.value;
+
+      if (isAbsence || hasAbsencePeriodHalfDay) {
+        // C'est une absence
+        if (entry.period == AbsencePeriod.fullDay.value) {
+          map[date]!.add(Event(entry, isAbsence: true));
+        } else if (entry.period == AbsencePeriod.halfDay.value) {
+          // Pour une demi-journée d'absence, on crée deux événements
+          bool isMorningAbsence =
+              entry.startMorning.isEmpty && entry.endMorning.isEmpty;
+
+          if (isMorningAbsence) {
+            map[date]!.add(Event(
+                entry.copyWith(
+                  startMorning: '',
+                  endMorning: '',
+                  startAfternoon: '',
+                  endAfternoon: '',
+                ),
+                isAbsence: true));
+
+            map[date]!.add(Event(entry.copyWith(
+              startMorning: '',
+              endMorning: '',
+            )));
+          } else {
+            map[date]!.add(Event(entry, isAbsence: false));
+
+            map[date]!.add(Event(
+                entry,
+                isAbsence: true));
+          }
+        }
+      } else {
+        // C'est une journée travaillée (complète ou partielle)
+        map[date]!.add(Event(entry));
+      }
     }
     return map;
   }

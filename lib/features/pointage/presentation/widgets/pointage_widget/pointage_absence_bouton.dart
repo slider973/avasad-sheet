@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
 
-class PointageAbsenceBouton extends StatelessWidget {
-  final Function(DateTime, DateTime, String, String) onSignalerAbsencePeriode;
-  final String etatActuel;
+import '../../../../../enum/absence_motif.dart';
+import '../../../../../enum/absence_period.dart';
 
-  const PointageAbsenceBouton({
-    Key? key,
+class PointageAbsenceBouton extends StatelessWidget {
+  final Function(DateTime, DateTime, String, String, String?) onSignalerAbsencePeriode;
+  final String etatActuel;
+  final DateTime selectedDate;
+
+   PointageAbsenceBouton({
+    super.key,
     required this.onSignalerAbsencePeriode,
     required this.etatActuel,
-  }) : super(key: key);
+    required this.selectedDate
+  });
 
   @override
   Widget build(BuildContext context) {
+    bool canChangePeriod = selectedDate == selectedDate;
     if (etatActuel == 'Sortie') {
       return const SizedBox.shrink();
     }
@@ -19,7 +25,7 @@ class PointageAbsenceBouton extends StatelessWidget {
       width: 320,
       height: 40,
       child: ElevatedButton(
-        onPressed: () => _showAbsencePeriodeDialog(context),
+        onPressed: () => _showAbsencePeriodeDialog(context, canChangePeriod),
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.orange,
           elevation: 0,
@@ -35,11 +41,12 @@ class PointageAbsenceBouton extends StatelessWidget {
     );
   }
 
-  void _showAbsencePeriodeDialog(BuildContext context) {
-    DateTime dateDebut = DateTime.now();
-    DateTime dateFin = DateTime.now();
-    String type = 'Congés';
+  void _showAbsencePeriodeDialog(BuildContext context, bool canChangePeriod) {
+    DateTime dateDebut = selectedDate;
+    DateTime dateFin = selectedDate;
+    AbsenceMotif type = AbsenceMotif.publicHoliday;
     String raison = '';
+    AbsencePeriod? periode = AbsencePeriod.fullDay;
 
     showDialog(
       context: context,
@@ -51,18 +58,18 @@ class PointageAbsenceBouton extends StatelessWidget {
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  DropdownButton<String>(
+                  DropdownButton<AbsenceMotif>(
                     value: type,
-                    onChanged: (String? newValue) {
+                    onChanged: (AbsenceMotif? newValue) {
                       setState(() {
                         type = newValue!;
                       });
                     },
-                    items: ['Congés', 'Maladie', 'Jour férié']
-                        .map<DropdownMenuItem<String>>((String value) {
-                      return DropdownMenuItem<String>(
+                    items: AbsenceMotif.values
+                        .map<DropdownMenuItem<AbsenceMotif>>((AbsenceMotif value) {
+                      return DropdownMenuItem<AbsenceMotif>(
                         value: value,
-                        child: Text(value),
+                        child: Text(value.value),
                       );
                     }).toList(),
                   ),
@@ -70,11 +77,17 @@ class PointageAbsenceBouton extends StatelessWidget {
                     onPressed: () async {
                       final picked = await showDateRangePicker(
                         context: context,
+                        initialDateRange: DateTimeRange(
+                          start: dateDebut,
+                          end: dateFin,
+                        ),
+                        locale: const Locale('fr', 'FR'),
                         firstDate: DateTime(2000),
                         lastDate: DateTime(2101),
                       );
                       if (picked != null) {
                         setState(() {
+                          canChangePeriod = picked.start == picked.end;
                           dateDebut = picked.start;
                           dateFin = picked.end;
                         });
@@ -83,6 +96,21 @@ class PointageAbsenceBouton extends StatelessWidget {
                     child: Text(
                         'Période: ${dateDebut.toString().substring(0, 10)} - ${dateFin.toString().substring(0, 10)}'),
                   ),
+                  if(canChangePeriod && type != AbsenceMotif.publicHoliday)
+                    DropdownButton<AbsencePeriod>(
+                      value: periode,
+                      onChanged: (AbsencePeriod? newValue) {
+                        setState(() {
+                          periode = newValue!;
+                        });
+                      },
+                      items: AbsencePeriod.values.map<DropdownMenuItem<AbsencePeriod>>((AbsencePeriod value) {
+                        return DropdownMenuItem<AbsencePeriod>(
+                          value: value,
+                          child: Text(value.value),
+                        );
+                      }).toList(),
+                    ),
                   TextField(
                     onChanged: (value) {
                       setState(() {
@@ -90,7 +118,7 @@ class PointageAbsenceBouton extends StatelessWidget {
                       });
                     },
                     decoration:
-                        const InputDecoration(hintText: "Motif de l'absence"),
+                    const InputDecoration(hintText: "Motif de l'absence"),
                   ),
                 ],
               ),
@@ -102,7 +130,7 @@ class PointageAbsenceBouton extends StatelessWidget {
                 TextButton(
                   child: const Text('Confirmer'),
                   onPressed: () {
-                    onSignalerAbsencePeriode(dateDebut, dateFin, type, raison);
+                    onSignalerAbsencePeriode(dateDebut, dateFin, type.value, raison, periode?.value);
                     Navigator.of(context).pop();
                   },
                 ),
