@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_remove_timesheet_day.dart';
 
+import '../../../../../enum/absence_motif.dart';
+
 class PointageAbsence extends StatelessWidget {
   final String? absenceReason;
   final VoidCallback onDeleteEntry;
@@ -13,7 +15,7 @@ class PointageAbsence extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     bool isVacation =
-        absenceReason?.toLowerCase().contains('congés') ?? false;
+        absenceReason?.toLowerCase().contains(AbsenceMotif.leaveDay.value) ?? false;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,

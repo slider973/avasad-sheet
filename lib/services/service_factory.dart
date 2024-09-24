@@ -10,6 +10,7 @@ import '../features/pointage/domain/use_cases/generate_monthly_timesheet_usease.
 import '../features/pointage/domain/use_cases/get_overtime_hours_usecase.dart';
 import '../features/pointage/domain/use_cases/get_remaining_vacation_days_usecase.dart';
 import '../features/pointage/domain/use_cases/get_weekly_work_time_usecase.dart';
+import '../features/pointage/domain/use_cases/signaler_absence_periode_usecase.dart';
 import '../features/preference/domain/use_cases/get_signature_usecase.dart';
 import '../features/preference/domain/use_cases/get_user_preference_use_case.dart';
 import '../features/preference/domain/use_cases/set_user_preference_use_case.dart';
@@ -52,7 +53,7 @@ class ServiceFactory extends StatelessWidget {
                   getWeeklyWorkTimeUseCase: getIt<GetWeeklyWorkTimeUseCase>(),
                   getRemainingVacationDaysUseCase:
                       getIt<GetRemainingVacationDaysUseCase>(),
-                  getOvertimeHoursUseCase: getIt<GetOvertimeHoursUseCase>())),
+                  getOvertimeHoursUseCase: getIt<GetOvertimeHoursUseCase>(), signalerAbsencePeriodeUsecase: getIt<SignalerAbsencePeriodeUsecase>())),
           BlocProvider<TimeSheetListBloc>(
             create: (context) => TimeSheetListBloc(
               findPointedListUseCase: getIt<FindPointedListUseCase>(),

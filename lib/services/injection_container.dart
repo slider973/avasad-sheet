@@ -9,6 +9,7 @@ import '../features/pointage/domain/use_cases/generate_monthly_timesheet_usease.
 import '../features/pointage/domain/use_cases/get_overtime_hours_usecase.dart';
 import '../features/pointage/domain/use_cases/get_remaining_vacation_days_usecase.dart';
 import '../features/pointage/domain/use_cases/get_weekly_work_time_usecase.dart';
+import '../features/pointage/domain/use_cases/signaler_absence_periode_usecase.dart';
 import '../features/preference/data/models/user_preference.dart';
 import '../features/preference/data/repositories/user_preference_repository.impl.dart';
 import 'backup.dart';
@@ -105,6 +106,10 @@ Future<void> setup() async {
   getIt.registerLazySingleton<SetUserPreferenceUseCase>(() => SetUserPreferenceUseCase(getIt<UserPreferencesRepositoryImpl>()));
   getIt.registerLazySingleton<GetSignatureUseCase>(() => GetSignatureUseCase(getIt<UserPreferencesRepositoryImpl>()));
   getIt.registerLazySingleton<GetTodayTimesheetEntryUseCase>(() => GetTodayTimesheetEntryUseCase(getIt<TimesheetRepositoryImpl>()));
+  getIt.registerLazySingleton<SignalerAbsencePeriodeUsecase>(() => SignalerAbsencePeriodeUsecase(
+    getTodayTimesheetEntryUseCase: getIt<GetTodayTimesheetEntryUseCase>(),
+    saveTimesheetEntryUseCase: getIt<SaveTimesheetEntryUseCase>(),
+  ));
   getIt.registerLazySingleton<GenerateMonthlyTimesheetUseCase>(() => GenerateMonthlyTimesheetUseCase(getIt<TimesheetRepositoryImpl>()));
   getIt.registerLazySingleton<GetRemainingVacationDaysUseCase>(() => GetRemainingVacationDaysUseCase(getIt<TimesheetRepositoryImpl>()));
   getIt.registerLazySingleton<GetWeeklyWorkTimeUseCase>(() => GetWeeklyWorkTimeUseCase(getIt<TimesheetRepositoryImpl>()));

@@ -6,6 +6,7 @@ abstract class TimeSheetEvent extends Equatable {
 
 class TimeSheetInitialEvent extends TimeSheetEvent {
   const TimeSheetInitialEvent();
+
   @override
   List<Object> get props => [];
 }
@@ -21,21 +22,27 @@ class TimeSheetEnterEvent extends TimeSheetEvent {
 
 class TimeSheetOutEvent extends TimeSheetEvent {
   final DateTime endTime;
+
   const TimeSheetOutEvent(this.endTime);
+
   @override
   List<Object> get props => [endTime];
 }
 
 class TimeSheetStartBreakEvent extends TimeSheetEvent {
   final DateTime startBreakTime;
+
   const TimeSheetStartBreakEvent(this.startBreakTime);
+
   @override
   List<Object> get props => [startBreakTime];
 }
 
 class TimeSheetEndBreakEvent extends TimeSheetEvent {
   final DateTime endBreakTime;
+
   const TimeSheetEndBreakEvent(this.endBreakTime);
+
   @override
   List<Object> get props => [endBreakTime];
 }
@@ -49,10 +56,11 @@ class GetTimesheetEntriesForWeekEvent extends TimeSheetEvent {
   List<Object> get props => [weekNumber];
 }
 
-
 class LoadTimeSheetDataEvent extends TimeSheetEvent {
   final String dateStr;
+
   const LoadTimeSheetDataEvent(this.dateStr);
+
   @override
   List<Object> get props => [dateStr];
 }
@@ -69,6 +77,7 @@ class TimeSheetUpdatePointageEvent extends TimeSheetEvent {
 
 class UpdateTimeSheetDataEvent extends TimeSheetEvent {
   final TimesheetEntry entry;
+
   const UpdateTimeSheetDataEvent(this.entry);
 
   @override
@@ -81,20 +90,25 @@ class GenerateMonthlyTimesheetEvent extends TimeSheetEvent {
   @override
   List<Object> get props => [];
 }
+
 class CheckGenerationStatusEvent extends TimeSheetEvent {
   const CheckGenerationStatusEvent();
 
   @override
   List<Object> get props => [];
 }
+
 class TimeSheetSignalerAbsencePeriodeEvent extends TimeSheetEvent {
   final DateTime dateDebut;
   final DateTime dateFin;
   final String type; // 'Vacances' ou 'Maladie'
   final String raison;
   final String? period;
+  final TimeOfDay? startTime;
+  final TimeOfDay? endTime;
 
-  const TimeSheetSignalerAbsencePeriodeEvent(this.dateDebut, this.dateFin, this.type, this.raison, this.period);
+  const TimeSheetSignalerAbsencePeriodeEvent(this.dateDebut, this.dateFin,
+      this.type, this.raison, this.period, this.startTime, this.endTime);
 
   @override
   List<Object> get props => [dateDebut, dateFin, type, raison];
@@ -102,6 +116,7 @@ class TimeSheetSignalerAbsencePeriodeEvent extends TimeSheetEvent {
 
 class TimeSheetDeleteEntryEvent extends TimeSheetEvent {
   final int entryId;
+
   const TimeSheetDeleteEntryEvent(this.entryId);
 
   @override
@@ -116,6 +131,7 @@ class CalculateWeeklyDataEvent extends TimeSheetEvent {
   @override
   List<Object> get props => [selectedDate];
 }
+
 class LoadVacationDaysEvent extends TimeSheetEvent {
   @override
   List<Object?> get props => [];

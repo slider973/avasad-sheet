@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:time_sheet/features/pointage/domain/use_cases/delete_timesheet_entry_usecase.dart';
 
@@ -12,6 +13,7 @@ import '../../../../../domain/use_cases/get_overtime_hours_usecase.dart';
 import '../../../../../domain/use_cases/get_remaining_vacation_days_usecase.dart';
 import '../../../../../domain/use_cases/get_today_timesheet_entry_use_case.dart';
 import '../../../../../domain/use_cases/get_weekly_work_time_usecase.dart';
+import '../../../../../domain/use_cases/signaler_absence_periode_usecase.dart';
 import '../../../../../domain/use_cases/save_timesheet_entry_usecase.dart';
 
 part 'time_sheet_event.dart';
@@ -27,6 +29,7 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
   final GetWeeklyWorkTimeUseCase getWeeklyWorkTimeUseCase;
   final GetRemainingVacationDaysUseCase getRemainingVacationDaysUseCase;
   final GetOvertimeHoursUseCase getOvertimeHoursUseCase;
+  final SignalerAbsencePeriodeUsecase signalerAbsencePeriodeUsecase;
 
   TimeSheetBloc({
     required this.saveTimesheetEntryUseCase,
@@ -37,6 +40,7 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
     required this.getWeeklyWorkTimeUseCase,
     required this.getRemainingVacationDaysUseCase,
     required this.getOvertimeHoursUseCase,
+    required this.signalerAbsencePeriodeUsecase,
   }) : super(TimeSheetInitial()) {
     on<TimeSheetEnterEvent>(_updateEnter);
     on<TimeSheetStartBreakEvent>(_updateStartBreak);
@@ -256,45 +260,7 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
       Emitter<TimeSheetState> emit) async {
     emit(TimeSheetLoading());
     try {
-      DateTime currentDate = DateTime.utc(
-          event.dateDebut.year, event.dateDebut.month, event.dateDebut.day);
-      DateTime endDate = DateTime.utc(
-          event.dateFin.year, event.dateFin.month, event.dateFin.day);
-
-      while (currentDate.isBefore(endDate.add(Duration(days: 1)))) {
-        // Vérifier si le jour actuel est un jour de semaine (lundi à vendredi)
-        if (currentDate.weekday >= DateTime.monday &&
-            currentDate.weekday <= DateTime.friday) {
-          final formattedDate = DateFormat("dd-MMM-yy").format(currentDate);
-          String absenceReason;
-          final entry =
-              await getTodayTimesheetEntryUseCase.execute(formattedDate);
-          print(event.type);
-          if (event.type == 'Congés' || event.type == 'Jour férié') {
-            absenceReason = event.type;
-          } else {
-            absenceReason = "${event.type}: ${event.raison}";
-          }
-          final updatedEntry = entry?.copyWith(
-                absenceReason: absenceReason,
-                period: event.period,
-              ) ??
-              TimesheetEntry(
-                dayDate: formattedDate,
-                dayOfWeekDate: DateFormat.EEEE().format(currentDate),
-                startMorning: '',
-                endMorning: '',
-                startAfternoon: '',
-                endAfternoon: '',
-                absenceReason: absenceReason,
-                period: event.period,
-              );
-
-          await saveTimesheetEntryUseCase.execute(updatedEntry);
-        }
-        currentDate = currentDate.add(Duration(days: 1));
-      }
-
+      signalerAbsencePeriodeUsecase.execute(event);
       emit(TimeSheetAbsenceSignalee());
     } catch (e) {
       emit(TimeSheetErrorState(e.toString()));

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import '../../../../../enum/absence_period.dart';
 import '../../../domain/entities/timesheet_entry.dart';
 import '../../pages/time-sheet/bloc/time_sheet/time_sheet_bloc.dart';
 import 'events.dart';
@@ -91,12 +92,33 @@ class TimesheetEventList extends StatelessWidget {
 
   String _formatTimeRange(TimesheetEntry entry, {bool isAbsence = false}) {
     if (!isAbsence) {
-      return "${entry.startMorning} - ${entry.endAfternoon.isEmpty ? entry.endMorning : entry.endAfternoon }";
+      if (entry.startMorning.isNotEmpty && entry.endAfternoon.isNotEmpty) {
+        // Journée complète de travail
+        return "${entry.startMorning} - ${entry.endAfternoon}";
+      } else if (entry.startMorning.isNotEmpty && entry.endMorning.isNotEmpty) {
+        // Travail le matin seulement
+        return "${entry.startMorning} - ${entry.endMorning}";
+      } else if (entry.startAfternoon.isNotEmpty && entry.endAfternoon.isNotEmpty) {
+        // Travail l'après-midi seulement
+        return "${entry.startAfternoon} - ${entry.endAfternoon}";
+      } else {
+        // Au cas où aucune heure n'est définie
+        return "Heures non définies";
+      }
     } else {
-      return "${entry.absenceReason}";
+      if (entry.period == "Demi journée") {
+        if (entry.startMorning.isNotEmpty && entry.endMorning.isNotEmpty) {
+          return "${entry.absenceReason} (Matin: ${entry.startMorning} - ${entry.endMorning})";
+        } else if (entry.startAfternoon.isNotEmpty && entry.endAfternoon.isNotEmpty) {
+          return "${entry.absenceReason} (Après-midi: ${entry.startAfternoon} - ${entry.endAfternoon})";
+        } else {
+          return "${entry.absenceReason} (Demi-journée)";
+        }
+      } else {
+        return "${entry.absenceReason} (Journée complète)";
+      }
     }
   }
-
   Widget _buildAvatars() {
     return Row(
       mainAxisSize: MainAxisSize.min,

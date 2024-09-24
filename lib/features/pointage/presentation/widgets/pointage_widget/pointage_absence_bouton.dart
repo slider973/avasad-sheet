@@ -1,31 +1,30 @@
 import 'package:flutter/material.dart';
 
-import '../../../../../enum/absence_motif.dart';
-import '../../../../../enum/absence_period.dart';
+import 'pointage_absence_bouton_form.dart';
 
 class PointageAbsenceBouton extends StatelessWidget {
-  final Function(DateTime, DateTime, String, String, String?) onSignalerAbsencePeriode;
+  final Function(DateTime, DateTime, String, String, String, TimeOfDay?, TimeOfDay?) onSignalerAbsencePeriode;
   final String etatActuel;
   final DateTime selectedDate;
 
-   PointageAbsenceBouton({
-    super.key,
+  const PointageAbsenceBouton({
+    Key? key,
     required this.onSignalerAbsencePeriode,
     required this.etatActuel,
     required this.selectedDate
-  });
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    bool canChangePeriod = selectedDate == selectedDate;
     if (etatActuel == 'Sortie') {
       return const SizedBox.shrink();
     }
+
     return SizedBox(
       width: 320,
       height: 40,
       child: ElevatedButton(
-        onPressed: () => _showAbsencePeriodeDialog(context, canChangePeriod),
+        onPressed: () => _showAbsenceBottomSheet(context),
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.orange,
           elevation: 0,
@@ -41,104 +40,30 @@ class PointageAbsenceBouton extends StatelessWidget {
     );
   }
 
-  void _showAbsencePeriodeDialog(BuildContext context, bool canChangePeriod) {
-    DateTime dateDebut = selectedDate;
-    DateTime dateFin = selectedDate;
-    AbsenceMotif type = AbsenceMotif.publicHoliday;
-    String raison = '';
-    AbsencePeriod? periode = AbsencePeriod.fullDay;
-
-    showDialog(
+  void _showAbsenceBottomSheet(BuildContext context) {
+    showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      constraints: const BoxConstraints(
+        maxWidth: 600,
+        maxHeight: 700,
+      ),
       builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: const Text('Signaler une absence'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  DropdownButton<AbsenceMotif>(
-                    value: type,
-                    onChanged: (AbsenceMotif? newValue) {
-                      setState(() {
-                        type = newValue!;
-                      });
-                    },
-                    items: AbsenceMotif.values
-                        .map<DropdownMenuItem<AbsenceMotif>>((AbsenceMotif value) {
-                      return DropdownMenuItem<AbsenceMotif>(
-                        value: value,
-                        child: Text(value.value),
-                      );
-                    }).toList(),
-                  ),
-                  TextButton(
-                    onPressed: () async {
-                      final picked = await showDateRangePicker(
-                        context: context,
-                        initialDateRange: DateTimeRange(
-                          start: dateDebut,
-                          end: dateFin,
-                        ),
-                        locale: const Locale('fr', 'FR'),
-                        firstDate: DateTime(2000),
-                        lastDate: DateTime(2101),
-                      );
-                      if (picked != null) {
-                        setState(() {
-                          canChangePeriod = picked.start == picked.end;
-                          dateDebut = picked.start;
-                          dateFin = picked.end;
-                        });
-                      }
-                    },
-                    child: Text(
-                        'Période: ${dateDebut.toString().substring(0, 10)} - ${dateFin.toString().substring(0, 10)}'),
-                  ),
-                  if(canChangePeriod && type != AbsenceMotif.publicHoliday)
-                    DropdownButton<AbsencePeriod>(
-                      value: periode,
-                      onChanged: (AbsencePeriod? newValue) {
-                        setState(() {
-                          periode = newValue!;
-                        });
-                      },
-                      items: AbsencePeriod.values.map<DropdownMenuItem<AbsencePeriod>>((AbsencePeriod value) {
-                        return DropdownMenuItem<AbsencePeriod>(
-                          value: value,
-                          child: Text(value.value),
-                        );
-                      }).toList(),
-                    ),
-                  TextField(
-                    onChanged: (value) {
-                      setState(() {
-                        raison = value;
-                      });
-                    },
-                    decoration:
-                    const InputDecoration(hintText: "Motif de l'absence"),
-                  ),
-                ],
-              ),
-              actions: <Widget>[
-                TextButton(
-                  child: const Text('Annuler'),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-                TextButton(
-                  child: const Text('Confirmer'),
-                  onPressed: () {
-                    onSignalerAbsencePeriode(dateDebut, dateFin, type.value, raison, periode?.value);
-                    Navigator.of(context).pop();
-                  },
-                ),
-              ],
-            );
-          },
+        return ClipRRect(
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(20), // Arrondir uniquement les coins du haut
+          ),
+          child: Container(
+            color: Colors.white, // Couleur de fond du contenu
+            child: AbsenceForm(
+              selectedDate: selectedDate,
+              onSignalerAbsencePeriode: onSignalerAbsencePeriode,
+            ),
+          ),
         );
       },
     );
   }
 }
+

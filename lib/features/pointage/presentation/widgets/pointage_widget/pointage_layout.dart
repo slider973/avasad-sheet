@@ -16,7 +16,7 @@ class PointageLayout extends StatelessWidget {
   final List<Map<String, dynamic>> pointages;
   final VoidCallback onActionPointage;
   final Function(Map<String, dynamic>) onModifierPointage;
-  final Function(DateTime, DateTime, String, String, String?) onSignalerAbsencePeriode;
+  final Function(DateTime, DateTime, String, String, String, TimeOfDay?, TimeOfDay?) onSignalerAbsencePeriode;
   final VoidCallback onDeleteEntry;
   final Duration totalDayHours;
   final String monthlyHoursStatus;
