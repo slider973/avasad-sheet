@@ -110,7 +110,7 @@ flutter:
     - assets/images/logo-app.png
     - assets/images/logo-sonrysa.png
     - assets/images/undraw_in_no_time_6igu.png
-    - assets/animation/vacance.json
+    - assets/animation/
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see

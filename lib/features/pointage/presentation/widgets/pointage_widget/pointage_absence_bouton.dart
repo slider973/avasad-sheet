@@ -46,8 +46,8 @@ class PointageAbsenceBouton extends StatelessWidget {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       constraints: const BoxConstraints(
-        maxWidth: 600,
-        maxHeight: 700,
+        maxWidth: 450,
+        maxHeight: 800,
       ),
       builder: (BuildContext context) {
         return ClipRRect(

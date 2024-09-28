@@ -72,7 +72,7 @@ class MyApp extends StatelessWidget {
     return ServiceFactory(
       child: MaterialApp(
         title: 'Planet Time Sheet ',
-          locale: const Locale('fr', 'CH'),
+        locale: const Locale('fr', 'CH'),
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
           primaryColor: Colors.teal,

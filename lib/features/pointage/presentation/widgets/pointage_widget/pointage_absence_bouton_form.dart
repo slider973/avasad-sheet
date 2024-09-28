@@ -48,28 +48,31 @@ class _AbsenceFormState extends State<AbsenceForm> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(18.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const SizedBox(height: 16),
-            _buildAbsenceTypeSegmentedButton(),
-            const SizedBox(height: 16),
-            _buildDateRangePicker(),
-            const SizedBox(height: 16),
-            if (canChangePeriod && type != AbsenceMotif.publicHoliday)
-              _buildPeriodSegmentedButton(),
-            if (periode == AbsencePeriod.halfDay && type != AbsenceMotif.publicHoliday) ...[
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(18.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
               const SizedBox(height: 16),
-              _buildTimeRangePicker(),
+              _buildAbsenceTypeSegmentedButton(),
+              const SizedBox(height: 16),
+              _buildDateRangePicker(),
+              const SizedBox(height: 16),
+              if (canChangePeriod && type != AbsenceMotif.publicHoliday)
+                _buildPeriodSegmentedButton(),
+              if (periode == AbsencePeriod.halfDay && type != AbsenceMotif.publicHoliday) ...[
+                const SizedBox(height: 16),
+                _buildTimeRangePicker(),
+              ],
+              const SizedBox(height: 16),
+              if (type != AbsenceMotif.publicHoliday)
+              _buildReasonTextField(),
+              const SizedBox(height: 24),
+              _buildActionButtons(),
             ],
-            const SizedBox(height: 16),
-            _buildReasonTextField(),
-            const SizedBox(height: 24),
-            _buildActionButtons(),
-          ],
+          ),
         ),
       ),
     );
@@ -142,21 +145,6 @@ class _AbsenceFormState extends State<AbsenceForm> {
     );
   }
 
-  Widget _buildHalfDayPeriodSelector() {
-    return SegmentedButton<String>(
-      segments: const [
-        ButtonSegment<String>(value: 'Matin', label: Text('Matin')),
-        ButtonSegment<String>(value: 'Après-midi', label: Text('Après-midi')),
-      ],
-      selected: {halfDayPeriod ?? 'Matin'},
-      onSelectionChanged: (Set<String> newSelection) {
-        setState(() {
-          halfDayPeriod = newSelection.first;
-          _resetTimeRange();
-        });
-      },
-    );
-  }
 
 
   Widget _buildTimeRangePicker() {
@@ -234,16 +222,26 @@ class _AbsenceFormState extends State<AbsenceForm> {
   }
 
   Widget _buildReasonTextField() {
-    return TextField(
-      onChanged: (value) {
-        setState(() {
-          raison = value;
-        });
-      },
-      decoration: const InputDecoration(
-        labelText: "Motif de l'absence",
-        border: OutlineInputBorder(),
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          "Entrez un motif d'absence (Optionnel)",
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 16),
+        TextField(
+          onChanged: (value) {
+            setState(() {
+              raison = value;
+            });
+          },
+          decoration: const InputDecoration(
+            labelText: "Motif de l'absence",
+            border: OutlineInputBorder(),
+          ),
+        ),
+      ],
     );
   }
 

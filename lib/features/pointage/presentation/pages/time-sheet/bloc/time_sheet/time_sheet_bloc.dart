@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
+import 'package:googleapis/cloudsearch/v1.dart';
 import 'package:intl/intl.dart';
 import 'package:time_sheet/features/pointage/domain/use_cases/delete_timesheet_entry_usecase.dart';
 
@@ -209,6 +210,21 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
           ),
           remainingVacationDays: remainingVacationDays));
     }
+    if (state is TimeSheetAbsenceSignalee) {
+      final currentEntry = (state as TimeSheetAbsenceSignalee).entry;
+      final remainingVacationDays =
+          await getRemainingVacationDaysUseCase.execute();
+      await deleteTimesheetEntryUsecase.execute(currentEntry);
+      emit(TimeSheetDataState(
+          currentEntry.copyWith(
+            startMorning: '',
+            endMorning: '',
+            startAfternoon: '',
+            endAfternoon: '',
+            absenceReason: '',
+          ),
+          remainingVacationDays: remainingVacationDays));
+    }
   }
 
   Future<void> _loadDataTimeSheetData(
@@ -260,8 +276,13 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
       Emitter<TimeSheetState> emit) async {
     emit(TimeSheetLoading());
     try {
-      signalerAbsencePeriodeUsecase.execute(event);
-      emit(TimeSheetAbsenceSignalee());
+      final daysOff =  await signalerAbsencePeriodeUsecase.execute(event);
+      final mapTest = daysOff.firstWhere((element) => element.containsKey(DateFormat("dd-MMM-yy").format(event.selectedDay)));
+      print("event.raison ${event.type}");
+      emit(TimeSheetAbsenceSignalee(
+        absenceReason: event.type,
+        entry: mapTest[DateFormat("dd-MMM-yy").format(event.selectedDay)] as TimesheetEntry,
+      ));
     } catch (e) {
       emit(TimeSheetErrorState(e.toString()));
     }

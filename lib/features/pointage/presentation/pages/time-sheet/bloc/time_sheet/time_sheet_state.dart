@@ -13,15 +13,17 @@ class TimeSheetDataState extends TimeSheetState {
   final TimesheetEntry entry;
   final int remainingVacationDays;
 
-   TimeSheetDataState(this.entry, {this.remainingVacationDays = 0});
+  TimeSheetDataState(this.entry, {this.remainingVacationDays = 0});
 
   @override
-  List<Object> get props => [entry , remainingVacationDays];
+  List<Object> get props => [entry, remainingVacationDays];
 }
 
 class TimeSheetErrorState extends TimeSheetState {
   final String message;
+
   const TimeSheetErrorState(this.message);
+
   @override
   List<Object> get props => [message];
 }
@@ -35,14 +37,23 @@ class TimeSheetGenerationCompleted extends TimeSheetState {
   @override
   List<Object> get props => [];
 }
+
 class TimeSheetGenerationAvailable extends TimeSheetState {
   @override
   List<Object> get props => [];
 }
 
 class TimeSheetAbsenceSignalee extends TimeSheetState {
+  final String absenceReason;
+  final TimesheetEntry entry;
+
+  const TimeSheetAbsenceSignalee({
+    required this.absenceReason,
+    required this.entry,
+});
+
   @override
-  List<Object> get props => [];
+  List<Object> get props => [absenceReason, entry];
 }
 
 class TimeSheetWeeklyDataState extends TimeSheetState {
@@ -59,7 +70,8 @@ class TimeSheetWeeklyDataState extends TimeSheetState {
   });
 
   @override
-  List<Object> get props => [entry, weeklyWorkTime, weeklyTarget, overtimeHours];
+  List<Object> get props =>
+      [entry, weeklyWorkTime, weeklyTarget, overtimeHours];
 }
 
 class TimeSheetVacationDataState extends TimeSheetState {
@@ -74,8 +86,3 @@ class TimeSheetVacationDataState extends TimeSheetState {
   @override
   List<Object> get props => [entry, remainingVacationDays];
 }
-
-
-
-
-

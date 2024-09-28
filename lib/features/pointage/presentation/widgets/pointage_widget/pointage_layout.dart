@@ -28,31 +28,36 @@ class PointageLayout extends StatelessWidget {
   final Duration overtimeHours;
 
   const PointageLayout({
-    super.key,
+    Key? key,
     required this.etatActuel,
     required this.dernierPointage,
+    required this.selectedDate,
     required this.progression,
     required this.pointages,
     required this.onActionPointage,
     required this.onModifierPointage,
-    required this.selectedDate,
     required this.onSignalerAbsencePeriode,
+    required this.onDeleteEntry,
     required this.totalDayHours,
     required this.monthlyHoursStatus,
     this.absenceReason,
-    required this.onDeleteEntry,
-    required this.totalBreakTime, required this.weeklyWorkTime, required this.weeklyTarget, required this.remainingVacationDays, required this.overtimeHours
-  });
+    required this.totalBreakTime,
+    required this.weeklyWorkTime,
+    required this.weeklyTarget,
+    required this.remainingVacationDays,
+    required this.overtimeHours,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     if (absenceReason != null && absenceReason!.isNotEmpty) {
       return PointageAbsence(
-        absenceReason: absenceReason,
+        absenceReason: absenceReason!,
         onDeleteEntry: onDeleteEntry,
         etatActuel: etatActuel,
       );
     }
+
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -119,12 +124,6 @@ class PointageLayout extends StatelessWidget {
     );
   }
 
-  String _formatDuration(Duration duration) {
-    String twoDigits(int n) => n.toString().padLeft(2, '0');
-    String hours = twoDigits(duration.inHours);
-    String minutes = twoDigits(duration.inMinutes.remainder(60));
-    return "$hours:$minutes";
-  }
   Widget _buildWeeklySummary() {
     return Card(
       child: Padding(
@@ -164,5 +163,11 @@ class PointageLayout extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, "0");
+    String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
+    return "${twoDigits(duration.inHours)}:$twoDigitMinutes";
   }
 }

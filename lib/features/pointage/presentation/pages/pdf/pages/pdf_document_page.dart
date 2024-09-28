@@ -24,7 +24,6 @@ class _PdfDocumentPageState extends State<PdfDocumentPage> {
   }
 
   @override
-  @override
   Widget build(BuildContext context) {
     return BlocConsumer<PdfBloc, PdfState>(
       listener: (context, state) {
@@ -59,7 +58,7 @@ class _PdfDocumentPageState extends State<PdfDocumentPage> {
                 Text('Erreur: ${(state as dynamic).error}'),
                 ElevatedButton(
                   onPressed: () => context.read<PdfBloc>().add(LoadGeneratedPdfsEvent()),
-                  child: Text('Réessayer'),
+                  child: const Text('Réessayer'),
                 ),
               ],
             ),
@@ -81,14 +80,14 @@ class _PdfDocumentPageState extends State<PdfDocumentPage> {
           content: Text(errorMessage),
           actions: <Widget>[
             TextButton(
-              child: Text('OK'),
+              child: const Text('OK'),
               onPressed: () {
                 Navigator.of(context).pop();
               },
             ),
             if (isPdfGeneration)
               TextButton(
-                child: Text('Réessayer'),
+                child: const Text('Réessayer'),
                 onPressed: () {
                   Navigator.of(context).pop();
                   context.read<PdfBloc>().add(GeneratePdfEvent(DateTime.now().month));

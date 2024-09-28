@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_absence.dart';
 import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_layout.dart';
 
 import '../../../domain/entities/timesheet_entry.dart';
@@ -99,6 +100,21 @@ class _PointageWidgetState extends State<PointageWidget>
     return BlocConsumer<TimeSheetBloc, TimeSheetState>(
       listener: _timeSheetListener,
       builder: (context, state) {
+        if (state is TimeSheetAbsenceSignalee) {
+          print(' abb ${state.absenceReason}');
+          if (state.absenceReason.isNotEmpty) {
+            return PointageAbsence(
+              absenceReason: state.absenceReason,
+              onDeleteEntry: () {
+                if (state.entry != null) {
+                  _deleteEntry(state.entry!);
+                }
+              },
+              etatActuel: _etatActuel,
+            );
+          }
+        }
+
         return PointageLayout(
           etatActuel: _etatActuel,
           dernierPointage: _dernierPointage,
@@ -127,7 +143,7 @@ class _PointageWidgetState extends State<PointageWidget>
   }
 
   void _timeSheetListener(BuildContext context, TimeSheetState state) {
-    print('State: $state');
+    print('State: PointageWidget $state');
     if (state is TimeSheetDataState) {
       setState(() {
         _etatActuel = state.entry.currentState;
@@ -254,7 +270,7 @@ class _PointageWidgetState extends State<PointageWidget>
       TimeOfDay? endTime) {
     final bloc = context.read<TimeSheetBloc>();
     bloc.add(TimeSheetSignalerAbsencePeriodeEvent(
-        dateDebut, dateFin, type, raison, periode, startTime, endTime));
+        dateDebut, dateFin, type, raison, periode, startTime, endTime , widget.selectedDate));
     // Convertir TimeOfDay en String si non null
     String? startTimeStr = startTime?.format(context);
     String? endTimeStr = endTime?.format(context);
