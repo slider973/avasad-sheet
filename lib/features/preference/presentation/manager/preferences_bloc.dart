@@ -3,7 +3,7 @@ import 'dart:typed_data';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:time_sheet/features/preference/domain/use_cases/get_signature_usecase.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../../../services/logger_service.dart';
 import '../../domain/use_cases/get_user_preference_use_case.dart';
@@ -64,6 +64,10 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
           print('Erreur lors du décodage de la signature: $e');
         }
       }
+      // Obtenez les informations de version
+      PackageInfo packageInfo = await PackageInfo.fromPlatform();
+      String versionNumber = packageInfo.version;
+      String buildNumber = packageInfo.buildNumber;
       emit(PreferencesLoaded(
         firstName: firstName,
         lastName: lastName,
@@ -72,6 +76,8 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
         notificationsEnabled: notificationsEnabled == 'true',
         isDeliveryManager: isDeliveryManager == 'true',
         badgeCount: int.tryParse(badgeCountString ?? '0') ?? 0,
+        versionNumber: versionNumber,
+        buildNumber: buildNumber,
 
       ));
     } catch (e) {
@@ -108,6 +114,10 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
           : null;
       final badgeCountString =
           await getUserPreferenceUseCase.execute('badgeCount');
+      // Obtenez les informations de version
+      PackageInfo packageInfo = await PackageInfo.fromPlatform();
+      String versionNumber = packageInfo.version;
+      String buildNumber = packageInfo.buildNumber;
       emit(PreferencesSaved());
       emit(PreferencesLoaded(
         firstName: event.firstName,
@@ -118,6 +128,8 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
         notificationsEnabled: notificationsEnabled,
         isDeliveryManager: isDeliveryManager,
         badgeCount: int.tryParse(badgeCountString ?? '0') ?? 0,
+        versionNumber: versionNumber,
+        buildNumber: buildNumber,
       ));
     } catch (e) {
       print(e);
@@ -149,6 +161,10 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
       // Émettez un état indiquant que la sauvegarde a réussi
       emit(PreferencesSaved());
       // Émettez le nouvel état avec toutes les données à jour
+      // Obtenez les informations de version
+      PackageInfo packageInfo = await PackageInfo.fromPlatform();
+      String versionNumber = packageInfo.version;
+      String buildNumber = packageInfo.buildNumber;
       emit(PreferencesLoaded(
         firstName: firstName,
         lastName: lastName,
@@ -162,6 +178,8 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
             ? (state as PreferencesLoaded).isDeliveryManager
             : false,
         badgeCount: int.tryParse(badgeCountString ?? '0') ?? 0,
+        versionNumber: versionNumber,
+        buildNumber: buildNumber,
       ));
     } catch (e) {
       print('Erreur lors de la sauvegarde de la signature: $e');
@@ -194,6 +212,10 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
       try {
         await setUserPreferenceUseCase.execute(
             'lastGenerationDate', event.date.toIso8601String());
+        // Obtenez les informations de version
+        PackageInfo packageInfo = await PackageInfo.fromPlatform();
+        String versionNumber = packageInfo.version;
+        String buildNumber = packageInfo.buildNumber;
         emit(PreferencesLoaded(
           firstName: currentState.firstName,
           lastName: currentState.lastName,
@@ -202,6 +224,8 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
           notificationsEnabled: currentState.notificationsEnabled,
           isDeliveryManager: currentState.isDeliveryManager,
           badgeCount: currentState.badgeCount,
+          versionNumber: versionNumber,
+          buildNumber: buildNumber,
         ));
       } catch (e) {
         print(e);
@@ -222,6 +246,10 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
           'notificationsEnabled',
           event.enabled.toString(),
         );
+        // Obtenez les informations de version
+        PackageInfo packageInfo = await PackageInfo.fromPlatform();
+        String versionNumber = packageInfo.version;
+        String buildNumber = packageInfo.buildNumber;
         emit(PreferencesLoaded(
           firstName: currentState.firstName,
           lastName: currentState.lastName,
@@ -230,6 +258,8 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
           notificationsEnabled: event.enabled,
           isDeliveryManager: currentState.isDeliveryManager,
           badgeCount: currentState.badgeCount,
+          versionNumber: versionNumber,
+          buildNumber: buildNumber,
         ));
       } catch (e) {
         print(e);
@@ -250,6 +280,10 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
           'isDeliveryManager',
           event.enabled.toString(),
         );
+        // Obtenez les informations de version
+        PackageInfo packageInfo = await PackageInfo.fromPlatform();
+        String versionNumber = packageInfo.version;
+        String buildNumber = packageInfo.buildNumber;
         emit(PreferencesLoaded(
           firstName: currentState.firstName,
           lastName: currentState.lastName,
@@ -258,6 +292,8 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
           notificationsEnabled: currentState.notificationsEnabled,
           isDeliveryManager: event.enabled,
           badgeCount: currentState.badgeCount,
+          versionNumber: versionNumber,
+          buildNumber: buildNumber,
         ));
       } catch (e) {
         print(e);
@@ -278,6 +314,10 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
           'badgeCount',
           event.count.toString(),
         );
+        // Obtenez les informations de version
+        PackageInfo packageInfo = await PackageInfo.fromPlatform();
+        String versionNumber = packageInfo.version;
+        String buildNumber = packageInfo.buildNumber;
         emit(PreferencesLoaded(
           firstName: currentState.firstName,
           lastName: currentState.lastName,
@@ -286,6 +326,8 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
           notificationsEnabled: currentState.notificationsEnabled,
           isDeliveryManager: currentState.isDeliveryManager,
           badgeCount: event.count,
+          versionNumber: versionNumber,
+          buildNumber: buildNumber,
 
         ));
       } catch (e) {

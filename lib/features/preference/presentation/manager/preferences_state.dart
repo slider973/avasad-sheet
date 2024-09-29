@@ -20,6 +20,8 @@ class PreferencesLoaded extends PreferencesState {
   final bool notificationsEnabled;
   final bool isDeliveryManager;
   final int badgeCount;
+  final String versionNumber;
+  final String buildNumber;
 
   PreferencesLoaded({
     required this.firstName,
@@ -30,6 +32,8 @@ class PreferencesLoaded extends PreferencesState {
     required this.notificationsEnabled,
     required this.isDeliveryManager,
     required this.badgeCount,
+    required this.versionNumber,
+    required this.buildNumber,
   });
 
   @override
