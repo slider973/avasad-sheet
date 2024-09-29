@@ -5,17 +5,19 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:googleapis/cloudsearch/v1.dart';
 import 'package:intl/intl.dart';
-import 'package:time_sheet/features/pointage/domain/use_cases/delete_timesheet_entry_usecase.dart';
 
+//use cases
 import '../../../../../../preference/presentation/manager/preferences_bloc.dart';
 import '../../../../../domain/entities/timesheet_entry.dart';
-import '../../../../../domain/use_cases/generate_monthly_timesheet_usease.dart';
-import '../../../../../domain/use_cases/get_overtime_hours_usecase.dart';
-import '../../../../../domain/use_cases/get_remaining_vacation_days_usecase.dart';
-import '../../../../../domain/use_cases/get_today_timesheet_entry_use_case.dart';
-import '../../../../../domain/use_cases/get_weekly_work_time_usecase.dart';
-import '../../../../../domain/use_cases/signaler_absence_periode_usecase.dart';
-import '../../../../../domain/use_cases/save_timesheet_entry_usecase.dart';
+import '../../../../../use_cases/delete_timesheet_entry_usecase.dart';
+import '../../../../../use_cases/generate_monthly_timesheet_usease.dart';
+import '../../../../../use_cases/get_overtime_hours_usecase.dart';
+import '../../../../../use_cases/get_remaining_vacation_days_usecase.dart';
+import '../../../../../use_cases/get_today_timesheet_entry_use_case.dart';
+import '../../../../../use_cases/get_weekly_work_time_usecase.dart';
+import '../../../../../use_cases/save_timesheet_entry_usecase.dart';
+import '../../../../../use_cases/signaler_absence_periode_usecase.dart';
+
 
 part 'time_sheet_event.dart';
 

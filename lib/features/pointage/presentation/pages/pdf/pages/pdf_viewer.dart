@@ -6,7 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:open_file/open_file.dart';
 
-import '../bloc/pdf_bloc.dart';
+import '../bloc/pdf/pdf_bloc.dart';
 
 class PdfViewerPage extends StatelessWidget {
   final String filePath;

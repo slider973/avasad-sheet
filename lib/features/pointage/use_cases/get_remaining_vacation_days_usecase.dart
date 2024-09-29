@@ -1,5 +1,7 @@
-import '../repositories/timesheet_repository.dart';
+
 import 'package:intl/intl.dart';
+
+import '../domain/repositories/timesheet_repository.dart';
 
 class GetRemainingVacationDaysUseCase {
   final TimesheetRepository _repository;

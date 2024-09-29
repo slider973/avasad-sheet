@@ -1,7 +1,9 @@
 import 'package:intl/intl.dart';
 
-import '../entities/timesheet_entry.dart';
-import '../repositories/timesheet_repository.dart';
+import '../domain/entities/timesheet_entry.dart';
+import '../domain/repositories/timesheet_repository.dart';
+
+
 
 class GetTodayTimesheetEntryUseCase {
   final TimesheetRepository repository;

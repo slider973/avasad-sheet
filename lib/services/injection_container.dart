@@ -4,12 +4,19 @@ import 'package:path/path.dart' as path;
 import 'package:get_it/get_it.dart';
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
-import '../features/pointage/domain/use_cases/delete_timesheet_entry_usecase.dart';
-import '../features/pointage/domain/use_cases/generate_monthly_timesheet_usease.dart';
-import '../features/pointage/domain/use_cases/get_overtime_hours_usecase.dart';
-import '../features/pointage/domain/use_cases/get_remaining_vacation_days_usecase.dart';
-import '../features/pointage/domain/use_cases/get_weekly_work_time_usecase.dart';
-import '../features/pointage/domain/use_cases/signaler_absence_periode_usecase.dart';
+
+import '../features/pointage/factory/anomaly_detector_factory.dart';
+import '../features/pointage/use_cases/delete_timesheet_entry_usecase.dart';
+import '../features/pointage/use_cases/detect_anomalies_usecase.dart';
+import '../features/pointage/use_cases/find_pointed_list_usecase.dart';
+import '../features/pointage/use_cases/generate_monthly_timesheet_usease.dart';
+import '../features/pointage/use_cases/get_overtime_hours_usecase.dart';
+import '../features/pointage/use_cases/get_remaining_vacation_days_usecase.dart';
+import '../features/pointage/use_cases/get_today_timesheet_entry_use_case.dart';
+import '../features/pointage/use_cases/get_weekly_work_time_usecase.dart';
+import '../features/pointage/use_cases/insufficient_hours_detector.dart';
+import '../features/pointage/use_cases/save_timesheet_entry_usecase.dart';
+import '../features/pointage/use_cases/signaler_absence_periode_usecase.dart';
 import '../features/preference/data/models/user_preference.dart';
 import '../features/preference/data/repositories/user_preference_repository.impl.dart';
 import 'backup.dart';
@@ -20,9 +27,7 @@ import '../features/pointage/data/data_sources/local.dart';
 import '../features/pointage/data/models/generated_pdf/generated_pdf.dart';
 import '../features/pointage/data/models/timesheet_entry/timesheet_entry.dart';
 import '../features/pointage/data/repositories/timesheet_repository_impl.dart';
-import '../features/pointage/domain/use_cases/find_pointed_list_usecase.dart';
-import '../features/pointage/domain/use_cases/get_today_timesheet_entry_use_case.dart';
-import '../features/pointage/domain/use_cases/save_timesheet_entry_usecase.dart';
+
 
 final getIt = GetIt.instance;
 Future<String> getInstallationPath() async {
@@ -94,6 +99,7 @@ Future<void> setup() async {
     reopenIsarInstance: reopenIsarInstance,
   ));
 
+
   // Initialiser l'instance Isar
   await getIsarInstance();
   getIt.registerLazySingleton<LocalDatasourceImpl>(() => LocalDatasourceImpl(getIt<Isar>()));
@@ -114,5 +120,12 @@ Future<void> setup() async {
   getIt.registerLazySingleton<GetRemainingVacationDaysUseCase>(() => GetRemainingVacationDaysUseCase(getIt<TimesheetRepositoryImpl>()));
   getIt.registerLazySingleton<GetWeeklyWorkTimeUseCase>(() => GetWeeklyWorkTimeUseCase(getIt<TimesheetRepositoryImpl>()));
   getIt.registerLazySingleton<GetOvertimeHoursUseCase>(() => GetOvertimeHoursUseCase());
+  getIt.registerLazySingleton<DetectAnomaliesUseCase>(() {
+    final allDetectors = AnomalyDetectorFactory.getAllDetectors();
+    return DetectAnomaliesUseCase(
+      getIt<TimesheetRepositoryImpl>(),
+      allDetectors.values.toList(),
+    );
+  });
 
 }

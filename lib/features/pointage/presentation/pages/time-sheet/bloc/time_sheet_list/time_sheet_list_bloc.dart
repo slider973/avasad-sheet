@@ -6,7 +6,8 @@ import 'package:equatable/equatable.dart';
 
 import '../../../../../../../services/logger_service.dart';
 import '../../../../../domain/entities/timesheet_entry.dart';
-import '../../../../../domain/use_cases/find_pointed_list_usecase.dart';
+import '../../../../../use_cases/find_pointed_list_usecase.dart';
+
 
 part 'time_sheet_list_event.dart';
 

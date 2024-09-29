@@ -1,8 +1,9 @@
 import 'package:intl/intl.dart';
 
-import '../entities/timesheet_entry.dart';
-import '../entities/work_day.dart';
-import '../entities/work_week.dart';
+import '../domain/entities/timesheet_entry.dart';
+import '../domain/entities/work_day.dart';
+import '../domain/entities/work_week.dart';
+
 
 class OrganizeTimesheetEntriesIntoWeeksUseCase {
  static List<WorkWeek> execute(List<TimesheetEntry> entries) {

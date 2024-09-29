@@ -1,6 +1,8 @@
-import '../entities/timesheet_entry.dart';
-import '../entities/timesheet_organizer.dart';
-import '../entities/work_week.dart';
+
+
+import '../domain/entities/timesheet_entry.dart';
+import '../domain/entities/timesheet_organizer.dart';
+import '../domain/entities/work_week.dart';
 
 class WeekGeneratorUseCase {
   execute(List<TimesheetEntry> timesheetEntryList) {

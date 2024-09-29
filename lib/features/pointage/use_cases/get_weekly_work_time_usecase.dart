@@ -1,5 +1,7 @@
 import 'package:intl/intl.dart';
-import '../repositories/timesheet_repository.dart';
+
+import '../domain/repositories/timesheet_repository.dart';
+
 
 class GetWeeklyWorkTimeUseCase {
   final TimesheetRepository _repository;

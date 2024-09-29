@@ -1,8 +1,9 @@
 import 'dart:math';
 import 'package:intl/intl.dart';
 import '../../../../enum/absence_period.dart';
-import '../entities/timesheet_entry.dart';
-import '../repositories/timesheet_repository.dart';
+import '../domain/entities/timesheet_entry.dart';
+import '../domain/repositories/timesheet_repository.dart';
+
 
 class GenerateMonthlyTimesheetUseCase {
   final TimesheetRepository repository;
