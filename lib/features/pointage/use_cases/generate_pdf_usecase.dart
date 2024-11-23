@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
@@ -40,28 +41,83 @@ class GeneratePdfUseCase {
     }
   }
 
+  // Future<Either<String, String>> _generatePdf(int monthNumber) async {
+  //   final timesheetEntryList =
+  //       await repository.findEntriesFromMonthOf(monthNumber);
+  //   final weeks = WeekGeneratorUseCase().execute(timesheetEntryList);
+  //
+  //   final userEither = await _getUserFromPreferences();
+  //   if (userEither.isLeft()) {
+  //     return Left(userEither.getLeft().getOrElse(() =>
+  //         "Erreur inconnue lors de la récupération des préférences utilisateur"));
+  //   }
+  //   final user = userEither.getRight().getOrElse(() =>
+  //       throw ("Erreur inconnue lors de la récupération des préférences utilisateur"));
+  //
+  //   final pdfFile = await generatePdf(weeks, monthNumber, user);
+  //   final generatedPdf = GeneratedPdfModel(
+  //     fileName: pdfFile.path.split('/').last,
+  //     filePath: pdfFile.path,
+  //     generatedDate: DateTime.now(),
+  //   );
+  //
+  //   await repository.saveGeneratedPdf(generatedPdf);
+  //   return Right(pdfFile.path);
+  // }
+
   Future<Either<String, String>> _generatePdf(int monthNumber) async {
-    final timesheetEntryList =
-        await repository.findEntriesFromMonthOf(monthNumber);
-    final weeks = WeekGeneratorUseCase().execute(timesheetEntryList);
+    debugPrint('🚀 Début de la génération du PDF pour le mois $monthNumber');
+    try {
+      // Récupération des entrées
+      debugPrint('📊 Récupération des entrées du timesheet...');
+      final timesheetEntryList = await repository.findEntriesFromMonthOf(monthNumber);
+      debugPrint('✅ ${timesheetEntryList.length} entrées récupérées');
 
-    final userEither = await _getUserFromPreferences();
-    if (userEither.isLeft()) {
-      return Left(userEither.getLeft().getOrElse(() =>
-          "Erreur inconnue lors de la récupération des préférences utilisateur"));
+      // Génération des semaines
+      debugPrint('📅 Organisation des entrées par semaine...');
+      final weeks = WeekGeneratorUseCase().execute(timesheetEntryList);
+      debugPrint('✅ ${weeks.length} semaines générées');
+
+      // Récupération des préférences utilisateur
+      debugPrint('👤 Récupération des préférences utilisateur...');
+      final userEither = await _getUserFromPreferences();
+
+      if (userEither.isLeft()) {
+        final errorMessage = userEither.getLeft().getOrElse(
+                () => "Erreur inconnue lors de la récupération des préférences utilisateur"
+        );
+        debugPrint('❌ Échec de récupération des préférences: $errorMessage');
+        return Left(errorMessage);
+      }
+
+      final user = userEither.getRight().getOrElse(() {
+        debugPrint('❌ Erreur critique: impossible d\'extraire les données utilisateur');
+        throw "Erreur inconnue lors de la récupération des préférences utilisateur";
+      });
+      debugPrint('✅ Préférences utilisateur récupérées pour: ${user.firstName} ${user.lastName}');
+
+      // Génération du PDF
+      debugPrint('📄 Génération du fichier PDF...');
+      final pdfFile = await generatePdf(weeks, monthNumber, user);
+      debugPrint('✅ PDF généré avec succès: ${pdfFile.path}');
+
+      // Sauvegarde des métadonnées
+      debugPrint('💾 Sauvegarde des métadonnées du PDF...');
+      final generatedPdf = GeneratedPdfModel(
+        fileName: pdfFile.path.split('/').last,
+        filePath: pdfFile.path,
+        generatedDate: DateTime.now(),
+      );
+      await repository.saveGeneratedPdf(generatedPdf);
+      debugPrint('✅ Métadonnées sauvegardées');
+
+      debugPrint('🎉 Génération du PDF terminée avec succès');
+      return Right(pdfFile.path);
+    } catch (e, stackTrace) {
+      debugPrint('❌ Erreur lors de la génération du PDF: $e');
+      debugPrint('📑 Stack trace: $stackTrace');
+      return Left('Erreur lors de la génération du PDF: $e');
     }
-    final user = userEither.getRight().getOrElse(() =>
-        throw ("Erreur inconnue lors de la récupération des préférences utilisateur"));
-
-    final pdfFile = await generatePdf(weeks, monthNumber, user);
-    final generatedPdf = GeneratedPdfModel(
-      fileName: pdfFile.path.split('/').last,
-      filePath: pdfFile.path,
-      generatedDate: DateTime.now(),
-    );
-
-    await repository.saveGeneratedPdf(generatedPdf);
-    return Right(pdfFile.path);
   }
 
   Future<Either<String, User>> _getUserFromPreferences() async {
