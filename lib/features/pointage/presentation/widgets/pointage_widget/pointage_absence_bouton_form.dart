@@ -10,10 +10,10 @@ class AbsenceForm extends StatefulWidget {
       onSignalerAbsencePeriode;
 
   const AbsenceForm({
-    Key? key,
+    super.key,
     required this.selectedDate,
     required this.onSignalerAbsencePeriode,
-  }) : super(key: key);
+  });
 
   @override
   _AbsenceFormState createState() => _AbsenceFormState();
@@ -22,7 +22,7 @@ class AbsenceForm extends StatefulWidget {
 class _AbsenceFormState extends State<AbsenceForm> {
   late DateTime dateDebut;
   late DateTime dateFin;
-  AbsenceMotif type = AbsenceMotif.publicHoliday;
+  AbsenceMotif type = AbsenceMotif.leaveDay;
   String raison = '';
   AbsencePeriod periode = AbsencePeriod.fullDay;
   bool canChangePeriod = true;
@@ -60,14 +60,14 @@ class _AbsenceFormState extends State<AbsenceForm> {
               const SizedBox(height: 16),
               _buildDateRangePicker(),
               const SizedBox(height: 16),
-              if (canChangePeriod && type != AbsenceMotif.publicHoliday)
+              if (canChangePeriod && type != AbsenceMotif.other)
                 _buildPeriodSegmentedButton(),
-              if (periode == AbsencePeriod.halfDay && type != AbsenceMotif.publicHoliday) ...[
+              if (periode == AbsencePeriod.halfDay && type != AbsenceMotif.other) ...[
                 const SizedBox(height: 16),
                 _buildTimeRangePicker(),
               ],
               const SizedBox(height: 16),
-              if (type != AbsenceMotif.publicHoliday)
+              if (type == AbsenceMotif.other)
               _buildReasonTextField(),
               const SizedBox(height: 24),
               _buildActionButtons(),

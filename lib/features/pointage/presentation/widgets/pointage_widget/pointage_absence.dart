@@ -190,7 +190,7 @@ class _PointageAbsenceState extends State<PointageAbsence> {
     if (reason == null) return AbsenceType.vacation;
     if (reason.toLowerCase() == AbsenceMotif.leaveDay.value.toLowerCase()) {
       return AbsenceType.vacation;
-    } else if (reason.toLowerCase() == AbsenceMotif.publicHoliday.value.toLowerCase()) {
+    } else if (reason.toLowerCase() == AbsenceMotif.other.value.toLowerCase()) {
       return AbsenceType.publicHoliday;
     } else {
       return AbsenceType.sickLeave;

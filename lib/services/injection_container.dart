@@ -5,6 +5,7 @@ import 'package:get_it/get_it.dart';
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../features/absence/data/models/absence.dart';
 import '../features/pointage/factory/anomaly_detector_factory.dart';
 import '../features/pointage/use_cases/delete_timesheet_entry_usecase.dart';
 import '../features/pointage/use_cases/detect_anomalies_usecase.dart';
@@ -71,7 +72,7 @@ Future<void> setup() async {
   Future<Isar> getIsarInstance() async {
     if (!getIt.isRegistered<Isar>()) {
       final isar = await Isar.open(
-        [TimeSheetEntryModelSchema, GeneratedPdfModelSchema, UserPreferencesSchema],
+        [TimeSheetEntryModelSchema, GeneratedPdfModelSchema, UserPreferencesSchema, AbsenceSchema],
         directory: dir,
       );
       getIt.registerSingleton<Isar>(isar);

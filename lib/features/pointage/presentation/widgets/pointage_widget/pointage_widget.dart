@@ -101,7 +101,6 @@ class _PointageWidgetState extends State<PointageWidget>
       listener: _timeSheetListener,
       builder: (context, state) {
         if (state is TimeSheetAbsenceSignalee) {
-          print(' abb ${state.absenceReason}');
           if (state.absenceReason.isNotEmpty) {
             return PointageAbsence(
               absenceReason: state.absenceReason,

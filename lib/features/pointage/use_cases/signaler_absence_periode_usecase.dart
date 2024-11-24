@@ -31,7 +31,7 @@ class SignalerAbsencePeriodeUsecase {
           currentDate.weekday <= DateTime.friday) {
         final formattedDate = DateFormat("dd-MMM-yy").format(currentDate);
         String absenceReason = event.type == AbsenceMotif.leaveDay.value ||
-                event.type == AbsenceMotif.publicHoliday.value
+                event.type == AbsenceMotif.other.value
             ? event.type
             : "${event.type}: ${event.raison}";
 
