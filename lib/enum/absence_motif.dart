@@ -1,7 +1,7 @@
 enum AbsenceMotif {
-  publicHoliday("Jour férié"),
   leaveDay("Congés"),
-  sickness("Maladie");
+  sickness("Maladie"),
+  other("Autre");
 
   final String value;
 

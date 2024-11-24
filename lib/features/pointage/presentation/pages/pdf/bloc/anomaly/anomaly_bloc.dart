@@ -3,7 +3,6 @@ import 'package:equatable/equatable.dart';
 
 import '../../../../../../../services/anomaly_detector_config.dart';
 import '../../../../../../preference/presentation/manager/preferences_bloc.dart';
-import '../../../../../factory/anomaly_detector_factory.dart';
 import '../../../../../strategies/anomaly_detector.dart';
 import '../../../../../use_cases/detect_anomalies_usecase.dart';
 

@@ -1,5 +1,7 @@
 import 'package:isar/isar.dart';
 
+import '../../../../absence/data/models/absence.dart';
+
 part 'timesheet_entry.g.dart';
 
 @collection
@@ -14,15 +16,6 @@ class TimeSheetEntryModel {
   late String endAfternoon;
   late String absenceReason;
   late String period;
-
-  TimeSheetEntryModel({
-    required this.dayDate,
-    required this.dayOfWeekDate,
-    this.startMorning = '',
-    this.endMorning = '',
-    this.startAfternoon = '',
-    this.endAfternoon = '',
-    this.absenceReason = '',
-     this.period = '',
-  });
+  @Backlink(to: 'timesheetEntry')
+  final absence = IsarLink<Absence>();
 }

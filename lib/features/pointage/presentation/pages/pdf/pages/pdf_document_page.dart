@@ -21,6 +21,12 @@ class _PdfDocumentPageState extends State<PdfDocumentPage> {
   @override
   void initState() {
     super.initState();
+    context.read<PdfBloc>().stream.listen((state) {
+      if (state is PdfGenerated) {
+        // Forcer une reconstruction de l'interface
+        setState(() {});
+      }
+    });
     context.read<PdfBloc>().add(LoadGeneratedPdfsEvent());
     _detectAnomalies();
   }
@@ -37,6 +43,7 @@ class _PdfDocumentPageState extends State<PdfDocumentPage> {
         Expanded(
           child: BlocConsumer<PdfBloc, PdfState>(
             listener: (context, state) {
+              print('PDF STATE: $state');
               if (state is PdfGenerationError) {
                 _showErrorDialog(context, state.error, isPdfGeneration: true);
               } else if (state is PdfOpenError) {
@@ -142,10 +149,14 @@ class _PdfDocumentPageState extends State<PdfDocumentPage> {
                 ],
               );
             } else {
-              // Si pas d'anomalies, générer directement le PDF
-              context
-                  .read<PdfBloc>()
-                  .add(GeneratePdfEvent(DateTime.now().month));
+              // Fermer le dialog avant de générer le PDF
+              Navigator.of(context).pop();
+              // Déclencher la génération du PDF après la fermeture du dialog
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                context
+                    .read<PdfBloc>()
+                    .add(GeneratePdfEvent(DateTime.now().month));
+              });
               return const SizedBox.shrink();
             }
           },

@@ -13,7 +13,7 @@ class TimeSheetDataState extends TimeSheetState {
   final TimesheetEntry entry;
   final int remainingVacationDays;
 
-  TimeSheetDataState(this.entry, {this.remainingVacationDays = 0});
+  const TimeSheetDataState(this.entry, {this.remainingVacationDays = 0});
 
   @override
   List<Object> get props => [entry, remainingVacationDays];
@@ -49,7 +49,7 @@ class TimeSheetAbsenceSignalee extends TimeSheetState {
 
   const TimeSheetAbsenceSignalee({
     required this.absenceReason,
-    required this.entry,
+    required this.entry
 });
 
   @override

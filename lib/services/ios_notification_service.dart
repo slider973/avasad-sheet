@@ -133,6 +133,10 @@ class DynamicMultiplatformNotificationService {
   }
 
   Future<void> _scheduleNextNotification() async {
+    final now = DateTime.now();
+    if (now.weekday == DateTime.saturday || now.weekday == DateTime.sunday) {
+      return;
+    }
     final state = timeSheetBloc.state;
     if (state is TimeSheetDataState) {
       final entry = state.entry;

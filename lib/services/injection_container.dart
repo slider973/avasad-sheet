@@ -5,11 +5,13 @@ import 'package:get_it/get_it.dart';
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../features/absence/data/models/absence.dart';
 import '../features/pointage/factory/anomaly_detector_factory.dart';
 import '../features/pointage/use_cases/delete_timesheet_entry_usecase.dart';
 import '../features/pointage/use_cases/detect_anomalies_usecase.dart';
 import '../features/pointage/use_cases/find_pointed_list_usecase.dart';
 import '../features/pointage/use_cases/generate_monthly_timesheet_usease.dart';
+import '../features/pointage/use_cases/generate_pdf_usecase.dart';
 import '../features/pointage/use_cases/get_overtime_hours_usecase.dart';
 import '../features/pointage/use_cases/get_remaining_vacation_days_usecase.dart';
 import '../features/pointage/use_cases/get_today_timesheet_entry_use_case.dart';
@@ -19,6 +21,7 @@ import '../features/pointage/use_cases/save_timesheet_entry_usecase.dart';
 import '../features/pointage/use_cases/signaler_absence_periode_usecase.dart';
 import '../features/preference/data/models/user_preference.dart';
 import '../features/preference/data/repositories/user_preference_repository.impl.dart';
+import '../features/preference/presentation/manager/preferences_bloc.dart';
 import 'backup.dart';
 import '../features/preference/domain/use_cases/get_signature_usecase.dart';
 import '../features/preference/domain/use_cases/get_user_preference_use_case.dart';
@@ -69,7 +72,7 @@ Future<void> setup() async {
   Future<Isar> getIsarInstance() async {
     if (!getIt.isRegistered<Isar>()) {
       final isar = await Isar.open(
-        [TimeSheetEntryModelSchema, GeneratedPdfModelSchema, UserPreferencesSchema],
+        [TimeSheetEntryModelSchema, GeneratedPdfModelSchema, UserPreferencesSchema, AbsenceSchema],
         directory: dir,
       );
       getIt.registerSingleton<Isar>(isar);
@@ -127,5 +130,10 @@ Future<void> setup() async {
       allDetectors.values.toList(),
     );
   });
+  getIt.registerLazySingleton<GeneratePdfUseCase>(() => GeneratePdfUseCase(
+    repository: getIt<TimesheetRepositoryImpl>(),
+    getSignatureUseCase: getIt<GetSignatureUseCase>(),
+    getUserPreferenceUseCase: getIt<GetUserPreferenceUseCase>(),
+  ));
 
 }

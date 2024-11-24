@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:math';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter/services.dart';
@@ -20,7 +19,7 @@ import '../../../../../../preference/domain/use_cases/get_signature_usecase.dart
 import '../../../../../../preference/presentation/manager/preferences_bloc.dart';
 import '../../../../../data/models/generated_pdf/generated_pdf.dart';
 import '../../../../../domain/entities/work_week.dart';
-import '../../../../../use_cases/generate_week_usecase.dart';
+import '../../../../../use_cases/generate_pdf_usecase.dart';
 
 
 part 'pdf_event.dart';
@@ -35,8 +34,9 @@ class PdfBloc extends Bloc<PdfEvent, PdfState> {
   final TimesheetRepository repository;
   final GetSignatureUseCase getSignatureUseCase;
   final PreferencesBloc preferencesBloc;
+  final GeneratePdfUseCase generatePdfUseCase;
 
-  PdfBloc(this.repository, this.getSignatureUseCase, this.preferencesBloc)
+  PdfBloc(this.repository, this.getSignatureUseCase, this.preferencesBloc, this.generatePdfUseCase)
       : super(PdfInitial()) {
     on<GeneratePdfEvent>(_onGeneratePdfEvent);
     on<LoadGeneratedPdfsEvent>(_onLoadGeneratedPdfsEvent);
@@ -50,57 +50,33 @@ class PdfBloc extends Bloc<PdfEvent, PdfState> {
     });
   }
 
+
   Future<void> _onGeneratePdfEvent(
       GeneratePdfEvent event, Emitter<PdfState> emit) async {
     emit(PdfGenerating());
     try {
-      final timesheetEntryList =
-          await repository.findEntriesFromMonthOf(event.monthNumber);
-      List<WorkWeek> weekDay =
-          WeekGeneratorUseCase().execute(timesheetEntryList);
-      // Récupérer les préférences de l'utilisateur
-      final preferenceState = preferencesBloc.state;
-      if (preferenceState is! PreferencesLoaded) {
-        throw Exception("Les préférences utilisateur n'ont pas été chargées");
-      }
+      final result = await generatePdfUseCase.execute(event.monthNumber);
 
-      final user = User(
-        firstName: preferenceState.firstName,
-        lastName: preferenceState.lastName,
-        company: 'Avasad',
-        // Vous pouvez ajouter cela aux préférences si nécessaire
-        signature: preferenceState.signature,
-        isDeliveryManager: preferenceState.isDeliveryManager,
+      result.match(
+            (error) {
+          String errorMessage = "Une erreur s'est produite lors de la génération du PDF: $error";
+          emit(PdfGenerationError(errorMessage));
+        },
+            (pdfPath) {
+          emit(PdfGenerated(pdfPath));
+          add(LoadGeneratedPdfsEvent());
+        },
       );
-      final pdfFile = await generatePdf(weekDay, event.monthNumber, user);
-
-      // Sauvegarder les informations du PDF généré
-      final generatedPdf = GeneratedPdfModel(
-        fileName: pdfFile.path.split('/').last,
-        filePath: pdfFile.path,
-        generatedDate: DateTime.now(),
-      );
-      await repository.saveGeneratedPdf(generatedPdf);
-
-      emit(PdfGenerated(pdfFile.path));
-      add(LoadGeneratedPdfsEvent());
     } catch (exception, stackTrace) {
       await Sentry.captureException(
         exception,
         stackTrace: stackTrace,
       );
-      print(exception.toString());
-      String errorMessage = "Une erreur s'est produite lors de la génération du PDF.";
-
-      if (exception is PathAccessException) {
-        if (exception.osError?.errorCode == 32) {
-          errorMessage = "Impossible de générer le PDF car le fichier est déjà ouvert ou utilisé par un autre programme. Veuillez fermer toutes les applications qui pourraient utiliser ce fichier et réessayer.";
-        }
-      }
-
+      String errorMessage = "Une erreur inattendue s'est produite lors de la génération du PDF.";
       emit(PdfGenerationError(errorMessage));
     }
   }
+
 
   Future<void> _onLoadGeneratedPdfsEvent(
       LoadGeneratedPdfsEvent event, Emitter<PdfState> emit) async {
