@@ -136,9 +136,21 @@ class LocalDatasourceImpl implements LocalDataSource {
   }
 
   @override
-  Future<void> deleteTimeSheet(int id) {
+  Future<void> deleteTimeSheet(int id) async {
     return isar.writeTxn(() async {
-      await isar.timeSheetEntryModels.delete(id);
+      final timesheet = await isar.timeSheetEntryModels.get(id);
+      if (timesheet != null) {
+        final absences = await isar.absences
+            .filter()
+            .timesheetEntry((q) => q.idEqualTo(timesheet.id))
+            .findAll();
+
+        for (final absence in absences) {
+          await isar.absences.delete(absence.id);
+        }
+
+        await isar.timeSheetEntryModels.delete(id);
+      }
     });
   }
 

@@ -45,7 +45,14 @@ const AbsenceSchema = CollectionSchema(
   deserializeProp: _absenceDeserializeProp,
   idName: r'id',
   indexes: {},
-  links: {},
+  links: {
+    r'timesheetEntry': LinkSchema(
+      id: -7133275466858042903,
+      name: r'timesheetEntry',
+      target: r'TimeSheetEntryModel',
+      single: true,
+    )
+  },
   embeddedSchemas: {},
   getId: _absenceGetId,
   getLinks: _absenceGetLinks,
@@ -130,11 +137,13 @@ Id _absenceGetId(Absence object) {
 }
 
 List<IsarLinkBase<dynamic>> _absenceGetLinks(Absence object) {
-  return [];
+  return [object.timesheetEntry];
 }
 
 void _absenceAttach(IsarCollection<dynamic> col, Id id, Absence object) {
   object.id = id;
+  object.timesheetEntry.attach(
+      col, col.isar.collection<TimeSheetEntryModel>(), r'timesheetEntry', id);
 }
 
 extension AbsenceQueryWhereSort on QueryBuilder<Absence, Absence, QWhere> {
@@ -560,7 +569,20 @@ extension AbsenceQueryObject
     on QueryBuilder<Absence, Absence, QFilterCondition> {}
 
 extension AbsenceQueryLinks
-    on QueryBuilder<Absence, Absence, QFilterCondition> {}
+    on QueryBuilder<Absence, Absence, QFilterCondition> {
+  QueryBuilder<Absence, Absence, QAfterFilterCondition> timesheetEntry(
+      FilterQuery<TimeSheetEntryModel> q) {
+    return QueryBuilder.apply(this, (query) {
+      return query.link(q, r'timesheetEntry');
+    });
+  }
+
+  QueryBuilder<Absence, Absence, QAfterFilterCondition> timesheetEntryIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.linkLength(r'timesheetEntry', 0, true, 0, true);
+    });
+  }
+}
 
 extension AbsenceQuerySortBy on QueryBuilder<Absence, Absence, QSortBy> {
   QueryBuilder<Absence, Absence, QAfterSortBy> sortByEndDate() {

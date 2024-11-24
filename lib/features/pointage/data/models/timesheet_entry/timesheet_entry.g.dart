@@ -67,10 +67,11 @@ const TimeSheetEntryModelSchema = CollectionSchema(
   indexes: {},
   links: {
     r'absence': LinkSchema(
-      id: -232857660097741655,
+      id: 7426728764344287438,
       name: r'absence',
       target: r'Absence',
       single: true,
+      linkName: r'timesheetEntry',
     )
   },
   embeddedSchemas: {},

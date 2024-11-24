@@ -99,10 +99,13 @@ class _PointageAbsenceState extends State<PointageAbsence> {
         title = 'Profitez de vos vacances !';
         color = Colors.blue;
         break;
-      case AbsenceType.publicHoliday || AbsenceType.other:
+      case AbsenceType.publicHoliday:
         title = 'Jour férié';
         color = Colors.green;
         break;
+      case AbsenceType.other:
+        title = 'Jour de congé';
+        color = Colors.green;
       case AbsenceType.sickLeave:
         title = 'Prenez soin de vous';
         color = Colors.orange;
@@ -186,7 +189,7 @@ class _PointageAbsenceState extends State<PointageAbsence> {
   }
 
   String getMotifFromType() {
-    switch(widget.absence!.type) {
+    switch (widget.absence!.type) {
       case AbsenceType.vacation:
         return AbsenceMotif.leaveDay.value;
       case AbsenceType.publicHoliday:
@@ -216,7 +219,7 @@ class _PointageAbsenceState extends State<PointageAbsence> {
     if (reason.toLowerCase() == AbsenceMotif.leaveDay.value.toLowerCase()) {
       return AbsenceType.vacation;
     } else if (reason.toLowerCase() == AbsenceMotif.other.value.toLowerCase()) {
-      return AbsenceType.publicHoliday;
+      return AbsenceType.vacation;
     } else {
       return AbsenceType.sickLeave;
     }
