@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_absence.dart';
 
 import 'pointage_absence_bouton_form.dart';
 
 class PointageAbsenceBouton extends StatelessWidget {
-  final Function(DateTime, DateTime, String, String, String, TimeOfDay?, TimeOfDay?) onSignalerAbsencePeriode;
+  final Function(DateTime, DateTime, String, AbsenceType, String, String,
+      TimeOfDay?, TimeOfDay?) onSignalerAbsencePeriode;
   final String etatActuel;
   final DateTime selectedDate;
 
-  const PointageAbsenceBouton({
-    Key? key,
-    required this.onSignalerAbsencePeriode,
-    required this.etatActuel,
-    required this.selectedDate
-  }) : super(key: key);
+  const PointageAbsenceBouton(
+      {Key? key,
+      required this.onSignalerAbsencePeriode,
+      required this.etatActuel,
+      required this.selectedDate})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -66,4 +68,3 @@ class PointageAbsenceBouton extends StatelessWidget {
     );
   }
 }
-

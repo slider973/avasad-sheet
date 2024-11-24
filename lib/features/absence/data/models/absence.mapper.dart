@@ -7,20 +7,18 @@ extension AbsenceMapper on Absence {
   AbsenceEntity toEntity() {
     return AbsenceEntity(
       id: id,
-      userId: userId,
-      date: date,
+      startDate: startDate,
+      endDate: endDate,
       type: type,
-      description: description,
+      motif: motif,
     );
   }
 
   static Absence fromEntity(AbsenceEntity entity) {
-    return Absence(
-      id: entity.id ?? Isar.autoIncrement,
-      userId: entity.userId,
-      date: entity.date,
-      type: entity.type,
-      description: entity.description,
-    );
+    return Absence()..id = entity.id ?? Isar.autoIncrement
+      ..startDate = entity.startDate
+      ..endDate = entity.endDate
+      ..type = entity.type
+      ..motif = entity.motif;
   }
 }

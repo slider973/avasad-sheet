@@ -2,38 +2,39 @@ import '../../../pointage/presentation/widgets/pointage_widget/pointage_absence.
 
 class AbsenceEntity {
   final int? id;
-  final String userId;
-  final String date;
+  final DateTime startDate;
+  final DateTime endDate;
   final AbsenceType type;
-  final String description;
+  final String motif;
 
   AbsenceEntity({
     this.id,
-    required this.userId,
-    required this.date,
+    required this.startDate,
+    required this.endDate,
     required this.type,
-    required this.description,
+    required this.motif,
   });
 
   @override
   String toString() {
-    return 'Absence{id: $id, userId: $userId, date: $date, type: $type, description: $description}';
+    return 'Absence{id: $id, startDate: $startDate, endDate: $endDate, type: $type, description: $motif}';
   }
 
   /// Retourne une instance modifiée d'AbsenceEntity.
   AbsenceEntity copyWith({
     int? id,
     String? userId,
-    String? date,
+    DateTime? startDate,
+    DateTime? endDate,
     AbsenceType? type,
-    String? description,
+    String? motif,
   }) {
     return AbsenceEntity(
       id: id ?? this.id,
-      userId: userId ?? this.userId,
-      date: date ?? this.date,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
       type: type ?? this.type,
-      description: description ?? this.description,
+      motif: motif ?? this.motif,
     );
   }
 }

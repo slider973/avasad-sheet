@@ -5,17 +5,9 @@ part 'absence.g.dart';
 @collection
 class Absence {
   Id id = Isar.autoIncrement;
-  final String userId;
-  final String date;
+  late final DateTime startDate;
+  late final DateTime endDate;
   @enumerated
-  final AbsenceType type;
-  final String description;
-
-  Absence({
-    required this.id,
-    required this.userId,
-    required this.date,
-    required this.type,
-    required this.description,
-  });
+  late final AbsenceType type;
+  late final String motif;
 }

@@ -62,7 +62,7 @@ class Workday {
     return "$hours:$minutes";
   }
   bool isAbsence() {
-    return entry.absenceReason != null && entry.absenceReason!.isNotEmpty;
+    return entry.absence != null;
   }
 
   Workday disable() {

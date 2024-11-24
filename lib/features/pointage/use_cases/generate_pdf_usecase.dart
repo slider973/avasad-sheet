@@ -7,7 +7,9 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/services.dart';
+import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_absence.dart';
 
+import '../../../enum/absence_motif.dart';
 import '../../../services/logger_service.dart';
 import '../../preference/domain/entities/user.dart';
 import '../../preference/domain/use_cases/get_signature_usecase.dart';
@@ -29,9 +31,10 @@ class GeneratePdfUseCase {
     required this.getSignatureUseCase,
     required this.getUserPreferenceUseCase,
   });
+
   final headerColor = PdfColor.fromHex('#D9D9D9'); // Gris clair pour l'en-tête
   final totalRowColor =
-  PdfColor.fromHex('#F2F2F2'); // Gris très clair pour les totaux
+      PdfColor.fromHex('#F2F2F2'); // Gris très clair pour les totaux
 
   Future<Either<String, String>> execute(int monthNumber) async {
     try {
@@ -70,7 +73,8 @@ class GeneratePdfUseCase {
     try {
       // Récupération des entrées
       debugPrint('📊 Récupération des entrées du timesheet...');
-      final timesheetEntryList = await repository.findEntriesFromMonthOf(monthNumber);
+      final timesheetEntryList =
+          await repository.findEntriesFromMonthOf(monthNumber);
       debugPrint('✅ ${timesheetEntryList.length} entrées récupérées');
 
       // Génération des semaines
@@ -83,18 +87,19 @@ class GeneratePdfUseCase {
       final userEither = await _getUserFromPreferences();
 
       if (userEither.isLeft()) {
-        final errorMessage = userEither.getLeft().getOrElse(
-                () => "Erreur inconnue lors de la récupération des préférences utilisateur"
-        );
+        final errorMessage = userEither.getLeft().getOrElse(() =>
+            "Erreur inconnue lors de la récupération des préférences utilisateur");
         debugPrint('❌ Échec de récupération des préférences: $errorMessage');
         return Left(errorMessage);
       }
 
       final user = userEither.getRight().getOrElse(() {
-        debugPrint('❌ Erreur critique: impossible d\'extraire les données utilisateur');
+        debugPrint(
+            '❌ Erreur critique: impossible d\'extraire les données utilisateur');
         throw "Erreur inconnue lors de la récupération des préférences utilisateur";
       });
-      debugPrint('✅ Préférences utilisateur récupérées pour: ${user.firstName} ${user.lastName}');
+      debugPrint(
+          '✅ Préférences utilisateur récupérées pour: ${user.firstName} ${user.lastName}');
 
       // Génération du PDF
       debugPrint('📄 Génération du fichier PDF...');
@@ -156,14 +161,18 @@ class GeneratePdfUseCase {
       signatureImage = pw.Image(pw.MemoryImage(user.signature!));
     }
 
-    double totalDays = weeks.fold(0.0, (sum, week) => sum + week.workday.fold(0.0, (daySum, day) {
-      if (day.entry.period == AbsencePeriod.halfDay.value) {
-        return daySum + 0.5;
-      } else if (!day.isAbsence()) {
-        return daySum + 1;
-      }
-      return daySum;
-    }));
+    double totalDays = weeks.fold(
+        0.0,
+        (sum, week) =>
+            sum +
+            week.workday.fold(0.0, (daySum, day) {
+              if (day.entry.period == AbsencePeriod.halfDay.value) {
+                return daySum + 0.5;
+              } else if (!day.isAbsence()) {
+                return daySum + 1;
+              }
+              return daySum;
+            }));
     final totalHours = weeks.fold(
         Duration.zero, (sum, week) => sum + week.calculateTotalWeekHours());
 
@@ -247,7 +256,8 @@ class GeneratePdfUseCase {
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
           pw.Text('Note de temps',
-              style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+              style:
+                  pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
           pw.Image(logoImage, width: 70),
         ],
       ),
@@ -256,7 +266,8 @@ class GeneratePdfUseCase {
 
   bool _isWeekday(String dateString) {
     final date = DateFormat('dd-MMM-yy', 'en_US').parse(dateString);
-    return date.weekday >= 1 && date.weekday <= 5; // Du lundi (1) au vendredi (5)
+    return date.weekday >= 1 &&
+        date.weekday <= 5; // Du lundi (1) au vendredi (5)
   }
 
   pw.Widget _buildWeekTable(WorkWeek week) {
@@ -304,9 +315,11 @@ class GeneratePdfUseCase {
     bool isHalfDayAbsence = day.entry.period == AbsencePeriod.halfDay.value;
     bool isFullDayAbsence = day.isAbsence() && !isHalfDayAbsence;
     Duration workDuration = day.calculateTotalHours();
-    String formattedDuration = isFullDayAbsence ? '0h00' : _formatDuration(workDuration);
+    String formattedDuration =
+        isFullDayAbsence ? '0h00' : _formatDuration(workDuration);
 
-    String daysWorked = isFullDayAbsence ? '0' : (isHalfDayAbsence ? '0.5' : '1');
+    String daysWorked =
+        isFullDayAbsence ? '0' : (isHalfDayAbsence ? '0.5' : '1');
     return pw.TableRow(
       children: [
         pw.Center(
@@ -335,21 +348,41 @@ class GeneratePdfUseCase {
             child: pw.Text(day.entry.endAfternoon,
                 style: const pw.TextStyle(fontSize: 6))),
         pw.Center(
-            child: pw.Text(
-                formattedDuration,
+            child: pw.Text(formattedDuration,
                 style: const pw.TextStyle(fontSize: 6))),
         pw.Center(child: pw.Text('', style: const pw.TextStyle(fontSize: 6))),
         pw.Center(
-            child: pw.Text(day.entry.absenceReason ?? '',
+            child: pw.Text(_getCommentaire(day),
                 style: const pw.TextStyle(fontSize: 6))),
         pw.Center(
-            child: pw.Text(daysWorked,
-                style: const pw.TextStyle(fontSize: 6))),
+            child: pw.Text(daysWorked, style: const pw.TextStyle(fontSize: 6))),
       ]
           .map((widget) =>
-          pw.Padding(padding: const pw.EdgeInsets.all(3), child: widget))
+              pw.Padding(padding: const pw.EdgeInsets.all(3), child: widget))
           .toList(),
     );
+  }
+
+  String _getCommentaire(Workday day) {
+    if (day.isAbsence()) {
+      return day.entry.absence!.type == AbsenceType.other
+          ? day.entry.absence!.motif
+          : _getMotifFromType(day.entry.absence!.type) ?? '';
+    }
+    return '';
+  }
+
+  String _getMotifFromType(AbsenceType absenceType) {
+    switch (absenceType) {
+      case AbsenceType.vacation:
+        return AbsenceMotif.leaveDay.value;
+      case AbsenceType.publicHoliday:
+        return AbsenceMotif.other.value;
+      case AbsenceType.sickLeave:
+        return AbsenceMotif.sickness.value;
+      case AbsenceType.other:
+        return AbsenceMotif.other.value;
+    }
   }
 
   pw.TableRow _buildWeekTotal(WorkWeek week) {
@@ -376,15 +409,17 @@ class GeneratePdfUseCase {
         pw.Center(
             child: pw.Text(week.formatDuration(week.calculateTotalWeekHours()),
                 style:
-                pw.TextStyle(fontSize: 6, fontWeight: pw.FontWeight.bold))),
+                    pw.TextStyle(fontSize: 6, fontWeight: pw.FontWeight.bold))),
         pw.Text(''),
         pw.Text(''),
         pw.Center(
-            child: pw.Text('$formattedDaysWorked jour${daysWorked > 1 ? 's' : ''}',
-                style: pw.TextStyle(fontSize: 6, fontWeight: pw.FontWeight.bold))),
+            child: pw.Text(
+                '$formattedDaysWorked jour${daysWorked > 1 ? 's' : ''}',
+                style:
+                    pw.TextStyle(fontSize: 6, fontWeight: pw.FontWeight.bold))),
       ]
           .map((widget) =>
-          pw.Padding(padding: const pw.EdgeInsets.all(5), child: widget))
+              pw.Padding(padding: const pw.EdgeInsets.all(5), child: widget))
           .toList(),
     );
   }
@@ -403,16 +438,19 @@ class GeneratePdfUseCase {
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
               pw.Text('Total du mois: ${_formatDuration(totalHours)}',
-                  style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
+                  style: pw.TextStyle(
+                      fontSize: 8, fontWeight: pw.FontWeight.bold)),
             ],
           ),
           pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.end,
             children: [
               pw.Text('Jours travaillés:',
-                  style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+                  style: pw.TextStyle(
+                      fontSize: 10, fontWeight: pw.FontWeight.bold)),
               pw.Text(formattedTotalDays,
-                  style: pw.TextStyle(fontSize: 15, fontWeight: pw.FontWeight.bold)),
+                  style: pw.TextStyle(
+                      fontSize: 15, fontWeight: pw.FontWeight.bold)),
             ],
           ),
         ],
@@ -434,7 +472,8 @@ class GeneratePdfUseCase {
                       'Travailleur', user.fullName, signatureImage),
                   _buildSignatureColumn(
                       'Entreprise de mission', 'François Longchamp'),
-                  _buildSignatureColumn('Delivery manager', 'Sovattha Sok', user.isDeliveryManager ? signatureImage : null),
+                  _buildSignatureColumn('Delivery manager', 'Sovattha Sok',
+                      user.isDeliveryManager ? signatureImage : null),
                 ],
               ),
             ],
@@ -443,7 +482,8 @@ class GeneratePdfUseCase {
           pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
-              pw.Text('Date: ${DateFormat('dd/MM/yyyy').format(DateTime.now())}',
+              pw.Text(
+                  'Date: ${DateFormat('dd/MM/yyyy').format(DateTime.now())}',
                   style: const pw.TextStyle(fontSize: 8)),
               pw.Text(
                   'Je certifie sur l\'honneur que j\'ai travaillé durant ces horaires et heures travaillées',
@@ -454,6 +494,7 @@ class GeneratePdfUseCase {
       ),
     );
   }
+
   String _formatDate(String dateString) {
     final date = DateFormat('dd-MMM-yy', 'en_US').parse(dateString);
     return DateFormat('dd/MM/yyyy').format(date);
@@ -483,6 +524,7 @@ class GeneratePdfUseCase {
       ),
     );
   }
+
   String _dayOfWeek(String dateString) {
     try {
       final date = DateFormat('dd-MMM-yy', 'en_US').parse(dateString);
@@ -492,6 +534,7 @@ class GeneratePdfUseCase {
       return dateString;
     }
   }
+
   pw.Widget _buildSignatureColumn(String title, String name,
       [pw.Image? signatureImage]) {
     return pw.Container(
@@ -525,5 +568,4 @@ class GeneratePdfUseCase {
     final byteData = await rootBundle.load('assets/images/logo-sonrysa.png');
     return byteData.buffer.asUint8List();
   }
-
 }

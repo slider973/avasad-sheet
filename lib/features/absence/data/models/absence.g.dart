@@ -17,26 +17,26 @@ const AbsenceSchema = CollectionSchema(
   name: r'Absence',
   id: -7247862397841850355,
   properties: {
-    r'date': PropertySchema(
+    r'endDate': PropertySchema(
       id: 0,
-      name: r'date',
+      name: r'endDate',
+      type: IsarType.dateTime,
+    ),
+    r'motif': PropertySchema(
+      id: 1,
+      name: r'motif',
       type: IsarType.string,
     ),
-    r'description': PropertySchema(
-      id: 1,
-      name: r'description',
-      type: IsarType.string,
+    r'startDate': PropertySchema(
+      id: 2,
+      name: r'startDate',
+      type: IsarType.dateTime,
     ),
     r'type': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'type',
       type: IsarType.byte,
       enumMap: _AbsencetypeEnumValueMap,
-    ),
-    r'userId': PropertySchema(
-      id: 3,
-      name: r'userId',
-      type: IsarType.string,
     )
   },
   estimateSize: _absenceEstimateSize,
@@ -59,9 +59,7 @@ int _absenceEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
-  bytesCount += 3 + object.date.length * 3;
-  bytesCount += 3 + object.description.length * 3;
-  bytesCount += 3 + object.userId.length * 3;
+  bytesCount += 3 + object.motif.length * 3;
   return bytesCount;
 }
 
@@ -71,10 +69,10 @@ void _absenceSerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeString(offsets[0], object.date);
-  writer.writeString(offsets[1], object.description);
-  writer.writeByte(offsets[2], object.type.index);
-  writer.writeString(offsets[3], object.userId);
+  writer.writeDateTime(offsets[0], object.endDate);
+  writer.writeString(offsets[1], object.motif);
+  writer.writeDateTime(offsets[2], object.startDate);
+  writer.writeByte(offsets[3], object.type.index);
 }
 
 Absence _absenceDeserialize(
@@ -83,14 +81,13 @@ Absence _absenceDeserialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  final object = Absence(
-    date: reader.readString(offsets[0]),
-    description: reader.readString(offsets[1]),
-    id: id,
-    type: _AbsencetypeValueEnumMap[reader.readByteOrNull(offsets[2])] ??
-        AbsenceType.vacation,
-    userId: reader.readString(offsets[3]),
-  );
+  final object = Absence();
+  object.endDate = reader.readDateTime(offsets[0]);
+  object.id = id;
+  object.motif = reader.readString(offsets[1]);
+  object.startDate = reader.readDateTime(offsets[2]);
+  object.type = _AbsencetypeValueEnumMap[reader.readByteOrNull(offsets[3])] ??
+      AbsenceType.vacation;
   return object;
 }
 
@@ -102,14 +99,14 @@ P _absenceDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readString(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 1:
       return (reader.readString(offset)) as P;
     case 2:
+      return (reader.readDateTime(offset)) as P;
+    case 3:
       return (_AbsencetypeValueEnumMap[reader.readByteOrNull(offset)] ??
           AbsenceType.vacation) as P;
-    case 3:
-      return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -119,11 +116,13 @@ const _AbsencetypeEnumValueMap = {
   'vacation': 0,
   'publicHoliday': 1,
   'sickLeave': 2,
+  'other': 3,
 };
 const _AbsencetypeValueEnumMap = {
   0: AbsenceType.vacation,
   1: AbsenceType.publicHoliday,
   2: AbsenceType.sickLeave,
+  3: AbsenceType.other,
 };
 
 Id _absenceGetId(Absence object) {
@@ -215,263 +214,55 @@ extension AbsenceQueryWhere on QueryBuilder<Absence, Absence, QWhereClause> {
 
 extension AbsenceQueryFilter
     on QueryBuilder<Absence, Absence, QFilterCondition> {
-  QueryBuilder<Absence, Absence, QAfterFilterCondition> dateEqualTo(
-    String value, {
-    bool caseSensitive = true,
-  }) {
+  QueryBuilder<Absence, Absence, QAfterFilterCondition> endDateEqualTo(
+      DateTime value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'date',
+        property: r'endDate',
         value: value,
-        caseSensitive: caseSensitive,
       ));
     });
   }
 
-  QueryBuilder<Absence, Absence, QAfterFilterCondition> dateGreaterThan(
-    String value, {
+  QueryBuilder<Absence, Absence, QAfterFilterCondition> endDateGreaterThan(
+    DateTime value, {
     bool include = false,
-    bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         include: include,
-        property: r'date',
+        property: r'endDate',
         value: value,
-        caseSensitive: caseSensitive,
       ));
     });
   }
 
-  QueryBuilder<Absence, Absence, QAfterFilterCondition> dateLessThan(
-    String value, {
+  QueryBuilder<Absence, Absence, QAfterFilterCondition> endDateLessThan(
+    DateTime value, {
     bool include = false,
-    bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.lessThan(
         include: include,
-        property: r'date',
+        property: r'endDate',
         value: value,
-        caseSensitive: caseSensitive,
       ));
     });
   }
 
-  QueryBuilder<Absence, Absence, QAfterFilterCondition> dateBetween(
-    String lower,
-    String upper, {
+  QueryBuilder<Absence, Absence, QAfterFilterCondition> endDateBetween(
+    DateTime lower,
+    DateTime upper, {
     bool includeLower = true,
     bool includeUpper = true,
-    bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
-        property: r'date',
+        property: r'endDate',
         lower: lower,
         includeLower: includeLower,
         upper: upper,
         includeUpper: includeUpper,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<Absence, Absence, QAfterFilterCondition> dateStartsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'date',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<Absence, Absence, QAfterFilterCondition> dateEndsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'date',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<Absence, Absence, QAfterFilterCondition> dateContains(
-      String value,
-      {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.contains(
-        property: r'date',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<Absence, Absence, QAfterFilterCondition> dateMatches(
-      String pattern,
-      {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.matches(
-        property: r'date',
-        wildcard: pattern,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<Absence, Absence, QAfterFilterCondition> dateIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'date',
-        value: '',
-      ));
-    });
-  }
-
-  QueryBuilder<Absence, Absence, QAfterFilterCondition> dateIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'date',
-        value: '',
-      ));
-    });
-  }
-
-  QueryBuilder<Absence, Absence, QAfterFilterCondition> descriptionEqualTo(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'description',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<Absence, Absence, QAfterFilterCondition> descriptionGreaterThan(
-    String value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'description',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<Absence, Absence, QAfterFilterCondition> descriptionLessThan(
-    String value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'description',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<Absence, Absence, QAfterFilterCondition> descriptionBetween(
-    String lower,
-    String upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'description',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<Absence, Absence, QAfterFilterCondition> descriptionStartsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'description',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<Absence, Absence, QAfterFilterCondition> descriptionEndsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'description',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<Absence, Absence, QAfterFilterCondition> descriptionContains(
-      String value,
-      {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.contains(
-        property: r'description',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<Absence, Absence, QAfterFilterCondition> descriptionMatches(
-      String pattern,
-      {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.matches(
-        property: r'description',
-        wildcard: pattern,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<Absence, Absence, QAfterFilterCondition> descriptionIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'description',
-        value: '',
-      ));
-    });
-  }
-
-  QueryBuilder<Absence, Absence, QAfterFilterCondition>
-      descriptionIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'description',
-        value: '',
       ));
     });
   }
@@ -520,6 +311,189 @@ extension AbsenceQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
         property: r'id',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<Absence, Absence, QAfterFilterCondition> motifEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'motif',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Absence, Absence, QAfterFilterCondition> motifGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'motif',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Absence, Absence, QAfterFilterCondition> motifLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'motif',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Absence, Absence, QAfterFilterCondition> motifBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'motif',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Absence, Absence, QAfterFilterCondition> motifStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'motif',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Absence, Absence, QAfterFilterCondition> motifEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'motif',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Absence, Absence, QAfterFilterCondition> motifContains(
+      String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'motif',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Absence, Absence, QAfterFilterCondition> motifMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'motif',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Absence, Absence, QAfterFilterCondition> motifIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'motif',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<Absence, Absence, QAfterFilterCondition> motifIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'motif',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<Absence, Absence, QAfterFilterCondition> startDateEqualTo(
+      DateTime value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'startDate',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Absence, Absence, QAfterFilterCondition> startDateGreaterThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'startDate',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Absence, Absence, QAfterFilterCondition> startDateLessThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'startDate',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Absence, Absence, QAfterFilterCondition> startDateBetween(
+    DateTime lower,
+    DateTime upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'startDate',
         lower: lower,
         includeLower: includeLower,
         upper: upper,
@@ -580,136 +554,6 @@ extension AbsenceQueryFilter
       ));
     });
   }
-
-  QueryBuilder<Absence, Absence, QAfterFilterCondition> userIdEqualTo(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'userId',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<Absence, Absence, QAfterFilterCondition> userIdGreaterThan(
-    String value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'userId',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<Absence, Absence, QAfterFilterCondition> userIdLessThan(
-    String value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'userId',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<Absence, Absence, QAfterFilterCondition> userIdBetween(
-    String lower,
-    String upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'userId',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<Absence, Absence, QAfterFilterCondition> userIdStartsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'userId',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<Absence, Absence, QAfterFilterCondition> userIdEndsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'userId',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<Absence, Absence, QAfterFilterCondition> userIdContains(
-      String value,
-      {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.contains(
-        property: r'userId',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<Absence, Absence, QAfterFilterCondition> userIdMatches(
-      String pattern,
-      {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.matches(
-        property: r'userId',
-        wildcard: pattern,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<Absence, Absence, QAfterFilterCondition> userIdIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'userId',
-        value: '',
-      ));
-    });
-  }
-
-  QueryBuilder<Absence, Absence, QAfterFilterCondition> userIdIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'userId',
-        value: '',
-      ));
-    });
-  }
 }
 
 extension AbsenceQueryObject
@@ -719,27 +563,39 @@ extension AbsenceQueryLinks
     on QueryBuilder<Absence, Absence, QFilterCondition> {}
 
 extension AbsenceQuerySortBy on QueryBuilder<Absence, Absence, QSortBy> {
-  QueryBuilder<Absence, Absence, QAfterSortBy> sortByDate() {
+  QueryBuilder<Absence, Absence, QAfterSortBy> sortByEndDate() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'date', Sort.asc);
+      return query.addSortBy(r'endDate', Sort.asc);
     });
   }
 
-  QueryBuilder<Absence, Absence, QAfterSortBy> sortByDateDesc() {
+  QueryBuilder<Absence, Absence, QAfterSortBy> sortByEndDateDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'date', Sort.desc);
+      return query.addSortBy(r'endDate', Sort.desc);
     });
   }
 
-  QueryBuilder<Absence, Absence, QAfterSortBy> sortByDescription() {
+  QueryBuilder<Absence, Absence, QAfterSortBy> sortByMotif() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'description', Sort.asc);
+      return query.addSortBy(r'motif', Sort.asc);
     });
   }
 
-  QueryBuilder<Absence, Absence, QAfterSortBy> sortByDescriptionDesc() {
+  QueryBuilder<Absence, Absence, QAfterSortBy> sortByMotifDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'description', Sort.desc);
+      return query.addSortBy(r'motif', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Absence, Absence, QAfterSortBy> sortByStartDate() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'startDate', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Absence, Absence, QAfterSortBy> sortByStartDateDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'startDate', Sort.desc);
     });
   }
 
@@ -754,43 +610,19 @@ extension AbsenceQuerySortBy on QueryBuilder<Absence, Absence, QSortBy> {
       return query.addSortBy(r'type', Sort.desc);
     });
   }
-
-  QueryBuilder<Absence, Absence, QAfterSortBy> sortByUserId() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'userId', Sort.asc);
-    });
-  }
-
-  QueryBuilder<Absence, Absence, QAfterSortBy> sortByUserIdDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'userId', Sort.desc);
-    });
-  }
 }
 
 extension AbsenceQuerySortThenBy
     on QueryBuilder<Absence, Absence, QSortThenBy> {
-  QueryBuilder<Absence, Absence, QAfterSortBy> thenByDate() {
+  QueryBuilder<Absence, Absence, QAfterSortBy> thenByEndDate() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'date', Sort.asc);
+      return query.addSortBy(r'endDate', Sort.asc);
     });
   }
 
-  QueryBuilder<Absence, Absence, QAfterSortBy> thenByDateDesc() {
+  QueryBuilder<Absence, Absence, QAfterSortBy> thenByEndDateDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'date', Sort.desc);
-    });
-  }
-
-  QueryBuilder<Absence, Absence, QAfterSortBy> thenByDescription() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'description', Sort.asc);
-    });
-  }
-
-  QueryBuilder<Absence, Absence, QAfterSortBy> thenByDescriptionDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'description', Sort.desc);
+      return query.addSortBy(r'endDate', Sort.desc);
     });
   }
 
@@ -806,6 +638,30 @@ extension AbsenceQuerySortThenBy
     });
   }
 
+  QueryBuilder<Absence, Absence, QAfterSortBy> thenByMotif() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'motif', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Absence, Absence, QAfterSortBy> thenByMotifDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'motif', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Absence, Absence, QAfterSortBy> thenByStartDate() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'startDate', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Absence, Absence, QAfterSortBy> thenByStartDateDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'startDate', Sort.desc);
+    });
+  }
+
   QueryBuilder<Absence, Absence, QAfterSortBy> thenByType() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'type', Sort.asc);
@@ -817,46 +673,32 @@ extension AbsenceQuerySortThenBy
       return query.addSortBy(r'type', Sort.desc);
     });
   }
-
-  QueryBuilder<Absence, Absence, QAfterSortBy> thenByUserId() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'userId', Sort.asc);
-    });
-  }
-
-  QueryBuilder<Absence, Absence, QAfterSortBy> thenByUserIdDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'userId', Sort.desc);
-    });
-  }
 }
 
 extension AbsenceQueryWhereDistinct
     on QueryBuilder<Absence, Absence, QDistinct> {
-  QueryBuilder<Absence, Absence, QDistinct> distinctByDate(
-      {bool caseSensitive = true}) {
+  QueryBuilder<Absence, Absence, QDistinct> distinctByEndDate() {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'date', caseSensitive: caseSensitive);
+      return query.addDistinctBy(r'endDate');
     });
   }
 
-  QueryBuilder<Absence, Absence, QDistinct> distinctByDescription(
+  QueryBuilder<Absence, Absence, QDistinct> distinctByMotif(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'description', caseSensitive: caseSensitive);
+      return query.addDistinctBy(r'motif', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<Absence, Absence, QDistinct> distinctByStartDate() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'startDate');
     });
   }
 
   QueryBuilder<Absence, Absence, QDistinct> distinctByType() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'type');
-    });
-  }
-
-  QueryBuilder<Absence, Absence, QDistinct> distinctByUserId(
-      {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'userId', caseSensitive: caseSensitive);
     });
   }
 }
@@ -869,27 +711,27 @@ extension AbsenceQueryProperty
     });
   }
 
-  QueryBuilder<Absence, String, QQueryOperations> dateProperty() {
+  QueryBuilder<Absence, DateTime, QQueryOperations> endDateProperty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'date');
+      return query.addPropertyName(r'endDate');
     });
   }
 
-  QueryBuilder<Absence, String, QQueryOperations> descriptionProperty() {
+  QueryBuilder<Absence, String, QQueryOperations> motifProperty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'description');
+      return query.addPropertyName(r'motif');
+    });
+  }
+
+  QueryBuilder<Absence, DateTime, QQueryOperations> startDateProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'startDate');
     });
   }
 
   QueryBuilder<Absence, AbsenceType, QQueryOperations> typeProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'type');
-    });
-  }
-
-  QueryBuilder<Absence, String, QQueryOperations> userIdProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'userId');
     });
   }
 }
