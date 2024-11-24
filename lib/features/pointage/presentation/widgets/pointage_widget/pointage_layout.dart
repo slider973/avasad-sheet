@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:time_sheet/features/absence/domain/entities/absence_entity.dart';
 import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_absence.dart';
 import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_absence_bouton.dart';
 import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_boutton.dart';
@@ -16,11 +17,13 @@ class PointageLayout extends StatelessWidget {
   final List<Map<String, dynamic>> pointages;
   final VoidCallback onActionPointage;
   final Function(Map<String, dynamic>) onModifierPointage;
-  final Function(DateTime, DateTime, String, String, String, TimeOfDay?, TimeOfDay?) onSignalerAbsencePeriode;
+  final Function(DateTime, DateTime, String, AbsenceType, String, String,
+      TimeOfDay?, TimeOfDay?) onSignalerAbsencePeriode;
   final VoidCallback onDeleteEntry;
   final Duration totalDayHours;
   final String monthlyHoursStatus;
   final String? absenceReason;
+  final AbsenceEntity? absence;
   final Duration totalBreakTime;
   final Duration weeklyWorkTime;
   final Duration weeklyTarget;
@@ -41,6 +44,7 @@ class PointageLayout extends StatelessWidget {
     required this.totalDayHours,
     required this.monthlyHoursStatus,
     this.absenceReason,
+    this.absence,
     required this.totalBreakTime,
     required this.weeklyWorkTime,
     required this.weeklyTarget,
@@ -53,6 +57,7 @@ class PointageLayout extends StatelessWidget {
     if (absenceReason != null && absenceReason!.isNotEmpty) {
       return PointageAbsence(
         absenceReason: absenceReason!,
+        absence: absence,
         onDeleteEntry: onDeleteEntry,
         etatActuel: etatActuel,
       );
@@ -75,12 +80,14 @@ class PointageLayout extends StatelessWidget {
                     children: [
                       Text(
                         'Total du jour : ${_formatDuration(totalDayHours)}',
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 10),
                       Text(
                         'Temps de pause : ${_formatDuration(totalBreakTime)}',
-                        style: const TextStyle(fontSize: 14, fontStyle: FontStyle.italic),
+                        style: const TextStyle(
+                            fontSize: 14, fontStyle: FontStyle.italic),
                       ),
                     ],
                   ),
@@ -131,17 +138,20 @@ class PointageLayout extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Résumé hebdomadaire', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const Text('Résumé hebdomadaire',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             LinearProgressIndicator(
               value: weeklyTarget.inMinutes > 0
-                  ? (weeklyWorkTime.inMinutes / weeklyTarget.inMinutes).clamp(0.0, 1.0)
+                  ? (weeklyWorkTime.inMinutes / weeklyTarget.inMinutes)
+                      .clamp(0.0, 1.0)
                   : 0.0,
               backgroundColor: Colors.grey[200],
               valueColor: const AlwaysStoppedAnimation<Color>(Colors.teal),
             ),
             const SizedBox(height: 8),
-            Text('${_formatDuration(weeklyWorkTime)} / ${_formatDuration(weeklyTarget)}'),
+            Text(
+                '${_formatDuration(weeklyWorkTime)} / ${_formatDuration(weeklyTarget)}'),
           ],
         ),
       ),
@@ -155,7 +165,8 @@ class PointageLayout extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Informations complémentaires', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const Text('Informations complémentaires',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Text('Heures supplémentaires: ${_formatDuration(overtimeHours)}'),
             Text('Jours de congés restants: $remainingVacationDays'),

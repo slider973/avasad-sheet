@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:time_sheet/features/absence/domain/entities/absence_entity.dart';
 import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_absence.dart';
 import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_layout.dart';
 
@@ -27,6 +28,7 @@ class _PointageWidgetState extends State<PointageWidget>
   Duration _totalBreakTime = Duration.zero;
   String _monthlyHoursStatus = '';
   String? _absenceReason;
+  AbsenceEntity? _absence;
   TimesheetEntry? _currentEntry;
   Duration _weeklyWorkTime = Duration.zero;
   int _remainingVacationDays = 0;
@@ -101,15 +103,13 @@ class _PointageWidgetState extends State<PointageWidget>
       listener: _timeSheetListener,
       builder: (context, state) {
         if (state is TimeSheetAbsenceSignalee) {
-          print(' abb ${state.absenceReason}');
           if (state.absenceReason.isNotEmpty) {
             return PointageAbsence(
               absenceReason: state.absenceReason,
+              absence: state.entry.absence,
               onDeleteEntry: () {
-                if (state.entry != null) {
-                  _deleteEntry(state.entry!);
-                }
-              },
+                _deleteEntry(state.entry);
+                            },
               etatActuel: _etatActuel,
             );
           }
@@ -127,6 +127,7 @@ class _PointageWidgetState extends State<PointageWidget>
           totalDayHours: _totalDayHours,
           monthlyHoursStatus: _monthlyHoursStatus,
           absenceReason: _absenceReason,
+          absence: _absence,
           totalBreakTime: _totalBreakTime,
           onDeleteEntry: () {
             if (_currentEntry != null) {
@@ -159,6 +160,7 @@ class _PointageWidgetState extends State<PointageWidget>
         // Calculer le statut mensuel
         _monthlyHoursStatus = _calculateMonthlyHoursStatus(state.entry);
         _absenceReason = state.entry.absenceReason;
+        _absence = state.entry.absence;
         _currentEntry = state.entry;
         _loadWeeklyData();
         _remainingVacationDays = state.remainingVacationDays;
@@ -264,13 +266,15 @@ class _PointageWidgetState extends State<PointageWidget>
       DateTime dateDebut,
       DateTime dateFin,
       String type,
+      AbsenceType absence,
       String raison,
       String? periode,
       TimeOfDay? startTime,
       TimeOfDay? endTime) {
     final bloc = context.read<TimeSheetBloc>();
-    bloc.add(TimeSheetSignalerAbsencePeriodeEvent(
-        dateDebut, dateFin, type, raison, periode, startTime, endTime , widget.selectedDate));
+    final absenceEntity = AbsenceEntity(startDate: dateDebut, endDate: dateFin, type: absence, motif: raison);
+    bloc.add(TimeSheetSignalerAbsencePeriodeEvent(dateDebut, dateFin, type,
+        raison, periode, startTime, endTime,  widget.selectedDate, absenceEntity));
     // Convertir TimeOfDay en String si non null
     String? startTimeStr = startTime?.format(context);
     String? endTimeStr = endTime?.format(context);

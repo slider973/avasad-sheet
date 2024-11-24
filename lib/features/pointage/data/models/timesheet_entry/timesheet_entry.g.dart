@@ -65,7 +65,15 @@ const TimeSheetEntryModelSchema = CollectionSchema(
   deserializeProp: _timeSheetEntryModelDeserializeProp,
   idName: r'id',
   indexes: {},
-  links: {},
+  links: {
+    r'absence': LinkSchema(
+      id: 7426728764344287438,
+      name: r'absence',
+      target: r'Absence',
+      single: true,
+      linkName: r'timesheetEntry',
+    )
+  },
   embeddedSchemas: {},
   getId: _timeSheetEntryModelGetId,
   getLinks: _timeSheetEntryModelGetLinks,
@@ -111,17 +119,16 @@ TimeSheetEntryModel _timeSheetEntryModelDeserialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  final object = TimeSheetEntryModel(
-    absenceReason: reader.readStringOrNull(offsets[0]) ?? '',
-    dayDate: reader.readDateTime(offsets[1]),
-    dayOfWeekDate: reader.readString(offsets[2]),
-    endAfternoon: reader.readStringOrNull(offsets[3]) ?? '',
-    endMorning: reader.readStringOrNull(offsets[4]) ?? '',
-    period: reader.readStringOrNull(offsets[5]) ?? '',
-    startAfternoon: reader.readStringOrNull(offsets[6]) ?? '',
-    startMorning: reader.readStringOrNull(offsets[7]) ?? '',
-  );
+  final object = TimeSheetEntryModel();
+  object.absenceReason = reader.readString(offsets[0]);
+  object.dayDate = reader.readDateTime(offsets[1]);
+  object.dayOfWeekDate = reader.readString(offsets[2]);
+  object.endAfternoon = reader.readString(offsets[3]);
+  object.endMorning = reader.readString(offsets[4]);
   object.id = id;
+  object.period = reader.readString(offsets[5]);
+  object.startAfternoon = reader.readString(offsets[6]);
+  object.startMorning = reader.readString(offsets[7]);
   return object;
 }
 
@@ -133,21 +140,21 @@ P _timeSheetEntryModelDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readStringOrNull(offset) ?? '') as P;
+      return (reader.readString(offset)) as P;
     case 1:
       return (reader.readDateTime(offset)) as P;
     case 2:
       return (reader.readString(offset)) as P;
     case 3:
-      return (reader.readStringOrNull(offset) ?? '') as P;
+      return (reader.readString(offset)) as P;
     case 4:
-      return (reader.readStringOrNull(offset) ?? '') as P;
+      return (reader.readString(offset)) as P;
     case 5:
-      return (reader.readStringOrNull(offset) ?? '') as P;
+      return (reader.readString(offset)) as P;
     case 6:
-      return (reader.readStringOrNull(offset) ?? '') as P;
+      return (reader.readString(offset)) as P;
     case 7:
-      return (reader.readStringOrNull(offset) ?? '') as P;
+      return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -159,12 +166,13 @@ Id _timeSheetEntryModelGetId(TimeSheetEntryModel object) {
 
 List<IsarLinkBase<dynamic>> _timeSheetEntryModelGetLinks(
     TimeSheetEntryModel object) {
-  return [];
+  return [object.absence];
 }
 
 void _timeSheetEntryModelAttach(
     IsarCollection<dynamic> col, Id id, TimeSheetEntryModel object) {
   object.id = id;
+  object.absence.attach(col, col.isar.collection<Absence>(), r'absence', id);
 }
 
 extension TimeSheetEntryModelQueryWhereSort
@@ -1318,7 +1326,21 @@ extension TimeSheetEntryModelQueryObject on QueryBuilder<TimeSheetEntryModel,
     TimeSheetEntryModel, QFilterCondition> {}
 
 extension TimeSheetEntryModelQueryLinks on QueryBuilder<TimeSheetEntryModel,
-    TimeSheetEntryModel, QFilterCondition> {}
+    TimeSheetEntryModel, QFilterCondition> {
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterFilterCondition>
+      absence(FilterQuery<Absence> q) {
+    return QueryBuilder.apply(this, (query) {
+      return query.link(q, r'absence');
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterFilterCondition>
+      absenceIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.linkLength(r'absence', 0, true, 0, true);
+    });
+  }
+}
 
 extension TimeSheetEntryModelQuerySortBy
     on QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QSortBy> {

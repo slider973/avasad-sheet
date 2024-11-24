@@ -7,6 +7,8 @@ import 'package:googleapis/cloudsearch/v1.dart';
 import 'package:intl/intl.dart';
 
 //use cases
+import '../../../../../../absence/data/models/absence.dart';
+import '../../../../../../absence/domain/entities/absence_entity.dart';
 import '../../../../../../preference/presentation/manager/preferences_bloc.dart';
 import '../../../../../domain/entities/timesheet_entry.dart';
 import '../../../../../use_cases/delete_timesheet_entry_usecase.dart';
@@ -17,7 +19,7 @@ import '../../../../../use_cases/get_today_timesheet_entry_use_case.dart';
 import '../../../../../use_cases/get_weekly_work_time_usecase.dart';
 import '../../../../../use_cases/save_timesheet_entry_usecase.dart';
 import '../../../../../use_cases/signaler_absence_periode_usecase.dart';
-
+import '../../../../widgets/pointage_widget/pointage_absence.dart';
 
 part 'time_sheet_event.dart';
 
@@ -278,15 +280,19 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
       Emitter<TimeSheetState> emit) async {
     emit(TimeSheetLoading());
     try {
-      final daysOff =  await signalerAbsencePeriodeUsecase.execute(event);
-      final mapTest = daysOff.firstWhere((element) => element.containsKey(DateFormat("dd-MMM-yy").format(event.selectedDay)));
+      final daysOff = await signalerAbsencePeriodeUsecase.execute(event);
+      final mapTest = daysOff.firstWhere((element) => element
+          .containsKey(DateFormat("dd-MMM-yy").format(event.selectedDay)));
       print("event.raison ${event.type}");
+      print(mapTest[DateFormat("dd-MMM-yy").format(event.selectedDay)]);
       emit(TimeSheetAbsenceSignalee(
         absenceReason: event.type,
-        entry: mapTest[DateFormat("dd-MMM-yy").format(event.selectedDay)] as TimesheetEntry,
+        entry: mapTest[DateFormat("dd-MMM-yy").format(event.selectedDay)]
+            as TimesheetEntry,
       ));
-    } catch (e) {
+    } catch (e, stackTrace) {
       emit(TimeSheetErrorState(e.toString()));
+      print(stackTrace);
     }
   }
 

@@ -1,4 +1,5 @@
 import 'package:intl/intl.dart';
+import 'package:time_sheet/features/absence/domain/entities/absence_entity.dart';
 
 class TimesheetEntry {
   int? id;
@@ -9,6 +10,7 @@ class TimesheetEntry {
   String startAfternoon;
   String endAfternoon;
   final String? absenceReason;
+  final AbsenceEntity? absence;
   final String? period;
 
   TimesheetEntry({this.id,
@@ -18,6 +20,7 @@ class TimesheetEntry {
     required this.endMorning,
     required this.startAfternoon,
     required this.endAfternoon,
+    this.absence,
     this.absenceReason,
     this.period
   });
@@ -56,6 +59,10 @@ class TimesheetEntry {
   Duration calculateDailyTotal() {
     final format = DateFormat('HH:mm');
     Duration total = Duration.zero;
+
+    if (absence != null) {
+      return Duration.zero;
+    }
 
     if (startMorning.isNotEmpty && endMorning.isNotEmpty) {
       final start = format.parse(startMorning);
@@ -118,6 +125,7 @@ class TimesheetEntry {
     String? startAfternoon,
     String? endAfternoon,
     String? absenceReason,
+    AbsenceEntity? absence,
     String? period,
   }) {
     return TimesheetEntry(
@@ -130,6 +138,7 @@ class TimesheetEntry {
       endAfternoon: endAfternoon ?? this.endAfternoon,
       absenceReason: absenceReason ?? this.absenceReason,
       period: period ?? this.period,
+      absence: absence ?? this.absence,
 
     );
   }

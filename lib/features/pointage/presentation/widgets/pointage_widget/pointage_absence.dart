@@ -1,20 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:time_sheet/features/absence/domain/entities/absence_entity.dart';
 import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_remove_timesheet_day.dart';
 import '../../../../../enum/absence_motif.dart';
 
 class PointageAbsence extends StatefulWidget {
   final String? absenceReason;
+  final AbsenceEntity? absence;
   final VoidCallback onDeleteEntry;
   final String etatActuel;
 
   const PointageAbsence({
-    Key? key,
+    super.key,
     this.absenceReason,
     required this.onDeleteEntry,
     required this.etatActuel,
-  }) : super(key: key);
+    this.absence,
+  });
 
   @override
   _PointageAbsenceState createState() => _PointageAbsenceState();
@@ -78,7 +81,7 @@ class _PointageAbsenceState extends State<PointageAbsence> {
       case AbsenceType.vacation:
         animationPath = 'assets/animation/vacation.json';
         break;
-      case AbsenceType.publicHoliday:
+      case AbsenceType.publicHoliday || AbsenceType.other:
         animationPath = 'assets/animation/holiday.json';
         break;
       case AbsenceType.sickLeave:
@@ -100,6 +103,9 @@ class _PointageAbsenceState extends State<PointageAbsence> {
         title = 'Jour férié';
         color = Colors.green;
         break;
+      case AbsenceType.other:
+        title = 'Jour de congé';
+        color = Colors.green;
       case AbsenceType.sickLeave:
         title = 'Prenez soin de vous';
         color = Colors.orange;
@@ -108,9 +114,9 @@ class _PointageAbsenceState extends State<PointageAbsence> {
     return Text(
       title,
       style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-        color: color,
-        fontWeight: FontWeight.bold,
-      ),
+            color: color,
+            fontWeight: FontWeight.bold,
+          ),
     );
   }
 
@@ -126,6 +132,9 @@ class _PointageAbsenceState extends State<PointageAbsence> {
       case AbsenceType.sickLeave:
         subtitle = 'Reposez-vous bien pour un prompt rétablissement.';
         break;
+      case AbsenceType.other:
+        subtitle = 'Absence non spécifiée';
+        break;
     }
 
     return GestureDetector(
@@ -137,7 +146,8 @@ class _PointageAbsenceState extends State<PointageAbsence> {
           child: Animate(
             effects: [
               FadeEffect(duration: 500.ms),
-              SlideEffect(duration: 500.ms, begin: Offset(0, 0.1), end: Offset.zero),
+              SlideEffect(
+                  duration: 500.ms, begin: Offset(0, 0.1), end: Offset.zero),
             ],
             child: Text(
               subtitle,
@@ -166,11 +176,29 @@ class _PointageAbsenceState extends State<PointageAbsence> {
               style: Theme.of(context).textTheme.titleLarge,
             ),
             Divider(),
-            _buildInfoRow(context, 'Raison', widget.absenceReason ?? 'Non spécifiée'),
+            _buildInfoRow(
+                context,
+                'Raison',
+                widget.absence!.motif.isNotEmpty
+                    ? widget.absence!.motif
+                    : getMotifFromType()),
           ],
         ),
       ),
     );
+  }
+
+  String getMotifFromType() {
+    switch (widget.absence!.type) {
+      case AbsenceType.vacation:
+        return AbsenceMotif.leaveDay.value;
+      case AbsenceType.publicHoliday:
+        return AbsenceMotif.other.value;
+      case AbsenceType.sickLeave:
+        return AbsenceMotif.sickness.value;
+      case AbsenceType.other:
+        return AbsenceMotif.other.value;
+    }
   }
 
   Widget _buildInfoRow(BuildContext context, String label, String value) {
@@ -190,12 +218,12 @@ class _PointageAbsenceState extends State<PointageAbsence> {
     if (reason == null) return AbsenceType.vacation;
     if (reason.toLowerCase() == AbsenceMotif.leaveDay.value.toLowerCase()) {
       return AbsenceType.vacation;
-    } else if (reason.toLowerCase() == AbsenceMotif.publicHoliday.value.toLowerCase()) {
-      return AbsenceType.publicHoliday;
+    } else if (reason.toLowerCase() == AbsenceMotif.other.value.toLowerCase()) {
+      return AbsenceType.vacation;
     } else {
       return AbsenceType.sickLeave;
     }
   }
 }
 
-enum AbsenceType { vacation, publicHoliday, sickLeave }
+enum AbsenceType { vacation, publicHoliday, sickLeave, other }

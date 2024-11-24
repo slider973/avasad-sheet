@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_absence.dart';
 import '../../../../../enum/absence_motif.dart';
 import '../../../../../enum/absence_period.dart';
 
 class AbsenceForm extends StatefulWidget {
   final DateTime selectedDate;
-  final Function(
-          DateTime, DateTime, String, String, String, TimeOfDay?, TimeOfDay?)
-      onSignalerAbsencePeriode;
+  final Function(DateTime, DateTime, String, AbsenceType, String, String,
+      TimeOfDay?, TimeOfDay?) onSignalerAbsencePeriode;
 
   const AbsenceForm({
-    Key? key,
+    super.key,
     required this.selectedDate,
     required this.onSignalerAbsencePeriode,
-  }) : super(key: key);
+  });
 
   @override
   _AbsenceFormState createState() => _AbsenceFormState();
@@ -22,8 +22,9 @@ class AbsenceForm extends StatefulWidget {
 class _AbsenceFormState extends State<AbsenceForm> {
   late DateTime dateDebut;
   late DateTime dateFin;
-  AbsenceMotif type = AbsenceMotif.publicHoliday;
+  AbsenceMotif motif = AbsenceMotif.leaveDay;
   String raison = '';
+  AbsenceType absenceType = AbsenceType.vacation;
   AbsencePeriod periode = AbsencePeriod.fullDay;
   bool canChangePeriod = true;
   String? halfDayPeriod;
@@ -60,15 +61,15 @@ class _AbsenceFormState extends State<AbsenceForm> {
               const SizedBox(height: 16),
               _buildDateRangePicker(),
               const SizedBox(height: 16),
-              if (canChangePeriod && type != AbsenceMotif.publicHoliday)
+              if (canChangePeriod && motif != AbsenceMotif.other)
                 _buildPeriodSegmentedButton(),
-              if (periode == AbsencePeriod.halfDay && type != AbsenceMotif.publicHoliday) ...[
+              if (periode == AbsencePeriod.halfDay &&
+                  motif != AbsenceMotif.other) ...[
                 const SizedBox(height: 16),
                 _buildTimeRangePicker(),
               ],
               const SizedBox(height: 16),
-              if (type != AbsenceMotif.publicHoliday)
-              _buildReasonTextField(),
+              if (motif == AbsenceMotif.other) _buildReasonTextField(),
               const SizedBox(height: 24),
               _buildActionButtons(),
             ],
@@ -83,7 +84,7 @@ class _AbsenceFormState extends State<AbsenceForm> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          "Type d'absence",
+          "Motif d'absence",
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
@@ -94,15 +95,26 @@ class _AbsenceFormState extends State<AbsenceForm> {
               label: Text(value.value),
             );
           }).toList(),
-          selected: {type},
+          selected: {motif},
           onSelectionChanged: (Set<AbsenceMotif> newSelection) {
             setState(() {
-              type = newSelection.first;
+              motif = newSelection.first;
+              absenceType = _getTypeFromMotif(motif);
             });
           },
         ),
       ],
     );
+  }
+
+  _getTypeFromMotif(AbsenceMotif motif) {
+    if (motif == AbsenceMotif.leaveDay) {
+      return AbsenceType.vacation;
+    } else if (motif == AbsenceMotif.other) {
+      return AbsenceType.other;
+    } else {
+      return AbsenceType.sickLeave;
+    }
   }
 
   Widget _buildDateRangePicker() {
@@ -145,8 +157,6 @@ class _AbsenceFormState extends State<AbsenceForm> {
     );
   }
 
-
-
   Widget _buildTimeRangePicker() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -187,7 +197,8 @@ class _AbsenceFormState extends State<AbsenceForm> {
                     const SizedBox(height: 4),
                     Text(
                       "Sélectionner les heures de présence (non d'absence)",
-                      style: TextStyle(fontSize: 14, color: Colors.amber.shade900),
+                      style:
+                          TextStyle(fontSize: 14, color: Colors.amber.shade900),
                     ),
                   ],
                 ),
@@ -204,7 +215,8 @@ class _AbsenceFormState extends State<AbsenceForm> {
                 child: Text(startTime != null
                     ? 'Début: ${startTime!.format(context)}'
                     : 'l\'heure de début'),
-              ).animate().scale(delay: 200.ms, duration: 400.ms, curve: Curves.easeOutBack),
+              ).animate().scale(
+                  delay: 200.ms, duration: 400.ms, curve: Curves.easeOutBack),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -213,7 +225,8 @@ class _AbsenceFormState extends State<AbsenceForm> {
                 child: Text(endTime != null
                     ? 'Fin: ${endTime!.format(context)}'
                     : 'l\'heure de fin'),
-              ).animate().scale(delay: 400.ms, duration: 400.ms, curve: Curves.easeOutBack),
+              ).animate().scale(
+                  delay: 400.ms, duration: 400.ms, curve: Curves.easeOutBack),
             ),
           ],
         ),
@@ -320,8 +333,8 @@ class _AbsenceFormState extends State<AbsenceForm> {
   }
 
   void _submitAbsence() {
-    widget.onSignalerAbsencePeriode(dateDebut, dateFin, type.value, raison,
-        periode.value, startTime, endTime);
+    widget.onSignalerAbsencePeriode(dateDebut, dateFin, motif.value,
+        absenceType, raison, periode.value, startTime, endTime);
     Navigator.of(context).pop();
   }
 

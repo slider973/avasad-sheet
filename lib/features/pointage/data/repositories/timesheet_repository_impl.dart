@@ -82,10 +82,9 @@ class TimesheetRepositoryImpl implements TimesheetRepository {
     final TimeSheetEntryModel entry = entries.firstWhere(
       (entry) => DateFormat("dd-MMM-yy").format(entry.dayDate) == date,
       orElse: () {
-        final model = TimeSheetEntryModel(
-          dayDate: DateTime.now(),
-          dayOfWeekDate: '',
-        );
+        final model = TimeSheetEntryModel()
+          ..dayDate = DateTime.now()
+          ..dayOfWeekDate = '';
         return model;
       },
     );

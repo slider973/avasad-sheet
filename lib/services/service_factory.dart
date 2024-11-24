@@ -12,6 +12,7 @@ import '../features/pointage/use_cases/delete_timesheet_entry_usecase.dart';
 import '../features/pointage/use_cases/detect_anomalies_usecase.dart';
 import '../features/pointage/use_cases/find_pointed_list_usecase.dart';
 import '../features/pointage/use_cases/generate_monthly_timesheet_usease.dart';
+import '../features/pointage/use_cases/generate_pdf_usecase.dart';
 import '../features/pointage/use_cases/get_overtime_hours_usecase.dart';
 import '../features/pointage/use_cases/get_remaining_vacation_days_usecase.dart';
 import '../features/pointage/use_cases/get_today_timesheet_entry_use_case.dart';
@@ -76,6 +77,7 @@ class ServiceFactory extends StatelessWidget {
               getIt<TimesheetRepositoryImpl>(),
               getIt<GetSignatureUseCase>(),
               BlocProvider.of<PreferencesBloc>(context),
+              getIt<GeneratePdfUseCase>(),
             ),
           ),
           BlocProvider<AnomalyBloc>(
