@@ -36,9 +36,9 @@ class GeneratePdfUseCase {
   final totalRowColor =
       PdfColor.fromHex('#F2F2F2'); // Gris très clair pour les totaux
 
-  Future<Either<String, String>> execute(int monthNumber) async {
+  Future<Either<String, String>> execute(int monthNumber, int year) async {
     try {
-      return await _generatePdf(monthNumber);
+      return await _generatePdf(monthNumber, year);
     } catch (e) {
       return Left("Erreur lors de la génération du PDF: ${e.toString()}");
     }
@@ -68,13 +68,13 @@ class GeneratePdfUseCase {
   //   return Right(pdfFile.path);
   // }
 
-  Future<Either<String, String>> _generatePdf(int monthNumber) async {
+  Future<Either<String, String>> _generatePdf(int monthNumber, int year) async {
     debugPrint('🚀 Début de la génération du PDF pour le mois $monthNumber');
     try {
       // Récupération des entrées
       debugPrint('📊 Récupération des entrées du timesheet...');
       final timesheetEntryList =
-          await repository.findEntriesFromMonthOf(monthNumber);
+          await repository.findEntriesFromMonthOf(monthNumber, year);
       debugPrint('✅ ${timesheetEntryList.length} entrées récupérées');
 
       // Génération des semaines

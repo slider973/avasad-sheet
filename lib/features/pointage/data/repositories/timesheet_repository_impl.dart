@@ -41,9 +41,9 @@ class TimesheetRepositoryImpl implements TimesheetRepository {
   }
 
   @override
-  Future<List<TimesheetEntry>> findEntriesFromMonthOf(int monthNumber) {
-    logger.i('findEntriesFromMonthOf $monthNumber');
-    return datasource.findEntriesFromMonthOf(monthNumber).then((entries) {
+  Future<List<TimesheetEntry>> findEntriesFromMonthOf(int monthNumber, int? year) {
+    logger.i('[TimesheetRepositoryImpl] findEntriesFromMonthOf $monthNumber $year');
+    return datasource.findEntriesFromMonthOf(monthNumber, year!).then((entries) {
       return entries.map((e) => TimesheetEntryMapper.fromModel(e)).toList();
     });
   }

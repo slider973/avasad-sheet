@@ -9,7 +9,7 @@ abstract class TimesheetRepository {
 
   Future<List<TimesheetEntry>> getTimesheetEntriesForWeek(int weekNumber);
 
-  Future<List<TimesheetEntry>> findEntriesFromMonthOf(int monthNumber);
+  Future<List<TimesheetEntry>> findEntriesFromMonthOf(int monthNumber, int? year);
 
   Future<List<TimesheetEntry>> getTimesheetEntriesForMonth(int monthNumber);
 

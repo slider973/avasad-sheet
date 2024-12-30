@@ -3,6 +3,8 @@ import 'package:equatable/equatable.dart';
 
 import '../../../../../../../services/anomaly_detector_config.dart';
 import '../../../../../../preference/presentation/manager/preferences_bloc.dart';
+import '../../../../../data/models/anomalies/anomalies.dart';
+import '../../../../../data/repositories/anomaly_repository_impl.dart';
 import '../../../../../strategies/anomaly_detector.dart';
 import '../../../../../use_cases/detect_anomalies_usecase.dart';
 
@@ -13,31 +15,38 @@ class AnomalyBloc extends Bloc<AnomalyEvent, AnomalyState> {
   final DetectAnomaliesUseCase detectAnomaliesUseCase;
   final PreferencesBloc preferencesBloc;
   final Map<String, AnomalyDetector> allDetectors;
+  final AnomalyRepository anomalyRepository; // Ajout du repository
 
   AnomalyBloc({
     required this.detectAnomaliesUseCase,
     required this.preferencesBloc,
     required this.allDetectors,
+    required this.anomalyRepository,
   }) : super(AnomalyInitial()) {
     on<DetectAnomalies>(_onDetectAnomalies);
     on<LoadActiveDetectors>(_onLoadActiveDetectors);
     on<ToggleDetector>(_onToggleDetector);
+    on<MarkAnomalyResolved>(_onMarkResolved);
+  }
+  Future<void> _onMarkResolved(MarkAnomalyResolved event, Emitter<AnomalyState> emit) async {
+    try {
+      // Marque l'anomalie comme résolue et rafraîchit la liste
+      await anomalyRepository.markResolved(event.anomalyId);
+      add(DetectAnomalies());
+    } catch (e) {
+      emit(AnomalyError("Erreur lors de la résolution de l'anomalie : ${e.toString()}"));
+    }
   }
 
   Future<void> _onDetectAnomalies(DetectAnomalies event, Emitter<AnomalyState> emit) async {
     emit(AnomalyLoading());
     try {
-      final activeDetectorIds = await AnomalyDetectorConfig.getActiveDetectors(preferencesBloc);
-      final activeDetectors = activeDetectorIds
-          .where((id) => allDetectors.containsKey(id))
-          .map((id) => allDetectors[id]!)
-          .toList();
-
-      // Mettre à jour la liste des détecteurs dans le use case
-      detectAnomaliesUseCase.detectors = activeDetectors;
-
-      final anomalies = await detectAnomaliesUseCase.execute(event.month, event.year);
-      emit(AnomalyDetected(anomalies));
+      final anomalies = await anomalyRepository.getAnomalies(); // List<AnomalyModel>
+      if (anomalies.isEmpty) {
+        emit(const AnomalyLoaded([]));
+      } else {
+        emit(AnomalyLoaded(anomalies));
+      }
     } catch (e) {
       emit(AnomalyError("Erreur lors de la détection des anomalies : $e"));
     }

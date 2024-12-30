@@ -78,7 +78,7 @@ void showMonthPicker(BuildContext context) {
                 onPressed: () {
                   if (selectedMonth != null) {
                     Navigator.of(context).pop();
-                    context.read<PdfBloc>().add(GeneratePdfEvent(selectedMonth!));
+                    context.read<PdfBloc>().add(GeneratePdfEvent(selectedMonth!, selectedYear));
                   } else {
                     // Afficher un message d'erreur si aucun mois n'est sélectionné
                     ScaffoldMessenger.of(context).showSnackBar(

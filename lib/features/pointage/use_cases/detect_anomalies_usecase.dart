@@ -10,7 +10,7 @@ class DetectAnomaliesUseCase {
 
   Future<List<String>> execute(int month, int year) async {
     final monthToAsk =  DateTime.now().day > 20 ? month + 1 : month;
-    final entries = await repository.findEntriesFromMonthOf(monthToAsk);
+    final entries = await repository.findEntriesFromMonthOf(monthToAsk, year);
     return _detectAnomalies(entries);
   }
 
