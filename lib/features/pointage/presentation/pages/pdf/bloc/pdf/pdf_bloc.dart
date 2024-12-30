@@ -21,7 +21,6 @@ import '../../../../../data/models/generated_pdf/generated_pdf.dart';
 import '../../../../../domain/entities/work_week.dart';
 import '../../../../../use_cases/generate_pdf_usecase.dart';
 
-
 part 'pdf_event.dart';
 
 part 'pdf_state.dart';
@@ -36,7 +35,8 @@ class PdfBloc extends Bloc<PdfEvent, PdfState> {
   final PreferencesBloc preferencesBloc;
   final GeneratePdfUseCase generatePdfUseCase;
 
-  PdfBloc(this.repository, this.getSignatureUseCase, this.preferencesBloc, this.generatePdfUseCase)
+  PdfBloc(this.repository, this.getSignatureUseCase, this.preferencesBloc,
+      this.generatePdfUseCase)
       : super(PdfInitial()) {
     on<GeneratePdfEvent>(_onGeneratePdfEvent);
     on<LoadGeneratedPdfsEvent>(_onLoadGeneratedPdfsEvent);
@@ -50,19 +50,20 @@ class PdfBloc extends Bloc<PdfEvent, PdfState> {
     });
   }
 
-
   Future<void> _onGeneratePdfEvent(
       GeneratePdfEvent event, Emitter<PdfState> emit) async {
     emit(PdfGenerating());
     try {
-      final result = await generatePdfUseCase.execute(event.monthNumber);
+      final result =
+          await generatePdfUseCase.execute(event.monthNumber, event.year);
 
       result.match(
-            (error) {
-          String errorMessage = "Une erreur s'est produite lors de la génération du PDF: $error";
+        (error) {
+          String errorMessage =
+              "Une erreur s'est produite lors de la génération du PDF: $error";
           emit(PdfGenerationError(errorMessage));
         },
-            (pdfPath) {
+        (pdfPath) {
           emit(PdfGenerated(pdfPath));
           add(LoadGeneratedPdfsEvent());
         },
@@ -72,11 +73,11 @@ class PdfBloc extends Bloc<PdfEvent, PdfState> {
         exception,
         stackTrace: stackTrace,
       );
-      String errorMessage = "Une erreur inattendue s'est produite lors de la génération du PDF.";
+      String errorMessage =
+          "Une erreur inattendue s'est produite lors de la génération du PDF.";
       emit(PdfGenerationError(errorMessage));
     }
   }
-
 
   Future<void> _onLoadGeneratedPdfsEvent(
       LoadGeneratedPdfsEvent event, Emitter<PdfState> emit) async {
@@ -146,14 +147,18 @@ Future<File> generatePdf(
     signatureImage = pw.Image(pw.MemoryImage(user.signature!));
   }
 
-  double totalDays = weeks.fold(0.0, (sum, week) => sum + week.workday.fold(0.0, (daySum, day) {
-    if (day.entry.period == AbsencePeriod.halfDay.value) {
-      return daySum + 0.5;
-    } else if (!day.isAbsence()) {
-      return daySum + 1;
-    }
-    return daySum;
-  }));
+  double totalDays = weeks.fold(
+      0.0,
+      (sum, week) =>
+          sum +
+          week.workday.fold(0.0, (daySum, day) {
+            if (day.entry.period == AbsencePeriod.halfDay.value) {
+              return daySum + 0.5;
+            } else if (!day.isAbsence()) {
+              return daySum + 1;
+            }
+            return daySum;
+          }));
   final totalHours = weeks.fold(
       Duration.zero, (sum, week) => sum + week.calculateTotalWeekHours());
 
@@ -289,7 +294,8 @@ pw.TableRow _buildDayRow(Workday day, bool isWeekday) {
   bool isHalfDayAbsence = day.entry.period == AbsencePeriod.halfDay.value;
   bool isFullDayAbsence = day.isAbsence() && !isHalfDayAbsence;
   Duration workDuration = day.calculateTotalHours();
-  String formattedDuration = isFullDayAbsence ? '0h00' : _formatDuration(workDuration);
+  String formattedDuration =
+      isFullDayAbsence ? '0h00' : _formatDuration(workDuration);
 
   String daysWorked = isFullDayAbsence ? '0' : (isHalfDayAbsence ? '0.5' : '1');
   return pw.TableRow(
@@ -320,16 +326,14 @@ pw.TableRow _buildDayRow(Workday day, bool isWeekday) {
           child: pw.Text(day.entry.endAfternoon,
               style: const pw.TextStyle(fontSize: 6))),
       pw.Center(
-          child: pw.Text(
-              formattedDuration,
+          child: pw.Text(formattedDuration,
               style: const pw.TextStyle(fontSize: 6))),
       pw.Center(child: pw.Text('', style: const pw.TextStyle(fontSize: 6))),
       pw.Center(
           child: pw.Text(day.entry.absenceReason ?? '',
               style: const pw.TextStyle(fontSize: 6))),
       pw.Center(
-          child: pw.Text(daysWorked,
-              style: const pw.TextStyle(fontSize: 6))),
+          child: pw.Text(daysWorked, style: const pw.TextStyle(fontSize: 6))),
     ]
         .map((widget) =>
             pw.Padding(padding: const pw.EdgeInsets.all(3), child: widget))
@@ -365,8 +369,10 @@ pw.TableRow _buildWeekTotal(WorkWeek week) {
       pw.Text(''),
       pw.Text(''),
       pw.Center(
-          child: pw.Text('$formattedDaysWorked jour${daysWorked > 1 ? 's' : ''}',
-              style: pw.TextStyle(fontSize: 6, fontWeight: pw.FontWeight.bold))),
+          child: pw.Text(
+              '$formattedDaysWorked jour${daysWorked > 1 ? 's' : ''}',
+              style:
+                  pw.TextStyle(fontSize: 6, fontWeight: pw.FontWeight.bold))),
     ]
         .map((widget) =>
             pw.Padding(padding: const pw.EdgeInsets.all(5), child: widget))
@@ -388,16 +394,19 @@ pw.Widget _buildMonthTotal(Duration totalHours, double totalDays) {
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
             pw.Text('Total du mois: ${_formatDuration(totalHours)}',
-                style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
+                style:
+                    pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
           ],
         ),
         pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.end,
           children: [
             pw.Text('Jours travaillés:',
-                style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+                style:
+                    pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
             pw.Text(formattedTotalDays,
-                style: pw.TextStyle(fontSize: 15, fontWeight: pw.FontWeight.bold)),
+                style:
+                    pw.TextStyle(fontSize: 15, fontWeight: pw.FontWeight.bold)),
           ],
         ),
       ],
@@ -419,7 +428,8 @@ pw.Widget _buildFooter(pw.Image? signatureImage, User user) {
                     'Travailleur', user.fullName, signatureImage),
                 _buildSignatureColumn(
                     'Entreprise de mission', 'François Longchamp'),
-                _buildSignatureColumn('Delivery manager', 'Sovattha Sok', user.isDeliveryManager ? signatureImage : null),
+                _buildSignatureColumn('Delivery manager', 'Sovattha Sok',
+                    user.isDeliveryManager ? signatureImage : null),
               ],
             ),
           ],

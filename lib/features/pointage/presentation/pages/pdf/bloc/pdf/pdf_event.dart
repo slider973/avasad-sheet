@@ -9,11 +9,12 @@ abstract class PdfEvent extends Equatable {
 
 class GeneratePdfEvent extends PdfEvent {
   final int monthNumber;
+  final int year;
 
-  const GeneratePdfEvent(this.monthNumber);
+  const GeneratePdfEvent(this.monthNumber, this.year);
 
   @override
-  List<Object> get props => [monthNumber];
+  List<Object> get props => [monthNumber, year];
 }
 
 class LoadGeneratedPdfsEvent extends PdfEvent {}

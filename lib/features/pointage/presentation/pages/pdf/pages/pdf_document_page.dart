@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lottie/lottie.dart';
 import 'package:open_file/open_file.dart';
 import 'package:time_sheet/features/pointage/presentation/pages/pdf/bloc/pdf/pdf_bloc.dart';
 import 'package:time_sheet/features/pointage/presentation/pages/pdf/bloc/anomaly/anomaly_bloc.dart';
@@ -33,7 +34,7 @@ class _PdfDocumentPageState extends State<PdfDocumentPage> {
 
   void _detectAnomalies() {
     final now = DateTime.now();
-    context.read<AnomalyBloc>().add(DetectAnomalies(now.month, now.year));
+    context.read<AnomalyBloc>().add(DetectAnomalies());
   }
 
   @override
@@ -60,11 +61,34 @@ class _PdfDocumentPageState extends State<PdfDocumentPage> {
               } else if (state is PdfGenerationError || state is PdfOpenError) {
                 return _buildErrorView(context, (state as dynamic).error);
               }
-              return const Center(child: Text('Aucun PDF généré'));
+
+              // Gestion de l'animation avec FutureBuilder
+              return FutureBuilder(
+                future: Future.delayed(const Duration(seconds: 10)),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.done) {
+                    return Center(
+                      child: Lottie.asset(
+                        'assets/animation/pdfGeneration.json',
+                        width: 300,
+                        height: 300,
+                      ),
+                    );
+                  }
+                  // Afficher un indicateur de chargement avant l'animation
+                  return Center(
+                    child: Lottie.asset(
+                      'assets/animation/pdfGeneration.json',
+                      width: 300,
+                      height: 300,
+                    ),
+                  );
+                },
+              );
             },
+
           ),
         ),
-        _buildAnomaliesSection(),
       ],
     );
   }
@@ -143,7 +167,7 @@ class _PdfDocumentPageState extends State<PdfDocumentPage> {
                       Navigator.of(context).pop();
                       context
                           .read<PdfBloc>()
-                          .add(GeneratePdfEvent(DateTime.now().month));
+                          .add(GeneratePdfEvent(DateTime.now().month, DateTime.now().year));
                     },
                   ),
                 ],
@@ -153,9 +177,10 @@ class _PdfDocumentPageState extends State<PdfDocumentPage> {
               Navigator.of(context).pop();
               // Déclencher la génération du PDF après la fermeture du dialog
               WidgetsBinding.instance.addPostFrameCallback((_) {
+                final month = DateTime.now().day > 21 ? DateTime.now().month + 1 : DateTime.now().month;
                 context
                     .read<PdfBloc>()
-                    .add(GeneratePdfEvent(DateTime.now().month));
+                    .add(GeneratePdfEvent(month, DateTime.now().year));
               });
               return const SizedBox.shrink();
             }
@@ -187,7 +212,7 @@ class _PdfDocumentPageState extends State<PdfDocumentPage> {
                   Navigator.of(context).pop();
                   context
                       .read<PdfBloc>()
-                      .add(GeneratePdfEvent(DateTime.now().month));
+                      .add(GeneratePdfEvent(DateTime.now().month, DateTime.now().year));
                 },
               ),
           ],

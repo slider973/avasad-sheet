@@ -307,7 +307,7 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Votre signature'),
+        title: const Text('Votre signature'),
         content: Container(
           width: 300,
           height: 150,
@@ -318,15 +318,15 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
               ? Image.memory(state.signature!)
               : state.signatureBase64 != null
               ? Image.memory(base64Decode(state.signatureBase64!))
-              : Center(child: Text('Aucune signature disponible')),
+              : const Center(child: Text('Aucune signature disponible')),
         ),
         actions: [
           TextButton(
-            child: Text('Fermer'),
+            child: const Text('Fermer'),
             onPressed: () => Navigator.of(context).pop(),
           ),
           TextButton(
-            child: Text('Modifier'),
+            child: const Text('Modifier'),
             onPressed: () {
               Navigator.of(context).pop();
               _navigateToSignatureScreen();
@@ -338,8 +338,8 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
   }}
 Widget _buildVersionInfo(String versionNumber, String buildNumber) {
   return ListTile(
-    leading: Icon(Icons.info_outline, color: Colors.teal),
-    title: Text('Version de l\'application'),
+    leading: const Icon(Icons.info_outline, color: Colors.teal),
+    title: const Text('Version de l\'application'),
     subtitle: Text('Version $versionNumber (Build $buildNumber)'),
   );
 }

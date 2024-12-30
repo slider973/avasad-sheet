@@ -13,9 +13,17 @@ class AnomalyLoading extends AnomalyState {
   @override
   List<Object?> get props => [];
 }
+class AnomalyLoaded extends AnomalyState {
+  final List<AnomalyModel> anomalies;
+
+  const AnomalyLoaded(this.anomalies);
+
+  @override
+  List<Object> get props => [anomalies];
+}
 
 class AnomalyDetected extends AnomalyState {
-  final List<String> anomalies;
+  final List<AnomalyModel> anomalies;
 
   const AnomalyDetected(this.anomalies);
 

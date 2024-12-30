@@ -262,19 +262,35 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
   }
 
   Future<void> _generateMonthlyTimesheet(
-    GenerateMonthlyTimesheetEvent event,
-    Emitter<TimeSheetState> emit,
-  ) async {
+      GenerateMonthlyTimesheetEvent event,
+      Emitter<TimeSheetState> emit,
+      ) async {
+    print("Starting _generateMonthlyTimesheet");
     emit(TimeSheetLoading());
     try {
+      // Lancer le use case pour générer les feuilles de temps
+      print("Calling generateMonthlyTimesheetUseCase.execute()");
       await generateMonthlyTimesheetUseCase.execute();
+
+      // Obtenir la date actuelle
       final currentDate = DateTime.now();
+      print("Current date: $currentDate");
+
+      // Sauvegarder la date de génération
+      print("Saving last generation date in preferencesBloc");
       preferencesBloc.add(SaveLastGenerationDate(currentDate));
+
+      // Émettre l'état de succès
+      print("Timesheet generation completed");
       emit(TimeSheetGenerationCompleted());
     } catch (e) {
+      // Log de l'erreur
+      print("Error while generating monthly timesheet: $e");
       emit(TimeSheetErrorState(e.toString()));
     }
+    print("Exiting _generateMonthlyTimesheet");
   }
+
 
   void _onSignalerAbsencePeriode(TimeSheetSignalerAbsencePeriodeEvent event,
       Emitter<TimeSheetState> emit) async {

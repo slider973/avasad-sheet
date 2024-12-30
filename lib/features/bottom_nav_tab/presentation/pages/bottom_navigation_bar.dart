@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-
+import '../../../pointage/presentation/pages/anomaly/anomaly.dart';
 import '../../../pointage/presentation/pages/pdf/pages/pdf_document_page.dart';
-import '../../../preference/presentation/pages/preference.dart'   ;
+import '../../../preference/presentation/pages/preference.dart';
 import '../../../pointage/presentation/pages/pointage/pointage_page.dart';
 import '../../../pointage/presentation/widgets/timesheet_calendar_widget/timesheet_calendar_widget.dart';
 import '../widgets/bottom_navigation_bar_widget.dart';
@@ -14,7 +14,8 @@ class BottomNavigationBarPage extends StatefulWidget {
   const BottomNavigationBarPage({super.key});
 
   @override
-  State<BottomNavigationBarPage> createState() => _BottomNavigationBarPageState();
+  State<BottomNavigationBarPage> createState() =>
+      _BottomNavigationBarPageState();
 }
 
 class _BottomNavigationBarPageState extends State<BottomNavigationBarPage> {
@@ -27,10 +28,10 @@ class _BottomNavigationBarPageState extends State<BottomNavigationBarPage> {
   Future<void> _checkPermissions() async {
     await permission.handlePermission(context);
   }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-        body: BlocBuilder<BottomNavigationBarBloc, int>(
+    return Scaffold(body: BlocBuilder<BottomNavigationBarBloc, int>(
       builder: (context, currentIndex) {
         Widget currentScreen;
         switch (currentIndex) {
@@ -38,7 +39,7 @@ class _BottomNavigationBarPageState extends State<BottomNavigationBarPage> {
             currentScreen = const PointagePage();
             break;
           case 1:
-            currentScreen =  PdfDocumentPage();
+            currentScreen = PdfDocumentPage();
             break;
           case 2:
             currentScreen = const TimesheetCalendarWidget();
@@ -46,6 +47,8 @@ class _BottomNavigationBarPageState extends State<BottomNavigationBarPage> {
           case 3:
             currentScreen = PreferencesPage();
             break;
+          case 4: // Nouvel écran
+            currentScreen = AnomalyView(); // Votre vue d'anomalies
           default:
             currentScreen = const PointagePage();
         }

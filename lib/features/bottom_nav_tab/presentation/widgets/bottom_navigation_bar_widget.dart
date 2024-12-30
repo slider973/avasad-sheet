@@ -36,6 +36,10 @@ class BottomNavigationBarWidget extends StatelessWidget {
                     .read<BottomNavigationBarBloc>()
                     .add(BottomNavigationBarEvent.tab4);
                 break;
+              case 4: // Nouvel onglet pour les anomalies
+                context.read<BottomNavigationBarBloc>()
+                    .add(BottomNavigationBarEvent.tab5);
+                break;
             }
           },
           type: BottomNavigationBarType.fixed,
@@ -55,6 +59,10 @@ class BottomNavigationBarWidget extends StatelessWidget {
             BottomNavigationBarItem(
               icon: Icon(Icons.school),
               label: 'Réglages',
+            ),
+            BottomNavigationBarItem( // Nouvel item
+              icon: Icon(Icons.warning),
+              label: 'Anomalies',
             ),
           ],
         );

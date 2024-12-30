@@ -6,6 +6,7 @@ import 'package:get_it/get_it.dart';
 
 import '../features/bottom_nav_tab/presentation/pages/bloc/bottom_navigation_bar_bloc.dart';
 
+import '../features/pointage/data/repositories/anomaly_repository_impl.dart';
 import '../features/pointage/factory/anomaly_detector_factory.dart';
 import '../features/pointage/presentation/pages/pdf/bloc/anomaly/anomaly_bloc.dart';
 import '../features/pointage/use_cases/delete_timesheet_entry_usecase.dart';
@@ -85,6 +86,7 @@ class ServiceFactory extends StatelessWidget {
               detectAnomaliesUseCase: getIt<DetectAnomaliesUseCase>(),
               preferencesBloc: BlocProvider.of<PreferencesBloc>(context),
               allDetectors: AnomalyDetectorFactory.getAllDetectors(),
+              anomalyRepository: getIt<AnomalyRepository>(),
             ),
           ),
         ],
