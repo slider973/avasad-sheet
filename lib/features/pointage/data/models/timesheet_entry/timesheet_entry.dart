@@ -1,6 +1,7 @@
 import 'package:isar/isar.dart';
 
 import '../../../../absence/data/models/absence.dart';
+import '../anomalies/anomalies.dart';
 
 part 'timesheet_entry.g.dart';
 
@@ -18,4 +19,7 @@ class TimeSheetEntryModel {
   late String period;
   @Backlink(to: 'timesheetEntry')
   final absence = IsarLink<Absence>();
+
+  @Backlink(to: 'timesheetEntry')
+  final anomaly = IsarLink<AnomalyModel>();
 }

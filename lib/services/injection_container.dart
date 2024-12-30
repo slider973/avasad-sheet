@@ -4,8 +4,10 @@ import 'package:path/path.dart' as path;
 import 'package:get_it/get_it.dart';
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:time_sheet/features/pointage/data/models/anomalies/anomalies.dart';
 
 import '../features/absence/data/models/absence.dart';
+import '../features/pointage/data/repositories/anomaly_repository_impl.dart';
 import '../features/pointage/factory/anomaly_detector_factory.dart';
 import '../features/pointage/use_cases/delete_timesheet_entry_usecase.dart';
 import '../features/pointage/use_cases/detect_anomalies_usecase.dart';
@@ -22,6 +24,7 @@ import '../features/pointage/use_cases/signaler_absence_periode_usecase.dart';
 import '../features/preference/data/models/user_preference.dart';
 import '../features/preference/data/repositories/user_preference_repository.impl.dart';
 import '../features/preference/presentation/manager/preferences_bloc.dart';
+import 'anomaly/anomaly_service.dart';
 import 'backup.dart';
 import '../features/preference/domain/use_cases/get_signature_usecase.dart';
 import '../features/preference/domain/use_cases/get_user_preference_use_case.dart';
@@ -72,7 +75,7 @@ Future<void> setup() async {
   Future<Isar> getIsarInstance() async {
     if (!getIt.isRegistered<Isar>()) {
       final isar = await Isar.open(
-        [TimeSheetEntryModelSchema, GeneratedPdfModelSchema, UserPreferencesSchema, AbsenceSchema],
+        [TimeSheetEntryModelSchema, GeneratedPdfModelSchema, UserPreferencesSchema, AbsenceSchema, AnomalyModelSchema],
         directory: dir,
       );
       getIt.registerSingleton<Isar>(isar);
@@ -135,5 +138,17 @@ Future<void> setup() async {
     getSignatureUseCase: getIt<GetSignatureUseCase>(),
     getUserPreferenceUseCase: getIt<GetUserPreferenceUseCase>(),
   ));
+  getIt.registerLazySingleton<AnomalyRepository>(
+          () => AnomalyRepositoryImpl(getIt<Isar>())
+  );
+
+  // Enregistrez AnomalyService
+  final anomalyService = AnomalyService(getIt<Isar>());
+  GetIt.instance.registerSingleton<AnomalyService>(anomalyService);
+
+  // Initialisez le service des anomalies
+  await anomalyService.createAnomaliesForCurrentMonth();
+
+
 
 }

@@ -5,19 +5,16 @@ sealed class AnomalyEvent extends Equatable {
 }
 
 class DetectAnomalies extends AnomalyEvent {
-  final int month;
-  final int year;
 
-  const DetectAnomalies(this.month, this.year);
+  const DetectAnomalies();
 
   @override
-  List<Object> get props => [month, year];
+  List<Object> get props => [];
 }
 class LoadActiveDetectors extends AnomalyEvent {
   @override
   List<Object?> get props => [];
 }
-
 class ToggleDetector extends AnomalyEvent {
   final String detectorId;
   final bool isActive;
@@ -26,4 +23,12 @@ class ToggleDetector extends AnomalyEvent {
 
   @override
   List<Object> get props => [detectorId, isActive];
+}
+class MarkAnomalyResolved extends AnomalyEvent {
+  final int anomalyId;
+
+  const MarkAnomalyResolved(this.anomalyId);
+
+  @override
+  List<Object> get props => [anomalyId];
 }

@@ -9,7 +9,7 @@ abstract class LocalDataSource {
 
   Future<List<TimeSheetEntryModel>> getTimesheetEntriesForWeek(int weekNumber);
 
-  Future<List<TimeSheetEntryModel>> findEntriesFromMonthOf(int monthNumber);
+  Future<List<TimeSheetEntryModel>> findEntriesFromMonthOf(int monthNumber, int year);
 
   Future<void> saveGeneratedPdf(GeneratedPdfModel pdf);
 

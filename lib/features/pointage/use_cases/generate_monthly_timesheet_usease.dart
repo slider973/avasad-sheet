@@ -13,15 +13,28 @@ class GenerateMonthlyTimesheetUseCase {
 
   Future<void> execute() async {
     DateTime now = DateTime.now();
-    DateTime startDate = DateTime(now.year, now.month - 1, 21);
-    DateTime endDate = DateTime(now.year, now.month, 20);
+
+    // Calcul des bornes dynamiques de la période
+    DateTime startDate = now.day >= 21
+        ? DateTime(now.year, now.month, 21)
+        : DateTime(now.year, now.month - 1, 21);
+    DateTime endDate = now.day >= 21
+        ? DateTime(now.year, now.month + 1, 20)
+        : DateTime(now.year, now.month, 20);
+
+    print("Start Date: $startDate");
+    print("End Date: $endDate");
+
+    // Récupérer les entrées existantes pour la période
     List<TimesheetEntry> existingEntries = await repository.getTimesheetEntriesForMonth(now.month);
     Set<String> existingDates = existingEntries.map((e) => e.dayDate).toSet();
 
     try {
+      // Parcourir les jours de la période
       for (DateTime date = startDate; date.isBefore(endDate.add(const Duration(days: 1))); date = date.add(const Duration(days: 1))) {
+        // Ignorer les week-ends
         if (date.weekday >= DateTime.monday && date.weekday <= DateTime.friday) {
-          String formattedDate = DateFormat('dd-MMM-yy').format(date);  // Utilisez le même format que dans _generateDayEntry
+          String formattedDate = DateFormat('dd-MMM-yy').format(date);
           if (!existingDates.contains(formattedDate)) {
             print("Generating entry for: $formattedDate");
             TimesheetEntry entry = _generateDayEntry(date);
@@ -36,6 +49,7 @@ class GenerateMonthlyTimesheetUseCase {
       print('Error while generating monthly timesheet: $e');
     }
   }
+
 
   TimesheetEntry _generateDayEntry(DateTime date) {
     // Génération du temps de travail entre 7h30 (450 min) et 8h18 (498 min)

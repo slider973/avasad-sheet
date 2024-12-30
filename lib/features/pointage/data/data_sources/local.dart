@@ -8,6 +8,7 @@ import 'package:time_sheet/services/logger_service.dart';
 import '../../domain/data_source/time_sheet.dart';
 import '../../domain/mapper/timesheetEntry.mapper.dart';
 import '../../presentation/widgets/pointage_widget/pointage_absence.dart';
+import '../models/anomalies/anomalies.dart';
 import '../models/generated_pdf/generated_pdf.dart';
 
 class LocalDatasourceImpl implements LocalDataSource {
@@ -77,32 +78,31 @@ class LocalDatasourceImpl implements LocalDataSource {
   }
 
   @override
-  Future<List<TimeSheetEntryModel>> findEntriesFromMonthOf(int monthNumber) {
-    logger.i('findEntriesFromMonthOf $monthNumber');
-    DateTime now = DateTime.now();
+  Future<List<TimeSheetEntryModel>> findEntriesFromMonthOf(
+      int monthNumber, int year) {
+    logger.i('[LocalDatasourceImpl] findEntriesFromMonthOf $monthNumber $year');
 
-    // Calcul de l'année et du mois précédent
-    int previousYear;
-    int previousMonth;
-    if (monthNumber == 1) {
-      previousYear = now.year - 1;
-      previousMonth = 12;
-    } else {
-      previousYear = now.year;
-      previousMonth = monthNumber - 1;
-    }
+    // Calcul du 21 du mois précédent
+    final datePreviousMonth = DateTime(
+      year,
+      monthNumber - 1,
+      21,
+    );
 
-    final datePreviousMonth = DateTime(previousYear, previousMonth, 21);
-    logger.i(
-        'datePreviousMonth $datePreviousMonth with year ${datePreviousMonth.year}');
+    // Si le mois précédent est décembre de l'année précédente
+    final adjustedDatePreviousMonth = (monthNumber == 1)
+        ? DateTime(year - 1, 12, 21)
+        : datePreviousMonth;
 
-    // Ajouter un jour pour inclure tout le 20
-    final dateCurrentMonth = DateTime(now.year, monthNumber, 21);
-    logger.i('dateCurrentMonth $dateCurrentMonth');
+    // Calcul du 21 du mois courant
+    final dateCurrentMonth = DateTime(year, monthNumber, 21);
+
+    logger.i('[LocalDatasourceImpl] datePreviousMonth $adjustedDatePreviousMonth');
+    logger.i('[LocalDatasourceImpl] dateCurrentMonth $dateCurrentMonth');
 
     return isar.timeSheetEntryModels
         .filter()
-        .dayDateBetween(datePreviousMonth, dateCurrentMonth)
+        .dayDateBetween(adjustedDatePreviousMonth, dateCurrentMonth)
         .findAll();
   }
 
@@ -194,5 +194,43 @@ class LocalDatasourceImpl implements LocalDataSource {
     }
 
     return usedVacationDays;
+  }
+
+  Future<void> createAnomaliesForCurrentMonth() async {
+    final now = DateTime.now();
+    final firstDayOfMonth = DateTime(now.year, now.month, 1);
+
+    // Vérifiez si des anomalies existent déjà pour ce mois
+    final existingAnomalies = await isar.anomalyModels
+        .filter()
+        .detectedDateGreaterThan(firstDayOfMonth.subtract(Duration(days: 1)))
+        .findAll();
+
+    if (existingAnomalies.isNotEmpty) {
+      print('Les anomalies pour le mois courant existent déjà.');
+      return;
+    }
+
+    // Créez les anomalies
+    final lastDayOfMonth = DateTime(now.year, now.month + 1, 0);
+    DateTime currentDay = firstDayOfMonth;
+
+    while (currentDay.isBefore(lastDayOfMonth) ||
+        currentDay.isAtSameMomentAs(lastDayOfMonth)) {
+      final anomaly = AnomalyModel()
+        ..detectedDate = currentDay
+        ..description =
+            "Anomalie détectée pour le ${currentDay.day}/${currentDay.month}/${currentDay.year}"
+        ..isResolved = false
+        ..type = AnomalyType.missingEntry;
+
+      await isar.writeTxn(() async {
+        await isar.anomalyModels.put(anomaly);
+      });
+
+      currentDay = currentDay.add(Duration(days: 1));
+    }
+
+    print('Anomalies créées pour le mois courant.');
   }
 }
