@@ -12,6 +12,7 @@ class WeeklyProgressWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final data = _generateWeeklyData();
+    final targetData = _generateTargetData();
 
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -46,7 +47,8 @@ class WeeklyProgressWidget extends StatelessWidget {
                   axisLine: AxisLine(width: 0.5),
                   title: AxisTitle(text: '', alignment: ChartAlignment.near),
                 ),
-                series: <SplineAreaSeries<_ChartData, String>>[
+                series: <CartesianSeries<_ChartData, String>>[
+                  // Série pour les heures travaillées
                   SplineAreaSeries<_ChartData, String>(
                     dataSource: data,
                     xValueMapper: (_ChartData data, _) => data.day,
@@ -61,19 +63,14 @@ class WeeklyProgressWidget extends StatelessWidget {
                       color: Colors.white,
                     ),
                   ),
-                ],
-                annotations: <CartesianChartAnnotation>[
-                  CartesianChartAnnotation(
-                    widget: Container(
-                      child: const Text(
-                        '8.3h cible',
-                        style: TextStyle(color: Colors.orange, fontSize: 12),
-                      ),
-                    ),
-                    coordinateUnit: CoordinateUnit.point,
-                    region: AnnotationRegion.plotArea,
-                    x: 'Mar',
-                    y: 8.3,
+                  // Série pour la ligne orange
+                  LineSeries<_ChartData, String>(
+                    dataSource: targetData,
+                    xValueMapper: (_ChartData data, _) => data.day,
+                    yValueMapper: (_ChartData data, _) => data.hours,
+                    color: Colors.orange,
+                    width: 2,
+                    dashArray: [5, 5], // Ligne en pointillés
                   ),
                 ],
               ),
@@ -106,6 +103,19 @@ class WeeklyProgressWidget extends StatelessWidget {
     return data;
   }
 
+  List<_ChartData> _generateTargetData() {
+    final List<_ChartData> targetData = [];
+    final now = DateTime.now();
+    final startOfWeek = now.subtract(Duration(days: now.weekday - 1)); // Lundi
+
+    // Ajouter la cible pour chaque jour de la semaine
+    for (int i = 0; i < 5; i++) {
+      final date = startOfWeek.add(Duration(days: i)); // Jours de lundi à vendredi
+      targetData.add(_ChartData(DateFormat.E('fr_FR').format(date), 8.3)); // Cible de 8.3 heures
+    }
+
+    return targetData;
+  }
 
   double _calculateDailyHours(TimesheetEntry entry) {
     try {
@@ -126,7 +136,7 @@ class WeeklyProgressWidget extends StatelessWidget {
       final effectiveEnd = endAfternoon.isAfter(limitTime) ? limitTime : endAfternoon;
       final duration = effectiveEnd.difference(startMorning);
 
-      return duration.inMinutes.toDouble() / 60.0;
+      return duration.inMinutes.toDouble() / 60.0; // Retourne en heures
     } catch (e) {
       print('Erreur dans _calculateDailyHours: $e');
       return 0.0;
