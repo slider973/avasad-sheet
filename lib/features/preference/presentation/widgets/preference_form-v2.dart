@@ -26,6 +26,12 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: () {
+            Scaffold.of(context).openDrawer();
+          },
+        ),
         backgroundColor: Colors.teal,
         elevation: 0,
         title: const Text('Paramètres'),

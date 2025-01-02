@@ -22,6 +22,12 @@ class PdfDocumentLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: () {
+            Scaffold.of(context).openDrawer();
+          },
+        ),
         title: const Text('Gérer les PDFs'),
         backgroundColor: Theme.of(context).primaryColor,
         elevation: 0,

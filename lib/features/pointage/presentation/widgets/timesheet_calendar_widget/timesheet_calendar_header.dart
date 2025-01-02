@@ -8,6 +8,12 @@ class TimesheetCalendarHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
+      leading: IconButton(
+        icon: const Icon(Icons.menu),
+        onPressed: () {
+          Scaffold.of(context).openDrawer();
+        },
+      ),
       title: Text(title),
       backgroundColor: Theme.of(context).primaryColor,
     );

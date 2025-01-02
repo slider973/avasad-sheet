@@ -14,6 +14,12 @@ class PointagePage extends StatelessWidget {
         backgroundColor: Theme.of(context).primaryColor,
         title: const Text('Pointage'),
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: () {
+            Scaffold.of(context).openDrawer();
+          },
+        ),
       ),
       backgroundColor: Colors.teal[50],
       body: SafeArea(

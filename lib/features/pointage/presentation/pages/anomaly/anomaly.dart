@@ -36,6 +36,12 @@ class _AnomalyViewState extends State<AnomalyView> with SingleTickerProviderStat
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: () {
+            Scaffold.of(context).openDrawer();
+          },
+        ),
         title: const Text('Anomalies'),
         backgroundColor: Colors.teal,
         bottom: TabBar(

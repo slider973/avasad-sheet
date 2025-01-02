@@ -13,6 +13,7 @@ import '../../../../../../preference/presentation/manager/preferences_bloc.dart'
 import '../../../../../domain/entities/timesheet_entry.dart';
 import '../../../../../use_cases/delete_timesheet_entry_usecase.dart';
 import '../../../../../use_cases/generate_monthly_timesheet_usease.dart';
+import '../../../../../use_cases/get_monthly_timesheet_entries_usecase.dart';
 import '../../../../../use_cases/get_overtime_hours_usecase.dart';
 import '../../../../../use_cases/get_remaining_vacation_days_usecase.dart';
 import '../../../../../use_cases/get_today_timesheet_entry_use_case.dart';
@@ -35,6 +36,7 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
   final GetRemainingVacationDaysUseCase getRemainingVacationDaysUseCase;
   final GetOvertimeHoursUseCase getOvertimeHoursUseCase;
   final SignalerAbsencePeriodeUsecase signalerAbsencePeriodeUsecase;
+  final GetMonthlyTimesheetEntriesUseCase getMonthlyTimesheetEntriesUseCase;
 
   TimeSheetBloc({
     required this.saveTimesheetEntryUseCase,
@@ -46,6 +48,7 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
     required this.getRemainingVacationDaysUseCase,
     required this.getOvertimeHoursUseCase,
     required this.signalerAbsencePeriodeUsecase,
+    required this.getMonthlyTimesheetEntriesUseCase,
   }) : super(TimeSheetInitial()) {
     on<TimeSheetEnterEvent>(_updateEnter);
     on<TimeSheetStartBreakEvent>(_updateStartBreak);
@@ -60,6 +63,8 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
     on<TimeSheetDeleteEntryEvent>(_onDeleteEntry);
     on<CalculateWeeklyDataEvent>(_calculateWeeklyData);
     on<LoadVacationDaysEvent>(_loadVacationDays);
+    on<LoadMonthlyEntriesEvent>(_onLoadMonthlyEntries);
+
   }
 
   void _checkGenerationStatus(
@@ -369,4 +374,32 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
     final entry = await getTodayTimesheetEntryUseCase.execute(formattedDate);
     return entry != null && entry.startMorning.isNotEmpty;
   }
+
+  Future<void> _onLoadMonthlyEntries(
+      LoadMonthlyEntriesEvent event, Emitter<TimeSheetState> emit) async {
+    emit(TimeSheetLoading());
+
+    try {
+      // Récupérer les entrées mensuelles via le use case
+      final List<TimesheetEntry> entries =
+      await getMonthlyTimesheetEntriesUseCase.execute(event.month);
+
+      // Vérifier si l'état actuel contient une entrée valide
+      TimesheetEntry? currentEntry;
+      if (state is TimeSheetDataState) {
+        currentEntry = (state as TimeSheetDataState).entry;
+      } else {
+        currentEntry = entries.isNotEmpty ? entries.first : null;
+      }
+
+      if (currentEntry != null) {
+        emit(TimeSheetDataState(currentEntry, monthlyEntries: entries));
+      } else {
+        emit(const TimeSheetErrorState("Aucune donnée disponible pour ce mois."));
+      }
+    } catch (e) {
+      emit(TimeSheetErrorState("Erreur lors du chargement des entrées mensuelles : $e"));
+    }
+  }
+
 }

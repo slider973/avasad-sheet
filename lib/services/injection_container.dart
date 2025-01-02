@@ -14,6 +14,7 @@ import '../features/pointage/use_cases/detect_anomalies_usecase.dart';
 import '../features/pointage/use_cases/find_pointed_list_usecase.dart';
 import '../features/pointage/use_cases/generate_monthly_timesheet_usease.dart';
 import '../features/pointage/use_cases/generate_pdf_usecase.dart';
+import '../features/pointage/use_cases/get_monthly_timesheet_entries_usecase.dart';
 import '../features/pointage/use_cases/get_overtime_hours_usecase.dart';
 import '../features/pointage/use_cases/get_remaining_vacation_days_usecase.dart';
 import '../features/pointage/use_cases/get_today_timesheet_entry_use_case.dart';
@@ -124,6 +125,7 @@ Future<void> setup() async {
   ));
   getIt.registerLazySingleton<GenerateMonthlyTimesheetUseCase>(() => GenerateMonthlyTimesheetUseCase(getIt<TimesheetRepositoryImpl>()));
   getIt.registerLazySingleton<GetRemainingVacationDaysUseCase>(() => GetRemainingVacationDaysUseCase(getIt<TimesheetRepositoryImpl>()));
+  getIt.registerLazySingleton<GetMonthlyTimesheetEntriesUseCase>(() => GetMonthlyTimesheetEntriesUseCase(getIt<TimesheetRepositoryImpl>()));
   getIt.registerLazySingleton<GetWeeklyWorkTimeUseCase>(() => GetWeeklyWorkTimeUseCase(getIt<TimesheetRepositoryImpl>()));
   getIt.registerLazySingleton<GetOvertimeHoursUseCase>(() => GetOvertimeHoursUseCase());
   getIt.registerLazySingleton<DetectAnomaliesUseCase>(() {

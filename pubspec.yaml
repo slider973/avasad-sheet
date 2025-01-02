@@ -76,6 +76,8 @@ dependencies:
   flutter_animate: ^4.5.0
   package_info_plus: ^8.0.2
   fpdart: ^1.1.0
+  fl_chart: ^0.69.2
+  syncfusion_flutter_charts: ^27.2.5
 
 
 dev_dependencies:

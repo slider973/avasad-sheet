@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get_it/get_it.dart';
+import 'package:time_sheet/features/pointage/use_cases/get_monthly_timesheet_entries_usecase.dart';
 
 import '../features/bottom_nav_tab/presentation/pages/bloc/bottom_navigation_bar_bloc.dart';
 
@@ -64,6 +65,7 @@ class ServiceFactory extends StatelessWidget {
                     getOvertimeHoursUseCase: getIt<GetOvertimeHoursUseCase>(),
                     signalerAbsencePeriodeUsecase:
                         getIt<SignalerAbsencePeriodeUsecase>(),
+                getMonthlyTimesheetEntriesUseCase: getIt<GetMonthlyTimesheetEntriesUseCase>(),
                   )),
           BlocProvider<TimeSheetListBloc>(
             create: (context) => TimeSheetListBloc(

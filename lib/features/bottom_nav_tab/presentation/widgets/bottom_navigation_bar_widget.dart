@@ -56,13 +56,13 @@ class BottomNavigationBarWidget extends StatelessWidget {
               icon: Icon(Icons.calendar_today),
               label: 'Calendrier',
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.school),
-              label: 'Réglages',
-            ),
             BottomNavigationBarItem( // Nouvel item
               icon: Icon(Icons.warning),
               label: 'Anomalies',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.school),
+              label: 'Réglages',
             ),
           ],
         );

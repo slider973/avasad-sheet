@@ -6,6 +6,7 @@ import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widge
 import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_list.dart';
 import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_remove_timesheet_day.dart';
 
+import '../monthly_stats_widget/monthly_stats_widget.dart';
 import 'pointage_header.dart';
 import 'pointage_timer.dart';
 
