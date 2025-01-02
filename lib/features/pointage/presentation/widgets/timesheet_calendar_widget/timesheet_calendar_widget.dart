@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
+import 'package:time_sheet/features/pointage/presentation/widgets/timesheet_calendar_widget/timesheet_calendar_header.dart';
 import '../../../../../enum/absence_period.dart';
 import '../../../domain/entities/timesheet_entry.dart';
 import '../../pages/time-sheet/bloc/time_sheet_list/time_sheet_list_bloc.dart';
@@ -55,6 +56,16 @@ class _TimesheetCalendarWidgetState extends State<TimesheetCalendarWidget> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: () {
+            Scaffold.of(context).openDrawer();
+          },
+        ),
+        title: const Text('Calendrier des pointages'),
+        backgroundColor: Theme.of(context).primaryColor,
+      ),
       body: BlocListener<TimeSheetListBloc, TimeSheetListState>(
         listener: (context, state) {
           if (state is TimeSheetListFetchedState) {

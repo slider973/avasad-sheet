@@ -67,7 +67,11 @@ class _PointageWidgetState extends State<PointageWidget>
       });
     }
     _loadWeeklyData();
-    //  _loadVacationData();
+  }
+
+  void _loadVacationData() {
+    final bloc = context.read<TimeSheetBloc>();
+    bloc.add(LoadVacationDaysEvent());
   }
 
   Future<void> _loadWeeklyData() async {
@@ -92,10 +96,6 @@ class _PointageWidgetState extends State<PointageWidget>
     });
   }
 
-  void _loadVacationData() {
-    final bloc = context.read<TimeSheetBloc>();
-    bloc.add(LoadVacationDaysEvent());
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -114,31 +114,33 @@ class _PointageWidgetState extends State<PointageWidget>
             );
           }
         }
-
-        return PointageLayout(
-          etatActuel: _etatActuel,
-          dernierPointage: _dernierPointage,
-          progression: _progressionAnimation.value,
-          pointages: pointages,
-          onActionPointage: _actionPointage,
-          onModifierPointage: _modifierPointage,
-          selectedDate: widget.selectedDate,
-          onSignalerAbsencePeriode: _signalerAbsencePeriode,
-          totalDayHours: _totalDayHours,
-          monthlyHoursStatus: _monthlyHoursStatus,
-          absenceReason: _absenceReason,
-          absence: _absence,
-          totalBreakTime: _totalBreakTime,
-          onDeleteEntry: () {
-            if (_currentEntry != null) {
-              _deleteEntry(_currentEntry!);
-            }
-          },
-          weeklyWorkTime: _weeklyWorkTime,
-          remainingVacationDays: _remainingVacationDays,
-          weeklyTarget: _weeklyTarget,
-          overtimeHours: _overtimeHours,
-        );
+        if (state is TimeSheetDataState) {
+          return PointageLayout(
+            etatActuel: _etatActuel,
+            dernierPointage: _dernierPointage,
+            progression: _progressionAnimation.value,
+            pointages: pointages,
+            onActionPointage: _actionPointage,
+            onModifierPointage: _modifierPointage,
+            selectedDate: widget.selectedDate,
+            onSignalerAbsencePeriode: _signalerAbsencePeriode,
+            totalDayHours: _totalDayHours,
+            monthlyHoursStatus: _monthlyHoursStatus,
+            absenceReason: _absenceReason,
+            absence: _absence,
+            totalBreakTime: _totalBreakTime,
+            onDeleteEntry: () {
+              if (_currentEntry != null) {
+                _deleteEntry(_currentEntry!);
+              }
+            },
+            weeklyWorkTime: _weeklyWorkTime,
+            vacationInfo: state.vacationInfo,
+            weeklyTarget: _weeklyTarget,
+            overtimeHours: _overtimeHours,
+          );
+        }
+        return const Center(child: CircularProgressIndicator());
       },
     );
   }
@@ -163,7 +165,7 @@ class _PointageWidgetState extends State<PointageWidget>
         _absence = state.entry.absence;
         _currentEntry = state.entry;
         _loadWeeklyData();
-        _remainingVacationDays = state.remainingVacationDays;
+        _remainingVacationDays = state.vacationInfo.remainingTotal;
       });
     }
   }

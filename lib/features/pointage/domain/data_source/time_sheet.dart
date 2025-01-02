@@ -19,6 +19,7 @@ abstract class LocalDataSource {
   Future<TimesheetEntry?> getTimesheetEntryForDate(String date);
 
   Future<void> deleteTimeSheet(int id) async {}
+  Future<int> getLastYearVacationDaysCount();
 
   getTimesheetEntry(String formattedDate) {}
   getTimesheetEntryWhitFrenchFormat(String formattedDate) {}

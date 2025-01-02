@@ -155,3 +155,12 @@ class LoadMonthlyEntriesEvent extends TimeSheetEvent {
   @override
   List<Object> get props => [month];
 }
+
+class UpdateVacationInfoEvent extends TimeSheetEvent {
+  final VacationDaysInfo vacationInfo;
+
+  const UpdateVacationInfoEvent(this.vacationInfo);
+
+  @override
+  List<Object> get props => [vacationInfo];
+}

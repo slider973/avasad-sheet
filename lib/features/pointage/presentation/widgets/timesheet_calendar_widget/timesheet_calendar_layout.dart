@@ -42,7 +42,6 @@ class TimesheetCalendarLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        const TimesheetCalendarHeader(title: 'Calendrier des pointages'),
         TimesheetCalendarBody(
           firstDay: firstDay,
           lastDay: lastDay,

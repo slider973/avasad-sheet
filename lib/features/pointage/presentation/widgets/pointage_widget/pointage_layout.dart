@@ -5,8 +5,10 @@ import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widge
 import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_boutton.dart';
 import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_list.dart';
 import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_remove_timesheet_day.dart';
+import 'package:time_sheet/features/pointage/use_cases/get_remaining_vacation_days_usecase.dart';
 
 import '../monthly_stats_widget/monthly_stats_widget.dart';
+import '../vacation_days_detail_card/vacation_days_detail_card.dart';
 import 'pointage_header.dart';
 import 'pointage_timer.dart';
 
@@ -28,7 +30,7 @@ class PointageLayout extends StatelessWidget {
   final Duration totalBreakTime;
   final Duration weeklyWorkTime;
   final Duration weeklyTarget;
-  final int remainingVacationDays;
+  final VacationDaysInfo vacationInfo;
   final Duration overtimeHours;
 
   const PointageLayout({
@@ -49,7 +51,7 @@ class PointageLayout extends StatelessWidget {
     required this.totalBreakTime,
     required this.weeklyWorkTime,
     required this.weeklyTarget,
-    required this.remainingVacationDays,
+    required this.vacationInfo,
     required this.overtimeHours,
   }) : super(key: key);
 
@@ -159,21 +161,18 @@ class PointageLayout extends StatelessWidget {
     );
   }
 
+// Dans pointage_layout.dart, modifions la méthode _buildAdditionalInfo
+
   Widget _buildAdditionalInfo() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Informations complémentaires',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Text('Heures supplémentaires: ${_formatDuration(overtimeHours)}'),
-            Text('Jours de congés restants: $remainingVacationDays'),
-          ],
+    return Column(
+      children: [
+        VacationDaysDetailCard(
+          currentYearTotal: 25,
+          lastYearRemaining: vacationInfo.lastYearRemaining,
+          usedDays: vacationInfo.usedDays,
+          remainingTotal: vacationInfo.remainingTotal,
         ),
-      ),
+      ],
     );
   }
 

@@ -12,7 +12,7 @@ import '../weekly_progress_widget.dart';
 class MonthlyStatsWidget extends StatefulWidget {
   static const double MONTHLY_TARGET_HOURS = 168.0;
 
-  const MonthlyStatsWidget({Key? key}) : super(key: key);
+  const MonthlyStatsWidget({super.key});
 
   @override
   _MonthlyStatsWidgetState createState() => _MonthlyStatsWidgetState();

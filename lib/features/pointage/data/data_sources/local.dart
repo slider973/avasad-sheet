@@ -233,4 +233,25 @@ class LocalDatasourceImpl implements LocalDataSource {
 
     print('Anomalies créées pour le mois courant.');
   }
+  @override
+  Future<int> getLastYearVacationDaysCount() async {
+    final DateTime lastYear = DateTime(DateTime.now().year - 1);
+    final DateTime startOfLastYear = DateTime(lastYear.year, 1, 1);
+    final DateTime endOfLastYear = DateTime(lastYear.year, 12, 31);
+
+    int usedVacationDays = 0;
+    final entries = await isar.timeSheetEntryModels
+        .filter()
+        .dayDateBetween(startOfLastYear, endOfLastYear)
+        .findAll();
+
+    for (var entry in entries) {
+      if (entry.absence.value != null &&
+          entry.absence.value!.type == AbsenceType.vacation) {
+        usedVacationDays++;
+      }
+    }
+
+    return 25 - usedVacationDays; // Jours restants de l'année précédente
+  }
 }

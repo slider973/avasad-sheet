@@ -12,16 +12,16 @@ class TimeSheetInitial extends TimeSheetState {
 class TimeSheetDataState extends TimeSheetState {
   final TimesheetEntry entry;
   final List<TimesheetEntry> monthlyEntries; // Ajout des entrées mensuelles
-  final int remainingVacationDays;
+  final VacationDaysInfo vacationInfo;
 
   const TimeSheetDataState(
       this.entry, {
         this.monthlyEntries = const [],
-        this.remainingVacationDays = 0,
+        required this.vacationInfo,
       });
 
   @override
-  List<Object> get props => [entry, monthlyEntries, remainingVacationDays];
+  List<Object> get props => [entry, monthlyEntries, vacationInfo];
 }
 
 class TimeSheetErrorState extends TimeSheetState {

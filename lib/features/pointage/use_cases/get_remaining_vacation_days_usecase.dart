@@ -8,13 +8,38 @@ class GetRemainingVacationDaysUseCase {
 
   GetRemainingVacationDaysUseCase(this._repository);
 
-  Future<int> execute() async {
+  Future<VacationDaysInfo> execute() async {
     final DateTime now = DateTime.now();
     final DateTime startOfYear = DateTime(now.year, 1, 1);
+
+    // Obtenir les jours utilisés cette année
     int usedVacationDays = await _repository.getVacationDaysCount();
 
-    // Supposons un total de 25 jours de congés par an (à ajuster selon vos règles)
-    int totalVacationDays = 25;
-    return totalVacationDays - usedVacationDays;
+    // Obtenir les jours non utilisés de l'année précédente
+    int lastYearRemainingDays = await _repository.getLastYearVacationDaysCount();
+
+    // Total des jours disponibles pour l'année en cours
+    int totalVacationDays = 25 + lastYearRemainingDays;
+
+    return VacationDaysInfo(
+        currentYearTotal: 25,
+        lastYearRemaining: lastYearRemainingDays,
+        usedDays: usedVacationDays,
+        remainingTotal: totalVacationDays - usedVacationDays
+    );
   }
+}
+
+class VacationDaysInfo {
+  final int currentYearTotal;
+  final int lastYearRemaining;
+  final int usedDays;
+  final int remainingTotal;
+
+  VacationDaysInfo({
+    required this.currentYearTotal,
+    required this.lastYearRemaining,
+    required this.usedDays,
+    required this.remainingTotal,
+  });
 }

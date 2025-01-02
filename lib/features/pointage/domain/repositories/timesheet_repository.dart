@@ -1,4 +1,5 @@
 import '../../data/models/generated_pdf/generated_pdf.dart';
+import '../../use_cases/get_remaining_vacation_days_usecase.dart';
 import '../entities/timesheet_entry.dart';
 
 abstract class TimesheetRepository {
@@ -22,4 +23,6 @@ abstract class TimesheetRepository {
   Future<TimesheetEntry?> getTimesheetEntry(String formattedDate);
   Future<TimesheetEntry?> getTimesheetEntryWhitFrenchFormat(String formattedDate);
   Future<int> getVacationDaysCount();
+  Future<int> getLastYearVacationDaysCount();
+  Future<VacationDaysInfo> getVacationDaysInfo();
 }

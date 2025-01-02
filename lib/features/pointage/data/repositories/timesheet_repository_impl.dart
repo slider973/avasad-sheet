@@ -7,6 +7,7 @@ import '../../domain/data_source/time_sheet.dart';
 import '../../domain/entities/timesheet_entry.dart';
 import '../../domain/mapper/timesheetEntry.mapper.dart';
 import '../../domain/repositories/timesheet_repository.dart';
+import '../../use_cases/get_remaining_vacation_days_usecase.dart';
 import '../utils/time_sheet_utils.dart';
 
 class TimesheetRepositoryImpl implements TimesheetRepository {
@@ -41,9 +42,13 @@ class TimesheetRepositoryImpl implements TimesheetRepository {
   }
 
   @override
-  Future<List<TimesheetEntry>> findEntriesFromMonthOf(int monthNumber, int? year) {
-    logger.i('[TimesheetRepositoryImpl] findEntriesFromMonthOf $monthNumber $year');
-    return datasource.findEntriesFromMonthOf(monthNumber, year!).then((entries) {
+  Future<List<TimesheetEntry>> findEntriesFromMonthOf(
+      int monthNumber, int? year) {
+    logger.i(
+        '[TimesheetRepositoryImpl] findEntriesFromMonthOf $monthNumber $year');
+    return datasource
+        .findEntriesFromMonthOf(monthNumber, year!)
+        .then((entries) {
       return entries.map((e) => TimesheetEntryMapper.fromModel(e)).toList();
     });
   }
@@ -116,8 +121,10 @@ class TimesheetRepositoryImpl implements TimesheetRepository {
   }
 
   @override
-  Future<TimesheetEntry?> getTimesheetEntryWhitFrenchFormat(String formattedDate) async {
-    final entry = await datasource.getTimesheetEntryWhitFrenchFormat(formattedDate);
+  Future<TimesheetEntry?> getTimesheetEntryWhitFrenchFormat(
+      String formattedDate) async {
+    final entry =
+        await datasource.getTimesheetEntryWhitFrenchFormat(formattedDate);
     if (entry == null) {
       return null;
     }
@@ -127,5 +134,22 @@ class TimesheetRepositoryImpl implements TimesheetRepository {
   @override
   Future<int> getVacationDaysCount() {
     return datasource.getVacationDaysCount();
+  }
+
+  @override
+  Future<int> getLastYearVacationDaysCount() {
+    return datasource.getLastYearVacationDaysCount();
+  }
+  @override
+  Future<VacationDaysInfo> getVacationDaysInfo() async {
+    final usedDays = await datasource.getVacationDaysCount();
+    final lastYearRemaining = await datasource.getLastYearVacationDaysCount();
+
+    return VacationDaysInfo(
+        currentYearTotal: 25,
+        lastYearRemaining: lastYearRemaining,
+        usedDays: usedDays,
+        remainingTotal: 25 + lastYearRemaining - usedDays
+    );
   }
 }
