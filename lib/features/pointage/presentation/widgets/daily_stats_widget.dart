@@ -15,6 +15,8 @@ class DailyStatsWidget extends StatelessWidget {
     final double dailyHours = _calculateDailyHours(entry, today);
     final double dailyProgress =
         ((dailyHours / DAILY_TARGET_HOURS) * 100.0).clamp(0.0, 100.0);
+    final entryDate = DateFormat('dd-MMM-yy').parse(entry.dayDate);
+    final formattedDate = DateFormat('dd/MM').format(entryDate);
 
     return Card(
       child: Padding(
@@ -34,7 +36,7 @@ class DailyStatsWidget extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Aujourd\'hui (${DateFormat('dd/MM').format(today)})',
+                        'Aujourd\'hui ($formattedDate)',
                         style: const TextStyle(fontSize: 16),
                       ),
                       const SizedBox(height: 8),

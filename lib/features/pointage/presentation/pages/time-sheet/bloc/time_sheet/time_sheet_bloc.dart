@@ -387,31 +387,43 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
 
   Future<void> _onLoadMonthlyEntries(
       LoadMonthlyEntriesEvent event, Emitter<TimeSheetState> emit) async {
+
+    // Sauvegarder l'état actuel du pointage avant de charger les statistiques
+    final currentState = state;
     emit(TimeSheetLoading());
 
     try {
-      // Récupérer les entrées mensuelles via le use case
       final List<TimesheetEntry> entries =
       await getMonthlyTimesheetEntriesUseCase.execute(event.month);
 
-      // Vérifier si l'état actuel contient une entrée valide
       TimesheetEntry? currentEntry;
-      if (state is TimeSheetDataState) {
-        currentEntry = (state as TimeSheetDataState).entry;
+
+      // Utiliser l'entrée du pointage actuel si elle existe
+      if (currentState is TimeSheetDataState) {
+        currentEntry = currentState.entry;
       } else {
-        currentEntry = entries.isNotEmpty ? entries.first : null;
+        // Si pas d'entrée courante, essayer de charger l'entrée d'aujourd'hui
+        final today = DateFormat("dd-MMM-yy").format(DateTime.now());
+        currentEntry = await getTodayTimesheetEntryUseCase.execute(today);
+
+        // Si toujours pas d'entrée, créer une nouvelle entrée vide pour aujourd'hui
+        currentEntry ??= TimesheetEntry(
+            dayDate: today,
+            dayOfWeekDate: DateFormat('EEEE').format(DateTime.now()),
+            startMorning: '',
+            endMorning: '',
+            startAfternoon: '',
+            endAfternoon: '',
+          );
       }
 
-      if (currentEntry != null) {
-        emit(await _createTimeSheetDataState(currentEntry, monthlyEntries: entries));
-      } else {
-        emit(const TimeSheetErrorState("Aucune donnée disponible pour ce mois."));
-      }
+      emit(await _createTimeSheetDataState(currentEntry, monthlyEntries: entries));
+
     } catch (e) {
-      emit(TimeSheetErrorState("Erreur lors du chargement des entrées mensuelles : $e"));
+      emit(TimeSheetErrorState(
+          "Erreur lors du chargement des entrées mensuelles : $e"));
     }
   }
-  
   Future<void> _onUpdateVacationInfo(
       UpdateVacationInfoEvent event,
       Emitter<TimeSheetState> emit,
