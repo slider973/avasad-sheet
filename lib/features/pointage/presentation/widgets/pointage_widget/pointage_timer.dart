@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'pointage_painter.dart';
@@ -22,6 +23,8 @@ class _PointageTimerState extends State<PointageTimer> with SingleTickerProvider
   late AnimationController _animationController;
   late Animation<double> _animation;
   late double _lastProgression;
+  Timer? _timer;
+  Duration _elapsedTime = Duration.zero;
 
   @override
   void initState() {
@@ -35,6 +38,18 @@ class _PointageTimerState extends State<PointageTimer> with SingleTickerProvider
       parent: _animationController,
       curve: Curves.easeInOut,
     );
+    _startTimer();
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (widget.dernierPointage != null && widget.etatActuel != 'Non commencé' && widget.etatActuel != 'Sortie') {
+        setState(() {
+          _elapsedTime = DateTime.now().difference(widget.dernierPointage!);
+        });
+      }
+    });
   }
 
   @override
@@ -44,10 +59,23 @@ class _PointageTimerState extends State<PointageTimer> with SingleTickerProvider
       _lastProgression = oldWidget.progression;
       _animationController.forward(from: 0.0);
     }
+    if (oldWidget.dernierPointage != widget.dernierPointage) {
+      _elapsedTime = Duration.zero;
+      _startTimer();
+    }
+  }
+
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    String hours = twoDigits(duration.inHours);
+    String minutes = twoDigits(duration.inMinutes.remainder(60));
+    String seconds = twoDigits(duration.inSeconds.remainder(60));
+    return '$hours:$minutes:$seconds';
   }
 
   @override
   void dispose() {
+    _timer?.cancel();
     _animationController.dispose();
     super.dispose();
   }
@@ -96,6 +124,16 @@ class _PointageTimerState extends State<PointageTimer> with SingleTickerProvider
                   color: Color(0xFF2D3E50),
                 ),
               ),
+              if (widget.dernierPointage != null &&
+                  widget.etatActuel != 'Non commencé' &&
+                  widget.etatActuel != 'Sortie')
+                Text(
+                  'Durée: ${_formatDuration(_elapsedTime)}',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: Color(0xFF2D3E50),
+                  ),
+                ),
             ],
           ),
         ],

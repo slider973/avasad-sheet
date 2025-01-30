@@ -3,7 +3,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import '../../../../bottom_nav_tab/presentation/pages/bloc/bottom_navigation_bar_bloc.dart';
 import '../../../data/models/anomalies/anomalies.dart';
 import '../../widgets/pointage_widget/pointage_widget.dart';
 import '../pdf/bloc/anomaly/anomaly_bloc.dart';
