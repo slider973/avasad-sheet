@@ -46,7 +46,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
           await getUserPreferenceUseCase.execute('lastGenerationDate');
       final notificationsEnabled =
           await getUserPreferenceUseCase.execute('notificationsEnabled') ??
-              'true';
+              'false';  // Désactivé par défaut
       final isDeliveryManager =
           await getUserPreferenceUseCase.execute('isDeliveryManager') ??
               'false';

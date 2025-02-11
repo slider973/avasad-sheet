@@ -19,15 +19,13 @@ class DynamicMultiplatformNotificationService {
     required this.timeSheetBloc,
     required this.preferencesBloc,
   }) {
-    timeSheetBloc.stream.listen((_) => _updateNotifications());
+    // Ne plus écouter les mises à jour pour éviter les notifications automatiques
   }
 
   Future<void> initNotifications() async {
-    if (Platform.isIOS) {
-      await _initIOSNotifications();
-    }
-    // Pas besoin d'initialisation spécifique pour Windows
-    await _updateNotifications();
+    // Désactiver toutes les notifications
+    await flutterLocalNotificationsPlugin.cancelAll();
+    await _resetBadge();
   }
 
   Future<void> _initIOSNotifications() async {

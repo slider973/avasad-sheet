@@ -181,36 +181,26 @@ class _PointageWidgetState extends State<PointageWidget>
     );
     final bloc = context.read<TimeSheetBloc>();
 
-    setState(() {
-      _dernierPointage = maintenant;
-      switch (_etatActuel) {
-        case 'Non commencé':
-          _etatActuel = 'Entrée';
-          pointages.add({'type': 'Entrée', 'heure': maintenant});
-          print('Pointage entrée: $maintenant');
-          bloc.add(TimeSheetEnterEvent(maintenant));
-          break;
-        case 'Entrée':
-          _etatActuel = 'Pause';
-          pointages.add({'type': 'Début pause', 'heure': maintenant});
-          bloc.add(TimeSheetStartBreakEvent(maintenant));
-          break;
-        case 'Pause':
-          _etatActuel = 'Reprise';
-          pointages.add({'type': 'Fin pause', 'heure': maintenant});
-          bloc.add(TimeSheetEndBreakEvent(maintenant));
-          break;
-        case 'Reprise':
-          _etatActuel = 'Sortie';
-          pointages.add({'type': 'Fin de journée', 'heure': maintenant});
-          bloc.add(TimeSheetOutEvent(maintenant));
-          break;
-        case 'Sortie':
-          _etatActuel = 'Non commencé';
-          pointages.clear();
-          break;
-      }
-    });
+    // Ne pas mettre à jour l'état local, laisser le bloc gérer cela
+    switch (_etatActuel) {
+      case 'Non commencé':
+        bloc.add(TimeSheetEnterEvent(maintenant));
+        break;
+      case 'Entrée':
+        bloc.add(TimeSheetStartBreakEvent(maintenant));
+        break;
+      case 'Pause':
+        bloc.add(TimeSheetEndBreakEvent(maintenant));
+        break;
+      case 'Reprise':
+        bloc.add(TimeSheetOutEvent(maintenant));
+        break;
+      case 'Sortie':
+        // Retour à l'état initial
+        final formattedDate = DateFormat('dd-MMM-yy').format(widget.selectedDate);
+        bloc.add(LoadTimeSheetDataEvent(formattedDate));
+        break;
+    }
   }
 
   void _animerProgression(double nouvelleValeur) {

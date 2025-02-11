@@ -38,15 +38,45 @@ class _PointageTimerState extends State<PointageTimer> with SingleTickerProvider
       parent: _animationController,
       curve: Curves.easeInOut,
     );
-    _startTimer();
+    // Initialiser avec un temps écoulé de zéro
+    _elapsedTime = Duration.zero;
   }
+
+  DateTime? _startTime;
 
   void _startTimer() {
     _timer?.cancel();
+    
+    // Réinitialiser le temps écoulé
+    setState(() {
+      _elapsedTime = Duration.zero;
+    });
+    
+    // Ne démarrer le timer que si on a déjà pointé
+    if (widget.dernierPointage == null || widget.etatActuel == 'Non commencé') {
+      _startTime = null;
+      return;
+    }
+    
+    // Initialiser le temps de départ au moment où le timer est lancé
+    _startTime = DateTime.now();
+    
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (widget.dernierPointage != null && widget.etatActuel != 'Non commencé' && widget.etatActuel != 'Sortie') {
+      if (widget.etatActuel != 'Non commencé' && widget.etatActuel != 'Sortie') {
         setState(() {
-          _elapsedTime = DateTime.now().difference(widget.dernierPointage!);
+          // Si on est en pause, on ne compte pas le temps
+          if (widget.etatActuel == 'Pause') {
+            _startTime = null;
+            _elapsedTime = Duration.zero;
+            return;
+          }
+          
+          // Calculer le temps écoulé en excluant les pauses
+          if (_startTime != null && (widget.etatActuel == 'Entrée' || widget.etatActuel == 'Reprise')) {
+            _elapsedTime = DateTime.now().difference(_startTime!);
+          } else {
+            _elapsedTime = Duration.zero;
+          }
         });
       }
     });
