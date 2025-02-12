@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../../../../enum/absence_period.dart';
 import '../domain/entities/timesheet_entry.dart';
 import '../domain/repositories/timesheet_repository.dart';
+import '../domain/entities/timesheet_generation_config.dart';
 
 
 class GenerateMonthlyTimesheetUseCase {
@@ -11,7 +12,7 @@ class GenerateMonthlyTimesheetUseCase {
 
   GenerateMonthlyTimesheetUseCase(this.repository);
 
-  Future<void> execute() async {
+  Future<void> execute([TimesheetGenerationConfig? config]) async {
     DateTime now = DateTime.now();
 
     // Calcul des bornes dynamiques de la période
@@ -37,7 +38,7 @@ class GenerateMonthlyTimesheetUseCase {
           String formattedDate = DateFormat('dd-MMM-yy').format(date);
           if (!existingDates.contains(formattedDate)) {
             print("Generating entry for: $formattedDate");
-            TimesheetEntry entry = _generateDayEntry(date);
+            TimesheetEntry entry = _generateDayEntry(date, config);
             await repository.saveTimesheetEntry(entry);
             print("Entry saved for: $formattedDate");
           } else {
@@ -51,41 +52,57 @@ class GenerateMonthlyTimesheetUseCase {
   }
 
 
-  TimesheetEntry _generateDayEntry(DateTime date) {
-    // Génération du temps de travail entre 7h30 (450 min) et 8h18 (498 min)
-    int workMinutes = 450 + random.nextInt(49);
+  TimesheetEntry _generateDayEntry(DateTime date, TimesheetGenerationConfig? config) {
+    // Utiliser la configuration fournie ou la configuration par défaut
+    final conf = config ?? TimesheetGenerationConfig.defaultConfig();
 
-    // Heure de début entre 7h00 et 8h30
-    DateTime startTime = DateTime(date.year, date.month, date.day, 7, 0);
-    startTime = startTime.add(Duration(minutes: random.nextInt(91))); // 0 à 90 minutes après 7h00
+    // Heure de début entre startTimeMin et startTimeMax
+    int startMinutes = random.nextInt(
+      conf.startTimeMax.difference(conf.startTimeMin).inMinutes + 1
+    );
+    DateTime startTime = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      conf.startTimeMin.hour,
+      conf.startTimeMin.minute,
+    ).add(Duration(minutes: startMinutes));
 
-    // Pause déjeuner entre 12h00 et 12h30
-    DateTime lunchStart = DateTime(date.year, date.month, date.day, 12, 0);
-    lunchStart = lunchStart.add(Duration(minutes: random.nextInt(31))); // 0 à 30 minutes après 12h00
+    // Pause déjeuner entre lunchStartMin et lunchStartMax
+    int lunchStartMinutes = random.nextInt(
+      conf.lunchStartMax.difference(conf.lunchStartMin).inMinutes + 1
+    );
+    DateTime lunchStart = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      conf.lunchStartMin.hour,
+      conf.lunchStartMin.minute,
+    ).add(Duration(minutes: lunchStartMinutes));
 
-    // Durée de la pause entre 60 et 90 minutes
-    int lunchDuration = 60 + random.nextInt(31);
+    // Durée de la pause entre lunchDurationMin et lunchDurationMax
+    int lunchDuration = conf.lunchDurationMin +
+        random.nextInt(conf.lunchDurationMax - conf.lunchDurationMin + 1);
     DateTime lunchEnd = lunchStart.add(Duration(minutes: lunchDuration));
 
-    // S'assurer que la fin de pause ne dépasse pas 13h30
-    DateTime maxLunchEnd = DateTime(date.year, date.month, date.day, 13, 30);
-    if (lunchEnd.isAfter(maxLunchEnd)) {
-      lunchEnd = maxLunchEnd;
-      lunchDuration = lunchEnd.difference(lunchStart).inMinutes;
-    }
-
-    // Calcul de l'heure de fin
+    // Calcul de l'heure de fin en respectant le temps de travail cible (environ 8h)
+    int targetWorkMinutes = 480; // 8 heures de travail
     int morningWorkMinutes = lunchStart.difference(startTime).inMinutes;
-    int afternoonWorkMinutes = workMinutes - morningWorkMinutes;
+    int afternoonWorkMinutes = targetWorkMinutes - morningWorkMinutes;
     DateTime endTime = lunchEnd.add(Duration(minutes: afternoonWorkMinutes));
 
-    // Vérification que l'heure de fin ne dépasse pas 18:18
-    DateTime latestEndTime = DateTime(date.year, date.month, date.day, 18, 18);
+    // Vérification que l'heure de fin ne dépasse pas la limite configurée
+    DateTime latestEndTime = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      conf.endTimeMax.hour,
+      conf.endTimeMax.minute,
+    );
     if (endTime.isAfter(latestEndTime)) {
       endTime = latestEndTime;
       // Recalcul du temps de travail de l'après-midi
       afternoonWorkMinutes = endTime.difference(lunchEnd).inMinutes;
-      workMinutes = morningWorkMinutes + afternoonWorkMinutes;
     }
 
     return TimesheetEntry(

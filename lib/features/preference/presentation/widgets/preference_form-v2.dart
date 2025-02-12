@@ -5,6 +5,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import '../../../pointage/presentation/pages/pdf/pages/signature_page.dart';
 import '../../../pointage/presentation/pages/time-sheet/bloc/time_sheet/time_sheet_bloc.dart';
+import '../../../pointage/domain/entities/timesheet_generation_config.dart';
+import '../../../pointage/presentation/pages/timesheet_generation_config_page.dart';
 import '../manager/preferences_bloc.dart';
 
 import '../../../../services/backup.dart';
@@ -92,14 +94,23 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
                   subtitle: _isGeneratedThisMonth(state.lastGenerationDate)
                       ? 'Déjà généré ce mois-ci'
                       : 'Générer pour ce mois',
-                  onTap: () {
+                  onTap: () async {
                     if (!_isGeneratedThisMonth(state.lastGenerationDate)) {
-                      context
-                          .read<TimeSheetBloc>()
-                          .add(const GenerateMonthlyTimesheetEvent());
-                      context
-                          .read<PreferencesBloc>()
-                          .add(SaveLastGenerationDate(DateTime.now()));
+                      final result = await Navigator.push<TimesheetGenerationConfig>(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => TimesheetGenerationConfigPage(),
+                        ),
+                      );
+                      
+                      if (result != null) {
+                        context
+                            .read<TimeSheetBloc>()
+                            .add(GenerateMonthlyTimesheetEvent(config: result));
+                        context
+                            .read<PreferencesBloc>()
+                            .add(SaveLastGenerationDate(DateTime.now()));
+                      }
                     }
                   },
                 ),

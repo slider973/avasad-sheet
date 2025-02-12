@@ -85,7 +85,9 @@ class UpdateTimeSheetDataEvent extends TimeSheetEvent {
 }
 
 class GenerateMonthlyTimesheetEvent extends TimeSheetEvent {
-  const GenerateMonthlyTimesheetEvent();
+  final TimesheetGenerationConfig? config;
+
+  const GenerateMonthlyTimesheetEvent({this.config});
 
   @override
   List<Object> get props => [];

@@ -5,6 +5,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:googleapis/cloudsearch/v1.dart';
 import 'package:intl/intl.dart';
+import 'package:time_sheet/features/pointage/domain/entities/timesheet_generation_config.dart';
 
 //use cases
 import '../../../../../../absence/data/models/absence.dart';
@@ -282,7 +283,7 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
     try {
       // Lancer le use case pour générer les feuilles de temps
       print("Calling generateMonthlyTimesheetUseCase.execute()");
-      await generateMonthlyTimesheetUseCase.execute();
+      await generateMonthlyTimesheetUseCase.execute(event.config);
 
       // Obtenir la date actuelle
       final currentDate = DateTime.now();
