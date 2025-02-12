@@ -43,42 +43,54 @@ class _PointageTimerState extends State<PointageTimer> with SingleTickerProvider
   }
 
   DateTime? _startTime;
+  Duration _accumulatedTime = Duration.zero;
 
   void _startTimer() {
     _timer?.cancel();
     
-    // Réinitialiser le temps écoulé
-    setState(() {
-      _elapsedTime = Duration.zero;
-    });
-    
-    // Ne démarrer le timer que si on a déjà pointé
-    if (widget.dernierPointage == null || widget.etatActuel == 'Non commencé') {
-      _startTime = null;
+    // Réinitialiser au début de la journée
+    if (widget.etatActuel == 'Non commencé') {
+      setState(() {
+        _startTime = null;
+        _accumulatedTime = Duration.zero;
+        _elapsedTime = Duration.zero;
+      });
       return;
     }
-    
-    // Initialiser le temps de départ au moment où le timer est lancé
-    _startTime = DateTime.now();
+
+    // Démarrer le timer
+    if (widget.etatActuel == 'Entrée') {
+      _startTime = DateTime.now();
+      _accumulatedTime = Duration.zero;
+    } else if (widget.etatActuel == 'Reprise') {
+      _startTime = DateTime.now();
+    }
     
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (widget.etatActuel != 'Non commencé' && widget.etatActuel != 'Sortie') {
-        setState(() {
-          // Si on est en pause, on ne compte pas le temps
-          if (widget.etatActuel == 'Pause') {
+      setState(() {
+        switch (widget.etatActuel) {
+          case 'Entrée':
+          case 'Reprise':
+            if (_startTime != null) {
+              _elapsedTime = _accumulatedTime + DateTime.now().difference(_startTime!);
+            }
+            break;
+            
+          case 'Pause':
+            if (_startTime != null) {
+              _accumulatedTime = _accumulatedTime + DateTime.now().difference(_startTime!);
+              _startTime = null;
+            }
+            _elapsedTime = _accumulatedTime;
+            break;
+            
+          case 'Sortie':
+          case 'Non commencé':
+            _timer?.cancel();
             _startTime = null;
-            _elapsedTime = Duration.zero;
-            return;
-          }
-          
-          // Calculer le temps écoulé en excluant les pauses
-          if (_startTime != null && (widget.etatActuel == 'Entrée' || widget.etatActuel == 'Reprise')) {
-            _elapsedTime = DateTime.now().difference(_startTime!);
-          } else {
-            _elapsedTime = Duration.zero;
-          }
-        });
-      }
+            break;
+        }
+      });
     });
   }
 
