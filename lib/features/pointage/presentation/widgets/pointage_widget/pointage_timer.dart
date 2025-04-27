@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'pointage_painter.dart';
+import '../../../../../services/timer_service.dart';
 
 class PointageTimer extends StatefulWidget {
   final String etatActuel;
@@ -19,16 +20,17 @@ class PointageTimer extends StatefulWidget {
   _PointageTimerState createState() => _PointageTimerState();
 }
 
-class _PointageTimerState extends State<PointageTimer> with SingleTickerProviderStateMixin {
+class _PointageTimerState extends State<PointageTimer> with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late AnimationController _animationController;
   late Animation<double> _animation;
   late double _lastProgression;
-  Timer? _timer;
-  Duration _elapsedTime = Duration.zero;
+  final TimerService _timerService = TimerService();
+  Timer? _updateTimer;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _lastProgression = widget.progression;
     _animationController = AnimationController(
       vsync: this,
@@ -38,61 +40,33 @@ class _PointageTimerState extends State<PointageTimer> with SingleTickerProvider
       parent: _animationController,
       curve: Curves.easeInOut,
     );
-    // Initialiser avec un temps écoulé de zéro
-    _elapsedTime = Duration.zero;
-  }
-
-  DateTime? _startTime;
-  Duration _accumulatedTime = Duration.zero;
-
-  void _startTimer() {
-    _timer?.cancel();
     
-    // Réinitialiser au début de la journée
-    if (widget.etatActuel == 'Non commencé') {
-      setState(() {
-        _startTime = null;
-        _accumulatedTime = Duration.zero;
-        _elapsedTime = Duration.zero;
-      });
-      return;
-    }
-
-    // Démarrer le timer
-    if (widget.etatActuel == 'Entrée') {
-      _startTime = DateTime.now();
-      _accumulatedTime = Duration.zero;
-    } else if (widget.etatActuel == 'Reprise') {
-      _startTime = DateTime.now();
-    }
+    // Initialiser le service de timer
+    _timerService.initialize(widget.etatActuel, widget.dernierPointage);
     
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      setState(() {
-        switch (widget.etatActuel) {
-          case 'Entrée':
-          case 'Reprise':
-            if (_startTime != null) {
-              _elapsedTime = _accumulatedTime + DateTime.now().difference(_startTime!);
-            }
-            break;
-            
-          case 'Pause':
-            if (_startTime != null) {
-              _accumulatedTime = _accumulatedTime + DateTime.now().difference(_startTime!);
-              _startTime = null;
-            }
-            _elapsedTime = _accumulatedTime;
-            break;
-            
-          case 'Sortie':
-          case 'Non commencé':
-            _timer?.cancel();
-            _startTime = null;
-            break;
-        }
-      });
+    // Créer un timer pour mettre à jour l'affichage
+    _updateTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) {
+        setState(() {});
+      }
     });
   }
+  
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      // L'application passe en arrière-plan ou devient inactive
+      _timerService.appPaused();
+    } else if (state == AppLifecycleState.resumed) {
+      // L'application revient au premier plan
+      _timerService.appResumed();
+      setState(() {}); // Forcer une mise à jour de l'affichage
+    }
+  }
+
+
 
   @override
   void didUpdateWidget(PointageTimer oldWidget) {
@@ -101,9 +75,14 @@ class _PointageTimerState extends State<PointageTimer> with SingleTickerProvider
       _lastProgression = oldWidget.progression;
       _animationController.forward(from: 0.0);
     }
-    if (oldWidget.dernierPointage != widget.dernierPointage) {
-      _elapsedTime = Duration.zero;
-      _startTimer();
+    
+    // Si l'état a changé ou si le dernier pointage a changé
+    if (oldWidget.etatActuel != widget.etatActuel || 
+        oldWidget.dernierPointage != widget.dernierPointage) {
+      
+      // Mettre à jour l'état du timer dans le service
+      _timerService.updateState(widget.etatActuel, widget.dernierPointage);
+      setState(() {}); // Forcer une mise à jour de l'affichage
     }
   }
 
@@ -117,8 +96,9 @@ class _PointageTimerState extends State<PointageTimer> with SingleTickerProvider
 
   @override
   void dispose() {
-    _timer?.cancel();
+    _updateTimer?.cancel();
     _animationController.dispose();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
@@ -170,7 +150,7 @@ class _PointageTimerState extends State<PointageTimer> with SingleTickerProvider
                   widget.etatActuel != 'Non commencé' &&
                   widget.etatActuel != 'Sortie')
                 Text(
-                  'Durée: ${_formatDuration(_elapsedTime)}',
+                  'Durée: ${_formatDuration(_timerService.elapsedTime)}',
                   style: const TextStyle(
                     fontSize: 16,
                     color: Color(0xFF2D3E50),

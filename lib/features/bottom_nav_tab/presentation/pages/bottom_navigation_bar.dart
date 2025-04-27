@@ -20,10 +20,22 @@ class BottomNavigationBarPage extends StatefulWidget {
 }
 
 class _BottomNavigationBarPageState extends State<BottomNavigationBarPage> {
+  // Liste des écrans pré-initialisés pour conserver leur état
+  late List<Widget> _screens;
+  
   @override
   void initState() {
     super.initState();
     _checkPermissions();
+    
+    // Initialiser tous les écrans une seule fois
+    _screens = [
+      const PointagePage(),
+      PdfDocumentPage(),
+      const TimesheetCalendarWidget(),
+      AnomalyView(),
+      PreferencesPage(),
+    ];
   }
 
   Future<void> _checkPermissions() async {
@@ -36,31 +48,13 @@ class _BottomNavigationBarPageState extends State<BottomNavigationBarPage> {
         drawer: const AppDrawer(),
         body: BlocBuilder<BottomNavigationBarBloc, int>(
           builder: (context, currentIndex) {
-            Widget currentScreen;
-            switch (currentIndex) {
-              case 0:
-                currentScreen = const PointagePage();
-                break;
-              case 1:
-                currentScreen = PdfDocumentPage();
-                break;
-              case 2:
-                currentScreen = const TimesheetCalendarWidget();
-                break;
-              case 3:
-                currentScreen = AnomalyView();
-                break;
-              case 4: // Nouvel écran
-                currentScreen = PreferencesPage(); // Votre vue d'anomalies
-              default:
-                currentScreen = const PointagePage();
-            }
             return Column(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 Expanded(
-                  child: Center(
-                    child: currentScreen,
+                  child: IndexedStack(
+                    index: currentIndex,
+                    children: _screens,
                   ),
                 ),
                 const BottomNavigationBarWidget(),
