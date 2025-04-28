@@ -93,6 +93,8 @@ class _PointageTimerState extends State<PointageTimer> with SingleTickerProvider
     String seconds = twoDigits(duration.inSeconds.remainder(60));
     return '$hours:$minutes:$seconds';
   }
+  
+
 
   @override
   void dispose() {
@@ -119,6 +121,7 @@ class _PointageTimerState extends State<PointageTimer> with SingleTickerProvider
                   currentProgression: widget.progression,
                   animation: _animation,
                   etatActuel: widget.etatActuel,
+                  elapsedTime: _timerService.elapsedTime,
                 ),
                 size: const Size(250, 250),
               );
