@@ -99,6 +99,7 @@ class PointageLayout extends StatelessWidget {
                   etatActuel: etatActuel,
                   dernierPointage: dernierPointage,
                   progression: progression,
+                  pointages: pointages,
                 ),
               ],
             ),
