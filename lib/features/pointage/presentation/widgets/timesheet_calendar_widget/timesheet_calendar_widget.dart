@@ -8,6 +8,7 @@ import 'package:time_sheet/features/pointage/presentation/widgets/timesheet_cale
 import '../../../../../enum/absence_period.dart';
 import '../../../domain/entities/timesheet_entry.dart';
 import '../../pages/time-sheet/bloc/time_sheet_list/time_sheet_list_bloc.dart';
+import '../../pages/time-sheet/bloc/time_sheet/time_sheet_bloc.dart';
 import '../pointage_widget/pointage_widget.dart';
 import 'events.dart';
 import 'timesheet_calendar_layout.dart';
@@ -100,6 +101,27 @@ class _TimesheetCalendarWidgetState extends State<TimesheetCalendarWidget> {
         _focusedDay = focusedDay;
         _selectedEvents.value = _getEventsForDay(selectedDay);
       });
+      
+      // Charger explicitement les données pour le jour sélectionné
+      final dateFormat = DateFormat('dd-MMM-yy', 'en_US');
+      final formattedDate = dateFormat.format(selectedDay);
+      
+      // Charger les données pour le jour sélectionné avec la date formatée
+      try {
+        final timeSheetBloc = context.read<TimeSheetBloc>();
+        timeSheetBloc.add(LoadTimeSheetDataEvent(formattedDate));
+      } catch (e) {
+        print('Erreur lors du chargement des données: $e');
+      }
+      
+      // Charger également les données pour la liste complète
+      context.read<TimeSheetListBloc>().add(const FindTimesheetEntriesEvent());
+      
+      // Afficher les détails du jour sélectionné si un événement existe
+      final events = _getEventsForDay(selectedDay);
+      if (events.isNotEmpty) {
+        _onEventTap(events.first.entry);
+      }
     }
   }
 

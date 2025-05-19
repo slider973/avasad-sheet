@@ -42,13 +42,7 @@ class TimerPainter extends CustomPainter {
       if (type == 'Fin de journée') exitTime = time;
     }
     
-    // Dessiner le cercle de fond (gris clair)
-    final backgroundPaint = Paint()
-      ..color = Colors.grey.shade200
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 25;
-    
-    canvas.drawCircle(center, radius, backgroundPaint);
+    // Nous ne dessinons pas de fond pour garder la transparence
     
     // Dessiner les segments en fonction de l'état
     if (etatActuel == 'Non commencé') {
@@ -302,36 +296,57 @@ class _PointageTimerState extends State<PointageTimer>
   }
 
   void _showSegmentDetails(String type, Duration duration) {
-    // Afficher une boîte de dialogue avec les détails du segment
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Détails - $type'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+    // Calculer le pourcentage en fonction du type et de la durée
+    String percentage = '';
+    
+    // Extraire les horaires réels depuis les pointages
+    DateTime? entryTime;
+    DateTime? pauseStartTime;
+    DateTime? pauseEndTime;
+    DateTime? exitTime;
+    
+    for (var pointage in widget.pointages) {
+      final pointageType = pointage['type'] as String;
+      final time = pointage['heure'] as DateTime;
+      if (pointageType == 'Entrée') entryTime = time;
+      if (pointageType == 'Début pause') pauseStartTime = time;
+      if (pointageType == 'Fin pause') pauseEndTime = time;
+      if (pointageType == 'Fin de journée') exitTime = time;
+    }
+    
+    // Calculer le pourcentage en fonction de l'état actuel
+    if (widget.etatActuel == 'Sortie' && entryTime != null && exitTime != null) {
+      final totalWorkedSeconds = exitTime.difference(entryTime).inSeconds.toDouble();
+      
+      if (type == 'Entrée' && pauseStartTime != null) {
+        final entrySeconds = pauseStartTime.difference(entryTime).inSeconds.toDouble();
+        final percent = (entrySeconds / totalWorkedSeconds) * 100;
+        percentage = '${percent.toStringAsFixed(1)}%';
+      } else if (type == 'Pause' && pauseStartTime != null && pauseEndTime != null) {
+        final pauseSeconds = pauseEndTime.difference(pauseStartTime).inSeconds.toDouble();
+        final percent = (pauseSeconds / totalWorkedSeconds) * 100;
+        percentage = '${percent.toStringAsFixed(1)}%';
+      } else if (type == 'Reprise' && pauseEndTime != null) {
+        final repriseSeconds = exitTime.difference(pauseEndTime).inSeconds.toDouble();
+        final percent = (repriseSeconds / totalWorkedSeconds) * 100;
+        percentage = '${percent.toStringAsFixed(1)}%';
+      }
+    }
+    
+    // Afficher un SnackBar avec les détails et le pourcentage
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Type: $type',
-                style: const TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Text('Durée: ${_formatDuration(duration)}'),
-            const SizedBox(height: 8),
-            if (type == 'Entrée')
-              const Text(
-                  'Période du matin, de l\'arrivée jusqu\'à la pause déjeuner.'),
-            if (type == 'Pause')
-              const Text('Temps de pause, généralement pour le déjeuner.'),
-            if (type == 'Reprise')
-              const Text(
-                  'Période de l\'après-midi, de la fin de la pause jusqu\'à la sortie.'),
+            Text('$type: ${_formatDuration(duration)}'),
+            if (percentage.isNotEmpty)
+              Text(percentage, style: const TextStyle(fontWeight: FontWeight.bold)),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Fermer'),
-          ),
-        ],
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(10),
       ),
     );
   }
@@ -375,18 +390,81 @@ class _PointageTimerState extends State<PointageTimer>
                       final touchPosition = details.localPosition;
                       final dx = touchPosition.dx - center.dx;
                       final dy = touchPosition.dy - center.dy;
-                      final angle = (math.atan2(dy, dx) * 180 / math.pi + 270) % 360;
                       
-                      // Déterminer quel segment a été touché en fonction de l'angle
+                      // Vérifier d'abord si le clic est dans le cercle (distance du centre)
+                      final distance = math.sqrt(dx * dx + dy * dy);
+                      final radius = 125 - 25; // Rayon du cercle moins la moitié de l'épaisseur du trait
+                      
+                      if (distance > radius + 15 || distance < radius - 15) {
+                        // Clic en dehors de l'anneau du timer
+                        setState(() {
+                          _touchedIndex = -1;
+                        });
+                        return;
+                      }
+                      
+                      // Calculer l'angle en degrés (0 = haut, sens horaire)
+                      final angle = (math.atan2(dy, dx) * 180 / math.pi + 90) % 360;
+                      
+                      // Extraire les horaires réels depuis les pointages pour calculer les angles réels
+                      DateTime? entryTime;
+                      DateTime? pauseStartTime;
+                      DateTime? pauseEndTime;
+                      DateTime? exitTime;
+                      
+                      for (var pointage in widget.pointages) {
+                        final type = pointage['type'] as String;
+                        final time = pointage['heure'] as DateTime;
+                        if (type == 'Entrée') entryTime = time;
+                        if (type == 'Début pause') pauseStartTime = time;
+                        if (type == 'Fin pause') pauseEndTime = time;
+                        if (type == 'Fin de journée') exitTime = time;
+                      }
+                      
+                      // Déterminer quel segment a été touché en fonction de l'angle et de l'état
                       setState(() {
-                        if (angle < 120) {
-                          _touchedIndex = 0; // Entrée
-                        } else if (angle < 240) {
-                          _touchedIndex = 1; // Pause
+                        if (widget.etatActuel == 'Sortie' && entryTime != null && pauseStartTime != null && 
+                            pauseEndTime != null && exitTime != null) {
+                          // Calculer les angles pour chaque segment
+                          final totalWorkedSeconds = exitTime.difference(entryTime).inSeconds.toDouble();
+                          if (totalWorkedSeconds <= 0) return;
+                          
+                          final entryPercent = pauseStartTime.difference(entryTime).inSeconds.toDouble() / totalWorkedSeconds;
+                          final pausePercent = pauseEndTime.difference(pauseStartTime).inSeconds.toDouble() / totalWorkedSeconds;
+                          
+                          final entryEndAngle = entryPercent * 360;
+                          final pauseEndAngle = entryEndAngle + (pausePercent * 360);
+                          
+                          if (angle < entryEndAngle) {
+                            _touchedIndex = 0; // Entrée
+                          } else if (angle < pauseEndAngle) {
+                            _touchedIndex = 1; // Pause
+                          } else {
+                            _touchedIndex = 2; // Reprise
+                          }
                         } else {
-                          _touchedIndex = 2; // Reprise
+                          // Utiliser une division simple pour les autres états
+                          if (angle < 120) {
+                            _touchedIndex = 0; // Entrée
+                          } else if (angle < 240) {
+                            _touchedIndex = 1; // Pause
+                          } else {
+                            _touchedIndex = 2; // Reprise
+                          }
                         }
                       });
+                    },
+                    onLongPress: () {
+                      // Afficher immédiatement les détails lors d'un appui long
+                      if (_touchedIndex != -1) {
+                        if (_touchedIndex == 0) {
+                          _showSegmentDetails('Entrée', _getDurationForSegment('Entrée'));
+                        } else if (_touchedIndex == 1) {
+                          _showSegmentDetails('Pause', _getDurationForSegment('Pause'));
+                        } else if (_touchedIndex == 2) {
+                          _showSegmentDetails('Reprise', _getDurationForSegment('Reprise'));
+                        }
+                      }
                     },
                     onTapUp: (details) {
                       if (_touchedIndex != -1) {
