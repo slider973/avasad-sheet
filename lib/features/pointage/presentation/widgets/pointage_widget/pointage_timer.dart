@@ -2,8 +2,167 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:fl_chart/fl_chart.dart';
 import '../../../../../services/timer_service.dart';
+
+// Classe personnalisée pour dessiner le timer
+class TimerPainter extends CustomPainter {
+  final String etatActuel;
+  final List<Map<String, dynamic>> pointages;
+  final int touchedIndex;
+  
+  TimerPainter({
+    required this.etatActuel,
+    required this.pointages,
+    required this.touchedIndex,
+  });
+  
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = math.min(size.width, size.height) / 2 - 10;
+    final innerRadius = radius - 25; // Rayon intérieur pour créer l'anneau
+    
+    // Définir les couleurs des segments
+    final Color entreeColor = Colors.teal;
+    final Color pauseColor = const Color(0xFFE7D37F); // Jaune
+    final Color repriseColor = const Color(0xFFFD9B63); // Orange
+    
+    // Extraire les horaires réels depuis les pointages
+    DateTime? entryTime;
+    DateTime? pauseStartTime;
+    DateTime? pauseEndTime;
+    DateTime? exitTime;
+    
+    for (var pointage in pointages) {
+      final type = pointage['type'] as String;
+      final time = pointage['heure'] as DateTime;
+      if (type == 'Entrée') entryTime = time;
+      if (type == 'Début pause') pauseStartTime = time;
+      if (type == 'Fin pause') pauseEndTime = time;
+      if (type == 'Fin de journée') exitTime = time;
+    }
+    
+    // Dessiner le cercle de fond (gris clair)
+    final backgroundPaint = Paint()
+      ..color = Colors.grey.shade200
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 25;
+    
+    canvas.drawCircle(center, radius, backgroundPaint);
+    
+    // Dessiner les segments en fonction de l'état
+    if (etatActuel == 'Non commencé') {
+      // Ne rien dessiner pour l'état non commencé
+      return;
+    }
+    
+    // Cas spécial : si la journée est terminée (état Sortie)
+    if (etatActuel == 'Sortie' && entryTime != null && pauseStartTime != null && 
+        pauseEndTime != null && exitTime != null) {
+      // Calculer les angles pour chaque segment
+      final totalWorkedSeconds = exitTime.difference(entryTime).inSeconds.toDouble();
+      if (totalWorkedSeconds <= 0) return;
+      
+      final entryPercent = pauseStartTime.difference(entryTime).inSeconds.toDouble() / totalWorkedSeconds;
+      final pausePercent = pauseEndTime.difference(pauseStartTime).inSeconds.toDouble() / totalWorkedSeconds;
+      final reprisePercent = exitTime.difference(pauseEndTime).inSeconds.toDouble() / totalWorkedSeconds;
+      
+      // Dessiner les segments
+      _drawSegment(canvas, center, radius, innerRadius, 0, entryPercent * 360, entreeColor, 0 == touchedIndex);
+      _drawSegment(canvas, center, radius, innerRadius, entryPercent * 360, 
+                  (entryPercent + pausePercent) * 360, pauseColor, 1 == touchedIndex);
+      _drawSegment(canvas, center, radius, innerRadius, (entryPercent + pausePercent) * 360, 
+                  (entryPercent + pausePercent + reprisePercent) * 360, repriseColor, 2 == touchedIndex);
+    } 
+    // Entrée en cours (avant la pause)
+    else if (entryTime != null && pauseStartTime == null) {
+      // Définir les heures de la journée de travail (8h-18h = 10h)
+      final startOfDay = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day, 8, 0);
+      final endOfDay = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day, 18, 0);
+      final totalDaySeconds = endOfDay.difference(startOfDay).inSeconds.toDouble();
+      
+      if (totalDaySeconds <= 0) return;
+      
+      // Calculer le pourcentage d'avancement
+      double entryPercent = (DateTime.now().difference(startOfDay).inSeconds.toDouble() / totalDaySeconds);
+      entryPercent = math.min(1.0, math.max(0.0, entryPercent));
+      
+      // Dessiner le segment d'entrée
+      _drawSegment(canvas, center, radius, innerRadius, 0, entryPercent * 360, entreeColor, 0 == touchedIndex);
+    }
+    // Pause en cours
+    else if (entryTime != null && pauseStartTime != null && pauseEndTime == null) {
+      final startOfDay = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day, 8, 0);
+      final endOfDay = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day, 18, 0);
+      final totalDaySeconds = endOfDay.difference(startOfDay).inSeconds.toDouble();
+      
+      if (totalDaySeconds <= 0) return;
+      
+      double entryPercent = (pauseStartTime.difference(startOfDay).inSeconds.toDouble() / totalDaySeconds);
+      double pausePercent = (DateTime.now().difference(pauseStartTime).inSeconds.toDouble() / totalDaySeconds);
+      
+      entryPercent = math.min(1.0, math.max(0.0, entryPercent));
+      pausePercent = math.min(1.0 - entryPercent, math.max(0.0, pausePercent));
+      
+      // Dessiner les segments
+      _drawSegment(canvas, center, radius, innerRadius, 0, entryPercent * 360, entreeColor, 0 == touchedIndex);
+      _drawSegment(canvas, center, radius, innerRadius, entryPercent * 360, 
+                  (entryPercent + pausePercent) * 360, pauseColor, 1 == touchedIndex);
+    }
+    // Reprise en cours
+    else if (entryTime != null && pauseStartTime != null && pauseEndTime != null && exitTime == null) {
+      final startOfDay = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day, 8, 0);
+      final endOfDay = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day, 18, 0);
+      final totalDaySeconds = endOfDay.difference(startOfDay).inSeconds.toDouble();
+      
+      if (totalDaySeconds <= 0) return;
+      
+      double entryPercent = (pauseStartTime.difference(startOfDay).inSeconds.toDouble() / totalDaySeconds);
+      double pausePercent = (pauseEndTime.difference(pauseStartTime).inSeconds.toDouble() / totalDaySeconds);
+      double reprisePercent = (DateTime.now().difference(pauseEndTime).inSeconds.toDouble() / totalDaySeconds);
+      
+      entryPercent = math.min(1.0, math.max(0.0, entryPercent));
+      pausePercent = math.min(1.0 - entryPercent, math.max(0.0, pausePercent));
+      reprisePercent = math.min(1.0 - entryPercent - pausePercent, math.max(0.0, reprisePercent));
+      
+      // Dessiner les segments
+      _drawSegment(canvas, center, radius, innerRadius, 0, entryPercent * 360, entreeColor, 0 == touchedIndex);
+      _drawSegment(canvas, center, radius, innerRadius, entryPercent * 360, 
+                  (entryPercent + pausePercent) * 360, pauseColor, 1 == touchedIndex);
+      _drawSegment(canvas, center, radius, innerRadius, (entryPercent + pausePercent) * 360, 
+                  (entryPercent + pausePercent + reprisePercent) * 360, repriseColor, 2 == touchedIndex);
+    }
+  }
+  
+  // Méthode pour dessiner un segment d'arc
+  void _drawSegment(Canvas canvas, Offset center, double radius, double innerRadius, 
+                    double startAngle, double endAngle, Color color, bool isTouched) {
+    final paint = Paint()
+      ..color = isTouched ? color.withOpacity(0.8) : color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = isTouched ? 30 : 25;
+    
+    // Convertir les angles en radians et ajuster pour commencer à midi (270 degrés)
+    final startRad = (startAngle - 90) * math.pi / 180;
+    final endRad = (endAngle - 90) * math.pi / 180;
+    
+    // Dessiner l'arc
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius - paint.strokeWidth / 2),
+      startRad,
+      endRad - startRad,
+      false,
+      paint,
+    );
+  }
+  
+  @override
+  bool shouldRepaint(TimerPainter oldDelegate) {
+    return oldDelegate.etatActuel != etatActuel ||
+           oldDelegate.pointages != pointages ||
+           oldDelegate.touchedIndex != touchedIndex;
+  }
+}
 
 class PointageTimer extends StatefulWidget {
   final String etatActuel;
@@ -185,101 +344,8 @@ class _PointageTimerState extends State<PointageTimer>
     super.dispose();
   }
 
-  // Générer les sections du PieChart en fonction des pointages
-  List<PieChartSectionData> _generateSections() {
-    List<PieChartSectionData> sections = [];
-
-    // Définir les couleurs des segments
-    final Color entreeColor = Colors.teal;
-    final Color pauseColor = const Color(0xFFE7D37F); // Jaune
-    final Color repriseColor = const Color(0xFFFD9B63); // Orange
-    
-    // Définir les heures de la journée de travail (8h-18h = 10h)
-    final startOfDay = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day, 8, 0); // 8h00
-    final endOfDay = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day, 18, 0);  // 18h00
-    final totalDaySeconds = endOfDay.difference(startOfDay).inSeconds.toDouble();
-    
-    // Extraire les horaires réels depuis les pointages
-    DateTime? entryTime;
-    DateTime? pauseStartTime;
-    DateTime? pauseEndTime;
-    DateTime? exitTime;
-    for (var pointage in widget.pointages) {
-      final type = pointage['type'] as String;
-      final time = pointage['heure'] as DateTime;
-      if (type == 'Entrée') entryTime = time;
-      if (type == 'Début pause') pauseStartTime = time;
-      if (type == 'Fin pause') pauseEndTime = time;
-      if (type == 'Fin de journée') exitTime = time;
-    }
-
-    // Cas spécial : si la journée est terminée (état Sortie), afficher le cercle complet avec la répartition réelle
-    if (widget.etatActuel == 'Sortie' && entryTime != null && pauseStartTime != null && pauseEndTime != null && exitTime != null) {
-      // Calcul proportionnel sur la vraie durée travaillée
-      final totalWorkedSeconds = exitTime.difference(entryTime).inSeconds.toDouble();
-      double entryPercent = (pauseStartTime.difference(entryTime).inSeconds.toDouble() / totalWorkedSeconds) * 100;
-      double pausePercent = (pauseEndTime.difference(pauseStartTime).inSeconds.toDouble() / totalWorkedSeconds) * 100;
-      double reprisePercent = (exitTime.difference(pauseEndTime).inSeconds.toDouble() / totalWorkedSeconds) * 100;
-      sections.add(_buildSection(entreeColor, entryPercent, 0));
-      sections.add(_buildSection(pauseColor, pausePercent, 1));
-      sections.add(_buildSection(repriseColor, reprisePercent, 2));
-      return sections;
-    }
-
-    // --- Remplissage dynamique selon l'étape et le temps réel écoulé ---
-    if (entryTime != null && pauseStartTime == null) {
-      // Entrée en cours (avant la pause)
-      double entryPercent = (DateTime.now().difference(startOfDay).inSeconds.toDouble() / totalDaySeconds) * 100;
-      entryPercent = entryPercent.clamp(0.0, 100.0);
-      sections.add(_buildSection(entreeColor, entryPercent, 0));
-      // Les autres segments restent à zéro
-      return sections;
-    } else if (entryTime != null && pauseStartTime != null && pauseEndTime == null) {
-      // Pause en cours
-      double entryPercent = (pauseStartTime.difference(startOfDay).inSeconds.toDouble() / totalDaySeconds) * 100;
-      double pausePercent = (DateTime.now().difference(pauseStartTime).inSeconds.toDouble() / totalDaySeconds) * 100;
-      // S'assurer que la limite supérieure est au moins 0
-      double maxPausePercent = math.max(0.0, 100.0 - entryPercent);
-      pausePercent = pausePercent.clamp(0.0, maxPausePercent);
-      sections.add(_buildSection(entreeColor, entryPercent, 0));
-      sections.add(_buildSection(pauseColor, pausePercent, 1));
-      return sections;
-    } else if (entryTime != null && pauseStartTime != null && pauseEndTime != null && exitTime == null) {
-      // Reprise en cours
-      double entryPercent = (pauseStartTime.difference(startOfDay).inSeconds.toDouble() / totalDaySeconds) * 100;
-      double pausePercent = (pauseEndTime.difference(pauseStartTime).inSeconds.toDouble() / totalDaySeconds) * 100;
-      double reprisePercent = (DateTime.now().difference(pauseEndTime).inSeconds.toDouble() / totalDaySeconds) * 100;
-      // S'assurer que la limite supérieure est au moins 0
-      double maxReprisePercent = math.max(0.0, 100.0 - entryPercent - pausePercent);
-      reprisePercent = reprisePercent.clamp(0.0, maxReprisePercent);
-      sections.add(_buildSection(entreeColor, entryPercent, 0));
-      sections.add(_buildSection(pauseColor, pausePercent, 1));
-      sections.add(_buildSection(repriseColor, reprisePercent, 2));
-      return sections;
-    }
-
-    // Si aucun pointage ou état non commencé, ne rien afficher
-    return [];
-  }
-
   // Construire une section de PieChart avec animation au toucher
-  PieChartSectionData _buildSection(Color color, double value, int index) {
-    final isTouched = index == _touchedIndex;
-    final double radius = isTouched ? 30 : 25;
-    final double fontSize = isTouched ? 8 : 0;
 
-    return PieChartSectionData(
-      color: color,
-      value: value,
-      title: isTouched ? '${value.toStringAsFixed(1)}%' : '',
-      radius: radius,
-      titleStyle: TextStyle(
-          fontSize: fontSize, color: Colors.white, fontWeight: FontWeight.bold),
-      badgeWidget: null,
-      badgePositionPercentageOffset: 0,
-      borderSide: const BorderSide(width: 0),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -289,51 +355,54 @@ class _PointageTimerState extends State<PointageTimer>
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Utiliser PieChart au lieu de CustomPainter
+          // Utiliser CustomPaint au lieu de PieChart pour plus de stabilité
           SizedBox(
             width: 250,
             height: 250,
             child: AnimatedBuilder(
               animation: _animationController,
               builder: (context, _) {
-                return PieChart(
-                  PieChartData(
-                    sections: _generateSections(),
-                    centerSpaceRadius: 90,
-                    sectionsSpace: 0.2,
-                    pieTouchData: PieTouchData(
-                      touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                return CustomPaint(
+                  painter: TimerPainter(
+                    etatActuel: widget.etatActuel,
+                    pointages: widget.pointages,
+                    touchedIndex: _touchedIndex,
+                  ),
+                  child: GestureDetector(
+                    onTapDown: (details) {
+                      // Calculer l'angle du toucher par rapport au centre
+                      final center = Offset(125, 125);
+                      final touchPosition = details.localPosition;
+                      final dx = touchPosition.dx - center.dx;
+                      final dy = touchPosition.dy - center.dy;
+                      final angle = (math.atan2(dy, dx) * 180 / math.pi + 270) % 360;
+                      
+                      // Déterminer quel segment a été touché en fonction de l'angle
+                      setState(() {
+                        if (angle < 120) {
+                          _touchedIndex = 0; // Entrée
+                        } else if (angle < 240) {
+                          _touchedIndex = 1; // Pause
+                        } else {
+                          _touchedIndex = 2; // Reprise
+                        }
+                      });
+                    },
+                    onTapUp: (details) {
+                      if (_touchedIndex != -1) {
+                        // Déterminer quel segment a été touché
+                        if (_touchedIndex == 0) {
+                          _showSegmentDetails('Entrée', _getDurationForSegment('Entrée'));
+                        } else if (_touchedIndex == 1) {
+                          _showSegmentDetails('Pause', _getDurationForSegment('Pause'));
+                        } else if (_touchedIndex == 2) {
+                          _showSegmentDetails('Reprise', _getDurationForSegment('Reprise'));
+                        }
                         setState(() {
-                          if (event is FlTapDownEvent ||
-                              event is FlPanDownEvent) {
-                            _touchedIndex = pieTouchResponse
-                                    ?.touchedSection?.touchedSectionIndex ??
-                                -1;
-                          } else if (event is FlTapUpEvent ||
-                              event is FlPanEndEvent ||
-                              event is FlLongPressEnd) {
-                            if (_touchedIndex != -1) {
-                              // Déterminer quel segment a été touché
-                              if (_touchedIndex == 0) {
-                                _showSegmentDetails(
-                                    'Entrée', _getDurationForSegment('Entrée'));
-                              } else if (_touchedIndex == 1) {
-                                _showSegmentDetails(
-                                    'Pause', _getDurationForSegment('Pause'));
-                              } else if (_touchedIndex == 2) {
-                                _showSegmentDetails('Reprise',
-                                    _getDurationForSegment('Reprise'));
-                              }
-                              _touchedIndex = -1;
-                            }
-                          } else {
-                            _touchedIndex = -1;
-                          }
+                          _touchedIndex = -1;
                         });
-                      },
-                    ),
-                    borderData: FlBorderData(show: false),
-                    startDegreeOffset: 270,
+                      }
+                    },
                   ),
                 );
               },

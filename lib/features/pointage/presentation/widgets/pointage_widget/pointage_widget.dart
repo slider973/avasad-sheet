@@ -68,6 +68,19 @@ class _PointageWidgetState extends State<PointageWidget>
     }
     _loadWeeklyData();
   }
+  
+  @override
+  void didUpdateWidget(PointageWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    
+    // Si la date sélectionnée a changé, recharger les données pour la nouvelle date
+    if (oldWidget.selectedDate != widget.selectedDate) {
+      print('Date sélectionnée modifiée: ${widget.selectedDate}');
+      // Réinitialiser les données et charger celles de la nouvelle date
+      _chargerDonneesPersistees(widget.selectedDate);
+      _loadWeeklyData();
+    }
+  }
 
   void _loadVacationData() {
     final bloc = context.read<TimeSheetBloc>();

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 
 import '../../../pointage/presentation/pages/anomaly/anomaly.dart';
 import '../../../pointage/presentation/pages/pdf/pages/pdf_document_page.dart';
 import '../../../preference/presentation/pages/preference.dart';
 import '../../../pointage/presentation/pages/pointage/pointage_page.dart';
+import '../../../pointage/presentation/pages/time-sheet/bloc/time_sheet/time_sheet_bloc.dart';
 import '../../../pointage/presentation/widgets/timesheet_calendar_widget/timesheet_calendar_widget.dart';
 import '../widgets/bottom_navigation_bar_widget.dart';
 import 'app_drawer.dart';
@@ -46,7 +48,20 @@ class _BottomNavigationBarPageState extends State<BottomNavigationBarPage> {
   Widget build(BuildContext context) {
     return Scaffold(
         drawer: const AppDrawer(),
-        body: BlocBuilder<BottomNavigationBarBloc, int>(
+        body: BlocConsumer<BottomNavigationBarBloc, int>(
+          listener: (context, currentIndex) {
+            // Si l'utilisateur navigue vers l'onglet pointage (index 0),
+            // forcer le chargement des données du jour actuel
+            if (currentIndex == 0) {
+              // Formater la date d'aujourd'hui dans le format attendu par le BLoC
+              final today = DateTime.now();
+              final formattedDate = DateFormat("dd-MMM-yy").format(today);
+              
+              // Déclencher le chargement des données pour aujourd'hui
+              final bloc = context.read<TimeSheetBloc>();
+              bloc.add(LoadTimeSheetDataEvent(formattedDate));
+            }
+          },
           builder: (context, currentIndex) {
             return Column(
               mainAxisAlignment: MainAxisAlignment.end,
