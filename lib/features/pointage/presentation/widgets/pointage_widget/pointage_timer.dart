@@ -42,11 +42,42 @@ class TimerPainter extends CustomPainter {
       if (type == 'Fin de journée') exitTime = time;
     }
     
-    // Nous ne dessinons pas de fond pour garder la transparence
+    // Dessiner un cercle de fond subtil pour la progression temporelle
+    final backgroundPaint = Paint()
+      ..color = Colors.grey.shade200.withOpacity(0.3)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 20;
+    
+    canvas.drawCircle(center, radius, backgroundPaint);
+    
+    // Dessiner la progression du temps dans la journée (8h-18h)
+    final now = DateTime.now();
+    final startOfDay = DateTime(now.year, now.month, now.day, 8, 0);
+    final endOfDay = DateTime(now.year, now.month, now.day, 18, 0);
+    final totalDaySeconds = endOfDay.difference(startOfDay).inSeconds.toDouble();
+    
+    if (totalDaySeconds > 0) {
+      double timeProgress = (now.difference(startOfDay).inSeconds.toDouble() / totalDaySeconds);
+      timeProgress = math.min(1.0, math.max(0.0, timeProgress));
+      
+      // Dessiner le cercle de progression temporelle
+      final progressPaint = Paint()
+        ..color = Colors.blue.shade200.withOpacity(0.5)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 15;
+      
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius),
+        -math.pi / 2, // Commencer à midi (haut)
+        timeProgress * 2 * math.pi, // Progression en radians
+        false,
+        progressPaint,
+      );
+    }
     
     // Dessiner les segments en fonction de l'état
     if (etatActuel == 'Non commencé') {
-      // Ne rien dessiner pour l'état non commencé
+      // Afficher seulement la progression temporelle pour l'état non commencé
       return;
     }
     
@@ -154,7 +185,8 @@ class TimerPainter extends CustomPainter {
   bool shouldRepaint(TimerPainter oldDelegate) {
     return oldDelegate.etatActuel != etatActuel ||
            oldDelegate.pointages != pointages ||
-           oldDelegate.touchedIndex != touchedIndex;
+           oldDelegate.touchedIndex != touchedIndex ||
+           true; // Toujours repeindre pour mettre à jour la progression temporelle
   }
 }
 
@@ -196,7 +228,7 @@ class _PointageTimerState extends State<PointageTimer>
     // Initialiser le service de timer
     _timerService.initialize(widget.etatActuel, widget.dernierPointage);
 
-    // Créer un timer pour mettre à jour l'affichage
+    // Créer un timer pour mettre à jour l'affichage du compteur temps réel
     _updateTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) {
         setState(() {});
