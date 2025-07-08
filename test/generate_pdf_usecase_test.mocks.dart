@@ -3,22 +3,24 @@
 // Do not manually edit this file.
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
-import 'dart:async' as _i4;
-import 'dart:typed_data' as _i8;
+import 'dart:async' as _i5;
+import 'dart:typed_data' as _i9;
 
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:time_sheet/features/pointage/data/models/generated_pdf/generated_pdf.dart'
-    as _i6;
-import 'package:time_sheet/features/pointage/domain/entities/timesheet_entry.dart'
-    as _i5;
-import 'package:time_sheet/features/pointage/domain/repositories/timesheet_repository.dart'
-    as _i3;
-import 'package:time_sheet/features/preference/domain/repositories/user_preference_repository.dart'
-    as _i2;
-import 'package:time_sheet/features/preference/domain/use_cases/get_signature_usecase.dart'
+import 'package:time_sheet/features/pointage/domain/entities/generated_pdf.dart'
     as _i7;
+import 'package:time_sheet/features/pointage/domain/entities/timesheet_entry.dart'
+    as _i6;
+import 'package:time_sheet/features/pointage/domain/repositories/timesheet_repository.dart'
+    as _i4;
+import 'package:time_sheet/features/pointage/domain/value_objects/vacation_days_info.dart'
+    as _i2;
+import 'package:time_sheet/features/preference/domain/repositories/user_preference_repository.dart'
+    as _i3;
+import 'package:time_sheet/features/preference/domain/use_cases/get_signature_usecase.dart'
+    as _i8;
 import 'package:time_sheet/features/preference/domain/use_cases/get_user_preference_use_case.dart'
-    as _i9;
+    as _i10;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -33,9 +35,20 @@ import 'package:time_sheet/features/preference/domain/use_cases/get_user_prefere
 // ignore_for_file: camel_case_types
 // ignore_for_file: subtype_of_sealed_class
 
-class _FakeUserPreferencesRepository_0 extends _i1.SmartFake
-    implements _i2.UserPreferencesRepository {
-  _FakeUserPreferencesRepository_0(
+class _FakeVacationDaysInfo_0 extends _i1.SmartFake
+    implements _i2.VacationDaysInfo {
+  _FakeVacationDaysInfo_0(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+}
+
+class _FakeUserPreferencesRepository_1 extends _i1.SmartFake
+    implements _i3.UserPreferencesRepository {
+  _FakeUserPreferencesRepository_1(
     Object parent,
     Invocation parentInvocation,
   ) : super(
@@ -48,44 +61,44 @@ class _FakeUserPreferencesRepository_0 extends _i1.SmartFake
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockTimesheetRepository extends _i1.Mock
-    implements _i3.TimesheetRepository {
+    implements _i4.TimesheetRepository {
   MockTimesheetRepository() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  _i4.Future<int> saveTimesheetEntry(_i5.TimesheetEntry? entry) =>
+  _i5.Future<int> saveTimesheetEntry(_i6.TimesheetEntry? entry) =>
       (super.noSuchMethod(
         Invocation.method(
           #saveTimesheetEntry,
           [entry],
         ),
-        returnValue: _i4.Future<int>.value(0),
-      ) as _i4.Future<int>);
+        returnValue: _i5.Future<int>.value(0),
+      ) as _i5.Future<int>);
 
   @override
-  _i4.Future<List<_i5.TimesheetEntry>> getTimesheetEntries() =>
+  _i5.Future<List<_i6.TimesheetEntry>> getTimesheetEntries() =>
       (super.noSuchMethod(
         Invocation.method(
           #getTimesheetEntries,
           [],
         ),
         returnValue:
-            _i4.Future<List<_i5.TimesheetEntry>>.value(<_i5.TimesheetEntry>[]),
-      ) as _i4.Future<List<_i5.TimesheetEntry>>);
+            _i5.Future<List<_i6.TimesheetEntry>>.value(<_i6.TimesheetEntry>[]),
+      ) as _i5.Future<List<_i6.TimesheetEntry>>);
 
   @override
-  _i4.Future<void> deleteTimeSheet(int? id) => (super.noSuchMethod(
+  _i5.Future<void> deleteTimeSheet(int? id) => (super.noSuchMethod(
         Invocation.method(
           #deleteTimeSheet,
           [id],
         ),
-        returnValue: _i4.Future<void>.value(),
-        returnValueForMissingStub: _i4.Future<void>.value(),
-      ) as _i4.Future<void>);
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
 
   @override
-  _i4.Future<List<_i5.TimesheetEntry>> getTimesheetEntriesForWeek(
+  _i5.Future<List<_i6.TimesheetEntry>> getTimesheetEntriesForWeek(
           int? weekNumber) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -93,23 +106,28 @@ class MockTimesheetRepository extends _i1.Mock
           [weekNumber],
         ),
         returnValue:
-            _i4.Future<List<_i5.TimesheetEntry>>.value(<_i5.TimesheetEntry>[]),
-      ) as _i4.Future<List<_i5.TimesheetEntry>>);
+            _i5.Future<List<_i6.TimesheetEntry>>.value(<_i6.TimesheetEntry>[]),
+      ) as _i5.Future<List<_i6.TimesheetEntry>>);
 
   @override
-  _i4.Future<List<_i5.TimesheetEntry>> findEntriesFromMonthOf(
-          int? monthNumber) =>
+  _i5.Future<List<_i6.TimesheetEntry>> findEntriesFromMonthOf(
+    int? monthNumber,
+    int? year,
+  ) =>
       (super.noSuchMethod(
         Invocation.method(
           #findEntriesFromMonthOf,
-          [monthNumber],
+          [
+            monthNumber,
+            year,
+          ],
         ),
         returnValue:
-            _i4.Future<List<_i5.TimesheetEntry>>.value(<_i5.TimesheetEntry>[]),
-      ) as _i4.Future<List<_i5.TimesheetEntry>>);
+            _i5.Future<List<_i6.TimesheetEntry>>.value(<_i6.TimesheetEntry>[]),
+      ) as _i5.Future<List<_i6.TimesheetEntry>>);
 
   @override
-  _i4.Future<List<_i5.TimesheetEntry>> getTimesheetEntriesForMonth(
+  _i5.Future<List<_i6.TimesheetEntry>> getTimesheetEntriesForMonth(
           int? monthNumber) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -117,134 +135,158 @@ class MockTimesheetRepository extends _i1.Mock
           [monthNumber],
         ),
         returnValue:
-            _i4.Future<List<_i5.TimesheetEntry>>.value(<_i5.TimesheetEntry>[]),
-      ) as _i4.Future<List<_i5.TimesheetEntry>>);
+            _i5.Future<List<_i6.TimesheetEntry>>.value(<_i6.TimesheetEntry>[]),
+      ) as _i5.Future<List<_i6.TimesheetEntry>>);
 
   @override
-  _i4.Future<void> saveGeneratedPdf(_i6.GeneratedPdfModel? pdf) =>
+  _i5.Future<void> saveGeneratedPdf(_i7.GeneratedPdf? pdf) =>
       (super.noSuchMethod(
         Invocation.method(
           #saveGeneratedPdf,
           [pdf],
         ),
-        returnValue: _i4.Future<void>.value(),
-        returnValueForMissingStub: _i4.Future<void>.value(),
-      ) as _i4.Future<void>);
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
 
   @override
-  _i4.Future<List<_i6.GeneratedPdfModel>> getGeneratedPdfs() =>
-      (super.noSuchMethod(
+  _i5.Future<List<_i7.GeneratedPdf>> getGeneratedPdfs() => (super.noSuchMethod(
         Invocation.method(
           #getGeneratedPdfs,
           [],
         ),
-        returnValue: _i4.Future<List<_i6.GeneratedPdfModel>>.value(
-            <_i6.GeneratedPdfModel>[]),
-      ) as _i4.Future<List<_i6.GeneratedPdfModel>>);
+        returnValue:
+            _i5.Future<List<_i7.GeneratedPdf>>.value(<_i7.GeneratedPdf>[]),
+      ) as _i5.Future<List<_i7.GeneratedPdf>>);
 
   @override
-  _i4.Future<void> deleteGeneratedPdf(int? pdfId) => (super.noSuchMethod(
+  _i5.Future<void> deleteGeneratedPdf(int? pdfId) => (super.noSuchMethod(
         Invocation.method(
           #deleteGeneratedPdf,
           [pdfId],
         ),
-        returnValue: _i4.Future<void>.value(),
-        returnValueForMissingStub: _i4.Future<void>.value(),
-      ) as _i4.Future<void>);
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
 
   @override
-  _i4.Future<_i5.TimesheetEntry?> getTimesheetEntryForDate(String? date) =>
+  _i5.Future<_i6.TimesheetEntry?> getTimesheetEntryForDate(String? date) =>
       (super.noSuchMethod(
         Invocation.method(
           #getTimesheetEntryForDate,
           [date],
         ),
-        returnValue: _i4.Future<_i5.TimesheetEntry?>.value(),
-      ) as _i4.Future<_i5.TimesheetEntry?>);
+        returnValue: _i5.Future<_i6.TimesheetEntry?>.value(),
+      ) as _i5.Future<_i6.TimesheetEntry?>);
 
   @override
-  _i4.Future<_i5.TimesheetEntry?> getTimesheetEntry(String? formattedDate) =>
+  _i5.Future<_i6.TimesheetEntry?> getTimesheetEntry(String? formattedDate) =>
       (super.noSuchMethod(
         Invocation.method(
           #getTimesheetEntry,
           [formattedDate],
         ),
-        returnValue: _i4.Future<_i5.TimesheetEntry?>.value(),
-      ) as _i4.Future<_i5.TimesheetEntry?>);
+        returnValue: _i5.Future<_i6.TimesheetEntry?>.value(),
+      ) as _i5.Future<_i6.TimesheetEntry?>);
 
   @override
-  _i4.Future<_i5.TimesheetEntry?> getTimesheetEntryWhitFrenchFormat(
+  _i5.Future<_i6.TimesheetEntry?> getTimesheetEntryWhitFrenchFormat(
           String? formattedDate) =>
       (super.noSuchMethod(
         Invocation.method(
           #getTimesheetEntryWhitFrenchFormat,
           [formattedDate],
         ),
-        returnValue: _i4.Future<_i5.TimesheetEntry?>.value(),
-      ) as _i4.Future<_i5.TimesheetEntry?>);
+        returnValue: _i5.Future<_i6.TimesheetEntry?>.value(),
+      ) as _i5.Future<_i6.TimesheetEntry?>);
 
   @override
-  _i4.Future<int> getVacationDaysCount() => (super.noSuchMethod(
+  _i5.Future<int> getVacationDaysCount() => (super.noSuchMethod(
         Invocation.method(
           #getVacationDaysCount,
           [],
         ),
-        returnValue: _i4.Future<int>.value(0),
-      ) as _i4.Future<int>);
+        returnValue: _i5.Future<int>.value(0),
+      ) as _i5.Future<int>);
+
+  @override
+  _i5.Future<int> getLastYearVacationDaysCount() => (super.noSuchMethod(
+        Invocation.method(
+          #getLastYearVacationDaysCount,
+          [],
+        ),
+        returnValue: _i5.Future<int>.value(0),
+      ) as _i5.Future<int>);
+
+  @override
+  _i5.Future<_i2.VacationDaysInfo> getVacationDaysInfo() => (super.noSuchMethod(
+        Invocation.method(
+          #getVacationDaysInfo,
+          [],
+        ),
+        returnValue:
+            _i5.Future<_i2.VacationDaysInfo>.value(_FakeVacationDaysInfo_0(
+          this,
+          Invocation.method(
+            #getVacationDaysInfo,
+            [],
+          ),
+        )),
+      ) as _i5.Future<_i2.VacationDaysInfo>);
 }
 
 /// A class which mocks [GetSignatureUseCase].
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockGetSignatureUseCase extends _i1.Mock
-    implements _i7.GetSignatureUseCase {
+    implements _i8.GetSignatureUseCase {
   MockGetSignatureUseCase() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  _i2.UserPreferencesRepository get repository => (super.noSuchMethod(
+  _i3.UserPreferencesRepository get repository => (super.noSuchMethod(
         Invocation.getter(#repository),
-        returnValue: _FakeUserPreferencesRepository_0(
+        returnValue: _FakeUserPreferencesRepository_1(
           this,
           Invocation.getter(#repository),
         ),
-      ) as _i2.UserPreferencesRepository);
+      ) as _i3.UserPreferencesRepository);
 
   @override
-  _i4.Future<_i8.Uint8List?> execute() => (super.noSuchMethod(
+  _i5.Future<_i9.Uint8List?> execute() => (super.noSuchMethod(
         Invocation.method(
           #execute,
           [],
         ),
-        returnValue: _i4.Future<_i8.Uint8List?>.value(),
-      ) as _i4.Future<_i8.Uint8List?>);
+        returnValue: _i5.Future<_i9.Uint8List?>.value(),
+      ) as _i5.Future<_i9.Uint8List?>);
 }
 
 /// A class which mocks [GetUserPreferenceUseCase].
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockGetUserPreferenceUseCase extends _i1.Mock
-    implements _i9.GetUserPreferenceUseCase {
+    implements _i10.GetUserPreferenceUseCase {
   MockGetUserPreferenceUseCase() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  _i2.UserPreferencesRepository get repository => (super.noSuchMethod(
+  _i3.UserPreferencesRepository get repository => (super.noSuchMethod(
         Invocation.getter(#repository),
-        returnValue: _FakeUserPreferencesRepository_0(
+        returnValue: _FakeUserPreferencesRepository_1(
           this,
           Invocation.getter(#repository),
         ),
-      ) as _i2.UserPreferencesRepository);
+      ) as _i3.UserPreferencesRepository);
 
   @override
-  _i4.Future<String?> execute(String? key) => (super.noSuchMethod(
+  _i5.Future<String?> execute(String? key) => (super.noSuchMethod(
         Invocation.method(
           #execute,
           [key],
         ),
-        returnValue: _i4.Future<String?>.value(),
-      ) as _i4.Future<String?>);
+        returnValue: _i5.Future<String?>.value(),
+      ) as _i5.Future<String?>);
 }

@@ -2,6 +2,23 @@ import 'dart:async';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+// Classe pour encapsuler les données sauvegardées
+class _SavedTimerData {
+  final int? savedAccumulatedTimeMillis;
+  final int? savedElapsedTimeMillis;
+  final int? savedLastUpdateTimeMillis;
+  final String? savedState;
+  final String? savedDate;
+  
+  _SavedTimerData({
+    this.savedAccumulatedTimeMillis,
+    this.savedElapsedTimeMillis,
+    this.savedLastUpdateTimeMillis,
+    this.savedState,
+    this.savedDate,
+  });
+}
+
 class TimerService {
   static final TimerService _instance = TimerService._internal();
 
@@ -22,23 +39,38 @@ class TimerService {
   // Getters
   DateTime? get startTime => _startTime;
   Duration get accumulatedTime => _accumulatedTime;
-  Duration get elapsedTime => _elapsedTime;
+  // Getter pour le temps écoulé - calcule en temps réel avec synchronisation
+  Duration get elapsedTime {
+    final now = DateTime.now();
+    
+    if (_startTime != null && (_currentState == 'Entrée' || _currentState == 'Reprise')) {
+      final currentElapsed = _accumulatedTime + now.difference(_startTime!);
+      // Assurer la cohérence : pas de temps négatif
+      return currentElapsed.isNegative ? Duration.zero : currentElapsed;
+    }
+    
+    // En pause ou arrêté, retourner le temps accumulé
+    return _accumulatedTime.isNegative ? Duration.zero : _accumulatedTime;
+  }
   String get currentState => _currentState;
 
   // Initialiser le service
   Future<void> initialize(String etatActuel, DateTime? dernierPointage) async {
     _currentState = etatActuel;
 
+    // D'abord, toujours essayer de charger l'état sauvegardé pour aujourd'hui
+    final bool stateLoaded = await _loadSavedTimerState();
+
     if (etatActuel == 'Non commencé' || etatActuel == 'Sortie') {
-      _startTime = null;
-      _accumulatedTime = Duration.zero;
-      _elapsedTime = Duration.zero;
-      await _saveTimerState();
+      // Si on a terminé la journée ou on n'a pas encore commencé
+      if (!stateLoaded || etatActuel == 'Non commencé') {
+        _startTime = null;
+        _accumulatedTime = Duration.zero;
+        _elapsedTime = Duration.zero;
+        await _saveTimerState();
+      }
       return;
     }
-
-    // Charger l'état sauvegardé et calculer le temps écoulé depuis la dernière fermeture
-    final bool stateLoaded = await _loadSavedTimerState();
 
     // Si nous avons un dernier pointage et que nous sommes en mode actif
     if (dernierPointage != null &&
@@ -70,71 +102,90 @@ class TimerService {
 
   // Charger l'état sauvegardé du timer
   Future<bool> _loadSavedTimerState() async {
-    if (_currentState == 'Non commencé' || _currentState == 'Sortie') {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedData = _extractSavedData(prefs);
+      
+      if (!_isDataForToday(savedData.savedDate)) {
+        return false;
+      }
+      
+      _restoreTimerData(savedData);
+      await _handleOfflineTime(savedData);
+      _configureTimerForState();
+      
+      return true;
+    } catch (e) {
+      // En cas d'erreur, utiliser les valeurs par défaut
+      _resetTimerState();
       return false;
     }
-
-    final prefs = await SharedPreferences.getInstance();
-    // Nous n'utilisons plus cette variable, mais la gardons pour référence future
-    // final savedStartTimeMillis = prefs.getInt('timer_start_time');
-    final savedAccumulatedTimeMillis = prefs.getInt('timer_accumulated_time');
-    final savedElapsedTimeMillis = prefs.getInt('timer_elapsed_time');
-    final savedLastUpdateTimeMillis = prefs.getInt('timer_last_update_time');
-    final savedState = prefs.getString('timer_etat_actuel');
-    final savedDate = prefs.getString('timer_date');
-
-    // Vérifier si les données sauvegardées sont pour aujourd'hui
-    final now = DateTime.now();
-    final today = DateFormat('yyyy-MM-dd').format(now);
-
-    // Débug: afficher les valeurs sauvegardées
-    print('Saved date: $savedDate, today: $today');
-    print('Saved elapsed time: ${savedElapsedTimeMillis != null ? Duration(milliseconds: savedElapsedTimeMillis).inSeconds : "null"} seconds');
-    print('Saved accumulated time: ${savedAccumulatedTimeMillis != null ? Duration(milliseconds: savedAccumulatedTimeMillis).inSeconds : "null"} seconds');
-
-    if (savedDate == today) {
-      // Toujours utiliser le temps écoulé sauvegardé s'il existe
-      if (savedElapsedTimeMillis != null) {
-        _elapsedTime = Duration(milliseconds: savedElapsedTimeMillis);
-        print('Restored elapsed time: ${_elapsedTime.inSeconds} seconds');
-      }
-
-      // Toujours charger le temps accumulé s'il existe
-      if (savedAccumulatedTimeMillis != null) {
-        _accumulatedTime = Duration(milliseconds: savedAccumulatedTimeMillis);
-        print('Restored accumulated time: ${_accumulatedTime.inSeconds} seconds');
-      }
-
-      if (_currentState == 'Entrée' || _currentState == 'Reprise') {
-        // Si nous avons une heure de dernière mise à jour, calculer le temps écoulé depuis
-        if (savedLastUpdateTimeMillis != null) {
-          DateTime lastUpdate = DateTime.fromMillisecondsSinceEpoch(savedLastUpdateTimeMillis);
-          Duration timeOffline = now.difference(lastUpdate);
-          
-          // Ajouter le temps hors ligne si nous étions en mode actif
-          if (savedState == 'Entrée' || savedState == 'Reprise') {
-            if (timeOffline.inHours < 12) { // Limite raisonnable
-              _accumulatedTime += timeOffline;
-              _elapsedTime = _accumulatedTime;
-              print('Added offline time: ${timeOffline.inSeconds} seconds');
-              print('New elapsed time: ${_elapsedTime.inSeconds} seconds');
-            }
-          }
-        }
-        
-        // Toujours démarrer le timer à partir de maintenant
-        _startTime = now;
-      } else if (_currentState == 'Pause') {
-        // En pause, pas de temps de démarrage
-        _startTime = null;
-        // S'assurer que le temps écoulé est égal au temps accumulé
+  }
+  
+  // Extraire les données sauvegardées
+  _SavedTimerData _extractSavedData(SharedPreferences prefs) {
+    return _SavedTimerData(
+      savedAccumulatedTimeMillis: prefs.getInt('timer_accumulated_time'),
+      savedElapsedTimeMillis: prefs.getInt('timer_elapsed_time'),
+      savedLastUpdateTimeMillis: prefs.getInt('timer_last_update_time'),
+      savedState: prefs.getString('timer_etat_actuel'),
+      savedDate: prefs.getString('timer_date'),
+    );
+  }
+  
+  // Vérifier si les données sont pour aujourd'hui
+  bool _isDataForToday(String? savedDate) {
+    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    return savedDate == today;
+  }
+  
+  // Restaurer les données du timer
+  void _restoreTimerData(_SavedTimerData data) {
+    if (data.savedElapsedTimeMillis != null) {
+      _elapsedTime = Duration(milliseconds: data.savedElapsedTimeMillis!);
+    }
+    
+    if (data.savedAccumulatedTimeMillis != null) {
+      _accumulatedTime = Duration(milliseconds: data.savedAccumulatedTimeMillis!);
+    }
+  }
+  
+  // Gérer le temps hors ligne
+  Future<void> _handleOfflineTime(_SavedTimerData data) async {
+    if ((_currentState == 'Entrée' || _currentState == 'Reprise') && 
+        data.savedLastUpdateTimeMillis != null) {
+      
+      final lastUpdate = DateTime.fromMillisecondsSinceEpoch(data.savedLastUpdateTimeMillis!);
+      final timeOffline = DateTime.now().difference(lastUpdate);
+      
+      // Ajouter le temps hors ligne si nous étions en mode actif et dans une limite raisonnable
+      if ((data.savedState == 'Entrée' || data.savedState == 'Reprise') && 
+          timeOffline.inHours < 12) {
+        _accumulatedTime += timeOffline;
         _elapsedTime = _accumulatedTime;
       }
-
-      return true;
     }
-
-    return false;
+  }
+  
+  // Configurer le timer selon l'état actuel
+  void _configureTimerForState() {
+    final now = DateTime.now();
+    
+    if (_currentState == 'Entrée' || _currentState == 'Reprise') {
+      _startTime = now;
+    } else if (_currentState == 'Pause') {
+      _startTime = null;
+      _elapsedTime = _accumulatedTime;
+    } else if (_currentState == 'Sortie') {
+      _startTime = null;
+    }
+  }
+  
+  // Réinitialiser l'état du timer
+  void _resetTimerState() {
+    _startTime = null;
+    _accumulatedTime = Duration.zero;
+    _elapsedTime = Duration.zero;
   }
 
   // Sauvegarder l'état du timer
@@ -146,8 +197,7 @@ class TimerService {
     // Toujours sauvegarder l'heure de la dernière mise à jour
     await prefs.setInt('timer_last_update_time', now.millisecondsSinceEpoch);
 
-    // Débug: afficher ce que nous sauvegardons
-    print('Saving timer state: currentState=$_currentState');
+    // Sauvegarder l'état actuel
     
     if (_currentState == 'Entrée' || _currentState == 'Reprise') {
       // Calculer le temps écoulé actuel
@@ -159,8 +209,7 @@ class TimerService {
         currentElapsedTime = _elapsedTime;
       }
       
-      print('Saving elapsed time: ${currentElapsedTime.inSeconds} seconds');
-      print('Saving accumulated time: ${_accumulatedTime.inSeconds} seconds');
+      // Sauvegarder les temps calculés
       
       // Toujours sauvegarder le temps de démarrage actuel
       if (_startTime != null) {
@@ -175,8 +224,7 @@ class TimerService {
       // En pause, on sauvegarde le temps accumulé mais pas l'heure de démarrage
       await prefs.remove('timer_start_time');
       
-      print('Saving in PAUSE - elapsed time: ${_elapsedTime.inSeconds} seconds');
-      print('Saving in PAUSE - accumulated time: ${_accumulatedTime.inSeconds} seconds');
+      // Sauvegarder en mode pause
       
       await prefs.setInt('timer_accumulated_time', _accumulatedTime.inMilliseconds);
       await prefs.setString('timer_etat_actuel', _currentState);
@@ -184,7 +232,7 @@ class TimerService {
       await prefs.setInt('timer_elapsed_time', _elapsedTime.inMilliseconds);
     } else if (_currentState == 'Sortie' || _currentState == 'Non commencé') {
       // Effacer les données sauvegardées si la journée est terminée
-      print('Clearing timer state');
+      // Nettoyer l'état du timer
       await prefs.remove('timer_start_time');
       await prefs.remove('timer_accumulated_time');
       await prefs.remove('timer_etat_actuel');
@@ -200,9 +248,7 @@ class TimerService {
     _timer?.cancel();
     _timer = null;
     
-    print('Starting timer in state: $_currentState');
-    print('Current elapsed time: ${_elapsedTime.inSeconds} seconds');
-    print('Current accumulated time: ${_accumulatedTime.inSeconds} seconds');
+    // Démarrage du timer avec état actuel
 
     if (_currentState == 'Non commencé' || _currentState == 'Sortie') {
       _startTime = null;
@@ -269,9 +315,7 @@ class TimerService {
     String oldState = _currentState;
     _currentState = newState;
 
-    print('Timer state changing from $oldState to $newState');
-    print('Current elapsed time: ${_elapsedTime.inSeconds} seconds');
-    print('Current accumulated time: ${_accumulatedTime.inSeconds} seconds');
+    // Changement d'état du timer
 
     if (newState == 'Non commencé' || newState == 'Sortie') {
       // Réinitialiser le timer

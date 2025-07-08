@@ -48,3 +48,25 @@ class ActiveDetectorsLoaded extends AnomalyState {
   @override
   List<Object> get props => [activeDetectorIds];
 }
+
+/// Nouvel état pour la vérification des anomalies avant génération PDF
+class PdfAnomalyCheckCompleted extends AnomalyState {
+  final List<String> criticalAnomaliesMessages;
+  final List<String> minorAnomaliesMessages;
+  final int month;
+  final int year;
+
+  const PdfAnomalyCheckCompleted({
+    required this.criticalAnomaliesMessages,
+    required this.minorAnomaliesMessages,
+    required this.month,
+    required this.year,
+  });
+
+  bool get hasCriticalAnomalies => criticalAnomaliesMessages.isNotEmpty;
+  bool get hasMinorAnomalies => minorAnomaliesMessages.isNotEmpty;
+  bool get hasAnyAnomalies => hasCriticalAnomalies || hasMinorAnomalies;
+
+  @override
+  List<Object> get props => [criticalAnomaliesMessages, minorAnomaliesMessages, month, year];
+}

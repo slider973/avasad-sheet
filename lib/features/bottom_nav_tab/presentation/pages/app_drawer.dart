@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../pointage/presentation/pages/statistiques/statistique_page.dart';
-import '../../../pointage/presentation/widgets/monthly_stats_widget/monthly_stats_widget.dart';
+import '../../../pointage/presentation/pages/pointage/pointage_page.dart';
+import '../../../pointage/presentation/pages/dashboard/dashboard_page.dart';
+import 'bottom_navigation_bar.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -57,6 +59,20 @@ class AppDrawer extends StatelessWidget {
               children: [
                 _buildMenuItem(
                   context,
+                  icon: Icons.home,
+                  title: 'Accueil',
+                  subtitle: 'Retour à la page principale',
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (context) => const BottomNavigationBarPage()),
+                      (route) => false,
+                    );
+                  },
+                ),
+                _buildMenuItem(
+                  context,
                   icon: Icons.bar_chart,
                   title: 'Statistiques',
                   subtitle: 'Voir les statistiques mensuelles',
@@ -73,7 +89,26 @@ class AppDrawer extends StatelessWidget {
                   icon: Icons.timeline,
                   title: 'Tableau de bord',
                   subtitle: 'Aperçu de vos activités',
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const DashboardPage()),
+                    );
+                  },
+                ),
+                _buildMenuItem(
+                  context,
+                  icon: Icons.access_time,
+                  title: 'Pointage',
+                  subtitle: 'Page de pointage journalier',
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const PointagePage()),
+                    );
+                  },
                 ),
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 16),
@@ -117,7 +152,7 @@ class AppDrawer extends StatelessWidget {
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: Colors.teal.withOpacity(0.1),
+          color: Colors.teal.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(icon, color: Colors.teal, size: 20),

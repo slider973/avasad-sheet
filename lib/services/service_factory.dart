@@ -3,29 +3,31 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get_it/get_it.dart';
-import 'package:time_sheet/features/pointage/use_cases/get_monthly_timesheet_entries_usecase.dart';
+import 'package:time_sheet/features/pointage/domain/use_cases/get_monthly_timesheet_entries_usecase.dart';
 
 import '../features/bottom_nav_tab/presentation/pages/bloc/bottom_navigation_bar_bloc.dart';
 
 import '../features/pointage/data/repositories/anomaly_repository_impl.dart';
-import '../features/pointage/factory/anomaly_detector_factory.dart';
+import '../features/pointage/domain/factories/anomaly_detector_factory.dart';
 import '../features/pointage/presentation/pages/pdf/bloc/anomaly/anomaly_bloc.dart';
-import '../features/pointage/use_cases/delete_timesheet_entry_usecase.dart';
-import '../features/pointage/use_cases/detect_anomalies_usecase.dart';
-import '../features/pointage/use_cases/find_pointed_list_usecase.dart';
-import '../features/pointage/use_cases/generate_monthly_timesheet_usease.dart';
-import '../features/pointage/use_cases/generate_pdf_usecase.dart';
-import '../features/pointage/use_cases/get_overtime_hours_usecase.dart';
-import '../features/pointage/use_cases/get_remaining_vacation_days_usecase.dart';
-import '../features/pointage/use_cases/get_today_timesheet_entry_use_case.dart';
-import '../features/pointage/use_cases/get_weekly_work_time_usecase.dart';
-import '../features/pointage/use_cases/save_timesheet_entry_usecase.dart';
-import '../features/pointage/use_cases/signaler_absence_periode_usecase.dart';
+import '../features/pointage/domain/use_cases/delete_timesheet_entry_usecase.dart';
+import '../features/pointage/domain/use_cases/detect_anomalies_usecase.dart';
+import '../features/pointage/domain/use_cases/find_pointed_list_usecase.dart';
+import '../features/pointage/domain/use_cases/generate_monthly_timesheet_usease.dart';
+import '../features/pointage/domain/use_cases/generate_pdf_usecase.dart';
+import '../features/pointage/domain/use_cases/get_overtime_hours_usecase.dart';
+import '../features/pointage/domain/use_cases/get_remaining_vacation_days_usecase.dart';
+import '../features/pointage/domain/use_cases/get_today_timesheet_entry_use_case.dart';
+import '../features/pointage/domain/use_cases/get_weekly_work_time_usecase.dart';
+import '../features/pointage/domain/use_cases/save_timesheet_entry_usecase.dart';
+import '../features/pointage/domain/use_cases/signaler_absence_periode_usecase.dart';
 import '../features/preference/domain/use_cases/get_signature_usecase.dart';
 import '../features/preference/domain/use_cases/get_user_preference_use_case.dart';
 import '../features/preference/domain/use_cases/set_user_preference_use_case.dart';
 import '../features/preference/presentation/manager/preferences_bloc.dart';
 import '../features/pointage/data/repositories/timesheet_repository_impl.dart';
+import '../features/pointage/domain/services/anomaly_detection_service.dart';
+import 'anomaly/anomaly_service.dart';
 
 import '../features/pointage/presentation/pages/pdf/bloc/pdf/pdf_bloc.dart';
 import '../features/pointage/presentation/pages/time-sheet/bloc/time_sheet/time_sheet_bloc.dart';
@@ -89,6 +91,9 @@ class ServiceFactory extends StatelessWidget {
               preferencesBloc: BlocProvider.of<PreferencesBloc>(context),
               allDetectors: AnomalyDetectorFactory.getAllDetectors(),
               anomalyRepository: getIt<AnomalyRepository>(),
+              newAnomalyDetectionService: getIt<AnomalyDetectionService>(),
+              timesheetRepository: getIt<TimesheetRepositoryImpl>(),
+              anomalyService: getIt<AnomalyService>(),
             ),
           ),
         ],

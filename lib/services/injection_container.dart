@@ -8,20 +8,20 @@ import 'package:time_sheet/features/pointage/data/models/anomalies/anomalies.dar
 
 import '../features/absence/data/models/absence.dart';
 import '../features/pointage/data/repositories/anomaly_repository_impl.dart';
-import '../features/pointage/factory/anomaly_detector_factory.dart';
-import '../features/pointage/use_cases/delete_timesheet_entry_usecase.dart';
-import '../features/pointage/use_cases/detect_anomalies_usecase.dart';
-import '../features/pointage/use_cases/find_pointed_list_usecase.dart';
-import '../features/pointage/use_cases/generate_monthly_timesheet_usease.dart';
-import '../features/pointage/use_cases/generate_pdf_usecase.dart';
-import '../features/pointage/use_cases/get_monthly_timesheet_entries_usecase.dart';
-import '../features/pointage/use_cases/get_overtime_hours_usecase.dart';
-import '../features/pointage/use_cases/get_remaining_vacation_days_usecase.dart';
-import '../features/pointage/use_cases/get_today_timesheet_entry_use_case.dart';
-import '../features/pointage/use_cases/get_weekly_work_time_usecase.dart';
-import '../features/pointage/use_cases/insufficient_hours_detector.dart';
-import '../features/pointage/use_cases/save_timesheet_entry_usecase.dart';
-import '../features/pointage/use_cases/signaler_absence_periode_usecase.dart';
+import '../features/pointage/domain/factories/anomaly_detector_factory.dart';
+import '../features/pointage/domain/use_cases/delete_timesheet_entry_usecase.dart';
+import '../features/pointage/domain/use_cases/detect_anomalies_usecase.dart';
+import '../features/pointage/domain/use_cases/find_pointed_list_usecase.dart';
+import '../features/pointage/domain/use_cases/generate_monthly_timesheet_usease.dart';
+import '../features/pointage/domain/use_cases/generate_pdf_usecase.dart';
+import '../features/pointage/domain/use_cases/get_monthly_timesheet_entries_usecase.dart';
+import '../features/pointage/domain/use_cases/get_overtime_hours_usecase.dart';
+import '../features/pointage/domain/use_cases/get_remaining_vacation_days_usecase.dart';
+import '../features/pointage/domain/use_cases/get_today_timesheet_entry_use_case.dart';
+import '../features/pointage/domain/use_cases/get_weekly_work_time_usecase.dart';
+import '../features/pointage/domain/use_cases/insufficient_hours_detector.dart';
+import '../features/pointage/domain/use_cases/save_timesheet_entry_usecase.dart';
+import '../features/pointage/domain/use_cases/signaler_absence_periode_usecase.dart';
 import '../features/preference/data/models/user_preference.dart';
 import '../features/preference/data/repositories/user_preference_repository.impl.dart';
 import '../features/preference/presentation/manager/preferences_bloc.dart';
@@ -34,6 +34,7 @@ import '../features/pointage/data/data_sources/local.dart';
 import '../features/pointage/data/models/generated_pdf/generated_pdf.dart';
 import '../features/pointage/data/models/timesheet_entry/timesheet_entry.dart';
 import '../features/pointage/data/repositories/timesheet_repository_impl.dart';
+import '../features/pointage/domain/services/anomaly_detection_service.dart';
 
 
 final getIt = GetIt.instance;
@@ -139,6 +140,7 @@ Future<void> setup() async {
     repository: getIt<TimesheetRepositoryImpl>(),
     getSignatureUseCase: getIt<GetSignatureUseCase>(),
     getUserPreferenceUseCase: getIt<GetUserPreferenceUseCase>(),
+    anomalyDetectionService: getIt<AnomalyDetectionService>(),
   ));
   getIt.registerLazySingleton<AnomalyRepository>(
           () => AnomalyRepositoryImpl(getIt<Isar>())
@@ -147,6 +149,9 @@ Future<void> setup() async {
   // Enregistrez AnomalyService
   final anomalyService = AnomalyService(getIt<Isar>());
   GetIt.instance.registerSingleton<AnomalyService>(anomalyService);
+  
+  // Enregistrer le nouveau service de détection d'anomalies
+  getIt.registerLazySingleton<AnomalyDetectionService>(() => AnomalyDetectionService());
 
   // Initialisez le service des anomalies
   await anomalyService.createAnomaliesForCurrentMonth();

@@ -32,7 +32,7 @@ class PdfGenerationError extends PdfState {
 class PdfLoading extends PdfState {}
 
 class PdfListLoaded extends PdfState {
-  final List<GeneratedPdfModel> pdfs;
+  final List<GeneratedPdf> pdfs;
 
   const PdfListLoaded(this.pdfs);
 

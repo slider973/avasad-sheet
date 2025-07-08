@@ -1,13 +1,14 @@
 import 'package:intl/intl.dart';
-import 'package:time_sheet/features/pointage/data/models/generated_pdf/generated_pdf.dart';
 import 'package:time_sheet/features/pointage/data/models/timesheet_entry/timesheet_entry.dart';
 import 'package:time_sheet/services/logger_service.dart';
 
-import '../../domain/data_source/time_sheet.dart';
 import '../../domain/entities/timesheet_entry.dart';
+import '../../domain/entities/generated_pdf.dart';
 import '../../domain/mapper/timesheetEntry.mapper.dart';
+import '../../domain/mapper/generated_pdf_mapper.dart';
 import '../../domain/repositories/timesheet_repository.dart';
-import '../../use_cases/get_remaining_vacation_days_usecase.dart';
+import '../../domain/value_objects/vacation_days_info.dart';
+import '../data_sources/timesheet_data_source.dart';
 import '../utils/time_sheet_utils.dart';
 
 class TimesheetRepositoryImpl implements TimesheetRepository {
@@ -67,13 +68,15 @@ class TimesheetRepositoryImpl implements TimesheetRepository {
   }
 
   @override
-  Future<List<GeneratedPdfModel>> getGeneratedPdfs() {
-    return datasource.getGeneratedPdfs();
+  Future<List<GeneratedPdf>> getGeneratedPdfs() async {
+    final models = await datasource.getGeneratedPdfs();
+    return GeneratedPdfMapper.fromModelList(models);
   }
 
   @override
-  Future<void> saveGeneratedPdf(GeneratedPdfModel pdf) async {
-    await datasource.saveGeneratedPdf(pdf);
+  Future<void> saveGeneratedPdf(GeneratedPdf pdf) async {
+    final model = GeneratedPdfMapper.toModel(pdf);
+    await datasource.saveGeneratedPdf(model);
   }
 
   @override

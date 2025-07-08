@@ -42,42 +42,11 @@ class TimerPainter extends CustomPainter {
       if (type == 'Fin de journée') exitTime = time;
     }
     
-    // Dessiner un cercle de fond subtil pour la progression temporelle
-    final backgroundPaint = Paint()
-      ..color = Colors.grey.shade200.withOpacity(0.3)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 20;
-    
-    canvas.drawCircle(center, radius, backgroundPaint);
-    
-    // Dessiner la progression du temps dans la journée (8h-18h)
-    final now = DateTime.now();
-    final startOfDay = DateTime(now.year, now.month, now.day, 8, 0);
-    final endOfDay = DateTime(now.year, now.month, now.day, 18, 0);
-    final totalDaySeconds = endOfDay.difference(startOfDay).inSeconds.toDouble();
-    
-    if (totalDaySeconds > 0) {
-      double timeProgress = (now.difference(startOfDay).inSeconds.toDouble() / totalDaySeconds);
-      timeProgress = math.min(1.0, math.max(0.0, timeProgress));
-      
-      // Dessiner le cercle de progression temporelle
-      final progressPaint = Paint()
-        ..color = Colors.blue.shade200.withOpacity(0.5)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 15;
-      
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        -math.pi / 2, // Commencer à midi (haut)
-        timeProgress * 2 * math.pi, // Progression en radians
-        false,
-        progressPaint,
-      );
-    }
+    // Ne pas dessiner de fond pour garder la transparence
     
     // Dessiner les segments en fonction de l'état
     if (etatActuel == 'Non commencé') {
-      // Afficher seulement la progression temporelle pour l'état non commencé
+      // Ne rien dessiner pour l'état non commencé
       return;
     }
     
@@ -101,61 +70,80 @@ class TimerPainter extends CustomPainter {
     } 
     // Entrée en cours (avant la pause)
     else if (entryTime != null && pauseStartTime == null) {
-      // Définir les heures de la journée de travail (8h-18h = 10h)
-      final startOfDay = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day, 8, 0);
-      final endOfDay = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day, 18, 0);
-      final totalDaySeconds = endOfDay.difference(startOfDay).inSeconds.toDouble();
+      // Calculer le temps écoulé depuis l'entrée
+      final now = DateTime.now();
+      final elapsedSinceEntry = now.difference(entryTime);
       
-      if (totalDaySeconds <= 0) return;
-      
-      // Calculer le pourcentage d'avancement
-      double entryPercent = (DateTime.now().difference(startOfDay).inSeconds.toDouble() / totalDaySeconds);
+      // Progression basée sur 4 heures de travail maximum pour l'affichage du segment
+      final maxWorkingSeconds = 4 * 60 * 60; // 4 heures
+      double entryPercent = elapsedSinceEntry.inSeconds / maxWorkingSeconds;
       entryPercent = math.min(1.0, math.max(0.0, entryPercent));
       
-      // Dessiner le segment d'entrée
+      // Dessiner le segment d'entrée qui se remplit progressivement
       _drawSegment(canvas, center, radius, innerRadius, 0, entryPercent * 360, entreeColor, 0 == touchedIndex);
     }
     // Pause en cours
     else if (entryTime != null && pauseStartTime != null && pauseEndTime == null) {
-      final startOfDay = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day, 8, 0);
-      final endOfDay = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day, 18, 0);
-      final totalDaySeconds = endOfDay.difference(startOfDay).inSeconds.toDouble();
+      final now = DateTime.now();
       
-      if (totalDaySeconds <= 0) return;
+      // Calculer les durées réelles de travail
+      final entryDuration = pauseStartTime.difference(entryTime);
+      final pauseDuration = now.difference(pauseStartTime);
       
-      double entryPercent = (pauseStartTime.difference(startOfDay).inSeconds.toDouble() / totalDaySeconds);
-      double pausePercent = (DateTime.now().difference(pauseStartTime).inSeconds.toDouble() / totalDaySeconds);
+      // Segments proportionnels basés sur le temps réel écoulé
+      final totalElapsed = entryDuration + pauseDuration;
+      final totalSeconds = totalElapsed.inSeconds.toDouble();
       
-      entryPercent = math.min(1.0, math.max(0.0, entryPercent));
-      pausePercent = math.min(1.0 - entryPercent, math.max(0.0, pausePercent));
-      
-      // Dessiner les segments
-      _drawSegment(canvas, center, radius, innerRadius, 0, entryPercent * 360, entreeColor, 0 == touchedIndex);
-      _drawSegment(canvas, center, radius, innerRadius, entryPercent * 360, 
-                  (entryPercent + pausePercent) * 360, pauseColor, 1 == touchedIndex);
+      if (totalSeconds > 0) {
+        double entryPercent = entryDuration.inSeconds / totalSeconds;
+        double pausePercent = pauseDuration.inSeconds / totalSeconds;
+        
+        // Normaliser pour que le total fasse maximum 360° (cercle complet après 8h)
+        final maxWorkingSeconds = 8 * 60 * 60; // 8 heures
+        final progressRatio = math.min(1.0, totalSeconds / maxWorkingSeconds);
+        
+        entryPercent *= progressRatio;
+        pausePercent *= progressRatio;
+        
+        // Dessiner les segments
+        _drawSegment(canvas, center, radius, innerRadius, 0, entryPercent * 360, entreeColor, 0 == touchedIndex);
+        _drawSegment(canvas, center, radius, innerRadius, entryPercent * 360, 
+                    (entryPercent + pausePercent) * 360, pauseColor, 1 == touchedIndex);
+      }
     }
     // Reprise en cours
     else if (entryTime != null && pauseStartTime != null && pauseEndTime != null && exitTime == null) {
-      final startOfDay = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day, 8, 0);
-      final endOfDay = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day, 18, 0);
-      final totalDaySeconds = endOfDay.difference(startOfDay).inSeconds.toDouble();
+      final now = DateTime.now();
       
-      if (totalDaySeconds <= 0) return;
+      // Calculer les durées réelles de chaque phase
+      final entryDuration = pauseStartTime.difference(entryTime);
+      final pauseDuration = pauseEndTime.difference(pauseStartTime);
+      final repriseDuration = now.difference(pauseEndTime);
       
-      double entryPercent = (pauseStartTime.difference(startOfDay).inSeconds.toDouble() / totalDaySeconds);
-      double pausePercent = (pauseEndTime.difference(pauseStartTime).inSeconds.toDouble() / totalDaySeconds);
-      double reprisePercent = (DateTime.now().difference(pauseEndTime).inSeconds.toDouble() / totalDaySeconds);
+      // Segments proportionnels basés sur le temps réel écoulé
+      final totalElapsed = entryDuration + pauseDuration + repriseDuration;
+      final totalSeconds = totalElapsed.inSeconds.toDouble();
       
-      entryPercent = math.min(1.0, math.max(0.0, entryPercent));
-      pausePercent = math.min(1.0 - entryPercent, math.max(0.0, pausePercent));
-      reprisePercent = math.min(1.0 - entryPercent - pausePercent, math.max(0.0, reprisePercent));
-      
-      // Dessiner les segments
-      _drawSegment(canvas, center, radius, innerRadius, 0, entryPercent * 360, entreeColor, 0 == touchedIndex);
-      _drawSegment(canvas, center, radius, innerRadius, entryPercent * 360, 
-                  (entryPercent + pausePercent) * 360, pauseColor, 1 == touchedIndex);
-      _drawSegment(canvas, center, radius, innerRadius, (entryPercent + pausePercent) * 360, 
-                  (entryPercent + pausePercent + reprisePercent) * 360, repriseColor, 2 == touchedIndex);
+      if (totalSeconds > 0) {
+        double entryPercent = entryDuration.inSeconds / totalSeconds;
+        double pausePercent = pauseDuration.inSeconds / totalSeconds;
+        double reprisePercent = repriseDuration.inSeconds / totalSeconds;
+        
+        // Normaliser pour que le total fasse maximum 360° (cercle complet après 8h)
+        final maxWorkingSeconds = 8 * 60 * 60; // 8 heures
+        final progressRatio = math.min(1.0, totalSeconds / maxWorkingSeconds);
+        
+        entryPercent *= progressRatio;
+        pausePercent *= progressRatio;
+        reprisePercent *= progressRatio;
+        
+        // Dessiner les segments
+        _drawSegment(canvas, center, radius, innerRadius, 0, entryPercent * 360, entreeColor, 0 == touchedIndex);
+        _drawSegment(canvas, center, radius, innerRadius, entryPercent * 360, 
+                    (entryPercent + pausePercent) * 360, pauseColor, 1 == touchedIndex);
+        _drawSegment(canvas, center, radius, innerRadius, (entryPercent + pausePercent) * 360, 
+                    (entryPercent + pausePercent + reprisePercent) * 360, repriseColor, 2 == touchedIndex);
+      }
     }
   }
   
@@ -186,7 +174,7 @@ class TimerPainter extends CustomPainter {
     return oldDelegate.etatActuel != etatActuel ||
            oldDelegate.pointages != pointages ||
            oldDelegate.touchedIndex != touchedIndex ||
-           true; // Toujours repeindre pour mettre à jour la progression temporelle
+           true; // Toujours repeindre pour la progression temps réel
   }
 }
 
@@ -197,12 +185,12 @@ class PointageTimer extends StatefulWidget {
   final List<Map<String, dynamic>> pointages;
 
   const PointageTimer({
-    Key? key,
+    super.key,
     required this.etatActuel,
     required this.dernierPointage,
     required this.progression,
     required this.pointages,
-  }) : super(key: key);
+  });
 
   @override
   _PointageTimerState createState() => _PointageTimerState();

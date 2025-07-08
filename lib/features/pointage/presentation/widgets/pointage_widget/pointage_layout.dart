@@ -5,9 +5,10 @@ import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widge
 import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_boutton.dart';
 import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_list.dart';
 import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_remove_timesheet_day.dart';
-import 'package:time_sheet/features/pointage/use_cases/get_remaining_vacation_days_usecase.dart';
 
 // import '../monthly_stats_widget/monthly_stats_widget.dart';
+import '../../../../absence/domain/value_objects/absence_type.dart';
+import '../../../domain/value_objects/vacation_days_info.dart';
 import '../vacation_days_detail_card/vacation_days_detail_card.dart';
 import 'pointage_header.dart';
 import 'pointage_timer.dart';

@@ -1,6 +1,6 @@
 
 import 'package:isar/isar.dart';
-import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_absence.dart';
+import '../../domain/value_objects/absence_type.dart';
 
 import '../../../pointage/data/models/timesheet_entry/timesheet_entry.dart';
 part 'absence.g.dart';

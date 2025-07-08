@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_absence.dart';
 import '../../../../../enum/absence_motif.dart';
 import '../../../../../enum/absence_period.dart';
+import '../../../../absence/domain/value_objects/absence_type.dart';
 
 class AbsenceForm extends StatefulWidget {
   final DateTime selectedDate;

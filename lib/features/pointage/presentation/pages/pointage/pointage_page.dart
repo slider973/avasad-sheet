@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../pages/time-sheet/bloc/time_sheet/time_sheet_bloc.dart';
 import '../../widgets/pointage_widget/pointage_widget.dart';
+import '../../../../bottom_nav_tab/presentation/pages/app_drawer.dart';
 
 class PointagePage extends StatefulWidget {
   const PointagePage({super.key});
@@ -39,13 +40,16 @@ class _PointagePageState extends State<PointagePage> {
         backgroundColor: Theme.of(context).primaryColor,
         title: const Text('Pointage'),
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: () {
-            Scaffold.of(context).openDrawer();
-          },
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () {
+              Scaffold.of(context).openDrawer();
+            },
+          ),
         ),
       ),
+      drawer: const AppDrawer(),
       backgroundColor: Colors.teal[50],
       body: SafeArea(
         child: SingleChildScrollView(

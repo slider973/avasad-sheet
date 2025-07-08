@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_absence.dart';
 
+import '../../../../absence/domain/value_objects/absence_type.dart';
 import 'pointage_absence_bouton_form.dart';
 
 class PointageAbsenceBouton extends StatelessWidget {

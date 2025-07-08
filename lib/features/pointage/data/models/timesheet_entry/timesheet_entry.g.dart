@@ -72,6 +72,13 @@ const TimeSheetEntryModelSchema = CollectionSchema(
       target: r'Absence',
       single: true,
       linkName: r'timesheetEntry',
+    ),
+    r'anomaly': LinkSchema(
+      id: -4880604681407737451,
+      name: r'anomaly',
+      target: r'AnomalyModel',
+      single: true,
+      linkName: r'timesheetEntry',
     )
   },
   embeddedSchemas: {},
@@ -166,13 +173,15 @@ Id _timeSheetEntryModelGetId(TimeSheetEntryModel object) {
 
 List<IsarLinkBase<dynamic>> _timeSheetEntryModelGetLinks(
     TimeSheetEntryModel object) {
-  return [object.absence];
+  return [object.absence, object.anomaly];
 }
 
 void _timeSheetEntryModelAttach(
     IsarCollection<dynamic> col, Id id, TimeSheetEntryModel object) {
   object.id = id;
   object.absence.attach(col, col.isar.collection<Absence>(), r'absence', id);
+  object.anomaly
+      .attach(col, col.isar.collection<AnomalyModel>(), r'anomaly', id);
 }
 
 extension TimeSheetEntryModelQueryWhereSort
@@ -1338,6 +1347,20 @@ extension TimeSheetEntryModelQueryLinks on QueryBuilder<TimeSheetEntryModel,
       absenceIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.linkLength(r'absence', 0, true, 0, true);
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterFilterCondition>
+      anomaly(FilterQuery<AnomalyModel> q) {
+    return QueryBuilder.apply(this, (query) {
+      return query.link(q, r'anomaly');
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterFilterCondition>
+      anomalyIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.linkLength(r'anomaly', 0, true, 0, true);
     });
   }
 }

@@ -46,6 +46,15 @@ class TimesheetEntry {
     return 1.0;
   }
 
+  /// Retourne la date sous forme de DateTime
+  DateTime? get date {
+    try {
+      return DateFormat('dd-MMM-yy').parse(dayDate);
+    } catch (e) {
+      return null;
+    }
+  }
+
   DateTime? get lastPointage {
     final format = DateFormat('dd-MMM-yy HH:mm');
     if (endAfternoon.isNotEmpty) return format.parse('$dayDate $endAfternoon');

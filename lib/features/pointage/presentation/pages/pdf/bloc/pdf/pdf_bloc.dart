@@ -17,9 +17,9 @@ import '../../../../../../../services/logger_service.dart';
 import '../../../../../../preference/domain/entities/user.dart';
 import '../../../../../../preference/domain/use_cases/get_signature_usecase.dart';
 import '../../../../../../preference/presentation/manager/preferences_bloc.dart';
-import '../../../../../data/models/generated_pdf/generated_pdf.dart';
+import '../../../../../domain/entities/generated_pdf.dart';
 import '../../../../../domain/entities/work_week.dart';
-import '../../../../../use_cases/generate_pdf_usecase.dart';
+import '../../../../../domain/use_cases/generate_pdf_usecase.dart';
 
 part 'pdf_event.dart';
 

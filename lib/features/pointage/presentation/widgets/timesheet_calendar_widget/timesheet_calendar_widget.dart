@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
-import 'package:time_sheet/features/pointage/presentation/widgets/timesheet_calendar_widget/timesheet_calendar_header.dart';
 import '../../../../../enum/absence_period.dart';
 import '../../../domain/entities/timesheet_entry.dart';
 import '../../pages/time-sheet/bloc/time_sheet_list/time_sheet_list_bloc.dart';
@@ -25,7 +24,8 @@ class TimesheetCalendarWidget extends StatefulWidget {
       _TimesheetCalendarWidgetState();
 }
 
-class _TimesheetCalendarWidgetState extends State<TimesheetCalendarWidget> {
+class _TimesheetCalendarWidgetState extends State<TimesheetCalendarWidget> 
+    with AutomaticKeepAliveClientMixin {
   CalendarFormat _calendarFormat = CalendarFormat.month;
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
@@ -55,7 +55,11 @@ class _TimesheetCalendarWidgetState extends State<TimesheetCalendarWidget> {
   }
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -66,16 +70,39 @@ class _TimesheetCalendarWidgetState extends State<TimesheetCalendarWidget> {
         ),
         title: const Text('Calendrier des pointages'),
         backgroundColor: Theme.of(context).primaryColor,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              _loadEvents();
+            },
+            tooltip: 'Actualiser le calendrier',
+          ),
+        ],
       ),
-      body: BlocListener<TimeSheetListBloc, TimeSheetListState>(
-        listener: (context, state) {
-          if (state is TimeSheetListFetchedState) {
-            setState(() {
-              _events = _groupEntries(state.entries);
-              _selectedEvents.value = _getEventsForDay(_selectedDay!);
-            });
-          }
-        },
+      body: MultiBlocListener(
+        listeners: [
+          BlocListener<TimeSheetListBloc, TimeSheetListState>(
+            listener: (context, state) {
+              if (state is TimeSheetListFetchedState) {
+                setState(() {
+                  _events = _groupEntries(state.entries);
+                  _selectedEvents.value = _getEventsForDay(_selectedDay!);
+                });
+              }
+            },
+          ),
+          BlocListener<TimeSheetBloc, TimeSheetState>(
+            listener: (context, state) {
+              // Quand une entrée est créée, modifiée ou supprimée,
+              // recharger les données du calendrier
+              if (state is TimeSheetDataState || 
+                  state is TimeSheetGenerationCompleted) {
+                _loadEvents();
+              }
+            },
+          ),
+        ],
         child: TimesheetCalendarLayout(
           firstDay: kFirstDay,
           lastDay: kLastDay,

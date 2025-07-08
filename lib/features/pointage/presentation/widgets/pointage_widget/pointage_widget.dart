@@ -5,6 +5,7 @@ import 'package:time_sheet/features/absence/domain/entities/absence_entity.dart'
 import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_absence.dart';
 import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_layout.dart';
 
+import '../../../../absence/domain/value_objects/absence_type.dart';
 import '../../../domain/entities/timesheet_entry.dart';
 import '../../pages/time-sheet/bloc/time_sheet/time_sheet_bloc.dart';
 

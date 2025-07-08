@@ -6,21 +6,22 @@ import 'package:flutter/material.dart';
 import 'package:googleapis/cloudsearch/v1.dart';
 import 'package:intl/intl.dart';
 import 'package:time_sheet/features/pointage/domain/entities/timesheet_generation_config.dart';
+import 'package:time_sheet/services/timer_service.dart';
 
 //use cases
-import '../../../../../../absence/data/models/absence.dart';
 import '../../../../../../absence/domain/entities/absence_entity.dart';
 import '../../../../../../preference/presentation/manager/preferences_bloc.dart';
 import '../../../../../domain/entities/timesheet_entry.dart';
-import '../../../../../use_cases/delete_timesheet_entry_usecase.dart';
-import '../../../../../use_cases/generate_monthly_timesheet_usease.dart';
-import '../../../../../use_cases/get_monthly_timesheet_entries_usecase.dart';
-import '../../../../../use_cases/get_overtime_hours_usecase.dart';
-import '../../../../../use_cases/get_remaining_vacation_days_usecase.dart';
-import '../../../../../use_cases/get_today_timesheet_entry_use_case.dart';
-import '../../../../../use_cases/get_weekly_work_time_usecase.dart';
-import '../../../../../use_cases/save_timesheet_entry_usecase.dart';
-import '../../../../../use_cases/signaler_absence_periode_usecase.dart';
+import '../../../../../domain/use_cases/delete_timesheet_entry_usecase.dart';
+import '../../../../../domain/use_cases/generate_monthly_timesheet_usease.dart';
+import '../../../../../domain/use_cases/get_monthly_timesheet_entries_usecase.dart';
+import '../../../../../domain/use_cases/get_overtime_hours_usecase.dart';
+import '../../../../../domain/use_cases/get_remaining_vacation_days_usecase.dart';
+import '../../../../../domain/use_cases/get_today_timesheet_entry_use_case.dart';
+import '../../../../../domain/use_cases/get_weekly_work_time_usecase.dart';
+import '../../../../../domain/use_cases/save_timesheet_entry_usecase.dart';
+import '../../../../../domain/use_cases/signaler_absence_periode_usecase.dart';
+import '../../../../../domain/value_objects/vacation_days_info.dart';
 import '../../../../widgets/pointage_widget/pointage_absence.dart';
 
 part 'time_sheet_event.dart';
@@ -38,6 +39,7 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
   final GetOvertimeHoursUseCase getOvertimeHoursUseCase;
   final SignalerAbsencePeriodeUsecase signalerAbsencePeriodeUsecase;
   final GetMonthlyTimesheetEntriesUseCase getMonthlyTimesheetEntriesUseCase;
+  final TimerService _timerService = TimerService();
 
   TimeSheetBloc({
     required this.saveTimesheetEntryUseCase,
@@ -143,6 +145,10 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
 
       final id = await saveTimesheetEntryUseCase.execute(updatedEntry);
       updatedEntry = updatedEntry.copyWith(id: id);
+      
+      // Synchroniser le TimerService avec le nouvel état
+      _timerService.updateState('Entrée', event.startTime);
+      
       emit(await _createTimeSheetDataState(updatedEntry ));
     } else {
       print('non implémenté');
@@ -164,6 +170,10 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
         id: currentEntry.id,
       );
       await saveTimesheetEntryUseCase.execute(updatedEntry);
+      
+      // Synchroniser le TimerService avec le nouvel état
+      _timerService.updateState('Sortie', event.endTime);
+      
       emit(await _createTimeSheetDataState(updatedEntry));
     } else {
       print('non implémenté');
@@ -186,6 +196,10 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
       );
       updatedEntry.id = currentEntry.id;
       await saveTimesheetEntryUseCase.execute(updatedEntry);
+      
+      // Synchroniser le TimerService avec le nouvel état
+      _timerService.updateState('Pause', event.startBreakTime);
+      
       emit(await _createTimeSheetDataState(updatedEntry));
     } else {
       print('non implémenté');
@@ -207,6 +221,10 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
         endAfternoon: currentEntry.endAfternoon,
       );
       await saveTimesheetEntryUseCase.execute(updatedEntry);
+      
+      // Synchroniser le TimerService avec le nouvel état
+      _timerService.updateState('Reprise', event.endBreakTime);
+      
       emit(await _createTimeSheetDataState(updatedEntry));
     } else {
       print('non implémenté');
@@ -251,8 +269,12 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
     final remainingVacationDays =
         await getRemainingVacationDaysUseCase.execute();
     if (entry != null) {
+      // Synchroniser le TimerService avec l'état actuel de l'entrée
+      _timerService.initialize(entry.currentState, entry.lastPointage);
       emit(await _createTimeSheetDataState(entry));
     } else {
+      // Initialiser le TimerService pour un nouvel état
+      _timerService.initialize('Non commencé', null);
       emit(await _createTimeSheetDataState(
           TimesheetEntry(
             dayDate: event.dateStr,

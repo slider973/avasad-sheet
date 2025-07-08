@@ -1,4 +1,4 @@
-import '../../../pointage/presentation/widgets/pointage_widget/pointage_absence.dart';
+import '../value_objects/absence_type.dart';
 
 class AbsenceEntity {
   final int? id;

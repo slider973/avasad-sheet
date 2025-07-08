@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:time_sheet/features/absence/domain/entities/absence_entity.dart';
+import 'package:time_sheet/features/absence/domain/value_objects/absence_type.dart';
 import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_remove_timesheet_day.dart';
 import '../../../../../enum/absence_motif.dart';
 
@@ -226,4 +227,3 @@ class _PointageAbsenceState extends State<PointageAbsence> {
   }
 }
 
-enum AbsenceType { vacation, publicHoliday, sickLeave, other }

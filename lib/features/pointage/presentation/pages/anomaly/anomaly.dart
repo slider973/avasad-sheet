@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../data/models/anomalies/anomalies.dart';
 import '../../widgets/pointage_widget/pointage_widget.dart';
 import '../pdf/bloc/anomaly/anomaly_bloc.dart';
+import '../../../../bottom_nav_tab/presentation/pages/app_drawer.dart';
 
 class AnomalyView extends StatefulWidget {
   @override
@@ -22,7 +23,7 @@ class _AnomalyViewState extends State<AnomalyView> with SingleTickerProviderStat
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    context.read<AnomalyBloc>().add(const DetectAnomalies());
+    // Le rechargement sera géré par le listener du BottomNavigationBar
   }
 
   @override
@@ -35,11 +36,13 @@ class _AnomalyViewState extends State<AnomalyView> with SingleTickerProviderStat
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: () {
-            Scaffold.of(context).openDrawer();
-          },
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () {
+              Scaffold.of(context).openDrawer();
+            },
+          ),
         ),
         title: const Text('Anomalies'),
         backgroundColor: Colors.teal,
@@ -63,6 +66,7 @@ class _AnomalyViewState extends State<AnomalyView> with SingleTickerProviderStat
           ),
         ],
       ),
+      drawer: const AppDrawer(),
       body: TabBarView(
         controller: _tabController,
         children: [
