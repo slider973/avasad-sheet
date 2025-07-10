@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../pointage/presentation/pages/statistiques/statistique_page.dart';
 import '../../../pointage/presentation/pages/pointage/pointage_page.dart';
 import '../../../pointage/presentation/pages/dashboard/dashboard_page.dart';
+import '../../../preference/presentation/pages/preference.dart';
 import 'bottom_navigation_bar.dart';
 
 class AppDrawer extends StatelessWidget {
@@ -119,7 +120,13 @@ class AppDrawer extends StatelessWidget {
                   icon: Icons.settings,
                   title: 'Paramètres',
                   subtitle: 'Configurer l\'application',
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => PreferencesPage()),
+                    );
+                  },
                 ),
               ],
             ),

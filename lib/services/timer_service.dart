@@ -72,25 +72,38 @@ class TimerService {
       return;
     }
 
-    // Si nous avons un dernier pointage et que nous sommes en mode actif
-    if (dernierPointage != null &&
-        (etatActuel == 'Entrée' || etatActuel == 'Reprise')) {
-      // Si nous n'avons pas pu charger l'état ou si nous sommes un nouveau jour
+    // Si nous sommes en mode actif (Entrée ou Reprise)
+    if (etatActuel == 'Entrée' || etatActuel == 'Reprise') {
+      // Si nous n'avons pas pu charger l'état sauvegardé
       if (!stateLoaded) {
-        // Utiliser le dernier pointage comme référence
         final now = DateTime.now();
-        final today = DateFormat('yyyy-MM-dd').format(now);
-        final pointageDay = DateFormat('yyyy-MM-dd').format(dernierPointage);
+        
+        // Si nous avons un dernier pointage
+        if (dernierPointage != null) {
+          final today = DateFormat('yyyy-MM-dd').format(now);
+          final pointageDay = DateFormat('yyyy-MM-dd').format(dernierPointage);
 
-        // Si le pointage est d'aujourd'hui et que nous sommes en mode actif
-        if (today == pointageDay &&
-            (etatActuel == 'Entrée' || etatActuel == 'Reprise')) {
-          // Calculer le temps écoulé depuis le dernier pointage
+          // Si le pointage est d'aujourd'hui
+          if (today == pointageDay) {
+            // Calculer le temps écoulé depuis le dernier pointage
+            _accumulatedTime = Duration.zero;
+            _startTime = dernierPointage;
+            _elapsedTime = now.difference(_startTime!);
+          } else {
+            // Pointage d'un jour précédent, commencer à zéro
+            _accumulatedTime = Duration.zero;
+            _startTime = now;
+            _elapsedTime = Duration.zero;
+          }
+        } else {
+          // Pas de dernier pointage (premier pointage du jour)
+          // Initialiser à zéro et commencer maintenant
           _accumulatedTime = Duration.zero;
-          _startTime = dernierPointage;
-          _elapsedTime = now.difference(_startTime!);
-          await _saveTimerState();
+          _startTime = now;
+          _elapsedTime = Duration.zero;
         }
+        
+        await _saveTimerState();
       }
     }
 
@@ -258,13 +271,14 @@ class TimerService {
       return;
     }
 
-    // Pour Entrée ou Reprise, on démarre le timer maintenant
+    // Pour Entrée ou Reprise, utiliser le startTime existant ou maintenant
     if (_currentState == 'Entrée' || _currentState == 'Reprise') {
-      _startTime = DateTime.now();
-      // Pour Entrée, on réinitialise le temps accumulé
-      if (_currentState == 'Entrée') {
-        _accumulatedTime = Duration.zero;
-        _elapsedTime = Duration.zero;
+      // Si _startTime est null, utiliser maintenant
+      _startTime ??= DateTime.now();
+      // Pour Entrée, on réinitialise le temps accumulé seulement si pas déjà fait
+      if (_currentState == 'Entrée' && _accumulatedTime == Duration.zero && _elapsedTime == Duration.zero) {
+        // Calculer le temps écoulé depuis le startTime
+        _elapsedTime = DateTime.now().difference(_startTime!);
       }
     }
 
@@ -333,13 +347,18 @@ class TimerService {
       }
       // On ne cancel pas le timer, on le laisse tourner pour mettre à jour l'UI
     } else if (newState == 'Entrée' || newState == 'Reprise') {
-      // Si on démarre ou reprend, on met à jour le startTime
-      _startTime = DateTime.now();
+      // Si on démarre ou reprend, utiliser le temps de pointage fourni ou maintenant
+      _startTime = dernierPointage ?? DateTime.now();
       
       // Si on vient de 'Non commencé' et qu'on passe à 'Entrée', réinitialiser
       if (oldState == 'Non commencé' && newState == 'Entrée') {
         _accumulatedTime = Duration.zero;
-        _elapsedTime = Duration.zero;
+        // Si on a un temps de pointage, calculer le temps écoulé depuis ce moment
+        if (dernierPointage != null) {
+          _elapsedTime = DateTime.now().difference(dernierPointage);
+        } else {
+          _elapsedTime = Duration.zero;
+        }
       }
       
       // Démarrer ou redémarrer le timer si nécessaire

@@ -48,7 +48,9 @@ class _PointageWidgetState extends State<PointageWidget>
     );
     _progressionAnimation = Tween<double>(begin: 0, end: 0).animate(_controller)
       ..addListener(() {
-        setState(() {});
+        if (mounted) {
+          setState(() {});
+        }
       });
     if (widget.entry != null) {
       // Initialisez les données avec celles de l'entrée
@@ -105,9 +107,11 @@ class _PointageWidgetState extends State<PointageWidget>
       }
     }
 
-    setState(() {
-      _weeklyWorkTime = weeklyWorkTime;
-    });
+    if (mounted) {
+      setState(() {
+        _weeklyWorkTime = weeklyWorkTime;
+      });
+    }
   }
 
 
@@ -162,6 +166,7 @@ class _PointageWidgetState extends State<PointageWidget>
   void _timeSheetListener(BuildContext context, TimeSheetState state) {
     print('State: PointageWidget $state');
     if (state is TimeSheetDataState) {
+      if (!mounted) return;
       setState(() {
         _etatActuel = state.entry.currentState;
         _dernierPointage = state.entry.lastPointage;
@@ -236,7 +241,7 @@ class _PointageWidgetState extends State<PointageWidget>
       context: context,
       initialTime: TimeOfDay.fromDateTime(pointage['heure']),
     ).then((nouvelleHeure) {
-      if (nouvelleHeure != null) {
+      if (nouvelleHeure != null && mounted) {
         final bloc = context.read<TimeSheetBloc>();
         final nouveauDateTime = DateTime(
           pointage['heure'].year,

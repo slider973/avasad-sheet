@@ -14,6 +14,7 @@ class PreferencesLoading extends PreferencesState {}
 class PreferencesLoaded extends PreferencesState {
   final String firstName;
   final String lastName;
+  final String company;
   final String? signatureBase64;
   final DateTime? lastGenerationDate;
   Uint8List? signature;
@@ -26,6 +27,7 @@ class PreferencesLoaded extends PreferencesState {
   PreferencesLoaded({
     required this.firstName,
     required this.lastName,
+    required this.company,
     this.signatureBase64,
     this.lastGenerationDate,
     this.signature,
@@ -40,6 +42,7 @@ class PreferencesLoaded extends PreferencesState {
   List<Object?> get props => [
         firstName,
         lastName,
+        company,
         signature,
         lastGenerationDate,
         notificationsEnabled,

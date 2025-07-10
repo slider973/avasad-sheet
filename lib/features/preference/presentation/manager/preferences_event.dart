@@ -12,16 +12,35 @@ class LoadPreferences extends PreferencesEvent {}
 class SavePreferences extends PreferencesEvent {
   final String firstName;
   final String lastName;
+  final String company;
   Uint8List? signature;
 
   SavePreferences({
     required this.firstName,
     required this.lastName,
+    required this.company,
     this.signature,
   });
 
   @override
-  List<Object?> get props => [firstName, lastName, signature];
+  List<Object?> get props => [firstName, lastName, company, signature];
+}
+
+class SaveUserInfoEvent extends PreferencesEvent {
+  final String firstName;
+  final String lastName;
+  final String company;
+  final Uint8List? signature;
+
+  const SaveUserInfoEvent({
+    required this.firstName,
+    required this.lastName,
+    required this.company,
+    this.signature,
+  });
+
+  @override
+  List<Object?> get props => [firstName, lastName, company, signature];
 }
 class SaveSignature extends PreferencesEvent {
   final Uint8List signature;

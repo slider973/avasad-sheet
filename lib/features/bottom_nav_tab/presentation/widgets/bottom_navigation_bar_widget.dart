@@ -32,13 +32,14 @@ class BottomNavigationBarWidget extends StatelessWidget {
                     .read<BottomNavigationBarBloc>()
                     .add(BottomNavigationBarEvent.tab3);
                 break;
-                case 3:
+              case 3:
                 context
                     .read<BottomNavigationBarBloc>()
                     .add(BottomNavigationBarEvent.tab4);
                 break;
-              case 4: // Nouvel onglet pour les anomalies
-                context.read<BottomNavigationBarBloc>()
+              case 4:
+                context
+                    .read<BottomNavigationBarBloc>()
                     .add(BottomNavigationBarEvent.tab5);
                 break;
             }
@@ -46,24 +47,24 @@ class BottomNavigationBarWidget extends StatelessWidget {
           type: BottomNavigationBarType.fixed,
           items: const [
             BottomNavigationBarItem(
-              icon: Icon(Icons.home),
+              icon: Icon(Icons.dashboard),
+              label: 'Dashboard',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.fingerprint),
               label: 'Pointage',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.business),
+              icon: Icon(Icons.description),
               label: 'Time Sheet',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.calendar_today),
               label: 'Calendrier',
             ),
-            BottomNavigationBarItem( // Nouvel item
+            BottomNavigationBarItem(
               icon: AnomalyIconWithBadge(),
               label: 'Anomalies',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.school),
-              label: 'Réglages',
             ),
           ],
         );

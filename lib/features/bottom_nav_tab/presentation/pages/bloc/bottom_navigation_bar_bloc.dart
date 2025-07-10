@@ -20,7 +20,7 @@ class BottomNavigationBarBloc extends Bloc<BottomNavigationBarEvent, int> {
         case BottomNavigationBarEvent.tab4:
           emit(3);
           break;
-          case BottomNavigationBarEvent.tab5:
+        case BottomNavigationBarEvent.tab5:
           emit(4);
           break;
       }

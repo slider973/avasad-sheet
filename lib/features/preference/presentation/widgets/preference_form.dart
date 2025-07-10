@@ -334,6 +334,7 @@ class _PreferencesFormState extends State<PreferencesForm> {
       context.read<PreferencesBloc>().add(SavePreferences(
             firstName: _firstNameController.text,
             lastName: _lastNameController.text,
+            company: '', // TODO: Add company field to the form
           ));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(

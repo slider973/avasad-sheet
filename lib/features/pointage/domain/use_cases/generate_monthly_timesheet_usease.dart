@@ -12,23 +12,41 @@ class GenerateMonthlyTimesheetUseCase {
 
   GenerateMonthlyTimesheetUseCase(this.repository);
 
-  Future<void> execute([TimesheetGenerationConfig? config]) async {
-    DateTime now = DateTime.now();
-
-    // Calcul des bornes dynamiques de la période
-    DateTime startDate = now.day >= 21
-        ? DateTime(now.year, now.month, 21)
-        : DateTime(now.year, now.month - 1, 21);
-    DateTime endDate = now.day >= 21
-        ? DateTime(now.year, now.month + 1, 20)
-        : DateTime(now.year, now.month, 20);
+  Future<void> execute([TimesheetGenerationConfig? config, DateTime? targetMonth]) async {
+    // Utiliser le mois fourni ou le mois actuel par défaut
+    DateTime baseDate = targetMonth ?? DateTime.now();
+    
+    // Calcul des bornes dynamiques de la période pour le mois sélectionné
+    // Gérer le cas de janvier où month - 1 = 0
+    DateTime startDate;
+    if (baseDate.month == 1) {
+      startDate = DateTime(baseDate.year - 1, 12, 21);
+    } else {
+      startDate = DateTime(baseDate.year, baseDate.month - 1, 21);
+    }
+    DateTime endDate = DateTime(baseDate.year, baseDate.month, 20);
 
     print("Start Date: $startDate");
     print("End Date: $endDate");
 
-    // Récupérer les entrées existantes pour la période
-    List<TimesheetEntry> existingEntries = await repository.getTimesheetEntriesForMonth(now.month);
-    Set<String> existingDates = existingEntries.map((e) => e.dayDate).toSet();
+    // Récupérer TOUTES les entrées existantes pour vérifier celles dans notre période
+    List<TimesheetEntry> allEntries = await repository.getTimesheetEntries();
+    
+    // Filtrer les entrées qui sont dans notre période
+    Set<String> existingDates = {};
+    Map<String, TimesheetEntry> existingEntriesMap = {};
+    
+    for (var entry in allEntries) {
+      // Parser la date de l'entrée
+      DateTime entryDate = DateFormat('dd-MMM-yy').parse(entry.dayDate);
+      
+      // Vérifier si cette date est dans notre période
+      if (!entryDate.isBefore(startDate) && !entryDate.isAfter(endDate)) {
+        existingDates.add(entry.dayDate);
+        existingEntriesMap[entry.dayDate] = entry;
+        print("Found existing entry for: ${entry.dayDate}");
+      }
+    }
 
     try {
       // Parcourir les jours de la période
@@ -37,12 +55,31 @@ class GenerateMonthlyTimesheetUseCase {
         if (date.weekday >= DateTime.monday && date.weekday <= DateTime.friday) {
           String formattedDate = DateFormat('dd-MMM-yy').format(date);
           if (!existingDates.contains(formattedDate)) {
+            // Aucune entrée n'existe, on peut générer
             print("Generating entry for: $formattedDate");
             TimesheetEntry entry = _generateDayEntry(date, config);
             await repository.saveTimesheetEntry(entry);
             print("Entry saved for: $formattedDate");
           } else {
-            print("Entry already exists for: $formattedDate");
+            // Une entrée existe, vérifier si elle a des données réelles
+            TimesheetEntry existingEntry = existingEntriesMap[formattedDate]!;
+            
+            // Vérifier si l'entrée a des pointages réels (non vides)
+            bool hasRealData = existingEntry.startMorning.isNotEmpty || 
+                              existingEntry.endMorning.isNotEmpty ||
+                              existingEntry.startAfternoon.isNotEmpty ||
+                              existingEntry.endAfternoon.isNotEmpty ||
+                              existingEntry.absenceReason != null;
+            
+            if (hasRealData) {
+              print("Entry has real data for $formattedDate, skipping...");
+            } else {
+              print("Entry exists but is empty for $formattedDate, can be regenerated if needed");
+              // Optionnel : supprimer l'entrée vide et regénérer
+              // await repository.deleteTimeSheet(existingEntry.id!);
+              // TimesheetEntry entry = _generateDayEntry(date, config);
+              // await repository.saveTimesheetEntry(entry);
+            }
           }
         }
       }

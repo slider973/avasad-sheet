@@ -68,8 +68,9 @@ class WeeklyProgressChart extends StatelessWidget {
                               bottomTitles: AxisTitles(
                                 sideTitles: SideTitles(
                                   showTitles: true,
+                                  interval: 1,
                                   getTitlesWidget: (value, meta) {
-                                    const days = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+                                    const days = ['L', 'Ma', 'Me', 'J', 'V', 'S', 'D'];
                                     if (value.toInt() >= 0 && value.toInt() < days.length) {
                                       return Text(
                                         days[value.toInt()],
@@ -238,8 +239,7 @@ class WeeklyProgressChart extends StatelessWidget {
   
   Widget _buildWeeklySummary(List<FlSpot> weekData) {
     final totalHours = weekData.fold<double>(0, (sum, spot) => sum + spot.y);
-    final averageHours = totalHours / 7;
-    final targetHours = 8.3 * 5; // 5 jours de travail
+    const targetHours = 8.3 * 5; // 5 jours de travail
     final progress = (totalHours / targetHours).clamp(0.0, 1.0);
     
     return Container(

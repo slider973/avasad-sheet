@@ -138,12 +138,13 @@ class GeneratePdfUseCase {
     final isDeliveryManagerString =
         await getUserPreferenceUseCase.execute('isDeliveryManager') ?? 'false';
     final isDeliveryManager = isDeliveryManagerString.toLowerCase() == 'true';
+    final company = await getUserPreferenceUseCase.execute('company') ?? 'Avasad';
 
     return Right(
       User(
         firstName: firstName,
         lastName: lastName,
-        company: 'Avasad',
+        company: company,
         signature: await getSignatureUseCase.execute(),
         isDeliveryManager: isDeliveryManager,
       ),

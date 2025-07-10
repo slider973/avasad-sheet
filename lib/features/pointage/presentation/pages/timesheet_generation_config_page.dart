@@ -11,6 +11,7 @@ class TimesheetGenerationConfigPage extends StatefulWidget {
 class _TimesheetGenerationConfigPageState extends State<TimesheetGenerationConfigPage> {
   late TimesheetGenerationConfig config;
   final _formKey = GlobalKey<FormState>();
+  DateTime selectedMonth = DateTime.now();
 
   @override
   void initState() {
@@ -48,6 +49,8 @@ class _TimesheetGenerationConfigPageState extends State<TimesheetGenerationConfi
         child: ListView(
           padding: EdgeInsets.all(16.0),
           children: [
+            _buildMonthSelector(),
+            SizedBox(height: 20),
             _buildTimeRangeSection(
               'Heure d\'arrivée',
               config.startTimeMin,
@@ -101,7 +104,10 @@ class _TimesheetGenerationConfigPageState extends State<TimesheetGenerationConfi
               onPressed: () {
                 if (_formKey.currentState!.validate()) {
                   context.read<TimeSheetBloc>().add(
-                    GenerateMonthlyTimesheetEvent(config: config),
+                    GenerateMonthlyTimesheetEvent(
+                      config: config,
+                      month: selectedMonth,
+                    ),
                   );
                   Navigator.pop(context);
                 }
@@ -253,5 +259,138 @@ class _TimesheetGenerationConfigPageState extends State<TimesheetGenerationConfi
         Divider(),
       ],
     );
+  }
+
+  Widget _buildMonthSelector() {
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Sélectionner le mois',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 10),
+            InkWell(
+              onTap: () async {
+                // Utiliser showModalBottomSheet pour afficher un sélecteur de mois personnalisé
+                final result = await showModalBottomSheet<DateTime>(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return Container(
+                      height: 300,
+                      child: Column(
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(16),
+                            child: Text(
+                              'Sélectionner le mois',
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          Expanded(
+                            child: ListView.builder(
+                              itemCount: 12,
+                              itemBuilder: (context, index) {
+                                final month = index + 1;
+                                final monthDate = DateTime(selectedMonth.year, month);
+                                final isSelected = selectedMonth.month == month;
+                                
+                                return ListTile(
+                                  title: Text(
+                                    '${_getMonthName(month)} ${selectedMonth.year}',
+                                    style: TextStyle(
+                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                      color: isSelected ? Colors.teal : null,
+                                    ),
+                                  ),
+                                  subtitle: Text(
+                                    month == 1 
+                                      ? 'Du 21 décembre ${selectedMonth.year - 1} au 20 janvier ${selectedMonth.year}'
+                                      : 'Du 21 ${_getMonthName(month - 1)} au 20 ${_getMonthName(month)} ${selectedMonth.year}',
+                                    style: TextStyle(fontSize: 12),
+                                  ),
+                                  trailing: isSelected ? Icon(Icons.check, color: Colors.teal) : null,
+                                  onTap: () {
+                                    Navigator.pop(context, monthDate);
+                                  },
+                                );
+                              },
+                            ),
+                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              TextButton(
+                                onPressed: () {
+                                  // Année précédente
+                                  setState(() {
+                                    selectedMonth = DateTime(selectedMonth.year - 1, selectedMonth.month);
+                                  });
+                                  Navigator.pop(context);
+                                },
+                                child: Text('< ${selectedMonth.year - 1}'),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: Text('Annuler'),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  // Année suivante
+                                  setState(() {
+                                    selectedMonth = DateTime(selectedMonth.year + 1, selectedMonth.month);
+                                  });
+                                  Navigator.pop(context);
+                                },
+                                child: Text('${selectedMonth.year + 1} >'),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+                
+                if (result != null) {
+                  setState(() {
+                    selectedMonth = result;
+                  });
+                }
+              },
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '${_getMonthName(selectedMonth.month)} ${selectedMonth.year}',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                    Icon(Icons.calendar_today, color: Colors.teal),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _getMonthName(int month) {
+    const monthNames = [
+      'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+      'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+    ];
+    return monthNames[month - 1];
   }
 }

@@ -86,11 +86,12 @@ class UpdateTimeSheetDataEvent extends TimeSheetEvent {
 
 class GenerateMonthlyTimesheetEvent extends TimeSheetEvent {
   final TimesheetGenerationConfig? config;
+  final DateTime? month;
 
-  const GenerateMonthlyTimesheetEvent({this.config});
+  const GenerateMonthlyTimesheetEvent({this.config, this.month});
 
   @override
-  List<Object> get props => [];
+  List<Object> get props => [if (config != null) config!, if (month != null) month!];
 }
 
 class CheckGenerationStatusEvent extends TimeSheetEvent {

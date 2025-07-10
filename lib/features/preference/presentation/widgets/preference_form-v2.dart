@@ -28,12 +28,6 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: () {
-            Scaffold.of(context).openDrawer();
-          },
-        ),
         backgroundColor: Colors.teal,
         elevation: 0,
         title: const Text('Paramètres'),
@@ -95,22 +89,20 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
                       ? 'Déjà généré ce mois-ci'
                       : 'Générer pour ce mois',
                   onTap: () async {
-                    if (!_isGeneratedThisMonth(state.lastGenerationDate)) {
-                      final result = await Navigator.push<TimesheetGenerationConfig>(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => TimesheetGenerationConfigPage(),
-                        ),
-                      );
-                      
-                      if (result != null) {
-                        context
-                            .read<TimeSheetBloc>()
-                            .add(GenerateMonthlyTimesheetEvent(config: result));
-                        context
-                            .read<PreferencesBloc>()
-                            .add(SaveLastGenerationDate(DateTime.now()));
-                      }
+                    final result = await Navigator.push<TimesheetGenerationConfig>(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => TimesheetGenerationConfigPage(),
+                      ),
+                    );
+                    
+                    if (result != null && mounted) {
+                      context
+                          .read<TimeSheetBloc>()
+                          .add(GenerateMonthlyTimesheetEvent(config: result));
+                      context
+                          .read<PreferencesBloc>()
+                          .add(SaveLastGenerationDate(DateTime.now()));
                     }
                   },
                 ),
@@ -156,8 +148,9 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
   }
 
   void _showPersonalInfoDialog(BuildContext context, PreferencesLoaded state) {
-    final _firstNameController = TextEditingController(text: state.firstName);
-    final _lastNameController = TextEditingController(text: state.lastName);
+    final firstNameController = TextEditingController(text: state.firstName);
+    final lastNameController = TextEditingController(text: state.lastName);
+    final companyController = TextEditingController(text: state.company);
 
     showDialog(
       context: context,
@@ -167,12 +160,18 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
-              controller: _firstNameController,
+              controller: firstNameController,
               decoration: const InputDecoration(labelText: 'Prénom'),
             ),
+            const SizedBox(height: 10),
             TextField(
-              controller: _lastNameController,
+              controller: lastNameController,
               decoration: const InputDecoration(labelText: 'Nom'),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: companyController,
+              decoration: const InputDecoration(labelText: 'Entreprise'),
             ),
           ],
         ),
@@ -185,8 +184,9 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
             child: const Text('Enregistrer'),
             onPressed: () {
               context.read<PreferencesBloc>().add(SavePreferences(
-                    firstName: _firstNameController.text,
-                    lastName: _lastNameController.text,
+                    firstName: firstNameController.text,
+                    lastName: lastNameController.text,
+                    company: companyController.text,
                   ));
               Navigator.of(context).pop();
             },
@@ -209,7 +209,7 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
         ),
       ),
     );
-    if (result != null) {
+    if (result != null && mounted) {
       context.read<PreferencesBloc>().add(SaveSignature(signature: result));
     }
   }
@@ -247,14 +247,18 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
     final backupService = GetIt.instance<BackupService>();
     try {
       final backupPath = await backupService.backupDatabase();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Sauvegarde réussie : $backupPath')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Sauvegarde réussie : $backupPath')),
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text('Erreur lors de la sauvegarde : ${e.toString()}')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Erreur lors de la sauvegarde : ${e.toString()}')),
+        );
+      }
     }
   }
 
@@ -262,7 +266,7 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
     final backupService = GetIt.instance<BackupService>();
     try {
       final importSuccess = await backupService.importDatabase();
-      if (importSuccess) {
+      if (importSuccess && mounted) {
         showDialog(
           context: context,
           barrierDismissible: false,
@@ -285,10 +289,12 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text('Erreur lors de la restauration : ${e.toString()}')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Erreur lors de la restauration : ${e.toString()}')),
+        );
+      }
     }
   }
 

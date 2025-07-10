@@ -70,7 +70,10 @@ class LocalDatasourceImpl implements LocalDataSource {
 
   @override
   Future<List<TimeSheetEntryModel>> getTimesheetEntries() async {
-    return isar.timeSheetEntryModels.where().findAll();
+    return isar.timeSheetEntryModels
+        .where()
+        .sortByDayDateDesc()
+        .findAll();
   }
 
   @override
@@ -95,8 +98,8 @@ class LocalDatasourceImpl implements LocalDataSource {
         ? DateTime(year - 1, 12, 21)
         : datePreviousMonth;
 
-    // Calcul du 21 du mois courant
-    final dateCurrentMonth = DateTime(year, monthNumber, 21);
+    // Calcul du 20 du mois courant à 23:59:59 pour inclure toute la journée
+    final dateCurrentMonth = DateTime(year, monthNumber, 20, 23, 59, 59);
 
     logger.i('[LocalDatasourceImpl] datePreviousMonth $adjustedDatePreviousMonth');
     logger.i('[LocalDatasourceImpl] dateCurrentMonth $dateCurrentMonth');

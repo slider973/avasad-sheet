@@ -125,11 +125,14 @@ void _showAnomalyCheckDialog(BuildContext context, int month, int year) {
               return _buildAnomalyConfirmationDialog(context, state);
             } else {
               // Aucune anomalie, fermer le dialog et générer le PDF
-              Navigator.of(context).pop();
               WidgetsBinding.instance.addPostFrameCallback((_) {
+                Navigator.of(context).pop();
                 context.read<PdfBloc>().add(GeneratePdfEvent(month, year));
               });
-              return const SizedBox.shrink();
+              return const AlertDialog(
+                title: Text('Aucune anomalie'),
+                content: Text('Génération du PDF en cours...'),
+              );
             }
           }
           

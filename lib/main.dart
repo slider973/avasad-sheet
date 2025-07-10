@@ -12,6 +12,8 @@ import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
 import 'features/bottom_nav_tab/presentation/pages/bottom_navigation_bar.dart';
+import 'features/preference/presentation/pages/initial_check_page.dart';
+import 'features/preference/presentation/pages/onboarding_page.dart';
 import './services/injection_container.dart' as di;
 import 'package:window_manager/window_manager.dart';
 
@@ -76,7 +78,11 @@ class MyApp extends StatelessWidget {
           primaryColor: Colors.teal,
           useMaterial3: false,
         ),
-        home: const BottomNavigationBarPage(),
+        home: const InitialCheckPage(),
+        routes: {
+          '/main': (context) => const BottomNavigationBarPage(),
+          '/onboarding': (context) => const OnboardingPage(),
+        },
         localizationsDelegates: const [
           GlobalMaterialLocalizations.delegate,
           GlobalWidgetsLocalizations.delegate,

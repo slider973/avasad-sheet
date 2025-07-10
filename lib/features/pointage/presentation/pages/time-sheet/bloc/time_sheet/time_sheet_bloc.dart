@@ -305,7 +305,7 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
     try {
       // Lancer le use case pour générer les feuilles de temps
       print("Calling generateMonthlyTimesheetUseCase.execute()");
-      await generateMonthlyTimesheetUseCase.execute(event.config);
+      await generateMonthlyTimesheetUseCase.execute(event.config, event.month);
 
       // Obtenir la date actuelle
       final currentDate = DateTime.now();

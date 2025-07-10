@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Time Sheet Application for HeyTalent** - A comprehensive Flutter timesheet management application with multi-platform support (iOS, Android, Web, Windows, macOS, Linux). Features include time tracking, absence management, PDF report generation, anomaly detection, and user preferences.
+**Time Sheet Application for HeyTalent** - A comprehensive Flutter timesheet management application with multi-platform support (iOS, Android, Web, Windows, macOS, Linux). Features include time tracking, absence management, PDF report generation, anomaly detection, user preferences, and onboarding flow.
 
 ## Architecture
 
@@ -77,6 +77,8 @@ flutter build macos            # macOS
 - **Calendar Integration**: `table_calendar` and `syncfusion_flutter_calendar`
 - **Charts & Analytics**: `fl_chart` and `syncfusion_flutter_charts`
 - **Notifications**: `flutter_local_notifications` with timezone support
+- **Digital Signature**: `signature` package for capturing user signatures
+- **Onboarding**: First-run experience to collect user info (name, company, signature)
 
 ## Development Patterns
 
@@ -112,7 +114,47 @@ Custom anomaly detection with multiple detectors (`AnomalyDetectorFactory`) for 
 - Mockito for mocking dependencies
 - Test utilities in `test/test_utils.dart`
 
+## Recent Updates & Bug Fixes
+
+### Timer Synchronization Fix (2025-07-10)
+- Fixed timer bug where it wasn't synchronized with first pointage
+- Modified `TimerService.initialize()` to handle null `dernierPointage` 
+- Timer now uses actual pointage time instead of `DateTime.now()`
+- Added proper handling for first pointage of the day
+
+### Navigation Restructure (2025-07-10)
+- Moved Settings tab from bottom navigation to drawer menu
+- Added existing Dashboard as first tab in bottom navigation (reused from `pointage/presentation/pages/dashboard/`)
+- Bottom navigation now has 5 tabs: Dashboard, Pointage, Time Sheet, Calendrier, Anomalies
+- Settings accessible via "Paramètres" in drawer menu
+- Updated all navigation-related BLoCs and widgets
+- Dashboard features: metrics overview, weekly progress chart, monthly summary, recent activities, quick actions
+
+### Onboarding System (2025-07-10)
+- Added `OnboardingPage` with 2-step flow: user info + signature
+- Created `InitialCheckPage` that verifies if onboarding is complete
+- Added "company" field to user preferences (no longer hardcoded as "Avasad")
+- Updated `PreferencesBloc`, `PreferencesState`, and `PreferencesEvent` for company support
+- Fixed Scaffold context error in `PreferencesFormV2` using Builder pattern
+
+### Navigation Architecture Fix (2025-07-10)
+- Fixed setState after dispose error in PointageWidget by checking mounted in animation listener
+- Added mounted check for async operations (showTimePicker)
+- Navigation structure:
+  - Main Scaffold with drawer is in `BottomNavigationBarPage`
+  - Tab pages (PointagePage, etc.) have their own Scaffold for independence
+  - Drawer is accessible via swipe gesture on mobile
+  - Secondary pages (from drawer) show back arrow automatically
+- Removed menu burger from tab pages to avoid Scaffold context issues
+
+### User Preferences Enhancement
+- Extended `User` entity to include company field
+- Updated PDF generation to use company from preferences
+- Modified preference forms to include company field
+- Created reusable `SignaturePadWidget` component
+
 ## Code Quality
 - Flutter lints enabled with custom analysis options
 - 80-character line limit disabled for practical development
 - French locale support (fr_CH) with localization
+- Replace print statements with logger service

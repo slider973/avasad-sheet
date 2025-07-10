@@ -6,7 +6,12 @@ import '../entities/work_week.dart';
 
 class WeekGeneratorUseCase {
   execute(List<TimesheetEntry> timesheetEntryList) {
-    print('WeekGeneratorUseCase.execute() ${timesheetEntryList.last}');
+    if (timesheetEntryList.isNotEmpty) {
+      print('WeekGeneratorUseCase.execute() last entry: ${timesheetEntryList.last}');
+    } else {
+      print('WeekGeneratorUseCase.execute() empty list');
+    }
+    
     TimesheetOrganizer organizer = TimesheetOrganizer();
     List<WorkWeek> weeks = organizer.organizeIntoWeeks(timesheetEntryList);
 

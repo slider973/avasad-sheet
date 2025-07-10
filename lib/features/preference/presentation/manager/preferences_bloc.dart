@@ -28,6 +28,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
     on<ToggleNotifications>(_onToggleNotifications);
     on<ToggleDeliveryManager>(_onToggleDeliveryManager);
     on<SaveBadgeCount>(_onSaveBadgeCount);
+    on<SaveUserInfoEvent>(_onSaveUserInfo);
   }
 
   Future<void> _onLoadPreferences(
@@ -40,6 +41,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
       final firstName =
           await getUserPreferenceUseCase.execute('firstName') ?? '';
       final lastName = await getUserPreferenceUseCase.execute('lastName') ?? '';
+      final company = await getUserPreferenceUseCase.execute('company') ?? '';
       final signatureBase64 =
           await getUserPreferenceUseCase.execute('signature');
       final lastGenerationDateString =
@@ -61,7 +63,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
         try {
           signature = base64Decode(signatureBase64);
         } catch (e) {
-          print('Erreur lors du décodage de la signature: $e');
+          logger.e('Erreur lors du décodage de la signature: $e');
         }
       }
       // Obtenez les informations de version
@@ -71,6 +73,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
       emit(PreferencesLoaded(
         firstName: firstName,
         lastName: lastName,
+        company: company,
         signature: signature,
         lastGenerationDate: lastGenerationDate,
         notificationsEnabled: notificationsEnabled == 'true',
@@ -93,6 +96,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
     try {
       await setUserPreferenceUseCase.execute('firstName', event.firstName);
       await setUserPreferenceUseCase.execute('lastName', event.lastName);
+      await setUserPreferenceUseCase.execute('company', event.company);
       // Récupérer la signature existante
       final currentState = state;
       Uint8List? signature;
@@ -122,6 +126,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
       emit(PreferencesLoaded(
         firstName: event.firstName,
         lastName: event.lastName,
+        company: event.company,
         signatureBase64: signatureBase64,
         lastGenerationDate: lastGenerationDate,
         signature: signature,
@@ -132,7 +137,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
         buildNumber: buildNumber,
       ));
     } catch (e) {
-      print(e);
+      logger.e(e);
       emit(PreferencesError(e.toString()));
     }
   }
@@ -168,6 +173,9 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
       emit(PreferencesLoaded(
         firstName: firstName,
         lastName: lastName,
+        company: state is PreferencesLoaded
+            ? (state as PreferencesLoaded).company
+            : '',
         signature: event.signature,
         // Utilisez la signature non encodée pour l'état
         lastGenerationDate: lastGenerationDate,
@@ -182,7 +190,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
         buildNumber: buildNumber,
       ));
     } catch (e) {
-      print('Erreur lors de la sauvegarde de la signature: $e');
+      logger.e('Erreur lors de la sauvegarde de la signature: $e');
       emit(PreferencesError(e.toString()));
     }
   }
@@ -219,6 +227,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
         emit(PreferencesLoaded(
           firstName: currentState.firstName,
           lastName: currentState.lastName,
+          company: currentState.company,
           signature: currentState.signature,
           lastGenerationDate: event.date,
           notificationsEnabled: currentState.notificationsEnabled,
@@ -228,7 +237,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
           buildNumber: buildNumber,
         ));
       } catch (e) {
-        print(e);
+        logger.e(e);
         emit(PreferencesError(
             'Erreur lors de la sauvegarde de la date de dernière génération: $e'));
       }
@@ -253,6 +262,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
         emit(PreferencesLoaded(
           firstName: currentState.firstName,
           lastName: currentState.lastName,
+          company: currentState.company,
           signature: currentState.signature,
           lastGenerationDate: currentState.lastGenerationDate,
           notificationsEnabled: event.enabled,
@@ -262,7 +272,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
           buildNumber: buildNumber,
         ));
       } catch (e) {
-        print(e);
+        logger.e(e);
         emit(PreferencesError(
             'Erreur lors de la modification des paramètres de notification: $e'));
       }
@@ -287,6 +297,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
         emit(PreferencesLoaded(
           firstName: currentState.firstName,
           lastName: currentState.lastName,
+          company: currentState.company,
           signature: currentState.signature,
           lastGenerationDate: currentState.lastGenerationDate,
           notificationsEnabled: currentState.notificationsEnabled,
@@ -296,7 +307,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
           buildNumber: buildNumber,
         ));
       } catch (e) {
-        print(e);
+        logger.e(e);
         emit(PreferencesError(
             'Erreur lors de la modification des paramètres de notification: $e'));
       }
@@ -321,6 +332,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
         emit(PreferencesLoaded(
           firstName: currentState.firstName,
           lastName: currentState.lastName,
+          company: currentState.company,
           signature: currentState.signature,
           lastGenerationDate: currentState.lastGenerationDate,
           notificationsEnabled: currentState.notificationsEnabled,
@@ -331,10 +343,62 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
 
         ));
       } catch (e) {
-        print(e);
+        logger.e(e);
         emit(PreferencesError(
             'Erreur lors de la modification des paramètres de notification: $e'));
       }
+    }
+  }
+
+  Future<void> _onSaveUserInfo(
+    SaveUserInfoEvent event,
+    Emitter<PreferencesState> emit,
+  ) async {
+    emit(PreferencesLoading());
+    try {
+      await setUserPreferenceUseCase.execute('firstName', event.firstName);
+      await setUserPreferenceUseCase.execute('lastName', event.lastName);
+      await setUserPreferenceUseCase.execute('company', event.company);
+      
+      if (event.signature != null) {
+        final signatureBase64 = base64Encode(event.signature!);
+        await setUserPreferenceUseCase.execute('signature', signatureBase64);
+      }
+      
+      // Charger les autres préférences existantes
+      final notificationsEnabled =
+          await getUserPreferenceUseCase.execute('notificationsEnabled') ?? 'false';
+      final isDeliveryManager =
+          await getUserPreferenceUseCase.execute('isDeliveryManager') ?? 'false';
+      final lastGenerationDateString =
+          await getUserPreferenceUseCase.execute('lastGenerationDate');
+      final lastGenerationDate = lastGenerationDateString != null
+          ? DateTime.parse(lastGenerationDateString)
+          : null;
+      final badgeCountString =
+          await getUserPreferenceUseCase.execute('badgeCount');
+      
+      // Obtenez les informations de version
+      PackageInfo packageInfo = await PackageInfo.fromPlatform();
+      String versionNumber = packageInfo.version;
+      String buildNumber = packageInfo.buildNumber;
+      
+      emit(PreferencesSaved());
+      emit(PreferencesLoaded(
+        firstName: event.firstName,
+        lastName: event.lastName,
+        company: event.company,
+        signature: event.signature,
+        lastGenerationDate: lastGenerationDate,
+        notificationsEnabled: notificationsEnabled == 'true',
+        isDeliveryManager: isDeliveryManager == 'true',
+        badgeCount: int.tryParse(badgeCountString ?? '0') ?? 0,
+        versionNumber: versionNumber,
+        buildNumber: buildNumber,
+      ));
+    } catch (e) {
+      logger.e('Erreur lors de la sauvegarde des informations utilisateur: $e');
+      emit(PreferencesError(e.toString()));
     }
   }
 }

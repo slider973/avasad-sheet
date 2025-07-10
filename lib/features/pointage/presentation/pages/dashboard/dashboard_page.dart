@@ -9,8 +9,8 @@ import '../../widgets/dashboard/monthly_summary_card.dart';
 import '../../widgets/dashboard/recent_activities_card.dart';
 import '../../widgets/dashboard/quick_actions_card.dart';
 import '../time-sheet/bloc/time_sheet_list/time_sheet_list_bloc.dart';
+import '../time-sheet/bloc/time_sheet/time_sheet_bloc.dart';
 import '../pdf/bloc/anomaly/anomaly_bloc.dart';
-import '../../../../bottom_nav_tab/presentation/pages/app_drawer.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -30,9 +30,14 @@ class _DashboardPageState extends State<DashboardPage> {
   void _loadDashboardData() {
     // Charger la liste des entrées pour les métriques
     context.read<TimeSheetListBloc>().add(const FindTimesheetEntriesEvent());
-    
+
     // Charger les anomalies pour les alertes
     context.read<AnomalyBloc>().add(const DetectAnomalies());
+    
+    // Charger les données du jour pour les actions rapides
+    final today = DateTime.now();
+    final formattedDate = DateFormat("dd-MMM-yy").format(today);
+    context.read<TimeSheetBloc>().add(LoadTimeSheetDataEvent(formattedDate));
   }
 
   @override
@@ -51,7 +56,6 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
         ],
       ),
-      drawer: const AppDrawer(),
       body: RefreshIndicator(
         onRefresh: () async {
           _loadDashboardData();
@@ -63,62 +67,33 @@ class _DashboardPageState extends State<DashboardPage> {
             children: [
               // Header avec date et accueil
               const DashboardHeader(),
-              
+
               const SizedBox(height: 20),
-              
+
               // Vue d'ensemble des métriques principales
               const MetricsOverviewCard(),
-              
+
               const SizedBox(height: 20),
-              
+
+              // Actions rapides
+              const QuickActionsCard(),
+              const SizedBox(height: 20),
+
               // Graphique de progression hebdomadaire
               const WeeklyProgressChart(),
-              
+
               const SizedBox(height: 20),
-              
-              // Résumé mensuel et actions rapides - responsive
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  // Si l'écran est trop petit, empiler verticalement
-                  if (constraints.maxWidth < 600) {
-                    return const Column(
-                      children: [
-                        MonthlySummaryCard(),
-                        SizedBox(height: 16),
-                        QuickActionsCard(),
-                      ],
-                    );
-                  }
-                  
-                  // Sinon, disposition côte à côte
-                  return const Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Résumé mensuel
-                      Expanded(
-                        flex: 2,
-                        child: MonthlySummaryCard(),
-                      ),
-                      
-                      SizedBox(width: 16),
-                      
-                      // Actions rapides
-                      Expanded(
-                        flex: 1,
-                        child: QuickActionsCard(),
-                      ),
-                    ],
-                  );
-                },
-              ),
-              
+
+              // Résumé mensuel
+              const MonthlySummaryCard(),
+
               const SizedBox(height: 20),
-              
+
               // Activités récentes
               const RecentActivitiesCard(),
-              
+
               const SizedBox(height: 20),
-              
+
               // Footer avec informations système
               Container(
                 width: double.infinity,

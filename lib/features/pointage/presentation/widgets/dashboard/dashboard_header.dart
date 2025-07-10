@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import '../../../../preference/presentation/manager/preferences_bloc.dart';
 
 class DashboardHeader extends StatelessWidget {
   const DashboardHeader({super.key});
 
   @override
   Widget build(BuildContext context) {
+    return BlocBuilder<PreferencesBloc, PreferencesState>(
+      builder: (context, state) {
     final now = DateTime.now();
     final dayName = DateFormat('EEEE', 'fr_FR').format(now);
     final dayNumber = DateFormat('dd').format(now);
@@ -16,14 +20,22 @@ class DashboardHeader extends StatelessWidget {
     String greeting;
     IconData greetingIcon;
     
+    String userFirstName = '';
+    String company = '';
+    
+    if (state is PreferencesLoaded) {
+      userFirstName = state.firstName;
+      company = state.company;
+    }
+    
     if (hour < 12) {
-      greeting = 'Bonjour';
+      greeting = userFirstName.isNotEmpty ? 'Bonjour $userFirstName' : 'Bonjour';
       greetingIcon = Icons.wb_sunny;
     } else if (hour < 18) {
-      greeting = 'Bon après-midi';
+      greeting = userFirstName.isNotEmpty ? 'Bon après-midi $userFirstName' : 'Bon après-midi';
       greetingIcon = Icons.wb_sunny_outlined;
     } else {
-      greeting = 'Bonsoir';
+      greeting = userFirstName.isNotEmpty ? 'Bonsoir $userFirstName' : 'Bonsoir';
       greetingIcon = Icons.brightness_3;
     }
     
@@ -97,6 +109,28 @@ class DashboardHeader extends StatelessWidget {
                     fontSize: 14,
                   ),
                 ),
+                
+                if (company.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.business,
+                        color: Colors.white.withValues(alpha: 0.9),
+                        size: 16,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        company,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.9),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
@@ -116,6 +150,8 @@ class DashboardHeader extends StatelessWidget {
           ),
         ],
       ),
+    );
+      },
     );
   }
 }
