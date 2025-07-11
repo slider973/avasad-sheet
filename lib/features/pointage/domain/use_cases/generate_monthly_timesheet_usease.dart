@@ -93,7 +93,7 @@ class GenerateMonthlyTimesheetUseCase {
     // Utiliser la configuration fournie ou la configuration par défaut
     final conf = config ?? TimesheetGenerationConfig.defaultConfig();
 
-    // Heure de début entre startTimeMin et startTimeMax
+    // 1. Générer l'heure de début aléatoire
     int startMinutes = random.nextInt(
       conf.startTimeMax.difference(conf.startTimeMin).inMinutes + 1
     );
@@ -105,42 +105,80 @@ class GenerateMonthlyTimesheetUseCase {
       conf.startTimeMin.minute,
     ).add(Duration(minutes: startMinutes));
 
-    // Pause déjeuner entre lunchStartMin et lunchStartMax
-    int lunchStartMinutes = random.nextInt(
-      conf.lunchStartMax.difference(conf.lunchStartMin).inMinutes + 1
-    );
-    DateTime lunchStart = DateTime(
+    // 2. Générer l'heure de début de pause
+    // S'assurer que la pause commence après le début + un minimum de travail (ex: 3h)
+    DateTime earliestLunchStart = startTime.add(Duration(hours: 3));
+    DateTime configuredLunchMin = DateTime(
       date.year,
       date.month,
       date.day,
       conf.lunchStartMin.hour,
       conf.lunchStartMin.minute,
-    ).add(Duration(minutes: lunchStartMinutes));
+    );
+    DateTime configuredLunchMax = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      conf.lunchStartMax.hour,
+      conf.lunchStartMax.minute,
+    );
+    
+    // Utiliser le plus tard entre earliestLunchStart et configuredLunchMin
+    DateTime actualLunchMin = earliestLunchStart.isAfter(configuredLunchMin) 
+        ? earliestLunchStart 
+        : configuredLunchMin;
+    
+    // S'assurer que actualLunchMin ne dépasse pas configuredLunchMax
+    if (actualLunchMin.isAfter(configuredLunchMax)) {
+      actualLunchMin = configuredLunchMax;
+    }
+    
+    int lunchStartMinutes = actualLunchMin == configuredLunchMax 
+        ? 0 
+        : random.nextInt(configuredLunchMax.difference(actualLunchMin).inMinutes + 1);
+    DateTime lunchStart = actualLunchMin.add(Duration(minutes: lunchStartMinutes));
 
-    // Durée de la pause entre lunchDurationMin et lunchDurationMax
+    // 3. Générer la durée de pause
     int lunchDuration = conf.lunchDurationMin +
         random.nextInt(conf.lunchDurationMax - conf.lunchDurationMin + 1);
     DateTime lunchEnd = lunchStart.add(Duration(minutes: lunchDuration));
 
-    // Calcul de l'heure de fin en respectant le temps de travail cible (environ 8h)
-    int targetWorkMinutes = 480; // 8 heures de travail
-    int morningWorkMinutes = lunchStart.difference(startTime).inMinutes;
-    int afternoonWorkMinutes = targetWorkMinutes - morningWorkMinutes;
-    DateTime endTime = lunchEnd.add(Duration(minutes: afternoonWorkMinutes));
-
-    // Vérification que l'heure de fin ne dépasse pas la limite configurée
-    DateTime latestEndTime = DateTime(
+    // 4. Générer l'heure de fin dans la plage [endTimeMin, endTimeMax]
+    DateTime configuredEndMin = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      conf.endTimeMin.hour,
+      conf.endTimeMin.minute,
+    );
+    DateTime configuredEndMax = DateTime(
       date.year,
       date.month,
       date.day,
       conf.endTimeMax.hour,
       conf.endTimeMax.minute,
     );
-    if (endTime.isAfter(latestEndTime)) {
-      endTime = latestEndTime;
-      // Recalcul du temps de travail de l'après-midi
-      afternoonWorkMinutes = endTime.difference(lunchEnd).inMinutes;
+    
+    // S'assurer que l'heure de fin est au moins 3h après la fin de pause
+    DateTime earliestEndTime = lunchEnd.add(Duration(hours: 3));
+    DateTime actualEndMin = earliestEndTime.isAfter(configuredEndMin) 
+        ? earliestEndTime 
+        : configuredEndMin;
+    
+    // S'assurer que actualEndMin ne dépasse pas configuredEndMax
+    if (actualEndMin.isAfter(configuredEndMax)) {
+      actualEndMin = configuredEndMax;
     }
+    
+    int endMinutes = actualEndMin == configuredEndMax 
+        ? 0 
+        : random.nextInt(configuredEndMax.difference(actualEndMin).inMinutes + 1);
+    DateTime endTime = actualEndMin.add(Duration(minutes: endMinutes));
+    
+    // 5. Vérifier le temps de travail total (optionnel)
+    int totalWorkMinutes = lunchStart.difference(startTime).inMinutes + 
+                          endTime.difference(lunchEnd).inMinutes;
+    print("Generated work time: ${totalWorkMinutes / 60} hours");
 
     return TimesheetEntry(
       dayDate: DateFormat('dd-MMM-yy').format(date),

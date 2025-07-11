@@ -5,10 +5,12 @@ import 'package:time_sheet/features/pointage/presentation/pages/time-sheet/bloc/
 
 class TimesheetGenerationConfigPage extends StatefulWidget {
   @override
-  _TimesheetGenerationConfigPageState createState() => _TimesheetGenerationConfigPageState();
+  _TimesheetGenerationConfigPageState createState() =>
+      _TimesheetGenerationConfigPageState();
 }
 
-class _TimesheetGenerationConfigPageState extends State<TimesheetGenerationConfigPage> {
+class _TimesheetGenerationConfigPageState
+    extends State<TimesheetGenerationConfigPage> {
   late TimesheetGenerationConfig config;
   final _formKey = GlobalKey<FormState>();
   DateTime selectedMonth = DateTime.now();
@@ -25,10 +27,12 @@ class _TimesheetGenerationConfigPageState extends State<TimesheetGenerationConfi
 
   DateTime _timeOfDayToDateTime(TimeOfDay timeOfDay) {
     final now = DateTime.now();
-    return DateTime(now.year, now.month, now.day, timeOfDay.hour, timeOfDay.minute);
+    return DateTime(
+        now.year, now.month, now.day, timeOfDay.hour, timeOfDay.minute);
   }
 
-  Future<void> _selectTime(BuildContext context, String label, DateTime initialTime, Function(DateTime) onTimeSelected) async {
+  Future<void> _selectTime(BuildContext context, String label,
+      DateTime initialTime, Function(DateTime) onTimeSelected) async {
     final TimeOfDay? picked = await showTimePicker(
       context: context,
       initialTime: _dateTimeToTimeOfDay(initialTime),
@@ -56,63 +60,68 @@ class _TimesheetGenerationConfigPageState extends State<TimesheetGenerationConfi
               config.startTimeMin,
               config.startTimeMax,
               (time) => setState(() => config = TimesheetGenerationConfig(
-                startTimeMin: time,
-                startTimeMax: config.startTimeMax,
-                lunchStartMin: config.lunchStartMin,
-                lunchStartMax: config.lunchStartMax,
-                lunchDurationMin: config.lunchDurationMin,
-                lunchDurationMax: config.lunchDurationMax,
-                endTimeMax: config.endTimeMax,
-              )),
+                    startTimeMin: time,
+                    startTimeMax: config.startTimeMax,
+                    lunchStartMin: config.lunchStartMin,
+                    lunchStartMax: config.lunchStartMax,
+                    lunchDurationMin: config.lunchDurationMin,
+                    lunchDurationMax: config.lunchDurationMax,
+                    endTimeMin: config.endTimeMin,
+                    endTimeMax: config.endTimeMax,
+                  )),
               (time) => setState(() => config = TimesheetGenerationConfig(
-                startTimeMin: config.startTimeMin,
-                startTimeMax: time,
-                lunchStartMin: config.lunchStartMin,
-                lunchStartMax: config.lunchStartMax,
-                lunchDurationMin: config.lunchDurationMin,
-                lunchDurationMax: config.lunchDurationMax,
-                endTimeMax: config.endTimeMax,
-              )),
+                    startTimeMin: config.startTimeMin,
+                    startTimeMax: time,
+                    lunchStartMin: config.lunchStartMin,
+                    lunchStartMax: config.lunchStartMax,
+                    lunchDurationMin: config.lunchDurationMin,
+                    lunchDurationMax: config.lunchDurationMax,
+                    endTimeMin: config.endTimeMin,
+                    endTimeMax: config.endTimeMax,
+                  )),
             ),
             _buildTimeRangeSection(
               'Heure de pause déjeuner',
               config.lunchStartMin,
               config.lunchStartMax,
               (time) => setState(() => config = TimesheetGenerationConfig(
-                startTimeMin: config.startTimeMin,
-                startTimeMax: config.startTimeMax,
-                lunchStartMin: time,
-                lunchStartMax: config.lunchStartMax,
-                lunchDurationMin: config.lunchDurationMin,
-                lunchDurationMax: config.lunchDurationMax,
-                endTimeMax: config.endTimeMax,
-              )),
+                    startTimeMin: config.startTimeMin,
+                    startTimeMax: config.startTimeMax,
+                    lunchStartMin: time,
+                    lunchStartMax: config.lunchStartMax,
+                    lunchDurationMin: config.lunchDurationMin,
+                    lunchDurationMax: config.lunchDurationMax,
+                    endTimeMin: config.endTimeMin,
+                    endTimeMax: config.endTimeMax,
+                  )),
               (time) => setState(() => config = TimesheetGenerationConfig(
-                startTimeMin: config.startTimeMin,
-                startTimeMax: config.startTimeMax,
-                lunchStartMin: config.lunchStartMin,
-                lunchStartMax: time,
-                lunchDurationMin: config.lunchDurationMin,
-                lunchDurationMax: config.lunchDurationMax,
-                endTimeMax: config.endTimeMax,
-              )),
+                    startTimeMin: config.startTimeMin,
+                    startTimeMax: config.startTimeMax,
+                    lunchStartMin: config.lunchStartMin,
+                    lunchStartMax: time,
+                    lunchDurationMin: config.lunchDurationMin,
+                    lunchDurationMax: config.lunchDurationMax,
+                    endTimeMin: config.endTimeMin,
+                    endTimeMax: config.endTimeMax,
+                  )),
             ),
             _buildDurationRangeSection(),
-            _buildEndTimeSection(),
+            _buildEndTimeRangeSection(),
             SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
                 if (_formKey.currentState!.validate()) {
                   context.read<TimeSheetBloc>().add(
-                    GenerateMonthlyTimesheetEvent(
-                      config: config,
-                      month: selectedMonth,
-                    ),
-                  );
+                        GenerateMonthlyTimesheetEvent(
+                          config: config,
+                          month: selectedMonth,
+                        ),
+                      );
                   Navigator.pop(context);
                 }
               },
-              child: Text('Générer le timesheet'),
+              child: Text(
+                  'Générer les heures pour le mois de ${_getMonthName(selectedMonth.month)} ${selectedMonth.year}'),
             ),
           ],
         ),
@@ -130,21 +139,26 @@ class _TimesheetGenerationConfigPageState extends State<TimesheetGenerationConfi
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        Text(label,
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         Row(
           children: [
             Expanded(
               child: ListTile(
                 title: Text('Minimum'),
-                subtitle: Text('${_dateTimeToTimeOfDay(minTime).format(context)}'),
-                onTap: () => _selectTime(context, 'Minimum', minTime, onMinSelected),
+                subtitle:
+                    Text('${_dateTimeToTimeOfDay(minTime).format(context)}'),
+                onTap: () =>
+                    _selectTime(context, 'Minimum', minTime, onMinSelected),
               ),
             ),
             Expanded(
               child: ListTile(
                 title: Text('Maximum'),
-                subtitle: Text('${_dateTimeToTimeOfDay(maxTime).format(context)}'),
-                onTap: () => _selectTime(context, 'Maximum', maxTime, onMaxSelected),
+                subtitle:
+                    Text('${_dateTimeToTimeOfDay(maxTime).format(context)}'),
+                onTap: () =>
+                    _selectTime(context, 'Maximum', maxTime, onMaxSelected),
               ),
             ),
           ],
@@ -181,14 +195,15 @@ class _TimesheetGenerationConfigPageState extends State<TimesheetGenerationConfi
                   final duration = int.tryParse(value);
                   if (duration != null) {
                     setState(() => config = TimesheetGenerationConfig(
-                      startTimeMin: config.startTimeMin,
-                      startTimeMax: config.startTimeMax,
-                      lunchStartMin: config.lunchStartMin,
-                      lunchStartMax: config.lunchStartMax,
-                      lunchDurationMin: duration,
-                      lunchDurationMax: config.lunchDurationMax,
-                      endTimeMax: config.endTimeMax,
-                    ));
+                          startTimeMin: config.startTimeMin,
+                          startTimeMax: config.startTimeMax,
+                          lunchStartMin: config.lunchStartMin,
+                          lunchStartMax: config.lunchStartMax,
+                          lunchDurationMin: duration,
+                          lunchDurationMax: config.lunchDurationMax,
+                          endTimeMin: config.endTimeMin,
+                          endTimeMax: config.endTimeMax,
+                        ));
                   }
                 },
               ),
@@ -213,14 +228,15 @@ class _TimesheetGenerationConfigPageState extends State<TimesheetGenerationConfi
                   final duration = int.tryParse(value);
                   if (duration != null) {
                     setState(() => config = TimesheetGenerationConfig(
-                      startTimeMin: config.startTimeMin,
-                      startTimeMax: config.startTimeMax,
-                      lunchStartMin: config.lunchStartMin,
-                      lunchStartMax: config.lunchStartMax,
-                      lunchDurationMin: config.lunchDurationMin,
-                      lunchDurationMax: duration,
-                      endTimeMax: config.endTimeMax,
-                    ));
+                          startTimeMin: config.startTimeMin,
+                          startTimeMax: config.startTimeMax,
+                          lunchStartMin: config.lunchStartMin,
+                          lunchStartMax: config.lunchStartMax,
+                          lunchDurationMin: config.lunchDurationMin,
+                          lunchDurationMax: duration,
+                          endTimeMin: config.endTimeMin,
+                          endTimeMax: config.endTimeMax,
+                        ));
                   }
                 },
               ),
@@ -232,32 +248,31 @@ class _TimesheetGenerationConfigPageState extends State<TimesheetGenerationConfi
     );
   }
 
-  Widget _buildEndTimeSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Heure de fin maximale',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        ListTile(
-          title: Text('Heure limite'),
-          subtitle: Text('${_dateTimeToTimeOfDay(config.endTimeMax).format(context)}'),
-          onTap: () => _selectTime(
-            context,
-            'Heure limite',
-            config.endTimeMax,
-            (time) => setState(() => config = TimesheetGenerationConfig(
-              startTimeMin: config.startTimeMin,
-              startTimeMax: config.startTimeMax,
-              lunchStartMin: config.lunchStartMin,
-              lunchStartMax: config.lunchStartMax,
-              lunchDurationMin: config.lunchDurationMin,
-              lunchDurationMax: config.lunchDurationMax,
-              endTimeMax: time,
-            )),
-          ),
-        ),
-        Divider(),
-      ],
+  Widget _buildEndTimeRangeSection() {
+    return _buildTimeRangeSection(
+      'Heure de fin',
+      config.endTimeMin,
+      config.endTimeMax,
+      (time) => setState(() => config = TimesheetGenerationConfig(
+            startTimeMin: config.startTimeMin,
+            startTimeMax: config.startTimeMax,
+            lunchStartMin: config.lunchStartMin,
+            lunchStartMax: config.lunchStartMax,
+            lunchDurationMin: config.lunchDurationMin,
+            lunchDurationMax: config.lunchDurationMax,
+            endTimeMin: time,
+            endTimeMax: config.endTimeMax,
+          )),
+      (time) => setState(() => config = TimesheetGenerationConfig(
+            startTimeMin: config.startTimeMin,
+            startTimeMax: config.startTimeMax,
+            lunchStartMin: config.lunchStartMin,
+            lunchStartMax: config.lunchStartMax,
+            lunchDurationMin: config.lunchDurationMin,
+            lunchDurationMax: config.lunchDurationMax,
+            endTimeMin: config.endTimeMin,
+            endTimeMax: time,
+          )),
     );
   }
 
@@ -288,7 +303,8 @@ class _TimesheetGenerationConfigPageState extends State<TimesheetGenerationConfi
                             padding: EdgeInsets.all(16),
                             child: Text(
                               'Sélectionner le mois',
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                  fontSize: 18, fontWeight: FontWeight.bold),
                             ),
                           ),
                           Expanded(
@@ -296,24 +312,29 @@ class _TimesheetGenerationConfigPageState extends State<TimesheetGenerationConfi
                               itemCount: 12,
                               itemBuilder: (context, index) {
                                 final month = index + 1;
-                                final monthDate = DateTime(selectedMonth.year, month);
+                                final monthDate =
+                                    DateTime(selectedMonth.year, month);
                                 final isSelected = selectedMonth.month == month;
-                                
+
                                 return ListTile(
                                   title: Text(
                                     '${_getMonthName(month)} ${selectedMonth.year}',
                                     style: TextStyle(
-                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                      fontWeight: isSelected
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
                                       color: isSelected ? Colors.teal : null,
                                     ),
                                   ),
                                   subtitle: Text(
-                                    month == 1 
-                                      ? 'Du 21 décembre ${selectedMonth.year - 1} au 20 janvier ${selectedMonth.year}'
-                                      : 'Du 21 ${_getMonthName(month - 1)} au 20 ${_getMonthName(month)} ${selectedMonth.year}',
+                                    month == 1
+                                        ? 'Du 21 décembre ${selectedMonth.year - 1} au 20 janvier ${selectedMonth.year}'
+                                        : 'Du 21 ${_getMonthName(month - 1)} au 20 ${_getMonthName(month)} ${selectedMonth.year}',
                                     style: TextStyle(fontSize: 12),
                                   ),
-                                  trailing: isSelected ? Icon(Icons.check, color: Colors.teal) : null,
+                                  trailing: isSelected
+                                      ? Icon(Icons.check, color: Colors.teal)
+                                      : null,
                                   onTap: () {
                                     Navigator.pop(context, monthDate);
                                   },
@@ -328,7 +349,9 @@ class _TimesheetGenerationConfigPageState extends State<TimesheetGenerationConfi
                                 onPressed: () {
                                   // Année précédente
                                   setState(() {
-                                    selectedMonth = DateTime(selectedMonth.year - 1, selectedMonth.month);
+                                    selectedMonth = DateTime(
+                                        selectedMonth.year - 1,
+                                        selectedMonth.month);
                                   });
                                   Navigator.pop(context);
                                 },
@@ -342,7 +365,9 @@ class _TimesheetGenerationConfigPageState extends State<TimesheetGenerationConfi
                                 onPressed: () {
                                   // Année suivante
                                   setState(() {
-                                    selectedMonth = DateTime(selectedMonth.year + 1, selectedMonth.month);
+                                    selectedMonth = DateTime(
+                                        selectedMonth.year + 1,
+                                        selectedMonth.month);
                                   });
                                   Navigator.pop(context);
                                 },
@@ -355,7 +380,7 @@ class _TimesheetGenerationConfigPageState extends State<TimesheetGenerationConfi
                     );
                   },
                 );
-                
+
                 if (result != null) {
                   setState(() {
                     selectedMonth = result;
@@ -388,8 +413,18 @@ class _TimesheetGenerationConfigPageState extends State<TimesheetGenerationConfi
 
   String _getMonthName(int month) {
     const monthNames = [
-      'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-      'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+      'Janvier',
+      'Février',
+      'Mars',
+      'Avril',
+      'Mai',
+      'Juin',
+      'Juillet',
+      'Août',
+      'Septembre',
+      'Octobre',
+      'Novembre',
+      'Décembre'
     ];
     return monthNames[month - 1];
   }

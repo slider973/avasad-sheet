@@ -49,3 +49,13 @@ class SignPdfEvent extends PdfEvent {
 
 class ClosePdfEvent extends PdfEvent {}
 
+class GenerateExcelEvent extends PdfEvent {
+  final int monthNumber;
+  final int year;
+
+  const GenerateExcelEvent(this.monthNumber, this.year);
+
+  @override
+  List<Object> get props => [monthNumber, year];
+}
+

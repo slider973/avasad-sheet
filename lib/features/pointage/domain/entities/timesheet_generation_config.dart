@@ -5,6 +5,7 @@ class TimesheetGenerationConfig {
   final DateTime lunchStartMax; // ex: 12h30
   final int lunchDurationMin; // en minutes, ex: 60
   final int lunchDurationMax; // en minutes, ex: 90
+  final DateTime endTimeMin; // ex: 16h30
   final DateTime endTimeMax; // ex: 18h18
 
   TimesheetGenerationConfig({
@@ -14,6 +15,7 @@ class TimesheetGenerationConfig {
     required this.lunchStartMax,
     required this.lunchDurationMin,
     required this.lunchDurationMax,
+    required this.endTimeMin,
     required this.endTimeMax,
   });
 
@@ -27,6 +29,7 @@ class TimesheetGenerationConfig {
       lunchStartMax: DateTime(now.year, now.month, now.day, 12, 30),
       lunchDurationMin: 60,
       lunchDurationMax: 90,
+      endTimeMin: DateTime(now.year, now.month, now.day, 16, 30),
       endTimeMax: DateTime(now.year, now.month, now.day, 18, 18),
     );
   }

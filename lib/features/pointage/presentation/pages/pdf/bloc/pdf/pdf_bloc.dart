@@ -20,6 +20,7 @@ import '../../../../../../preference/presentation/manager/preferences_bloc.dart'
 import '../../../../../domain/entities/generated_pdf.dart';
 import '../../../../../domain/entities/work_week.dart';
 import '../../../../../domain/use_cases/generate_pdf_usecase.dart';
+import '../../../../../domain/use_cases/generate_excel_usecase.dart';
 
 part 'pdf_event.dart';
 
@@ -34,15 +35,17 @@ class PdfBloc extends Bloc<PdfEvent, PdfState> {
   final GetSignatureUseCase getSignatureUseCase;
   final PreferencesBloc preferencesBloc;
   final GeneratePdfUseCase generatePdfUseCase;
+  final GenerateExcelUseCase generateExcelUseCase;
 
   PdfBloc(this.repository, this.getSignatureUseCase, this.preferencesBloc,
-      this.generatePdfUseCase)
+      this.generatePdfUseCase, this.generateExcelUseCase)
       : super(PdfInitial()) {
     on<GeneratePdfEvent>(_onGeneratePdfEvent);
     on<LoadGeneratedPdfsEvent>(_onLoadGeneratedPdfsEvent);
     on<DeletePdfEvent>(_onDeletePdfEvent);
     on<OpenPdfEvent>(_onOpenPdfEvent);
     on<SignPdfEvent>(_onSignPdfEvent);
+    on<GenerateExcelEvent>(_onGenerateExcelEvent);
     on<ClosePdfEvent>((event, emit) {
       emit(PdfClosed());
       emit(PdfInitial());
@@ -120,6 +123,30 @@ class PdfBloc extends Bloc<PdfEvent, PdfState> {
       emit(PdfSigned(signedFilePath));
     } catch (e) {
       emit(PdfSignError(e.toString()));
+    }
+  }
+
+  Future<void> _onGenerateExcelEvent(
+      GenerateExcelEvent event, Emitter<PdfState> emit) async {
+    emit(PdfGenerating());
+    try {
+      final userState = preferencesBloc.state;
+      if (userState is PreferencesLoaded) {
+        final user = User(
+          firstName: userState.firstName,
+          lastName: userState.lastName,
+          company: userState.company,
+          signature: userState.signature,
+          isDeliveryManager: userState.isDeliveryManager,
+        );
+        final file = await generateExcelUseCase.execute(event.monthNumber, user);
+        emit(PdfGenerated(file.path));
+        add(LoadGeneratedPdfsEvent());
+      } else {
+        emit(const PdfGenerationError('Utilisateur non trouvé'));
+      }
+    } catch (e) {
+      emit(PdfGenerationError(e.toString()));
     }
   }
 }

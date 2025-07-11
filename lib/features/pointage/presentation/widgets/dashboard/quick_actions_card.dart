@@ -105,61 +105,59 @@ class QuickActionsCard extends StatelessWidget {
   }
 
   Widget _buildPointageButtons(BuildContext context, String currentState) {
-    final now = DateTime.now();
-    final formattedTime = DateFormat('HH:mm').format(now);
+    // Ne pas calculer l'heure ici, elle sera calculée au moment du clic
     
     switch (currentState) {
       case 'Non commencé':
         return _buildPointageButton(
           context,
           'Commencer la journée',
-          'Pointer l\'entrée à $formattedTime',
+          'Pointer l\'entrée',
           Icons.login,
           Colors.green,
-          () => _handlePointage(context, 'Entrée', now),
+          () {
+            final now = DateTime.now();
+            _handlePointage(context, 'Entrée', now);
+          },
         );
       
       case 'Entrée':
-        return Column(
-          children: [
-            _buildPointageButton(
-              context,
-              'Prendre une pause',
-              'Commencer la pause à $formattedTime',
-              Icons.coffee,
-              Colors.orange,
-              () => _handlePointage(context, 'Pause', now),
-            ),
-            const SizedBox(height: 12),
-            _buildPointageButton(
-              context,
-              'Terminer la journée',
-              'Pointer la sortie à $formattedTime',
-              Icons.logout,
-              Colors.red,
-              () => _handlePointage(context, 'Sortie', now),
-            ),
-          ],
+        return _buildPointageButton(
+          context,
+          'Prendre une pause',
+          'Commencer la pause',
+          Icons.coffee,
+          Colors.orange,
+          () {
+            final now = DateTime.now();
+            _handlePointage(context, 'Pause', now);
+          },
         );
       
       case 'Pause':
         return _buildPointageButton(
           context,
           'Reprendre le travail',
-          'Terminer la pause à $formattedTime',
+          'Terminer la pause',
           Icons.play_arrow,
           Colors.green,
-          () => _handlePointage(context, 'Reprise', now),
+          () {
+            final now = DateTime.now();
+            _handlePointage(context, 'Reprise', now);
+          },
         );
       
       case 'Reprise':
         return _buildPointageButton(
           context,
           'Terminer la journée',
-          'Pointer la sortie à $formattedTime',
+          'Pointer la sortie',
           Icons.logout,
           Colors.red,
-          () => _handlePointage(context, 'Sortie', now),
+          () {
+            final now = DateTime.now();
+            _handlePointage(context, 'Sortie', now);
+          },
         );
       
       case 'Sortie':
@@ -187,7 +185,6 @@ class QuickActionsCard extends StatelessWidget {
 
   void _handlePointage(BuildContext context, String action, DateTime time) {
     final bloc = context.read<TimeSheetBloc>();
-    final formattedDate = DateFormat("dd-MMM-yy").format(time);
     
     switch (action) {
       case 'Entrée':

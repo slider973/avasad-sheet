@@ -20,11 +20,14 @@ class PdfDocumentPage extends StatefulWidget {
 }
 
 class _PdfDocumentPageState extends State<PdfDocumentPage> {
+  StreamSubscription<PdfState>? _pdfBlocSubscription;
+  Timer? _fileCheckTimer;
+  
   @override
   void initState() {
     super.initState();
-    context.read<PdfBloc>().stream.listen((state) {
-      if (state is PdfGenerated) {
+    _pdfBlocSubscription = context.read<PdfBloc>().stream.listen((state) {
+      if (state is PdfGenerated && mounted) {
         // Forcer une reconstruction de l'interface
         setState(() {});
       }
@@ -32,9 +35,15 @@ class _PdfDocumentPageState extends State<PdfDocumentPage> {
     context.read<PdfBloc>().add(LoadGeneratedPdfsEvent());
     _detectAnomalies();
   }
+  
+  @override
+  void dispose() {
+    _pdfBlocSubscription?.cancel();
+    _fileCheckTimer?.cancel();
+    super.dispose();
+  }
 
   void _detectAnomalies() {
-    final now = DateTime.now();
     context.read<AnomalyBloc>().add(const DetectAnomalies());
   }
 
@@ -99,6 +108,8 @@ class _PdfDocumentPageState extends State<PdfDocumentPage> {
       pdfs: state.pdfs,
       onGenerateCurrentMonth: () => _showConfirmationDialog(context),
       onChooseMonth: () => showMonthPicker(context),
+      onGenerateCurrentMonthExcel: () => _showConfirmationDialogExcel(context),
+      onChooseMonthExcel: () => _showMonthPickerExcel(context),
       onOpenPdf: (filePath) =>
           context.read<PdfBloc>().add(OpenPdfEvent(filePath)),
       onDeletePdf: (id) => context.read<PdfBloc>().add(DeletePdfEvent(id)),
@@ -354,9 +365,29 @@ class _PdfDocumentPageState extends State<PdfDocumentPage> {
   }
 
   void _handlePdfOpened(BuildContext context, String filePath) {
+    // Vérifier si c'est un fichier Excel
+    if (filePath.endsWith('.xlsx') || filePath.endsWith('.xls')) {
+      // Stocker la référence au bloc avant l'appel asynchrone
+      final pdfBloc = context.read<PdfBloc>();
+      // Ouvrir directement avec l'application par défaut du système
+      OpenFile.open(filePath).then((_) {
+        // Fermer l'état après avoir ouvert le fichier Excel
+        if (mounted) {
+          pdfBloc.add(ClosePdfEvent());
+        }
+      });
+      return;
+    }
+    
+    // Pour les fichiers PDF
     if (!kIsWeb && Platform.isWindows) {
       OpenFile.open(filePath).then((_) {
-        Timer.periodic(const Duration(seconds: 2), (timer) {
+        _fileCheckTimer?.cancel(); // Annuler tout timer existant
+        _fileCheckTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
+          if (!mounted) {
+            timer.cancel();
+            return;
+          }
           if (!_isFileOpen(filePath)) {
             timer.cancel();
             context.read<PdfBloc>().add(ClosePdfEvent());
@@ -383,5 +414,94 @@ class _PdfDocumentPageState extends State<PdfDocumentPage> {
     } on FileSystemException {
       return true;
     }
+  }
+
+  void _showConfirmationDialogExcel(BuildContext context) {
+    // Déterminer le mois et l'année à vérifier
+    final month = DateTime.now().day > 21 ? DateTime.now().month + 1 : DateTime.now().month;
+    final year = DateTime.now().year;
+    
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Générer Excel'),
+          content: Text('Voulez-vous générer le fichier Excel pour le mois actuel ?'),
+          actions: [
+            TextButton(
+              child: const Text('Annuler'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            TextButton(
+              child: const Text('Générer'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                context.read<PdfBloc>().add(GenerateExcelEvent(month, year));
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showMonthPickerExcel(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        int selectedMonth = DateTime.now().month;
+        int selectedYear = DateTime.now().year;
+        
+        return AlertDialog(
+          title: const Text('Choisir le mois (Excel)'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButton<int>(
+                value: selectedMonth,
+                items: List.generate(12, (index) {
+                  final monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+                                     'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+                  return DropdownMenuItem(
+                    value: index + 1,
+                    child: Text(monthNames[index]),
+                  );
+                }),
+                onChanged: (value) {
+                  selectedMonth = value!;
+                },
+              ),
+              const SizedBox(height: 10),
+              DropdownButton<int>(
+                value: selectedYear,
+                items: List.generate(5, (index) {
+                  final year = DateTime.now().year - 2 + index;
+                  return DropdownMenuItem(
+                    value: year,
+                    child: Text(year.toString()),
+                  );
+                }),
+                onChanged: (value) {
+                  selectedYear = value!;
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              child: const Text('Annuler'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            TextButton(
+              child: const Text('Générer'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                context.read<PdfBloc>().add(GenerateExcelEvent(selectedMonth, selectedYear));
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 }

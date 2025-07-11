@@ -16,16 +16,40 @@ class MonthlySummaryCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
+            Row(
               children: [
-                Icon(Icons.calendar_month, color: Colors.teal, size: 24),
-                SizedBox(width: 8),
-                Text(
-                  'Résumé mensuel',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                const Icon(Icons.calendar_month, color: Colors.teal, size: 24),
+                const SizedBox(width: 8),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Résumé mensuel',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    BlocBuilder<TimeSheetListBloc, TimeSheetListState>(
+                      builder: (context, state) {
+                        final now = DateTime.now();
+                        final startDay = now.day >= 21 ? 21 : 21;
+                        final startMonth = now.day >= 21 ? now.month : (now.month == 1 ? 12 : now.month - 1);
+                        final endDay = 20;
+                        final endMonth = now.day >= 21 ? (now.month == 12 ? 1 : now.month + 1) : now.month;
+                        
+                        final monthNames = ['', 'Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
+                        
+                        return Text(
+                          'Du $startDay ${monthNames[startMonth]} au $endDay ${monthNames[endMonth]}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -38,11 +62,33 @@ class MonthlySummaryCard extends StatelessWidget {
                   final entries = state.entries;
                   final now = DateTime.now();
                   
-                  // Filtrer les entrées du mois courant
+                  // Déterminer la période actuelle (21 du mois précédent au 20 du mois courant)
+                  DateTime startDate;
+                  DateTime endDate;
+                  
+                  if (now.day >= 21) {
+                    // Du 21 du mois courant au 20 du mois suivant
+                    startDate = DateTime(now.year, now.month, 21);
+                    if (now.month == 12) {
+                      endDate = DateTime(now.year + 1, 1, 20);
+                    } else {
+                      endDate = DateTime(now.year, now.month + 1, 20);
+                    }
+                  } else {
+                    // Du 21 du mois précédent au 20 du mois courant
+                    if (now.month == 1) {
+                      startDate = DateTime(now.year - 1, 12, 21);
+                    } else {
+                      startDate = DateTime(now.year, now.month - 1, 21);
+                    }
+                    endDate = DateTime(now.year, now.month, 20);
+                  }
+                  
+                  // Filtrer les entrées de la période
                   final monthEntries = entries.where((entry) {
-                    return entry.date != null &&
-                           entry.date!.year == now.year &&
-                           entry.date!.month == now.month;
+                    if (entry.date == null) return false;
+                    final entryDate = entry.date!;
+                    return !entryDate.isBefore(startDate) && !entryDate.isAfter(endDate);
                   }).toList();
                   
                   // Calculer les statistiques mensuelles
@@ -52,7 +98,16 @@ class MonthlySummaryCard extends StatelessWidget {
                   );
                   
                   final workingDays = monthEntries.length;
-                  final targetHours = Duration(hours: 168); // 21 jours × 8h
+                  
+                  // Calculer le nombre de jours ouvrables dans la période
+                  int workingDaysInPeriod = 0;
+                  for (DateTime date = startDate; date.isBefore(endDate.add(Duration(days: 1))); date = date.add(Duration(days: 1))) {
+                    if (date.weekday >= DateTime.monday && date.weekday <= DateTime.friday) {
+                      workingDaysInPeriod++;
+                    }
+                  }
+                  
+                  final targetHours = Duration(hours: workingDaysInPeriod * 8);
                   final averagePerDay = workingDays > 0 
                       ? Duration(minutes: totalHours.inMinutes ~/ workingDays)
                       : Duration.zero;

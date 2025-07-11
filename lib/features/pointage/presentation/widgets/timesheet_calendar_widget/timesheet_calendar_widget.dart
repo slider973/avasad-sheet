@@ -143,12 +143,6 @@ class _TimesheetCalendarWidgetState extends State<TimesheetCalendarWidget>
       
       // Charger également les données pour la liste complète
       context.read<TimeSheetListBloc>().add(const FindTimesheetEntriesEvent());
-      
-      // Afficher les détails du jour sélectionné si un événement existe
-      final events = _getEventsForDay(selectedDay);
-      if (events.isNotEmpty) {
-        _onEventTap(events.first.entry);
-      }
     }
   }
 
