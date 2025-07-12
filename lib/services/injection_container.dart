@@ -3,6 +3,7 @@ import 'package:path/path.dart' as path;
 
 import 'package:get_it/get_it.dart';
 import 'package:isar/isar.dart';
+import 'package:logger/logger.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:time_sheet/features/pointage/data/models/anomalies/anomalies.dart';
 
@@ -28,6 +29,7 @@ import '../features/preference/data/repositories/user_preference_repository.impl
 import '../features/preference/presentation/manager/preferences_bloc.dart';
 import 'anomaly/anomaly_service.dart';
 import 'backup.dart';
+import 'watch_service.dart';
 import '../features/preference/domain/use_cases/get_signature_usecase.dart';
 import '../features/preference/domain/use_cases/get_user_preference_use_case.dart';
 import '../features/preference/domain/use_cases/set_user_preference_use_case.dart';
@@ -111,6 +113,10 @@ Future<void> setup() async {
 
   // Initialiser l'instance Isar
   await getIsarInstance();
+  
+  // Enregistrer le Logger
+  getIt.registerLazySingleton<Logger>(() => Logger());
+  
   getIt.registerLazySingleton<LocalDatasourceImpl>(() => LocalDatasourceImpl(getIt<Isar>()));
   getIt.registerLazySingleton<UserPreferencesRepositoryImpl>(() => UserPreferencesRepositoryImpl(getIt<Isar>()));
   getIt.registerLazySingleton<TimesheetRepositoryImpl>(() => TimesheetRepositoryImpl(getIt<LocalDatasourceImpl>()));
@@ -154,9 +160,15 @@ Future<void> setup() async {
   
   // Enregistrer le nouveau service de détection d'anomalies
   getIt.registerLazySingleton<AnomalyDetectionService>(() => AnomalyDetectionService());
+  
+  // Enregistrer le service Watch
+  getIt.registerLazySingleton<WatchService>(() => WatchService());
 
   // Initialisez le service des anomalies
   await anomalyService.createAnomaliesForCurrentMonth();
+  
+  // Initialiser le service Watch
+  await getIt<WatchService>().initialize();
 
 
 

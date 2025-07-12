@@ -8,6 +8,7 @@ import '../../widgets/dashboard/weekly_progress_chart.dart';
 import '../../widgets/dashboard/monthly_summary_card.dart';
 import '../../widgets/dashboard/recent_activities_card.dart';
 import '../../widgets/dashboard/quick_actions_card.dart';
+import '../../widgets/dashboard/apple_watch_status_card.dart';
 import '../time-sheet/bloc/time_sheet_list/time_sheet_list_bloc.dart';
 import '../time-sheet/bloc/time_sheet/time_sheet_bloc.dart';
 import '../pdf/bloc/anomaly/anomaly_bloc.dart';
@@ -77,6 +78,10 @@ class _DashboardPageState extends State<DashboardPage> {
 
               // Actions rapides
               const QuickActionsCard(),
+              const SizedBox(height: 20),
+              
+              // Statut Apple Watch
+              const AppleWatchStatusCard(),
               const SizedBox(height: 20),
 
               // Graphique de progression hebdomadaire

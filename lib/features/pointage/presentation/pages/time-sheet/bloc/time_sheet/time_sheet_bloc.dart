@@ -4,9 +4,11 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:googleapis/cloudsearch/v1.dart';
+import 'package:get_it/get_it.dart';
 import 'package:intl/intl.dart';
 import 'package:time_sheet/features/pointage/domain/entities/timesheet_generation_config.dart';
 import 'package:time_sheet/services/timer_service.dart';
+import 'package:time_sheet/services/watch_service.dart';
 
 //use cases
 import '../../../../../../absence/domain/entities/absence_entity.dart';
@@ -40,6 +42,8 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
   final SignalerAbsencePeriodeUsecase signalerAbsencePeriodeUsecase;
   final GetMonthlyTimesheetEntriesUseCase getMonthlyTimesheetEntriesUseCase;
   final TimerService _timerService = TimerService();
+  final WatchService _watchService = GetIt.I<WatchService>();
+  StreamSubscription<String>? _watchStateSubscription;
 
   TimeSheetBloc({
     required this.saveTimesheetEntryUseCase,
@@ -149,6 +153,9 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
       // Synchroniser le TimerService avec le nouvel état
       _timerService.updateState('Entrée', event.startTime);
       
+      // Synchroniser avec l'Apple Watch
+      await _watchService.sendState('Entrée');
+      
       emit(await _createTimeSheetDataState(updatedEntry ));
     } else {
       print('non implémenté');
@@ -173,6 +180,9 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
       
       // Synchroniser le TimerService avec le nouvel état
       _timerService.updateState('Sortie', event.endTime);
+      
+      // Synchroniser avec l'Apple Watch
+      await _watchService.sendState('Sortie');
       
       emit(await _createTimeSheetDataState(updatedEntry));
     } else {
@@ -200,6 +210,9 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
       // Synchroniser le TimerService avec le nouvel état
       _timerService.updateState('Pause', event.startBreakTime);
       
+      // Synchroniser avec l'Apple Watch
+      await _watchService.sendState('Pause');
+      
       emit(await _createTimeSheetDataState(updatedEntry));
     } else {
       print('non implémenté');
@@ -224,6 +237,9 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
       
       // Synchroniser le TimerService avec le nouvel état
       _timerService.updateState('Reprise', event.endBreakTime);
+      
+      // Synchroniser avec l'Apple Watch
+      await _watchService.sendState('Reprise');
       
       emit(await _createTimeSheetDataState(updatedEntry));
     } else {
