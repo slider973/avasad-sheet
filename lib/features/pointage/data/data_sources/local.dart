@@ -258,4 +258,25 @@ class LocalDatasourceImpl implements LocalDataSource {
 
     return 25 - usedVacationDays; // Jours restants de l'année précédente
   }
+  
+  @override
+  Future<TimeSheetEntryModel?> getTimesheetEntryById(int id) async {
+    return await isar.timeSheetEntryModels.get(id);
+  }
+  
+  @override
+  Future<void> updateTimesheetEntry(TimeSheetEntryModel entry) async {
+    await isar.writeTxn(() async {
+      await isar.timeSheetEntryModels.put(entry);
+    });
+  }
+  
+  @override
+  Future<List<TimeSheetEntryModel>> getTimesheetEntriesForPeriod(
+      DateTime startDate, DateTime endDate) async {
+    return await isar.timeSheetEntryModels
+        .filter()
+        .dayDateBetween(startDate, endDate)
+        .findAll();
+  }
 }

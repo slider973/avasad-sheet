@@ -17,6 +17,10 @@ class TimeSheetEntryModel {
   late String endAfternoon;
   late String absenceReason;
   late String period;
+  
+  @Index()
+  bool hasOvertimeHours = false;
+  
   @Backlink(to: 'timesheetEntry')
   final absence = IsarLink<Absence>();
 

@@ -8,6 +8,7 @@ class User {
   final String company;
   final Uint8List? signature;
   final bool isDeliveryManager;
+  final double normalHoursThreshold;
 
   User({
     required this.firstName,
@@ -15,6 +16,7 @@ class User {
     required this.company,
     this.signature,
     required this.isDeliveryManager,
+    this.normalHoursThreshold = 8.0,
   });
 
   String get fullName => '$firstName $lastName';

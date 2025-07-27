@@ -155,4 +155,37 @@ class TimesheetRepositoryImpl implements TimesheetRepository {
         remainingTotal: 25 + lastYearRemaining - usedDays
     );
   }
+  
+  @override
+  Future<void> toggleOvertimeHours(int entryId, bool hasOvertimeHours) async {
+    final entry = await datasource.getTimesheetEntryById(entryId);
+    if (entry != null) {
+      entry.hasOvertimeHours = hasOvertimeHours;
+      await datasource.updateTimesheetEntry(entry);
+    }
+  }
+  
+  @override
+  Future<TimesheetEntry?> getTimesheetEntryById(int id) async {
+    final entry = await datasource.getTimesheetEntryById(id);
+    if (entry == null) {
+      return null;
+    }
+    return TimesheetEntryMapper.fromModel(entry);
+  }
+  
+  @override
+  Future<void> updateTimesheetEntry(TimesheetEntry entry) async {
+    final entryModel = TimesheetEntryMapper.toModel(entry);
+    await datasource.updateTimesheetEntry(entryModel);
+  }
+  
+  @override
+  Future<List<TimesheetEntry>> getAllTimesheetEntryForPeriod({
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    final entries = await datasource.getTimesheetEntriesForPeriod(startDate, endDate);
+    return entries.map((e) => TimesheetEntryMapper.fromModel(e)).toList();
+  }
 }

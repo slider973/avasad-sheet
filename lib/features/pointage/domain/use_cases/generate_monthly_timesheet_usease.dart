@@ -138,10 +138,37 @@ class GenerateMonthlyTimesheetUseCase {
         : random.nextInt(configuredLunchMax.difference(actualLunchMin).inMinutes + 1);
     DateTime lunchStart = actualLunchMin.add(Duration(minutes: lunchStartMinutes));
 
-    // 3. Générer la durée de pause
-    int lunchDuration = conf.lunchDurationMin +
-        random.nextInt(conf.lunchDurationMax - conf.lunchDurationMin + 1);
-    DateTime lunchEnd = lunchStart.add(Duration(minutes: lunchDuration));
+    // 3. Générer l'heure de fin de pause
+    DateTime configuredLunchEndMin = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      conf.lunchEndMin.hour,
+      conf.lunchEndMin.minute,
+    );
+    DateTime configuredLunchEndMax = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      conf.lunchEndMax.hour,
+      conf.lunchEndMax.minute,
+    );
+    
+    // S'assurer que la fin de pause est après le début de pause (minimum 30 minutes)
+    DateTime earliestLunchEnd = lunchStart.add(Duration(minutes: 30));
+    DateTime actualLunchEndMin = earliestLunchEnd.isAfter(configuredLunchEndMin) 
+        ? earliestLunchEnd 
+        : configuredLunchEndMin;
+    
+    // S'assurer que actualLunchEndMin ne dépasse pas configuredLunchEndMax
+    if (actualLunchEndMin.isAfter(configuredLunchEndMax)) {
+      actualLunchEndMin = configuredLunchEndMax;
+    }
+    
+    int lunchEndMinutes = actualLunchEndMin == configuredLunchEndMax 
+        ? 0 
+        : random.nextInt(configuredLunchEndMax.difference(actualLunchEndMin).inMinutes + 1);
+    DateTime lunchEnd = actualLunchEndMin.add(Duration(minutes: lunchEndMinutes));
 
     // 4. Générer l'heure de fin dans la plage [endTimeMin, endTimeMax]
     DateTime configuredEndMin = DateTime(
@@ -178,7 +205,9 @@ class GenerateMonthlyTimesheetUseCase {
     // 5. Vérifier le temps de travail total (optionnel)
     int totalWorkMinutes = lunchStart.difference(startTime).inMinutes + 
                           endTime.difference(lunchEnd).inMinutes;
+    int lunchDurationMinutes = lunchEnd.difference(lunchStart).inMinutes;
     print("Generated work time: ${totalWorkMinutes / 60} hours");
+    print("Generated lunch duration: ${lunchDurationMinutes} minutes");
 
     return TimesheetEntry(
       dayDate: DateFormat('dd-MMM-yy').format(date),

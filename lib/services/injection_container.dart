@@ -22,6 +22,7 @@ import '../features/pointage/domain/use_cases/get_remaining_vacation_days_usecas
 import '../features/pointage/domain/use_cases/get_today_timesheet_entry_use_case.dart';
 import '../features/pointage/domain/use_cases/get_weekly_work_time_usecase.dart';
 import '../features/pointage/domain/use_cases/insufficient_hours_detector.dart';
+import '../features/pointage/domain/use_cases/detect_anomalies_with_compensation_usecase.dart';
 import '../features/pointage/domain/use_cases/save_timesheet_entry_usecase.dart';
 import '../features/pointage/domain/use_cases/signaler_absence_periode_usecase.dart';
 import '../features/preference/data/models/user_preference.dart';
@@ -38,6 +39,9 @@ import '../features/pointage/data/models/generated_pdf/generated_pdf.dart';
 import '../features/pointage/data/models/timesheet_entry/timesheet_entry.dart';
 import '../features/pointage/data/repositories/timesheet_repository_impl.dart';
 import '../features/pointage/domain/services/anomaly_detection_service.dart';
+import '../features/pointage/domain/use_cases/toggle_overtime_hours_use_case.dart';
+import '../features/pointage/domain/use_cases/calculate_overtime_hours_use_case.dart';
+import '../features/pointage/domain/use_cases/get_days_with_overtime_use_case.dart';
 
 
 final getIt = GetIt.instance;
@@ -143,11 +147,25 @@ Future<void> setup() async {
       allDetectors.values.toList(),
     );
   });
+  // Enregistrer les nouveaux use cases pour les heures supplémentaires
+  getIt.registerLazySingleton<ToggleOvertimeHoursUseCase>(
+    () => ToggleOvertimeHoursUseCase(getIt<TimesheetRepositoryImpl>()),
+  );
+  
+  getIt.registerLazySingleton<CalculateOvertimeHoursUseCase>(
+    () => CalculateOvertimeHoursUseCase(),
+  );
+  
+  getIt.registerLazySingleton<GetDaysWithOvertimeUseCase>(
+    () => GetDaysWithOvertimeUseCase(getIt<TimesheetRepositoryImpl>()),
+  );
+
   getIt.registerLazySingleton<GeneratePdfUseCase>(() => GeneratePdfUseCase(
     repository: getIt<TimesheetRepositoryImpl>(),
     getSignatureUseCase: getIt<GetSignatureUseCase>(),
     getUserPreferenceUseCase: getIt<GetUserPreferenceUseCase>(),
     anomalyDetectionService: getIt<AnomalyDetectionService>(),
+    calculateOvertimeHoursUseCase: getIt<CalculateOvertimeHoursUseCase>(),
   ));
   getIt.registerLazySingleton<GenerateExcelUseCase>(() => GenerateExcelUseCase(getIt<TimesheetRepositoryImpl>()));
   getIt.registerLazySingleton<AnomalyRepository>(
@@ -160,6 +178,15 @@ Future<void> setup() async {
   
   // Enregistrer le nouveau service de détection d'anomalies
   getIt.registerLazySingleton<AnomalyDetectionService>(() => AnomalyDetectionService());
+  
+  // Enregistrer le use case de détection avec compensation
+  getIt.registerLazySingleton<DetectAnomaliesWithCompensationUseCase>(
+    () => DetectAnomaliesWithCompensationUseCase(
+      getIt<TimesheetRepositoryImpl>(),
+      AnomalyDetectorFactory.getAllDetectors().values.toList(),
+      AnomalyDetectorFactory.getWeeklyCompensationDetector(),
+    ),
+  );
   
   // Enregistrer le service Watch
   getIt.registerLazySingleton<WatchService>(() => WatchService());

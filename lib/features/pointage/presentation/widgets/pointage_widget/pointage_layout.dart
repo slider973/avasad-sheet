@@ -5,6 +5,8 @@ import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widge
 import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_boutton.dart';
 import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_list.dart';
 import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_remove_timesheet_day.dart';
+import 'package:time_sheet/features/pointage/domain/entities/timesheet_entry.dart';
+import 'package:time_sheet/features/pointage/presentation/widgets/overtime_indicator.dart';
 
 // import '../monthly_stats_widget/monthly_stats_widget.dart';
 import '../../../../absence/domain/value_objects/absence_type.dart';
@@ -33,6 +35,8 @@ class PointageLayout extends StatelessWidget {
   final Duration weeklyTarget;
   final VacationDaysInfo vacationInfo;
   final Duration overtimeHours;
+  final TimesheetEntry? currentEntry;
+  final VoidCallback onToggleOvertime;
 
   const PointageLayout({
     Key? key,
@@ -54,6 +58,8 @@ class PointageLayout extends StatelessWidget {
     required this.weeklyTarget,
     required this.vacationInfo,
     required this.overtimeHours,
+    this.currentEntry,
+    required this.onToggleOvertime,
   }) : super(key: key);
 
   @override
@@ -104,6 +110,31 @@ class PointageLayout extends StatelessWidget {
                 ),
               ],
             ),
+            const SizedBox(height: 20),
+            // Toggle pour les heures supplémentaires
+            if (currentEntry != null && etatActuel != 'Non commencé')
+              Card(
+                elevation: 2,
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Heures supplémentaires',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      OvertimeIndicator(
+                        isActive: currentEntry!.hasOvertimeHours,
+                        onToggle: onToggleOvertime,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             const SizedBox(height: 20),
             _buildWeeklySummary(),
             const SizedBox(height: 20),

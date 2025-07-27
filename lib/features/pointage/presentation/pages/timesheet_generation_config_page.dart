@@ -64,8 +64,8 @@ class _TimesheetGenerationConfigPageState
                     startTimeMax: config.startTimeMax,
                     lunchStartMin: config.lunchStartMin,
                     lunchStartMax: config.lunchStartMax,
-                    lunchDurationMin: config.lunchDurationMin,
-                    lunchDurationMax: config.lunchDurationMax,
+                    lunchEndMin: config.lunchEndMin,
+                    lunchEndMax: config.lunchEndMax,
                     endTimeMin: config.endTimeMin,
                     endTimeMax: config.endTimeMax,
                   )),
@@ -74,14 +74,14 @@ class _TimesheetGenerationConfigPageState
                     startTimeMax: time,
                     lunchStartMin: config.lunchStartMin,
                     lunchStartMax: config.lunchStartMax,
-                    lunchDurationMin: config.lunchDurationMin,
-                    lunchDurationMax: config.lunchDurationMax,
+                    lunchEndMin: config.lunchEndMin,
+                    lunchEndMax: config.lunchEndMax,
                     endTimeMin: config.endTimeMin,
                     endTimeMax: config.endTimeMax,
                   )),
             ),
             _buildTimeRangeSection(
-              'Heure de pause déjeuner',
+              'Début de pause déjeuner',
               config.lunchStartMin,
               config.lunchStartMax,
               (time) => setState(() => config = TimesheetGenerationConfig(
@@ -89,8 +89,8 @@ class _TimesheetGenerationConfigPageState
                     startTimeMax: config.startTimeMax,
                     lunchStartMin: time,
                     lunchStartMax: config.lunchStartMax,
-                    lunchDurationMin: config.lunchDurationMin,
-                    lunchDurationMax: config.lunchDurationMax,
+                    lunchEndMin: config.lunchEndMin,
+                    lunchEndMax: config.lunchEndMax,
                     endTimeMin: config.endTimeMin,
                     endTimeMax: config.endTimeMax,
                   )),
@@ -99,14 +99,62 @@ class _TimesheetGenerationConfigPageState
                     startTimeMax: config.startTimeMax,
                     lunchStartMin: config.lunchStartMin,
                     lunchStartMax: time,
-                    lunchDurationMin: config.lunchDurationMin,
-                    lunchDurationMax: config.lunchDurationMax,
+                    lunchEndMin: config.lunchEndMin,
+                    lunchEndMax: config.lunchEndMax,
                     endTimeMin: config.endTimeMin,
                     endTimeMax: config.endTimeMax,
                   )),
             ),
-            _buildDurationRangeSection(),
-            _buildEndTimeRangeSection(),
+            _buildTimeRangeSection(
+              'Fin de pause déjeuner',
+              config.lunchEndMin,
+              config.lunchEndMax,
+              (time) => setState(() => config = TimesheetGenerationConfig(
+                    startTimeMin: config.startTimeMin,
+                    startTimeMax: config.startTimeMax,
+                    lunchStartMin: config.lunchStartMin,
+                    lunchStartMax: config.lunchStartMax,
+                    lunchEndMin: time,
+                    lunchEndMax: config.lunchEndMax,
+                    endTimeMin: config.endTimeMin,
+                    endTimeMax: config.endTimeMax,
+                  )),
+              (time) => setState(() => config = TimesheetGenerationConfig(
+                    startTimeMin: config.startTimeMin,
+                    startTimeMax: config.startTimeMax,
+                    lunchStartMin: config.lunchStartMin,
+                    lunchStartMax: config.lunchStartMax,
+                    lunchEndMin: config.lunchEndMin,
+                    lunchEndMax: time,
+                    endTimeMin: config.endTimeMin,
+                    endTimeMax: config.endTimeMax,
+                  )),
+            ),
+            _buildTimeRangeSection(
+              'Heure de fin',
+              config.endTimeMin,
+              config.endTimeMax,
+              (time) => setState(() => config = TimesheetGenerationConfig(
+                    startTimeMin: config.startTimeMin,
+                    startTimeMax: config.startTimeMax,
+                    lunchStartMin: config.lunchStartMin,
+                    lunchStartMax: config.lunchStartMax,
+                    lunchEndMin: config.lunchEndMin,
+                    lunchEndMax: config.lunchEndMax,
+                    endTimeMin: time,
+                    endTimeMax: config.endTimeMax,
+                  )),
+              (time) => setState(() => config = TimesheetGenerationConfig(
+                    startTimeMin: config.startTimeMin,
+                    startTimeMax: config.startTimeMax,
+                    lunchStartMin: config.lunchStartMin,
+                    lunchStartMax: config.lunchStartMax,
+                    lunchEndMin: config.lunchEndMin,
+                    lunchEndMax: config.lunchEndMax,
+                    endTimeMin: config.endTimeMin,
+                    endTimeMax: time,
+                  )),
+            ),
             SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
@@ -165,114 +213,6 @@ class _TimesheetGenerationConfigPageState
         ),
         Divider(),
       ],
-    );
-  }
-
-  Widget _buildDurationRangeSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Durée de la pause déjeuner (minutes)',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        Row(
-          children: [
-            Expanded(
-              child: TextFormField(
-                initialValue: config.lunchDurationMin.toString(),
-                decoration: InputDecoration(labelText: 'Minimum'),
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Requis';
-                  }
-                  final duration = int.tryParse(value);
-                  if (duration == null || duration < 0) {
-                    return 'Durée invalide';
-                  }
-                  return null;
-                },
-                onChanged: (value) {
-                  final duration = int.tryParse(value);
-                  if (duration != null) {
-                    setState(() => config = TimesheetGenerationConfig(
-                          startTimeMin: config.startTimeMin,
-                          startTimeMax: config.startTimeMax,
-                          lunchStartMin: config.lunchStartMin,
-                          lunchStartMax: config.lunchStartMax,
-                          lunchDurationMin: duration,
-                          lunchDurationMax: config.lunchDurationMax,
-                          endTimeMin: config.endTimeMin,
-                          endTimeMax: config.endTimeMax,
-                        ));
-                  }
-                },
-              ),
-            ),
-            SizedBox(width: 16),
-            Expanded(
-              child: TextFormField(
-                initialValue: config.lunchDurationMax.toString(),
-                decoration: InputDecoration(labelText: 'Maximum'),
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Requis';
-                  }
-                  final duration = int.tryParse(value);
-                  if (duration == null || duration < 0) {
-                    return 'Durée invalide';
-                  }
-                  return null;
-                },
-                onChanged: (value) {
-                  final duration = int.tryParse(value);
-                  if (duration != null) {
-                    setState(() => config = TimesheetGenerationConfig(
-                          startTimeMin: config.startTimeMin,
-                          startTimeMax: config.startTimeMax,
-                          lunchStartMin: config.lunchStartMin,
-                          lunchStartMax: config.lunchStartMax,
-                          lunchDurationMin: config.lunchDurationMin,
-                          lunchDurationMax: duration,
-                          endTimeMin: config.endTimeMin,
-                          endTimeMax: config.endTimeMax,
-                        ));
-                  }
-                },
-              ),
-            ),
-          ],
-        ),
-        Divider(),
-      ],
-    );
-  }
-
-  Widget _buildEndTimeRangeSection() {
-    return _buildTimeRangeSection(
-      'Heure de fin',
-      config.endTimeMin,
-      config.endTimeMax,
-      (time) => setState(() => config = TimesheetGenerationConfig(
-            startTimeMin: config.startTimeMin,
-            startTimeMax: config.startTimeMax,
-            lunchStartMin: config.lunchStartMin,
-            lunchStartMax: config.lunchStartMax,
-            lunchDurationMin: config.lunchDurationMin,
-            lunchDurationMax: config.lunchDurationMax,
-            endTimeMin: time,
-            endTimeMax: config.endTimeMax,
-          )),
-      (time) => setState(() => config = TimesheetGenerationConfig(
-            startTimeMin: config.startTimeMin,
-            startTimeMax: config.startTimeMax,
-            lunchStartMin: config.lunchStartMin,
-            lunchStartMax: config.lunchStartMax,
-            lunchDurationMin: config.lunchDurationMin,
-            lunchDurationMax: config.lunchDurationMax,
-            endTimeMin: config.endTimeMin,
-            endTimeMax: time,
-          )),
     );
   }
 

@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import 'package:time_sheet/features/absence/domain/entities/absence_entity.dart';
 import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_absence.dart';
 import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_layout.dart';
+import 'package:time_sheet/services/injection_container.dart';
+import 'package:time_sheet/features/pointage/domain/use_cases/toggle_overtime_hours_use_case.dart';
 
 import '../../../../absence/domain/value_objects/absence_type.dart';
 import '../../../domain/entities/timesheet_entry.dart';
@@ -156,6 +158,8 @@ class _PointageWidgetState extends State<PointageWidget>
             vacationInfo: state.vacationInfo,
             weeklyTarget: _weeklyTarget,
             overtimeHours: _overtimeHours,
+            currentEntry: _currentEntry,
+            onToggleOvertime: _toggleOvertime,
           );
         }
         return const Center(child: CircularProgressIndicator());
@@ -298,6 +302,18 @@ class _PointageWidgetState extends State<PointageWidget>
   void _deleteEntry(TimesheetEntry entry) {
     final bloc = context.read<TimeSheetBloc>();
     bloc.add(TimeSheetDeleteEntryEvent(entry.id!));
+  }
+
+  void _toggleOvertime() async {
+    if (_currentEntry != null && _currentEntry!.id != null) {
+      final toggleUseCase = getIt<ToggleOvertimeHoursUseCase>();
+      await toggleUseCase.execute(
+        entryId: _currentEntry!.id!,
+        hasOvertimeHours: !_currentEntry!.hasOvertimeHours,
+      );
+      // Recharger les données pour refléter le changement
+      _chargerDonneesPersistees(widget.selectedDate);
+    }
   }
 
   Duration _calculateTotalDayHours(List<Map<String, dynamic>> pointages) {

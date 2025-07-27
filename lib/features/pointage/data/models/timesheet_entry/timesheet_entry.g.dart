@@ -43,18 +43,23 @@ const TimeSheetEntryModelSchema = CollectionSchema(
       name: r'endMorning',
       type: IsarType.string,
     ),
-    r'period': PropertySchema(
+    r'hasOvertimeHours': PropertySchema(
       id: 5,
+      name: r'hasOvertimeHours',
+      type: IsarType.bool,
+    ),
+    r'period': PropertySchema(
+      id: 6,
       name: r'period',
       type: IsarType.string,
     ),
     r'startAfternoon': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'startAfternoon',
       type: IsarType.string,
     ),
     r'startMorning': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'startMorning',
       type: IsarType.string,
     )
@@ -64,7 +69,21 @@ const TimeSheetEntryModelSchema = CollectionSchema(
   deserialize: _timeSheetEntryModelDeserialize,
   deserializeProp: _timeSheetEntryModelDeserializeProp,
   idName: r'id',
-  indexes: {},
+  indexes: {
+    r'hasOvertimeHours': IndexSchema(
+      id: -1731479981131342031,
+      name: r'hasOvertimeHours',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'hasOvertimeHours',
+          type: IndexType.value,
+          caseSensitive: false,
+        )
+      ],
+    )
+  },
   links: {
     r'absence': LinkSchema(
       id: 7426728764344287438,
@@ -115,9 +134,10 @@ void _timeSheetEntryModelSerialize(
   writer.writeString(offsets[2], object.dayOfWeekDate);
   writer.writeString(offsets[3], object.endAfternoon);
   writer.writeString(offsets[4], object.endMorning);
-  writer.writeString(offsets[5], object.period);
-  writer.writeString(offsets[6], object.startAfternoon);
-  writer.writeString(offsets[7], object.startMorning);
+  writer.writeBool(offsets[5], object.hasOvertimeHours);
+  writer.writeString(offsets[6], object.period);
+  writer.writeString(offsets[7], object.startAfternoon);
+  writer.writeString(offsets[8], object.startMorning);
 }
 
 TimeSheetEntryModel _timeSheetEntryModelDeserialize(
@@ -132,10 +152,11 @@ TimeSheetEntryModel _timeSheetEntryModelDeserialize(
   object.dayOfWeekDate = reader.readString(offsets[2]);
   object.endAfternoon = reader.readString(offsets[3]);
   object.endMorning = reader.readString(offsets[4]);
+  object.hasOvertimeHours = reader.readBool(offsets[5]);
   object.id = id;
-  object.period = reader.readString(offsets[5]);
-  object.startAfternoon = reader.readString(offsets[6]);
-  object.startMorning = reader.readString(offsets[7]);
+  object.period = reader.readString(offsets[6]);
+  object.startAfternoon = reader.readString(offsets[7]);
+  object.startMorning = reader.readString(offsets[8]);
   return object;
 }
 
@@ -157,10 +178,12 @@ P _timeSheetEntryModelDeserializeProp<P>(
     case 4:
       return (reader.readString(offset)) as P;
     case 5:
-      return (reader.readString(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 6:
       return (reader.readString(offset)) as P;
     case 7:
+      return (reader.readString(offset)) as P;
+    case 8:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -189,6 +212,15 @@ extension TimeSheetEntryModelQueryWhereSort
   QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterWhere> anyId() {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(const IdWhereClause.any());
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterWhere>
+      anyHasOvertimeHours() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        const IndexWhereClause.any(indexName: r'hasOvertimeHours'),
+      );
     });
   }
 }
@@ -260,6 +292,51 @@ extension TimeSheetEntryModelQueryWhere
         upper: upperId,
         includeUpper: includeUpper,
       ));
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterWhereClause>
+      hasOvertimeHoursEqualTo(bool hasOvertimeHours) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'hasOvertimeHours',
+        value: [hasOvertimeHours],
+      ));
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterWhereClause>
+      hasOvertimeHoursNotEqualTo(bool hasOvertimeHours) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'hasOvertimeHours',
+              lower: [],
+              upper: [hasOvertimeHours],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'hasOvertimeHours',
+              lower: [hasOvertimeHours],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'hasOvertimeHours',
+              lower: [hasOvertimeHours],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'hasOvertimeHours',
+              lower: [],
+              upper: [hasOvertimeHours],
+              includeUpper: false,
+            ));
+      }
     });
   }
 }
@@ -867,6 +944,16 @@ extension TimeSheetEntryModelQueryFilter on QueryBuilder<TimeSheetEntryModel,
   }
 
   QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterFilterCondition>
+      hasOvertimeHoursEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'hasOvertimeHours',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterFilterCondition>
       idEqualTo(Id value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -1438,6 +1525,20 @@ extension TimeSheetEntryModelQuerySortBy
   }
 
   QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterSortBy>
+      sortByHasOvertimeHours() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'hasOvertimeHours', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterSortBy>
+      sortByHasOvertimeHoursDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'hasOvertimeHours', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterSortBy>
       sortByPeriod() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'period', Sort.asc);
@@ -1553,6 +1654,20 @@ extension TimeSheetEntryModelQuerySortThenBy
   }
 
   QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterSortBy>
+      thenByHasOvertimeHours() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'hasOvertimeHours', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterSortBy>
+      thenByHasOvertimeHoursDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'hasOvertimeHours', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterSortBy>
       thenById() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.asc);
@@ -1649,6 +1764,13 @@ extension TimeSheetEntryModelQueryWhereDistinct
   }
 
   QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QDistinct>
+      distinctByHasOvertimeHours() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'hasOvertimeHours');
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QDistinct>
       distinctByPeriod({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'period', caseSensitive: caseSensitive);
@@ -1711,6 +1833,13 @@ extension TimeSheetEntryModelQueryProperty
       endMorningProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'endMorning');
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, bool, QQueryOperations>
+      hasOvertimeHoursProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'hasOvertimeHours');
     });
   }
 

@@ -25,4 +25,13 @@ abstract class TimesheetRepository {
   Future<int> getVacationDaysCount();
   Future<int> getLastYearVacationDaysCount();
   Future<VacationDaysInfo> getVacationDaysInfo();
+  
+  // Nouvelles méthodes pour les heures supplémentaires
+  Future<void> toggleOvertimeHours(int entryId, bool hasOvertimeHours);
+  Future<TimesheetEntry?> getTimesheetEntryById(int id);
+  Future<void> updateTimesheetEntry(TimesheetEntry entry);
+  Future<List<TimesheetEntry>> getAllTimesheetEntryForPeriod({
+    required DateTime startDate,
+    required DateTime endDate,
+  });
 }

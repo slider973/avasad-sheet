@@ -41,6 +41,8 @@ class WatchService {
       // Écouter les messages de la montre
       _setupListeners();
       
+      // La session est activée automatiquement côté iOS
+      
       // Envoyer l'état initial
       if (isReachable) {
         await sendState(_currentState);

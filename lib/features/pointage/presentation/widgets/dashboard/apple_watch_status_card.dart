@@ -70,13 +70,19 @@ class _AppleWatchStatusCardState extends State<AppleWatchStatusCard> {
                         ),
                       ],
                     ),
-                    if (isConnected) ...[
-                      const SizedBox(height: 8),
+                    const SizedBox(height: 8),
+                    Text(
+                      'État: $currentState',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    if (!isConnected) 
                       Text(
-                        'État: $currentState',
-                        style: Theme.of(context).textTheme.bodyMedium,
+                        '(Mode hors ligne - sync auto)',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontStyle: FontStyle.italic,
+                          color: Colors.grey[600],
+                        ),
                       ),
-                    ],
                   ],
                 );
               },

@@ -44,3 +44,17 @@ class CheckAnomaliesForPdfGeneration extends AnomalyEvent {
   @override
   List<Object> get props => [month, year];
 }
+
+/// Événement pour détecter les anomalies avec compensation hebdomadaire
+class DetectAnomaliesWithCompensation extends AnomalyEvent {
+  final int month;
+  final int year;
+
+  const DetectAnomaliesWithCompensation({
+    required this.month,
+    required this.year,
+  });
+
+  @override
+  List<Object> get props => [month, year];
+}

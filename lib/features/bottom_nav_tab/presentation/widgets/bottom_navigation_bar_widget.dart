@@ -80,20 +80,20 @@ class AnomalyIconWithBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<AnomalyBloc, AnomalyState>(
       buildWhen: (previous, current) {
-        // Ne rebuild que si le nombre d'anomalies non résolues change
-        if (previous is AnomalyLoaded && current is AnomalyLoaded) {
-          final previousCount = previous.anomalies.where((a) => !a.isResolved).length;
-          final currentCount = current.anomalies.where((a) => !a.isResolved).length;
-          return previousCount != currentCount;
-        }
-        // Rebuild si le type d'état change (loading -> loaded, error, etc.)
-        return previous.runtimeType != current.runtimeType;
+        // Ne rebuild que si le nombre d'anomalies change
+        return true; // Simplifié pour supporter les deux types d'états
       },
       builder: (context, state) {
         int unresolvedCount = 0;
         
+        // Support de l'ancien système
         if (state is AnomalyLoaded) {
           unresolvedCount = state.anomalies.where((anomaly) => !anomaly.isResolved).length;
+        }
+        // Support du nouveau système avec compensation
+        else if (state is AnomaliesWithCompensationLoaded) {
+          // Compter seulement les anomalies actives (non compensées)
+          unresolvedCount = state.activeAnomalies.length;
         }
         
         return Stack(

@@ -24,4 +24,9 @@ abstract class LocalDataSource {
   getTimesheetEntry(String formattedDate) {}
   getTimesheetEntryWhitFrenchFormat(String formattedDate) {}
   Future<int> getVacationDaysCount();
+  
+  // Nouvelles méthodes pour les heures supplémentaires
+  Future<TimeSheetEntryModel?> getTimesheetEntryById(int id);
+  Future<void> updateTimesheetEntry(TimeSheetEntryModel entry);
+  Future<List<TimeSheetEntryModel>> getTimesheetEntriesForPeriod(DateTime startDate, DateTime endDate);
 }

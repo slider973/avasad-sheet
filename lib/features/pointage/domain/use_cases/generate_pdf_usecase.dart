@@ -19,20 +19,24 @@ import '../entities/generated_pdf.dart';
 import '../repositories/timesheet_repository.dart';
 import '../entities/work_week.dart';
 import '../entities/work_day.dart';
+import '../entities/timesheet_entry.dart';
 import 'generate_week_usecase.dart';
 import '../services/anomaly_detection_service.dart';
+import 'calculate_overtime_hours_use_case.dart';
 
 class GeneratePdfUseCase {
   final TimesheetRepository repository;
   final GetSignatureUseCase getSignatureUseCase;
   final GetUserPreferenceUseCase getUserPreferenceUseCase;
   final AnomalyDetectionService anomalyDetectionService;
+  final CalculateOvertimeHoursUseCase calculateOvertimeHoursUseCase;
 
   GeneratePdfUseCase({
     required this.repository,
     required this.getSignatureUseCase,
     required this.getUserPreferenceUseCase,
     required this.anomalyDetectionService,
+    required this.calculateOvertimeHoursUseCase,
   });
 
   final headerColor = PdfColor.fromHex('#D9D9D9'); // Gris clair pour l'en-tête
@@ -109,7 +113,7 @@ class GeneratePdfUseCase {
 
       // Génération du PDF
       debugPrint('📄 Génération du fichier PDF...');
-      final pdfFile = await generatePdf(weeks, monthNumber, user);
+      final pdfFile = await generatePdf(weeks, monthNumber, user, timesheetEntryList);
       debugPrint('✅ PDF généré avec succès: ${pdfFile.path}');
 
       // Sauvegarde des métadonnées
@@ -152,7 +156,7 @@ class GeneratePdfUseCase {
   }
 
   Future<File> generatePdf(
-      List<WorkWeek> weeks, int monthNumber, User user) async {
+      List<WorkWeek> weeks, int monthNumber, User user, List<TimesheetEntry> entries) async {
     logger.i('start generatedPdf');
     final pdf = pw.Document();
 
@@ -183,6 +187,21 @@ class GeneratePdfUseCase {
             }));
     final totalHours = weeks.fold(
         Duration.zero, (sum, week) => sum + week.calculateTotalWeekHours());
+    
+    // Calcul des heures supplémentaires totales et par jour
+    Duration totalOvertimeHours = Duration.zero;
+    Map<String, Duration> overtimeByDay = {};
+    
+    for (final entry in entries) {
+      if (entry.hasOvertimeHours) {
+        final overtime = await calculateOvertimeHoursUseCase.execute(
+          entry: entry,
+          normalHoursThreshold: user.normalHoursThreshold,
+        );
+        totalOvertimeHours += overtime;
+        overtimeByDay[entry.dayDate] = overtime;
+      }
+    }
 
     pdf.addPage(
       pw.MultiPage(
@@ -195,8 +214,8 @@ class GeneratePdfUseCase {
         build: (pw.Context context) => [
           _buildHeader(logoImage),
           _buildInfoTable(monthNumber, user),
-          ...weeks.map((week) => _buildWeekTable(week)),
-          _buildMonthTotal(totalHours, totalDays),
+          ...weeks.map((week) => _buildWeekTable(week, user, entries, overtimeByDay)),
+          _buildMonthTotal(totalHours, totalDays, totalOvertimeHours),
           _buildFooter(signatureImage, user),
         ],
         theme: pw.ThemeData.withFont(
@@ -278,7 +297,7 @@ class GeneratePdfUseCase {
         date.weekday <= 5; // Du lundi (1) au vendredi (5)
   }
 
-  pw.Widget _buildWeekTable(WorkWeek week) {
+  pw.Widget _buildWeekTable(WorkWeek week, User user, List<TimesheetEntry> entries, Map<String, Duration> overtimeByDay) {
     return pw.Container(
       margin: const pw.EdgeInsets.only(top: 10),
       child: pw.Table(
@@ -296,7 +315,7 @@ class GeneratePdfUseCase {
         children: [
           _buildTableHeader(),
           ...week.workday
-              .map((day) => _buildDayRow(day, _isWeekday(day.entry.dayDate))),
+              .map((day) => _buildDayRow(day, _isWeekday(day.entry.dayDate), user, entries, overtimeByDay)),
           _buildWeekTotal(week),
         ],
       ),
@@ -319,7 +338,7 @@ class GeneratePdfUseCase {
         ]);
   }
 
-  pw.TableRow _buildDayRow(Workday day, bool isWeekday) {
+  pw.TableRow _buildDayRow(Workday day, bool isWeekday, User user, List<TimesheetEntry> entries, Map<String, Duration> overtimeByDay) {
     bool isHalfDayAbsence = day.entry.period == AbsencePeriod.halfDay.value;
     bool isFullDayAbsence = day.isAbsence() && !isHalfDayAbsence;
     Duration workDuration = day.calculateTotalHours();
@@ -328,6 +347,12 @@ class GeneratePdfUseCase {
 
     String daysWorked =
         isFullDayAbsence ? '0' : (isHalfDayAbsence ? '0.5' : '1');
+    
+    // Calcul des heures supplémentaires pour ce jour
+    String overtimeHours = '';
+    if (overtimeByDay.containsKey(day.entry.dayDate) && !isFullDayAbsence) {
+      overtimeHours = _formatDuration(overtimeByDay[day.entry.dayDate]!);
+    }
     return pw.TableRow(
       children: [
         pw.Center(
@@ -358,7 +383,7 @@ class GeneratePdfUseCase {
         pw.Center(
             child: pw.Text(formattedDuration,
                 style: const pw.TextStyle(fontSize: 6))),
-        pw.Center(child: pw.Text('', style: const pw.TextStyle(fontSize: 6))),
+        pw.Center(child: pw.Text(overtimeHours, style: const pw.TextStyle(fontSize: 6))),
         pw.Center(
             child: pw.Text(_getCommentaire(day),
                 style: const pw.TextStyle(fontSize: 6))),
@@ -432,7 +457,7 @@ class GeneratePdfUseCase {
     );
   }
 
-  pw.Widget _buildMonthTotal(Duration totalHours, double totalDays) {
+  pw.Widget _buildMonthTotal(Duration totalHours, double totalDays, Duration totalOvertimeHours) {
     String formattedTotalDays = totalDays.truncateToDouble() == totalDays
         ? totalDays.toStringAsFixed(0)
         : totalDays.toStringAsFixed(1);
@@ -448,6 +473,10 @@ class GeneratePdfUseCase {
               pw.Text('Total du mois: ${_formatDuration(totalHours)}',
                   style: pw.TextStyle(
                       fontSize: 8, fontWeight: pw.FontWeight.bold)),
+              if (totalOvertimeHours > Duration.zero)
+                pw.Text('Heures supplémentaires: ${_formatDuration(totalOvertimeHours)}',
+                    style: pw.TextStyle(
+                        fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.orange)),
             ],
           ),
           pw.Column(

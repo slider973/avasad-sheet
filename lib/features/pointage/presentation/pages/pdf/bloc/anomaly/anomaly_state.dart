@@ -70,3 +70,23 @@ class PdfAnomalyCheckCompleted extends AnomalyState {
   @override
   List<Object> get props => [criticalAnomaliesMessages, minorAnomaliesMessages, month, year];
 }
+
+/// État pour les anomalies avec compensation hebdomadaire
+class AnomaliesWithCompensationLoaded extends AnomalyState {
+  final List<Anomaly> anomalies;
+  final Map<String, dynamic> weeklyStats;
+
+  const AnomaliesWithCompensationLoaded({
+    required this.anomalies,
+    required this.weeklyStats,
+  });
+
+  List<Anomaly> get compensatedAnomalies => 
+      anomalies.where((a) => a.isCompensated).toList();
+  
+  List<Anomaly> get activeAnomalies => 
+      anomalies.where((a) => !a.isCompensated).toList();
+
+  @override
+  List<Object> get props => [anomalies, weeklyStats];
+}

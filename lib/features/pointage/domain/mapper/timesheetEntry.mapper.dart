@@ -16,6 +16,7 @@ class TimesheetEntryMapper {
       absenceReason: model.absenceReason,
       absence: model.absence.value?.toEntity(),
       period: model.period,
+      hasOvertimeHours: model.hasOvertimeHours,
     );
   }
 
@@ -28,7 +29,8 @@ class TimesheetEntryMapper {
       ..startAfternoon = entity.startAfternoon
       ..absenceReason = entity.absenceReason ?? ''
       ..period = entity.period ?? ''
-      ..endAfternoon = entity.endAfternoon;
+      ..endAfternoon = entity.endAfternoon
+      ..hasOvertimeHours = entity.hasOvertimeHours;
 
     if (entity.absence != null) {
       model.absence.value = AbsenceMapper.fromEntity(entity.absence!);;

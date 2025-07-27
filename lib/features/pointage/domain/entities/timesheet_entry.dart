@@ -12,6 +12,7 @@ class TimesheetEntry {
   final String? absenceReason;
   final AbsenceEntity? absence;
   final String? period;
+  final bool hasOvertimeHours;
 
   TimesheetEntry({this.id,
     required this.dayDate,
@@ -22,7 +23,8 @@ class TimesheetEntry {
     required this.endAfternoon,
     this.absence,
     this.absenceReason,
-    this.period
+    this.period,
+    this.hasOvertimeHours = false,
   });
 
   @override
@@ -136,6 +138,7 @@ class TimesheetEntry {
     String? absenceReason,
     AbsenceEntity? absence,
     String? period,
+    bool? hasOvertimeHours,
   }) {
     return TimesheetEntry(
       id: id ?? this.id,
@@ -148,7 +151,7 @@ class TimesheetEntry {
       absenceReason: absenceReason ?? this.absenceReason,
       period: period ?? this.period,
       absence: absence ?? this.absence,
-
+      hasOvertimeHours: hasOvertimeHours ?? this.hasOvertimeHours,
     );
   }
 }

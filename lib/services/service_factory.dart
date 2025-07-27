@@ -12,6 +12,7 @@ import '../features/pointage/domain/factories/anomaly_detector_factory.dart';
 import '../features/pointage/presentation/pages/pdf/bloc/anomaly/anomaly_bloc.dart';
 import '../features/pointage/domain/use_cases/delete_timesheet_entry_usecase.dart';
 import '../features/pointage/domain/use_cases/detect_anomalies_usecase.dart';
+import '../features/pointage/domain/use_cases/detect_anomalies_with_compensation_usecase.dart';
 import '../features/pointage/domain/use_cases/find_pointed_list_usecase.dart';
 import '../features/pointage/domain/use_cases/generate_monthly_timesheet_usease.dart';
 import '../features/pointage/domain/use_cases/generate_pdf_usecase.dart';
@@ -90,6 +91,7 @@ class ServiceFactory extends StatelessWidget {
           BlocProvider<AnomalyBloc>(
             create: (context) => AnomalyBloc(
               detectAnomaliesUseCase: getIt<DetectAnomaliesUseCase>(),
+              detectAnomaliesWithCompensationUseCase: getIt<DetectAnomaliesWithCompensationUseCase>(),
               preferencesBloc: BlocProvider.of<PreferencesBloc>(context),
               allDetectors: AnomalyDetectorFactory.getAllDetectors(),
               anomalyRepository: getIt<AnomalyRepository>(),

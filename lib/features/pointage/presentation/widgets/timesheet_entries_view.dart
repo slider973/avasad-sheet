@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../domain/entities/timesheet_entry.dart';
 import '../pages/time-sheet/bloc/time_sheet_list/time_sheet_list_bloc.dart';
+import 'timesheet_entry_card.dart';
 
 
 class TimesheetEntriesWidget extends StatelessWidget {
@@ -32,10 +33,11 @@ class TimesheetEntriesWidget extends StatelessWidget {
               itemCount: state.entries.length,
               itemBuilder: (context, index) {
                 final entry = state.entries[index];
-                return ListTile(
-                  title: Text(entry.dayDate),
-                  subtitle: Text('${entry.startMorning} - ${entry.endMorning}'),
-                  trailing: Text('Durée: ${_calculateDuration(entry)}'),
+                return TimesheetEntryCard(
+                  entry: entry,
+                  onRefresh: () {
+                    context.read<TimeSheetListBloc>().add(const FindTimesheetEntriesEvent());
+                  },
                 );
               },
             );
@@ -45,12 +47,5 @@ class TimesheetEntriesWidget extends StatelessWidget {
         },
       ),
     );
-  }
-
-  String _calculateDuration(TimesheetEntry entry) {
-    final start = DateFormat('HH:mm').parse(entry.startMorning);
-    final end = DateFormat('HH:mm').parse(entry.endMorning);
-    final duration = end.difference(start);
-    return '${duration.inHours}h ${duration.inMinutes.remainder(60)}m';
   }
 }
