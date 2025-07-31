@@ -3,15 +3,20 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
+  flutter_secure_storage_linux
+  flutter_timezone
+  gtk
   isar_flutter_libs
   open_file_linux
-  screen_retriever
+  printing
+  screen_retriever_linux
   sentry_flutter
   url_launcher_linux
   window_manager
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST
+  jni
 )
 
 set(PLUGIN_BUNDLED_LIBRARIES)

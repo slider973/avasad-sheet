@@ -8,6 +8,8 @@ import 'package:package_info_plus/package_info_plus.dart';
 import '../../../../services/logger_service.dart';
 import '../../domain/use_cases/get_user_preference_use_case.dart';
 import '../../domain/use_cases/set_user_preference_use_case.dart';
+import '../../domain/use_cases/register_manager_use_case.dart';
+import '../../domain/use_cases/unregister_manager_use_case.dart';
 
 part 'preferences_event.dart';
 
@@ -16,10 +18,14 @@ part 'preferences_state.dart';
 class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
   final GetUserPreferenceUseCase getUserPreferenceUseCase;
   final SetUserPreferenceUseCase setUserPreferenceUseCase;
+  final RegisterManagerUseCase registerManagerUseCase;
+  final UnregisterManagerUseCase unregisterManagerUseCase;
 
   PreferencesBloc({
     required this.getUserPreferenceUseCase,
     required this.setUserPreferenceUseCase,
+    required this.registerManagerUseCase,
+    required this.unregisterManagerUseCase,
   }) : super(PreferencesInitial()) {
     on<LoadPreferences>(_onLoadPreferences);
     on<SavePreferences>(_onSavePreferences);
@@ -286,10 +292,37 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
     if (state is PreferencesLoaded) {
       final currentState = state as PreferencesLoaded;
       try {
+        // Sauvegarder localement
         await setUserPreferenceUseCase.execute(
           'isDeliveryManager',
           event.enabled.toString(),
         );
+        
+        // Synchroniser avec Supabase via les use cases
+        if (event.enabled) {
+          // Enregistrer comme manager
+          final success = await registerManagerUseCase.execute(
+            firstName: currentState.firstName,
+            lastName: currentState.lastName,
+            company: currentState.company,
+          );
+          
+          if (!success) {
+            logger.w('Échec de l\'enregistrement dans Supabase, mais préférences locales mises à jour');
+          }
+        } else {
+          // Retirer de la liste des managers
+          final success = await unregisterManagerUseCase.execute(
+            firstName: currentState.firstName,
+            lastName: currentState.lastName,
+            company: currentState.company,
+          );
+          
+          if (!success) {
+            logger.w('Échec de la suppression dans Supabase, mais préférences locales mises à jour');
+          }
+        }
+        
         // Obtenez les informations de version
         PackageInfo packageInfo = await PackageInfo.fromPlatform();
         String versionNumber = packageInfo.version;
@@ -307,9 +340,9 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
           buildNumber: buildNumber,
         ));
       } catch (e) {
-        logger.e(e);
+        logger.e('Erreur lors du toggle delivery manager: $e');
         emit(PreferencesError(
-            'Erreur lors de la modification des paramètres de notification: $e'));
+            'Erreur lors de la modification du statut manager: $e'));
       }
     }
   }

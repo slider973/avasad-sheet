@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "209339291527",
+    "project_id": "time-sheet-b86f6",
+    "storage_bucket": "time-sheet-b86f6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:209339291527:android:2cb8de466562d2cc0ae522",
+        "android_client_info": {
+          "package_name": "com.example.time_sheet"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA5-uvSdPRP5SN85-oceYyb5hrhSUyWbWM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

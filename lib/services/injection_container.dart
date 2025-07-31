@@ -34,6 +34,8 @@ import 'watch_service.dart';
 import '../features/preference/domain/use_cases/get_signature_usecase.dart';
 import '../features/preference/domain/use_cases/get_user_preference_use_case.dart';
 import '../features/preference/domain/use_cases/set_user_preference_use_case.dart';
+import '../features/preference/domain/use_cases/register_manager_use_case.dart';
+import '../features/preference/domain/use_cases/unregister_manager_use_case.dart';
 import '../features/pointage/data/data_sources/local.dart';
 import '../features/pointage/data/models/generated_pdf/generated_pdf.dart';
 import '../features/pointage/data/models/timesheet_entry/timesheet_entry.dart';
@@ -42,6 +44,23 @@ import '../features/pointage/domain/services/anomaly_detection_service.dart';
 import '../features/pointage/domain/use_cases/toggle_overtime_hours_use_case.dart';
 import '../features/pointage/domain/use_cases/calculate_overtime_hours_use_case.dart';
 import '../features/pointage/domain/use_cases/get_days_with_overtime_use_case.dart';
+import '../features/validation/data/models/validation_request_cache.dart';
+import '../features/validation/data/models/notification_cache.dart';
+import '../features/validation/data/models/sync_queue_item.dart';
+import '../features/validation/domain/use_cases/create_validation_request_usecase.dart';
+import '../features/validation/domain/use_cases/approve_validation_usecase.dart';
+import '../features/validation/domain/use_cases/reject_validation_usecase.dart';
+import '../features/validation/domain/use_cases/get_employee_validations_usecase.dart';
+import '../features/validation/domain/use_cases/get_manager_validations_usecase.dart';
+import '../features/validation/domain/use_cases/download_validation_pdf_usecase.dart';
+import '../features/validation/domain/use_cases/get_available_managers_usecase.dart';
+import '../features/validation/data/repositories/validation_repository_impl.dart';
+import '../features/validation/data/data_sources/validation_remote_data_source.dart';
+import '../features/validation/data/data_sources/validation_local_data_source.dart';
+import '../features/validation/presentation/bloc/validation_list/validation_list_bloc.dart';
+import '../features/validation/presentation/bloc/create_validation/create_validation_bloc.dart';
+import '../features/validation/presentation/bloc/validation_detail/validation_detail_bloc.dart';
+import '../core/services/supabase/supabase_service.dart';
 
 
 final getIt = GetIt.instance;
@@ -84,7 +103,16 @@ Future<void> setup() async {
   Future<Isar> getIsarInstance() async {
     if (!getIt.isRegistered<Isar>()) {
       final isar = await Isar.open(
-        [TimeSheetEntryModelSchema, GeneratedPdfModelSchema, UserPreferencesSchema, AbsenceSchema, AnomalyModelSchema],
+        [
+          TimeSheetEntryModelSchema, 
+          GeneratedPdfModelSchema, 
+          UserPreferencesSchema, 
+          AbsenceSchema, 
+          AnomalyModelSchema,
+          ValidationRequestCacheSchema,
+          NotificationCacheSchema,
+          SyncQueueItemSchema
+        ],
         directory: dir,
       );
       getIt.registerSingleton<Isar>(isar);
@@ -130,6 +158,10 @@ Future<void> setup() async {
   getIt.registerLazySingleton<GetUserPreferenceUseCase>(() => GetUserPreferenceUseCase(getIt<UserPreferencesRepositoryImpl>()));
   getIt.registerLazySingleton<SetUserPreferenceUseCase>(() => SetUserPreferenceUseCase(getIt<UserPreferencesRepositoryImpl>()));
   getIt.registerLazySingleton<GetSignatureUseCase>(() => GetSignatureUseCase(getIt<UserPreferencesRepositoryImpl>()));
+  
+  // Use cases pour la gestion des managers dans Supabase
+  getIt.registerLazySingleton<RegisterManagerUseCase>(() => RegisterManagerUseCase(SupabaseService.instance));
+  getIt.registerLazySingleton<UnregisterManagerUseCase>(() => UnregisterManagerUseCase(SupabaseService.instance));
   getIt.registerLazySingleton<GetTodayTimesheetEntryUseCase>(() => GetTodayTimesheetEntryUseCase(getIt<TimesheetRepositoryImpl>()));
   getIt.registerLazySingleton<SignalerAbsencePeriodeUsecase>(() => SignalerAbsencePeriodeUsecase(
     getTodayTimesheetEntryUseCase: getIt<GetTodayTimesheetEntryUseCase>(),
@@ -196,7 +228,81 @@ Future<void> setup() async {
   
   // Initialiser le service Watch
   await getIt<WatchService>().initialize();
-
-
-
+  
+  // Enregistrer les services de validation
+  getIt.registerLazySingleton<ValidationRemoteDataSource>(
+    () => ValidationRemoteDataSourceImpl(
+      supabaseClient: SupabaseService.instance.client,
+    ),
+  );
+  
+  getIt.registerLazySingleton<ValidationLocalDataSource>(
+    () => ValidationLocalDataSourceImpl(
+      isar: getIt<Isar>(),
+    ),
+  );
+  
+  getIt.registerLazySingleton<ValidationRepositoryImpl>(
+    () => ValidationRepositoryImpl(
+      remoteDataSource: getIt<ValidationRemoteDataSource>(),
+      localDataSource: getIt<ValidationLocalDataSource>(),
+      supabaseService: SupabaseService.instance,
+    ),
+  );
+  
+  // Enregistrer les use cases de validation
+  getIt.registerLazySingleton<CreateValidationRequestUseCase>(
+    () => CreateValidationRequestUseCase(getIt<ValidationRepositoryImpl>()),
+  );
+  
+  getIt.registerLazySingleton<ApproveValidationUseCase>(
+    () => ApproveValidationUseCase(getIt<ValidationRepositoryImpl>()),
+  );
+  
+  getIt.registerLazySingleton<RejectValidationUseCase>(
+    () => RejectValidationUseCase(getIt<ValidationRepositoryImpl>()),
+  );
+  
+  getIt.registerLazySingleton<GetEmployeeValidationsUseCase>(
+    () => GetEmployeeValidationsUseCase(getIt<ValidationRepositoryImpl>()),
+  );
+  
+  getIt.registerLazySingleton<GetManagerValidationsUseCase>(
+    () => GetManagerValidationsUseCase(getIt<ValidationRepositoryImpl>()),
+  );
+  
+  getIt.registerLazySingleton<DownloadValidationPdfUseCase>(
+    () => DownloadValidationPdfUseCase(getIt<ValidationRepositoryImpl>()),
+  );
+  
+  getIt.registerLazySingleton<GetAvailableManagersUseCase>(
+    () => GetAvailableManagersUseCase(getIt<ValidationRepositoryImpl>()),
+  );
+  
+  // Enregistrer les BLoCs de validation
+  getIt.registerFactory<ValidationListBloc>(
+    () => ValidationListBloc(
+      getEmployeeValidations: getIt<GetEmployeeValidationsUseCase>(),
+      getManagerValidations: getIt<GetManagerValidationsUseCase>(),
+      supabaseService: SupabaseService.instance,
+    ),
+  );
+  
+  getIt.registerFactory<CreateValidationBloc>(
+    () => CreateValidationBloc(
+      createValidationRequest: getIt<CreateValidationRequestUseCase>(),
+      getAvailableManagers: getIt<GetAvailableManagersUseCase>(),
+      supabaseService: SupabaseService.instance,
+      getUserPreference: getIt<GetUserPreferenceUseCase>(),
+    ),
+  );
+  
+  getIt.registerFactory<ValidationDetailBloc>(
+    () => ValidationDetailBloc(
+      repository: getIt<ValidationRepositoryImpl>(),
+      approveValidation: getIt<ApproveValidationUseCase>(),
+      rejectValidation: getIt<RejectValidationUseCase>(),
+      downloadPdf: getIt<DownloadValidationPdfUseCase>(),
+    ),
+  );
 }

@@ -7,6 +7,8 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:time_sheet/services/logger_service.dart';
 import 'package:time_sheet/services/service_factory.dart';
+import 'package:time_sheet/core/services/supabase/supabase_service.dart';
+import 'package:time_sheet/core/services/firebase/firebase_service.dart';
 import 'dart:io';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
@@ -41,6 +43,10 @@ void main() async {
   );
 
   await di.setup();
+
+  // Initialiser les services de validation manager
+  await SupabaseService.instance.initialize();
+  await FirebaseService.instance.initialize(); // Version minimale sans messaging
 
   initializeDateFormatting().then((_) => runApp(const MyApp()));
 }

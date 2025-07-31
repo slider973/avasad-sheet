@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:intl/intl.dart';
@@ -8,6 +9,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/services.dart';
 
+import '../../../../core/error/failures.dart';
 import '../../../../enum/absence_motif.dart';
 import '../../../../enum/absence_period.dart';
 import '../../../absence/domain/value_objects/absence_type.dart';
@@ -23,6 +25,7 @@ import '../entities/timesheet_entry.dart';
 import 'generate_week_usecase.dart';
 import '../services/anomaly_detection_service.dart';
 import 'calculate_overtime_hours_use_case.dart';
+import 'generate_pdf_params.dart';
 
 class GeneratePdfUseCase {
   final TimesheetRepository repository;
@@ -42,6 +45,24 @@ class GeneratePdfUseCase {
   final headerColor = PdfColor.fromHex('#D9D9D9'); // Gris clair pour l'en-tête
   final totalRowColor =
       PdfColor.fromHex('#F2F2F2'); // Gris très clair pour les totaux
+
+  /// Call method pour la compatibilité avec les BLoCs de validation
+  Future<Either<Failure, Uint8List>> call(GeneratePdfParams params) async {
+    final result = await execute(params.monthNumber, params.year);
+    
+    return result.fold(
+      (error) => Left(GeneralFailure(error)),
+      (pdfPath) async {
+        try {
+          final file = File(pdfPath);
+          final bytes = await file.readAsBytes();
+          return Right(bytes);
+        } catch (e) {
+          return Left(GeneralFailure('Impossible de lire le fichier PDF: $e'));
+        }
+      },
+    );
+  }
 
   Future<Either<String, String>> execute(int monthNumber, int year) async {
     try {

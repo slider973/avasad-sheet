@@ -1,0 +1,6 @@
+{
+  "projects": {
+    "default": "timesheet-validation-prod",
+    "staging": "timesheet-validation-staging"
+  }
+}
