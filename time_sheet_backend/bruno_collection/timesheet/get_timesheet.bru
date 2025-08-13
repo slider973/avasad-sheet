@@ -1,0 +1,28 @@
+meta {
+  name: Get Timesheet Data
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/timesheet/processTimesheet
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+vars:pre-request {
+  baseUrl: http://localhost:8080
+}
+
+body:json {
+  {
+    "action": "get",
+    "data": {
+      "validationRequestId": 1
+    }
+  }
+}

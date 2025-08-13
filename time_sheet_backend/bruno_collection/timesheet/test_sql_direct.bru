@@ -1,0 +1,25 @@
+meta {
+  name: Test SQL Direct Insert
+  type: http
+  seq: 4
+}
+
+post {
+  url: http://localhost:8080/timesheet/saveJsonData
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "method": "saveJsonData",
+    "args": [
+      "timesheet_test", // tableName
+      "{\"test\":\"data\",\"timestamp\":\"2024-07-20\"}" // jsonData
+    ]
+  }
+}

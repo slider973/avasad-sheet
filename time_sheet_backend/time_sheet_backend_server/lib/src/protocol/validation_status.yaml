@@ -1,0 +1,6 @@
+enum: ValidationStatus
+values:
+  - pending
+  - approved
+  - rejected
+  - expired

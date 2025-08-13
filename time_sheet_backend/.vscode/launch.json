@@ -1,0 +1,194 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Flutter App",
+            "type": "dart",
+            "request": "launch",
+            "program": "time_sheet_backend_flutter/lib/main.dart",
+            "cwd": "${workspaceFolder}/time_sheet_backend_flutter"
+        },
+        {
+            "name": "Flutter App (profile)",
+            "type": "dart",
+            "request": "launch",
+            "program": "time_sheet_backend_flutter/lib/main.dart",
+            "cwd": "${workspaceFolder}/time_sheet_backend_flutter",
+            "flutterMode": "profile"
+        },
+        {
+            "name": "Flutter App (release)",
+            "type": "dart",
+            "request": "launch",
+            "program": "time_sheet_backend_flutter/lib/main.dart",
+            "cwd": "${workspaceFolder}/time_sheet_backend_flutter",
+            "flutterMode": "release"
+        },
+        
+        {
+            "name": "Serverpod Server",
+            "type": "dart",
+            "request": "launch",
+            "program": "bin/main.dart",
+            "cwd": "${workspaceFolder}/time_sheet_backend_server",
+            "args": ["--apply-migrations"]
+        },
+        {
+            "name": "Serverpod Server (no migrations)",
+            "type": "dart",
+            "request": "launch",
+            "program": "bin/main.dart",
+            "cwd": "${workspaceFolder}/time_sheet_backend_server"
+        },
+        
+        {
+            "name": "Flutter App (iPhone)",
+            "type": "dart",
+            "request": "launch",
+            "program": "time_sheet_backend_flutter/lib/main.dart",
+            "cwd": "${workspaceFolder}/time_sheet_backend_flutter",
+            "deviceId": "iphone"
+        },
+        {
+            "name": "Flutter App (iPhone 16 Pro)",
+            "type": "dart",
+            "request": "launch",
+            "program": "lib/main.dart",
+            "cwd": "${workspaceFolder}/time_sheet_backend_flutter",
+            "deviceId": "E908CD12-F6AA-48DF-98C7-A9664C64E855"
+        },
+        {
+            "name": "Flutter App (iPhone 16 Pro) Paired",
+            "type": "dart",
+            "request": "launch",
+            "program": "lib/main.dart",
+            "cwd": "${workspaceFolder}/time_sheet_backend_flutter",
+            "deviceId": "32D6DE14-24A1-4F0D-8C0D-3AE32645A0AD"
+        },
+        {
+            "name": "Flutter App (Android)",
+            "type": "dart",
+            "request": "launch",
+            "program": "time_sheet_backend_flutter/lib/main.dart",
+            "cwd": "${workspaceFolder}/time_sheet_backend_flutter",
+            "deviceId": "emulator"
+        },
+        {
+            "name": "Flutter App (Chrome)",
+            "type": "dart",
+            "request": "launch",
+            "program": "time_sheet_backend_flutter/lib/main.dart",
+            "cwd": "${workspaceFolder}/time_sheet_backend_flutter",
+            "deviceId": "chrome"
+        },
+        {
+            "name": "Flutter App (macOS)",
+            "type": "dart",
+            "request": "launch",
+            "program": "time_sheet_backend_flutter/lib/main.dart",
+            "cwd": "${workspaceFolder}/time_sheet_backend_flutter",
+            "deviceId": "macos"
+        },
+        {
+            "name": "Flutter App (Windows)",
+            "type": "dart",
+            "request": "launch",
+            "program": "time_sheet_backend_flutter/lib/main.dart",
+            "cwd": "${workspaceFolder}/time_sheet_backend_flutter",
+            "deviceId": "windows"
+        },
+        
+                {
+            "name": "Run Flutter Tests",
+            "type": "dart",
+            "request": "launch",
+            "program": "time_sheet_backend_flutter/test/",
+            "cwd": "${workspaceFolder}/time_sheet_backend_flutter"
+        },
+        {
+            "name": "Run Server Tests",
+            "type": "dart",
+            "request": "launch",
+            "program": "time_sheet_backend_server/test/",
+            "cwd": "${workspaceFolder}/time_sheet_backend_server"
+        }
+    ],
+    "compounds": [
+        {
+            "name": "🚀 Full Stack Debug",
+            "configurations": ["Serverpod Server", "Flutter App"],
+            "preLaunchTask": "docker-compose-up",
+            "stopAll": true,
+            "presentation": {
+                "hidden": false,
+                "group": "Full Stack",
+                "order": 1
+            }
+        },
+        {
+            "name": "🚀 Full Stack Debug (iPhone)",
+            "configurations": ["Serverpod Server", "Flutter App (iPhone)"],
+            "preLaunchTask": "docker-compose-up",
+            "stopAll": true,
+            "presentation": {
+                "hidden": false,
+                "group": "Full Stack",
+                "order": 2
+            }
+        },
+        {
+            "name": "🚀 Full Stack Debug (Android)",
+            "configurations": ["Serverpod Server", "Flutter App (Android)"],
+            "preLaunchTask": "docker-compose-up",
+            "stopAll": true,
+            "presentation": {
+                "hidden": false,
+                "group": "Full Stack",
+                "order": 3
+            }
+        },
+        {
+            "name": "🚀 Full Stack Debug (Chrome)",
+            "configurations": ["Serverpod Server", "Flutter App (Chrome)"],
+            "preLaunchTask": "docker-compose-up",
+            "stopAll": true,
+            "presentation": {
+                "hidden": false,
+                "group": "Full Stack",
+                "order": 4
+            }
+        },
+        {
+            "name": "🚀 Full Stack Debug (macOS)",
+            "configurations": ["Serverpod Server", "Flutter App (macOS)"],
+            "preLaunchTask": "docker-compose-up",
+            "stopAll": true,
+            "presentation": {
+                "hidden": false,
+                "group": "Full Stack",
+                "order": 5
+            }
+        },
+        {
+            "name": "🚀 Full Stack Debug (Windows)",
+            "configurations": ["Serverpod Server", "Flutter App (Windows)"],
+            "preLaunchTask": "docker-compose-up",
+            "stopAll": true,
+            "presentation": {
+                "hidden": false,
+                "group": "Full Stack",
+                "order": 6
+            }
+        },
+        {
+            "name": "🧪 Run All Tests",
+            "configurations": ["Run Flutter Tests", "Run Server Tests"],
+            "stopAll": true,
+            "presentation": {
+                "hidden": false,
+                "group": "Tests",
+                "order": 1
+            }
+        }
+    ]
+}

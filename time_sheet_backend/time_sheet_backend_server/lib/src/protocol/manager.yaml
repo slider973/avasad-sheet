@@ -1,0 +1,19 @@
+class: Manager
+table: managers
+fields:
+  email: String
+  firstName: String
+  lastName: String
+  company: String
+  signature: String?
+  isActive: bool, default=true
+  createdAt: DateTime?, defaultPersist=now
+  updatedAt: DateTime?, defaultPersist=now
+indexes:
+  manager_email_idx:
+    fields: email
+    unique: true
+  manager_company_idx:
+    fields: company
+  manager_active_idx:
+    fields: isActive

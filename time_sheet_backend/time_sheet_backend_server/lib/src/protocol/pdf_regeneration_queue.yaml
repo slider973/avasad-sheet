@@ -1,0 +1,14 @@
+class: PdfRegenerationQueue
+table: pdf_regeneration_queue
+fields:
+  validationId: int
+  status: QueueStatus, default=pending
+  createdAt: DateTime?, defaultPersist=now
+  processedAt: DateTime?
+  errorMessage: String?
+  retryCount: int, default=0
+indexes:
+  queue_status_idx:
+    fields: status
+  queue_created_idx:
+    fields: createdAt

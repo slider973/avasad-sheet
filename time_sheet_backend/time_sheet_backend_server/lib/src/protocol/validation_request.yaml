@@ -1,0 +1,29 @@
+class: ValidationRequest
+table: validation_requests
+fields:
+  employeeId: String
+  employeeName: String
+  managerId: String
+  managerEmail: String
+  periodStart: DateTime
+  periodEnd: DateTime
+  status: ValidationStatus
+  pdfPath: String
+  pdfHash: String
+  pdfSizeBytes: int
+  managerSignature: String?
+  managerComment: String?
+  managerName: String?
+  validatedAt: DateTime?
+  expiresAt: DateTime?
+  createdAt: DateTime?, defaultPersist=now
+  updatedAt: DateTime?, defaultPersist=now
+indexes:
+  validation_employee_idx:
+    fields: employeeId
+  validation_manager_idx:
+    fields: managerId
+  validation_status_idx:
+    fields: status
+  validation_created_idx:
+    fields: createdAt

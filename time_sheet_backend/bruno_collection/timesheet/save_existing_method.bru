@@ -1,0 +1,54 @@
+meta {
+  name: Save Timesheet (Existing Method)
+  type: http
+  seq: 10
+}
+
+post {
+  url: http://localhost:8080/timesheet/saveTimesheetData
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+docs {
+  Cette méthode utilise l'endpoint existant saveTimesheetData
+  qui est déjà reconnu par Serverpod
+}
+
+body:json {
+  {
+    "validationRequestId": 1,
+    "employeeId": "john_doe",
+    "employeeName": "John Doe",
+    "employeeCompany": "Avasad",
+    "month": 7,
+    "year": 2024,
+    "entries": [
+      {
+        "dayDate": "21-Jun-24",
+        "startMorning": "08:00",
+        "endMorning": "12:00",
+        "startAfternoon": "13:00",
+        "endAfternoon": "17:00",
+        "isAbsence": false,
+        "hasOvertimeHours": false
+      },
+      {
+        "dayDate": "24-Jun-24",
+        "startMorning": "08:00",
+        "endMorning": "12:00",
+        "startAfternoon": "13:00",  
+        "endAfternoon": "17:00",
+        "isAbsence": false,
+        "hasOvertimeHours": false
+      }
+    ],
+    "totalDays": 20.0,
+    "totalHours": "160:00",
+    "totalOvertimeHours": "0:00"
+  }
+}

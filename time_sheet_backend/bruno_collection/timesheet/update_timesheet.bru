@@ -1,0 +1,41 @@
+meta {
+  name: Update Timesheet Data
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/timesheet/processTimesheet
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "action": "update",
+    "data": {
+      "id": 1,
+      "totalHours": "168:00",
+      "totalOvertimeHours": "8:00",
+      "entries": [
+        {
+          "dayDate": "21-Jun-24",
+          "startMorning": "08:00",
+          "endMorning": "12:00",
+          "startAfternoon": "13:00",
+          "endAfternoon": "18:00",
+          "isAbsence": false,
+          "hasOvertimeHours": true
+        }
+      ]
+    }
+  }
+}
+
+vars:pre-request {
+  baseUrl: http://localhost:8080
+}

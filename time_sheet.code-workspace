@@ -1,0 +1,68 @@
+{
+    "folders": [
+        {
+            "name": "🗂️ Racine Git",
+            "path": "."
+        },
+        {
+            "name": "🚀 Backend Serverpod",
+            "path": "time_sheet_backend/time_sheet_backend_server"
+        },
+        {
+            "name": "📱 App Flutter",
+            "path": "time_sheet_backend/time_sheet_backend_flutter"
+        },
+        {
+            "name": "📦 Client Serverpod",
+            "path": "time_sheet_backend/time_sheet_backend_client"
+        }
+    ],
+    "launch": {
+        "version": "0.2.0",
+        "configurations": [
+            {
+                "name": "Flutter App",
+                "type": "dart",
+                "request": "launch",
+                "program": "time_sheet_backend/time_sheet_backend_flutter/lib/main.dart",
+                "cwd": "${workspaceFolder}/time_sheet_backend/time_sheet_backend_flutter"
+            },
+            {
+                "name": "Serverpod Server",
+                "type": "dart",
+                "request": "launch",
+                "program": "time_sheet_backend/time_sheet_backend_server/bin/main.dart",
+                "cwd": "${workspaceFolder}/time_sheet_backend/time_sheet_backend_server",
+                "args": ["--apply-migrations"]
+            }
+        ],
+        "compounds": [
+            {
+                "name": "🚀 Full Stack Debug",
+                "configurations": ["Serverpod Server", "Flutter App"],
+                "preLaunchTask": "docker-compose-up",
+                "stopAll": true
+            }
+        ]
+    },
+    "tasks": {
+        "version": "2.0.0",
+        "tasks": [
+            {
+                "label": "docker-compose-up",
+                "type": "shell",
+                "command": "docker-compose up -d",
+                "options": {
+                    "cwd": "${workspaceFolder}/time_sheet_backend/time_sheet_backend_server"
+                }
+            }
+        ]
+    },
+    "settings": {
+        "files.exclude": {
+            "**/.dart_tool": true,
+            "**/build": true,
+            "**/.idea": true
+        }
+    }
+}

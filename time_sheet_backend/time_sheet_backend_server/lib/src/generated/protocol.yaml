@@ -1,0 +1,43 @@
+manager:
+  - createManager:
+  - updateManager:
+  - getActiveManagers:
+  - getManagerById:
+  - getManagerByEmail:
+  - deactivateManager:
+  - activateManager:
+  - createOrActivateManager:
+  - getManagerStatistics:
+  - searchManagers:
+  - importManagers:
+notification:
+  - getUserNotifications:
+  - markAsRead:
+  - markAllAsRead:
+  - deleteNotification:
+  - deleteReadNotifications:
+  - getUnreadCount:
+  - createNotification:
+  - createBulkNotifications:
+  - cleanupOldNotifications:
+  - getNotificationsByType:
+  - sendValidationReminders:
+pdfProcessor:
+  - processPdfQueue:
+  - cleanupOldJobs:
+timesheet:
+  - processTimesheet:
+  - saveTimesheetData:
+  - getTimesheetData:
+  - generateSignedPdf:
+validation:
+  - createValidation:
+  - approveValidation:
+  - rejectValidation:
+  - getEmployeeValidations:
+  - getManagerValidations:
+  - getValidation:
+  - downloadValidationPdf:
+  - checkExpiredValidations:
+greeting:
+  - hello:

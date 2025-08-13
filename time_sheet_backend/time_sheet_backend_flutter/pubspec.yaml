@@ -1,0 +1,187 @@
+name: time_sheet
+description: Time sheet pour HeyTalent
+# The following line prevents the package from being accidentally published to
+# pub.dev using `flutter pub publish`. This is preferred for private packages.
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+# The following defines the version and build number for your application.
+# A version number is three numbers separated by dots, like 1.2.43
+# followed by an optional build number separated by a +.
+# Both the version and the builder number may be overridden in flutter
+# build by specifying --build-name and --build-number, respectively.
+# In Android, build-name is used as versionName while build-number used as versionCode.
+# Read more about Android versioning at https://developer.android.com/studio/publish/versioning
+# In iOS, build-name is used as CFBundleShortVersionString while build-number is used as CFBundleVersion.
+# Read more about iOS versioning at
+# https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
+# In Windows, build-name is used as the major, minor, and patch parts
+# of the product and file versions while build-number is used as the build suffix.
+version: 1.0.2+2
+
+isar_version: ^3.1.0+1
+
+environment:
+  sdk: '>=3.1.2 <4.0.0'
+
+# Dependencies specify other packages that your package needs in order to work.
+# To automatically upgrade your package dependencies to the latest versions
+# consider running `flutter pub upgrade --major-versions`. Alternatively,
+# dependencies can be manually updated by changing the version numbers below to
+# the latest version available on pub.dev. To see which dependencies have newer
+# versions available, run `flutter pub outdated`.
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  flutter_bloc: ^9.1.1
+  equatable: ^2.0.5
+  logger: ^2.3.0
+  pdf: ^3.11.0
+  path_provider: ^2.1.3
+  intl: ^0.20.2
+  table_calendar: ^3.1.2
+  get: ^4.6.6
+  get_it: ^8.0.0
+  isar: ^3.1.0+1
+  sentry_flutter: ^9.5.0
+  syncfusion_flutter_calendar: ^30.1.42
+  
+  # Serverpod client
+  time_sheet_backend_client:
+    path: ../time_sheet_backend_client
+  serverpod_flutter: ^2.9.1
+
+
+
+  # The following adds the Cupertino Icons font to your application.
+  # Use with the CupertinoIcons class for iOS style icons.
+  cupertino_icons: ^1.0.8
+  permission_handler: ^12.0.1
+  device_info: ^2.0.3
+  url_launcher: ^6.3.0
+  open_file: ^3.5.5
+  flutter_pdfview: ^1.3.3
+  signature: ^6.3.0
+  flutter_launcher_icons: ^0.14.0
+  flutter_native_splash: ^2.4.1
+  window_manager: ^0.5.1
+  lottie: ^3.1.2
+  share_plus: ^11.0.0
+  process_run: ^1.2.0
+  file_picker: ^10.2.0
+  flutter_local_notifications: ^19.4.0
+  timezone: ^0.10.1
+  flutter_timezone: ^4.1.1
+  excel: ^4.0.3
+  win32: ^5.5.4
+  ffi: ^2.1.3
+  google_sign_in: ^7.1.1
+  googleapis: ^14.0.0
+  http: ^1.2.2
+  flutter_animate: ^4.5.0
+  package_info_plus: ^8.0.2
+  fpdart: ^1.1.0
+  fl_chart: ^1.0.0
+  syncfusion_flutter_charts: ^30.1.42
+  shared_preferences: ^2.2.2
+  watch_connectivity: ^0.2.1+1
+  
+  # Validation Manager dependencies
+  supabase_flutter: ^2.3.4
+  firebase_core: ^4.0.0
+  # firebase_messaging: ^14.7.10  # Désactivé temporairement - problème iOS
+  # firebase_analytics: ^10.8.0   # Désactivé temporairement
+  encrypt: ^5.0.3
+  crypto: ^3.0.3
+  flutter_secure_storage: ^9.0.0
+  printing: ^5.13.1
+
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  isar_flutter_libs: ^3.1.0+1 # contains Isar Core
+  isar_generator: ^3.1.0+1
+  mockito: ^5.4.4
+  build_runner: any
+  flutter_native_splash: ^2.4.1
+
+  # The "flutter_lints" package below contains a set of recommended lints to
+  # encourage good coding practices. The lint set provided by the package is
+  # activated in the `analysis_options.yaml` file located at the root of your
+  # package. See that file for information about deactivating specific lint
+  # rules and activating additional ones.
+  flutter_lints: ^6.0.0
+
+# For information on the generic Dart part of this file, see the
+# following page: https://dart.dev/tools/pub/pubspec
+
+# The following section is specific to Flutter packages.
+flutter:
+
+  # The following line ensures that the Material Icons font is
+  # included with your application, so that you can use the icons in
+  # the material Icons class.
+  uses-material-design: true
+
+  # To add assets to your application, add an assets section, like this:
+  assets:
+    - assets/images/logo-heytalent.png
+    - assets/images/logo-app.webp
+    - assets/images/logo-app.png
+    - assets/images/logo-sonrysa.png
+    - assets/images/undraw_in_no_time_6igu.png
+    - assets/animation/
+  #   - images/a_dot_ham.jpeg
+
+  # An image asset can refer to one or more resolution-specific "variants", see
+  # https://flutter.dev/assets-and-images/#resolution-aware
+
+  # For details regarding adding assets from package dependencies, see
+  # https://flutter.dev/assets-and-images/#from-packages
+
+  # To add custom fonts to your application, add a fonts section here,
+  # in this "flutter" section. Each entry in this list should have a
+  # "family" key with the font family name, and a "fonts" key with a
+  # list giving the asset and other descriptors for the font. For
+  # example:
+  fonts:
+    - family: Hevetica
+      fonts:
+        - asset: assets/fonts/helvetica.ttf
+  #   - family: Trajan Pro
+  #     fonts:
+  #       - asset: fonts/TrajanPro.ttf
+  #       - asset: fonts/TrajanPro_Bold.ttf
+  #         weight: 700
+  #
+  # For details regarding fonts from package dependencies,
+  # see https://flutter.dev/custom-fonts/#from-packages
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  remove_alpha_ios: true
+  image_path: "assets/images/logo-app.webp"
+  min_sdk_android: 21 # android min sdk min:16, default 21
+  web:
+    generate: true
+    image_path: "assets/images/logo-app.webp"
+    background_color: "#hexcode"
+    theme_color: "#hexcode"
+  windows:
+    generate: true
+    image_path: "assets/images/logo-app.webp"
+    icon_size: 48 # min:48, max:256, default: 48
+  macos:
+    generate: true
+    image_path: "assets/images/logo-app.webp"
+flutter_native_splash:
+  color: "#DED9D3"  # Couleur d'arrière-plan principale
+  image: assets/images/logo-app.png  # Chemin vers l'image principale
+  android: true
+  ios: true
+  web: true
+  android_12:
+    image: assets/images/logo-app.png  # Chemin vers l'image pour Android 12
+    icon_background_color: "#DED9D3"  # Couleur de fond pour l'icône Android 12

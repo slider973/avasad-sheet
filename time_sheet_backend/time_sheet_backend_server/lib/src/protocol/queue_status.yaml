@@ -1,0 +1,6 @@
+enum: QueueStatus
+values:
+  - pending
+  - processing
+  - completed
+  - failed

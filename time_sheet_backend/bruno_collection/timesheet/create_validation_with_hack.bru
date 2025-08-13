@@ -1,0 +1,30 @@
+meta {
+  name: Create Validation with Timesheet Data (Hack)
+  type: http
+  seq: 3
+}
+
+post {
+  url: http://localhost:8080/validation/createValidation
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "method": "createValidation",
+    "args": [
+      "JSON:john_doe|{\"employeeName\":\"John Doe\",\"employeeCompany\":\"Avasad\",\"month\":7,\"year\":2024,\"entries\":[{\"dayDate\":\"21-Jun-24\",\"startMorning\":\"08:00\",\"endMorning\":\"12:00\",\"startAfternoon\":\"13:00\",\"endAfternoon\":\"17:00\",\"isAbsence\":false,\"hasOvertimeHours\":false}],\"totalDays\":20.0,\"totalHours\":\"160:00\",\"totalOvertimeHours\":\"0:00\"}",  // employeeId avec hack JSON
+      "John Doe",  // employeeName
+      "1",  // managerId
+      "manager@example.com",  // managerEmail
+      "2024-06-21T00:00:00.000Z",  // periodStart
+      "2024-07-20T23:59:59.000Z",  // periodEnd
+      [80, 68, 70, 45, 49, 46, 52]  // pdfBytes (exemple)
+    ]
+  }
+}

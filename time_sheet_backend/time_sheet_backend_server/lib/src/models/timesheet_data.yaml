@@ -1,0 +1,22 @@
+class: TimesheetData
+table: timesheet_data
+fields:
+  validationRequestId: int
+  employeeId: String
+  employeeName: String
+  employeeCompany: String
+  month: int
+  year: int
+  entries: String # JSON string containing all timesheet entries
+  totalDays: double
+  totalHours: String # Duration as string
+  totalOvertimeHours: String # Duration as string
+  createdAt: DateTime, default=now
+  updatedAt: DateTime, default=now
+
+indexes:
+  validation_idx:
+    fields: validationRequestId
+    unique: true
+  employee_period_idx:
+    fields: employeeId, month, year

@@ -1,0 +1,11 @@
+{
+    "recommendations": [
+        "dart-code.dart-code",
+        "dart-code.flutter",
+        "serverpod.serverpod-vscode",
+        "ms-azuretools.vscode-docker",
+        "ms-vscode.vscode-typescript-next",
+        "usernamehw.errorlens",
+        "gruntfuggly.todo-tree"
+    ]
+}

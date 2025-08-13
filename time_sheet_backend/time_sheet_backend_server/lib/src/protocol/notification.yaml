@@ -1,0 +1,18 @@
+class: Notification
+table: notifications
+fields:
+  userId: String
+  type: NotificationType
+  title: String
+  message: String
+  data: String?
+  isRead: bool, default=false
+  createdAt: DateTime?, defaultPersist=now
+  readAt: DateTime?
+indexes:
+  notification_user_idx:
+    fields: userId
+  notification_read_idx:
+    fields: isRead
+  notification_created_idx:
+    fields: createdAt

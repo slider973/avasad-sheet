@@ -1,0 +1,9 @@
+class: TimesheetEntry
+fields:
+  dayDate: String
+  startMorning: String
+  endMorning: String
+  startAfternoon: String
+  endAfternoon: String
+  isAbsence: bool
+  hasOvertimeHours: bool

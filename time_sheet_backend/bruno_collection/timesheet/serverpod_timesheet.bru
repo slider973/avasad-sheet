@@ -1,0 +1,33 @@
+meta {
+  name: Save Timesheet Data
+  type: http
+  seq: 1
+}
+
+post {
+  url: http://localhost:8080/timesheet/saveTimesheetDataJson
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "method": "saveTimesheetDataJson",
+    "args": [
+      "1", // validationRequestId
+      "john_doe", // employeeId
+      "John Doe", // employeeName
+      "Avasad", // employeeCompany
+      7, // month
+      2024, // year
+      "[{\"dayDate\":\"21-Jun-24\",\"startMorning\":\"08:00\",\"endMorning\":\"12:00\",\"startAfternoon\":\"13:00\",\"endAfternoon\":\"17:00\",\"isAbsence\":false,\"hasOvertimeHours\":false}]", // entries as JSON string
+      20.0, // totalDays
+      "160:00", // totalHours
+      "0:00" // totalOvertimeHours
+    ]
+  }
+}
