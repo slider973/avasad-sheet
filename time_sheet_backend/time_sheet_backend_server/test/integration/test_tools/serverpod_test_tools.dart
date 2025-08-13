@@ -19,13 +19,9 @@ import 'package:time_sheet_backend_server/src/generated/notification.dart'
     as _i5;
 import 'package:time_sheet_backend_server/src/generated/notification_type.dart'
     as _i6;
-import 'package:time_sheet_backend_server/src/generated/timesheet_data.dart'
-    as _i7;
-import 'package:time_sheet_backend_server/src/generated/timesheet_entry.dart'
-    as _i8;
 import 'package:time_sheet_backend_server/src/generated/validation_request.dart'
-    as _i9;
-import 'package:time_sheet_backend_server/src/generated/greeting.dart' as _i10;
+    as _i7;
+import 'package:time_sheet_backend_server/src/generated/greeting.dart' as _i8;
 import 'package:time_sheet_backend_server/src/generated/protocol.dart';
 import 'package:time_sheet_backend_server/src/generated/endpoints.dart';
 export 'package:serverpod_test/serverpod_test_public_exports.dart';
@@ -116,10 +112,6 @@ class TestEndpoints {
 
   late final _NotificationEndpoint notification;
 
-  late final _PdfProcessorEndpoint pdfProcessor;
-
-  late final _TimesheetEndpoint timesheet;
-
   late final _ValidationEndpoint validation;
 
   late final _GreetingEndpoint greeting;
@@ -137,14 +129,6 @@ class _InternalTestEndpoints extends TestEndpoints
       serializationManager,
     );
     notification = _NotificationEndpoint(
-      endpoints,
-      serializationManager,
-    );
-    pdfProcessor = _PdfProcessorEndpoint(
-      endpoints,
-      serializationManager,
-    );
-    timesheet = _TimesheetEndpoint(
       endpoints,
       serializationManager,
     );
@@ -870,230 +854,6 @@ class _NotificationEndpoint {
   }
 }
 
-class _PdfProcessorEndpoint {
-  _PdfProcessorEndpoint(
-    this._endpointDispatch,
-    this._serializationManager,
-  );
-
-  final _i2.EndpointDispatch _endpointDispatch;
-
-  final _i2.SerializationManager _serializationManager;
-
-  _i3.Future<void> processPdfQueue(
-      _i1.TestSessionBuilder sessionBuilder) async {
-    return _i1.callAwaitableFunctionAndHandleExceptions(() async {
-      var _localUniqueSession =
-          (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
-        endpoint: 'pdfProcessor',
-        method: 'processPdfQueue',
-      );
-      try {
-        var _localCallContext = await _endpointDispatch.getMethodCallContext(
-          createSessionCallback: (_) => _localUniqueSession,
-          endpointPath: 'pdfProcessor',
-          methodName: 'processPdfQueue',
-          parameters: _i1.testObjectToJson({}),
-          serializationManager: _serializationManager,
-        );
-        var _localReturnValue = await (_localCallContext.method.call(
-          _localUniqueSession,
-          _localCallContext.arguments,
-        ) as _i3.Future<void>);
-        return _localReturnValue;
-      } finally {
-        await _localUniqueSession.close();
-      }
-    });
-  }
-
-  _i3.Future<void> cleanupOldJobs(_i1.TestSessionBuilder sessionBuilder) async {
-    return _i1.callAwaitableFunctionAndHandleExceptions(() async {
-      var _localUniqueSession =
-          (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
-        endpoint: 'pdfProcessor',
-        method: 'cleanupOldJobs',
-      );
-      try {
-        var _localCallContext = await _endpointDispatch.getMethodCallContext(
-          createSessionCallback: (_) => _localUniqueSession,
-          endpointPath: 'pdfProcessor',
-          methodName: 'cleanupOldJobs',
-          parameters: _i1.testObjectToJson({}),
-          serializationManager: _serializationManager,
-        );
-        var _localReturnValue = await (_localCallContext.method.call(
-          _localUniqueSession,
-          _localCallContext.arguments,
-        ) as _i3.Future<void>);
-        return _localReturnValue;
-      } finally {
-        await _localUniqueSession.close();
-      }
-    });
-  }
-}
-
-class _TimesheetEndpoint {
-  _TimesheetEndpoint(
-    this._endpointDispatch,
-    this._serializationManager,
-  );
-
-  final _i2.EndpointDispatch _endpointDispatch;
-
-  final _i2.SerializationManager _serializationManager;
-
-  _i3.Future<Map<String, dynamic>> processTimesheet(
-    _i1.TestSessionBuilder sessionBuilder,
-    String action,
-    Map<String, dynamic> data,
-  ) async {
-    return _i1.callAwaitableFunctionAndHandleExceptions(() async {
-      var _localUniqueSession =
-          (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
-        endpoint: 'timesheet',
-        method: 'processTimesheet',
-      );
-      try {
-        var _localCallContext = await _endpointDispatch.getMethodCallContext(
-          createSessionCallback: (_) => _localUniqueSession,
-          endpointPath: 'timesheet',
-          methodName: 'processTimesheet',
-          parameters: _i1.testObjectToJson({
-            'action': action,
-            'data': data,
-          }),
-          serializationManager: _serializationManager,
-        );
-        var _localReturnValue = await (_localCallContext.method.call(
-          _localUniqueSession,
-          _localCallContext.arguments,
-        ) as _i3.Future<Map<String, dynamic>>);
-        return _localReturnValue;
-      } finally {
-        await _localUniqueSession.close();
-      }
-    });
-  }
-
-  _i3.Future<_i7.TimesheetData> saveTimesheetData(
-    _i1.TestSessionBuilder sessionBuilder,
-    int validationRequestId,
-    String employeeId,
-    String employeeName,
-    String employeeCompany,
-    int month,
-    int year,
-    List<_i8.TimesheetEntry> entries,
-    double totalDays,
-    String totalHours,
-    String totalOvertimeHours,
-  ) async {
-    return _i1.callAwaitableFunctionAndHandleExceptions(() async {
-      var _localUniqueSession =
-          (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
-        endpoint: 'timesheet',
-        method: 'saveTimesheetData',
-      );
-      try {
-        var _localCallContext = await _endpointDispatch.getMethodCallContext(
-          createSessionCallback: (_) => _localUniqueSession,
-          endpointPath: 'timesheet',
-          methodName: 'saveTimesheetData',
-          parameters: _i1.testObjectToJson({
-            'validationRequestId': validationRequestId,
-            'employeeId': employeeId,
-            'employeeName': employeeName,
-            'employeeCompany': employeeCompany,
-            'month': month,
-            'year': year,
-            'entries': entries,
-            'totalDays': totalDays,
-            'totalHours': totalHours,
-            'totalOvertimeHours': totalOvertimeHours,
-          }),
-          serializationManager: _serializationManager,
-        );
-        var _localReturnValue = await (_localCallContext.method.call(
-          _localUniqueSession,
-          _localCallContext.arguments,
-        ) as _i3.Future<_i7.TimesheetData>);
-        return _localReturnValue;
-      } finally {
-        await _localUniqueSession.close();
-      }
-    });
-  }
-
-  _i3.Future<_i7.TimesheetData?> getTimesheetData(
-    _i1.TestSessionBuilder sessionBuilder,
-    int validationRequestId,
-  ) async {
-    return _i1.callAwaitableFunctionAndHandleExceptions(() async {
-      var _localUniqueSession =
-          (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
-        endpoint: 'timesheet',
-        method: 'getTimesheetData',
-      );
-      try {
-        var _localCallContext = await _endpointDispatch.getMethodCallContext(
-          createSessionCallback: (_) => _localUniqueSession,
-          endpointPath: 'timesheet',
-          methodName: 'getTimesheetData',
-          parameters: _i1
-              .testObjectToJson({'validationRequestId': validationRequestId}),
-          serializationManager: _serializationManager,
-        );
-        var _localReturnValue = await (_localCallContext.method.call(
-          _localUniqueSession,
-          _localCallContext.arguments,
-        ) as _i3.Future<_i7.TimesheetData?>);
-        return _localReturnValue;
-      } finally {
-        await _localUniqueSession.close();
-      }
-    });
-  }
-
-  _i3.Future<List<int>> generateSignedPdf(
-    _i1.TestSessionBuilder sessionBuilder,
-    int validationRequestId,
-    String? employeeSignature,
-    String? managerSignature,
-    String? managerName,
-  ) async {
-    return _i1.callAwaitableFunctionAndHandleExceptions(() async {
-      var _localUniqueSession =
-          (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
-        endpoint: 'timesheet',
-        method: 'generateSignedPdf',
-      );
-      try {
-        var _localCallContext = await _endpointDispatch.getMethodCallContext(
-          createSessionCallback: (_) => _localUniqueSession,
-          endpointPath: 'timesheet',
-          methodName: 'generateSignedPdf',
-          parameters: _i1.testObjectToJson({
-            'validationRequestId': validationRequestId,
-            'employeeSignature': employeeSignature,
-            'managerSignature': managerSignature,
-            'managerName': managerName,
-          }),
-          serializationManager: _serializationManager,
-        );
-        var _localReturnValue = await (_localCallContext.method.call(
-          _localUniqueSession,
-          _localCallContext.arguments,
-        ) as _i3.Future<List<int>>);
-        return _localReturnValue;
-      } finally {
-        await _localUniqueSession.close();
-      }
-    });
-  }
-}
-
 class _ValidationEndpoint {
   _ValidationEndpoint(
     this._endpointDispatch,
@@ -1104,7 +864,7 @@ class _ValidationEndpoint {
 
   final _i2.SerializationManager _serializationManager;
 
-  _i3.Future<_i9.ValidationRequest> createValidation(
+  _i3.Future<_i7.ValidationRequest> createValidation(
     _i1.TestSessionBuilder sessionBuilder,
     String employeeId,
     String employeeName,
@@ -1139,7 +899,7 @@ class _ValidationEndpoint {
         var _localReturnValue = await (_localCallContext.method.call(
           _localUniqueSession,
           _localCallContext.arguments,
-        ) as _i3.Future<_i9.ValidationRequest>);
+        ) as _i3.Future<_i7.ValidationRequest>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -1147,7 +907,7 @@ class _ValidationEndpoint {
     });
   }
 
-  _i3.Future<_i9.ValidationRequest> approveValidation(
+  _i3.Future<_i7.ValidationRequest> approveValidation(
     _i1.TestSessionBuilder sessionBuilder,
     int validationId,
     String managerName,
@@ -1174,7 +934,7 @@ class _ValidationEndpoint {
         var _localReturnValue = await (_localCallContext.method.call(
           _localUniqueSession,
           _localCallContext.arguments,
-        ) as _i3.Future<_i9.ValidationRequest>);
+        ) as _i3.Future<_i7.ValidationRequest>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -1182,7 +942,7 @@ class _ValidationEndpoint {
     });
   }
 
-  _i3.Future<_i9.ValidationRequest> rejectValidation(
+  _i3.Future<_i7.ValidationRequest> rejectValidation(
     _i1.TestSessionBuilder sessionBuilder,
     int validationId,
     String comment,
@@ -1209,7 +969,7 @@ class _ValidationEndpoint {
         var _localReturnValue = await (_localCallContext.method.call(
           _localUniqueSession,
           _localCallContext.arguments,
-        ) as _i3.Future<_i9.ValidationRequest>);
+        ) as _i3.Future<_i7.ValidationRequest>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -1217,7 +977,7 @@ class _ValidationEndpoint {
     });
   }
 
-  _i3.Future<List<_i9.ValidationRequest>> getEmployeeValidations(
+  _i3.Future<List<_i7.ValidationRequest>> getEmployeeValidations(
     _i1.TestSessionBuilder sessionBuilder,
     String employeeId,
   ) async {
@@ -1238,7 +998,7 @@ class _ValidationEndpoint {
         var _localReturnValue = await (_localCallContext.method.call(
           _localUniqueSession,
           _localCallContext.arguments,
-        ) as _i3.Future<List<_i9.ValidationRequest>>);
+        ) as _i3.Future<List<_i7.ValidationRequest>>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -1246,7 +1006,7 @@ class _ValidationEndpoint {
     });
   }
 
-  _i3.Future<List<_i9.ValidationRequest>> getManagerValidations(
+  _i3.Future<List<_i7.ValidationRequest>> getManagerValidations(
     _i1.TestSessionBuilder sessionBuilder,
     String managerEmail,
   ) async {
@@ -1267,7 +1027,7 @@ class _ValidationEndpoint {
         var _localReturnValue = await (_localCallContext.method.call(
           _localUniqueSession,
           _localCallContext.arguments,
-        ) as _i3.Future<List<_i9.ValidationRequest>>);
+        ) as _i3.Future<List<_i7.ValidationRequest>>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -1275,7 +1035,7 @@ class _ValidationEndpoint {
     });
   }
 
-  _i3.Future<_i9.ValidationRequest?> getValidation(
+  _i3.Future<_i7.ValidationRequest?> getValidation(
     _i1.TestSessionBuilder sessionBuilder,
     int validationId,
   ) async {
@@ -1296,7 +1056,7 @@ class _ValidationEndpoint {
         var _localReturnValue = await (_localCallContext.method.call(
           _localUniqueSession,
           _localCallContext.arguments,
-        ) as _i3.Future<_i9.ValidationRequest?>);
+        ) as _i3.Future<_i7.ValidationRequest?>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -1307,7 +1067,6 @@ class _ValidationEndpoint {
   _i3.Future<List<int>> downloadValidationPdf(
     _i1.TestSessionBuilder sessionBuilder,
     int validationId,
-    String? managerSignature,
   ) async {
     return _i1.callAwaitableFunctionAndHandleExceptions(() async {
       var _localUniqueSession =
@@ -1320,10 +1079,7 @@ class _ValidationEndpoint {
           createSessionCallback: (_) => _localUniqueSession,
           endpointPath: 'validation',
           methodName: 'downloadValidationPdf',
-          parameters: _i1.testObjectToJson({
-            'validationId': validationId,
-            'managerSignature': managerSignature,
-          }),
+          parameters: _i1.testObjectToJson({'validationId': validationId}),
           serializationManager: _serializationManager,
         );
         var _localReturnValue = await (_localCallContext.method.call(
@@ -1375,7 +1131,7 @@ class _GreetingEndpoint {
 
   final _i2.SerializationManager _serializationManager;
 
-  _i3.Future<_i10.Greeting> hello(
+  _i3.Future<_i8.Greeting> hello(
     _i1.TestSessionBuilder sessionBuilder,
     String name,
   ) async {
@@ -1396,7 +1152,7 @@ class _GreetingEndpoint {
         var _localReturnValue = await (_localCallContext.method.call(
           _localUniqueSession,
           _localCallContext.arguments,
-        ) as _i3.Future<_i10.Greeting>);
+        ) as _i3.Future<_i8.Greeting>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();

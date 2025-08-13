@@ -16,14 +16,10 @@ import 'package:time_sheet_backend_client/src/protocol/notification.dart'
     as _i4;
 import 'package:time_sheet_backend_client/src/protocol/notification_type.dart'
     as _i5;
-import 'package:time_sheet_backend_client/src/protocol/timesheet_data.dart'
-    as _i6;
-import 'package:time_sheet_backend_client/src/protocol/timesheet_entry.dart'
-    as _i7;
 import 'package:time_sheet_backend_client/src/protocol/validation_request.dart'
-    as _i8;
-import 'package:time_sheet_backend_client/src/protocol/greeting.dart' as _i9;
-import 'protocol.dart' as _i10;
+    as _i6;
+import 'package:time_sheet_backend_client/src/protocol/greeting.dart' as _i7;
+import 'protocol.dart' as _i8;
 
 /// {@category Endpoint}
 class EndpointManager extends _i1.EndpointRef {
@@ -286,112 +282,6 @@ class EndpointNotification extends _i1.EndpointRef {
 }
 
 /// {@category Endpoint}
-class EndpointPdfProcessor extends _i1.EndpointRef {
-  EndpointPdfProcessor(_i1.EndpointCaller caller) : super(caller);
-
-  @override
-  String get name => 'pdfProcessor';
-
-  /// Traiter la queue de régénération PDF
-  _i2.Future<void> processPdfQueue() => caller.callServerEndpoint<void>(
-        'pdfProcessor',
-        'processPdfQueue',
-        {},
-      );
-
-  /// Nettoyer les anciens jobs de la queue
-  _i2.Future<void> cleanupOldJobs() => caller.callServerEndpoint<void>(
-        'pdfProcessor',
-        'cleanupOldJobs',
-        {},
-      );
-}
-
-/// {@category Endpoint}
-class EndpointTimesheet extends _i1.EndpointRef {
-  EndpointTimesheet(_i1.EndpointCaller caller) : super(caller);
-
-  @override
-  String get name => 'timesheet';
-
-  /// Endpoint unique et professionnel pour gérer toutes les opérations timesheet
-  ///
-  /// Cette méthode gère toutes les opérations via un paramètre 'action':
-  /// - 'save': Sauvegarder des données timesheet
-  /// - 'get': Récupérer des données timesheet
-  /// - 'update': Mettre à jour des données existantes
-  /// - 'generatePdf': Générer un PDF avec signatures
-  _i2.Future<Map<String, dynamic>> processTimesheet(
-    String action,
-    Map<String, dynamic> data,
-  ) =>
-      caller.callServerEndpoint<Map<String, dynamic>>(
-        'timesheet',
-        'processTimesheet',
-        {
-          'action': action,
-          'data': data,
-        },
-      );
-
-  /// Sauvegarder les données du timesheet (compatibilité)
-  _i2.Future<_i6.TimesheetData> saveTimesheetData(
-    int validationRequestId,
-    String employeeId,
-    String employeeName,
-    String employeeCompany,
-    int month,
-    int year,
-    List<_i7.TimesheetEntry> entries,
-    double totalDays,
-    String totalHours,
-    String totalOvertimeHours,
-  ) =>
-      caller.callServerEndpoint<_i6.TimesheetData>(
-        'timesheet',
-        'saveTimesheetData',
-        {
-          'validationRequestId': validationRequestId,
-          'employeeId': employeeId,
-          'employeeName': employeeName,
-          'employeeCompany': employeeCompany,
-          'month': month,
-          'year': year,
-          'entries': entries,
-          'totalDays': totalDays,
-          'totalHours': totalHours,
-          'totalOvertimeHours': totalOvertimeHours,
-        },
-      );
-
-  /// Récupérer les données du timesheet (compatibilité)
-  _i2.Future<_i6.TimesheetData?> getTimesheetData(int validationRequestId) =>
-      caller.callServerEndpoint<_i6.TimesheetData?>(
-        'timesheet',
-        'getTimesheetData',
-        {'validationRequestId': validationRequestId},
-      );
-
-  /// Générer un PDF avec signature (compatibilité)
-  _i2.Future<List<int>> generateSignedPdf(
-    int validationRequestId,
-    String? employeeSignature,
-    String? managerSignature,
-    String? managerName,
-  ) =>
-      caller.callServerEndpoint<List<int>>(
-        'timesheet',
-        'generateSignedPdf',
-        {
-          'validationRequestId': validationRequestId,
-          'employeeSignature': employeeSignature,
-          'managerSignature': managerSignature,
-          'managerName': managerName,
-        },
-      );
-}
-
-/// {@category Endpoint}
 class EndpointValidation extends _i1.EndpointRef {
   EndpointValidation(_i1.EndpointCaller caller) : super(caller);
 
@@ -399,7 +289,7 @@ class EndpointValidation extends _i1.EndpointRef {
   String get name => 'validation';
 
   /// Créer une nouvelle demande de validation
-  _i2.Future<_i8.ValidationRequest> createValidation(
+  _i2.Future<_i6.ValidationRequest> createValidation(
     String employeeId,
     String employeeName,
     String managerId,
@@ -408,7 +298,7 @@ class EndpointValidation extends _i1.EndpointRef {
     DateTime periodEnd,
     List<int> pdfBytes,
   ) =>
-      caller.callServerEndpoint<_i8.ValidationRequest>(
+      caller.callServerEndpoint<_i6.ValidationRequest>(
         'validation',
         'createValidation',
         {
@@ -423,12 +313,12 @@ class EndpointValidation extends _i1.EndpointRef {
       );
 
   /// Approuver une validation
-  _i2.Future<_i8.ValidationRequest> approveValidation(
+  _i2.Future<_i6.ValidationRequest> approveValidation(
     int validationId,
     String managerName,
     String? comment,
   ) =>
-      caller.callServerEndpoint<_i8.ValidationRequest>(
+      caller.callServerEndpoint<_i6.ValidationRequest>(
         'validation',
         'approveValidation',
         {
@@ -439,12 +329,12 @@ class EndpointValidation extends _i1.EndpointRef {
       );
 
   /// Rejeter une validation
-  _i2.Future<_i8.ValidationRequest> rejectValidation(
+  _i2.Future<_i6.ValidationRequest> rejectValidation(
     int validationId,
     String comment,
     String managerName,
   ) =>
-      caller.callServerEndpoint<_i8.ValidationRequest>(
+      caller.callServerEndpoint<_i6.ValidationRequest>(
         'validation',
         'rejectValidation',
         {
@@ -455,43 +345,37 @@ class EndpointValidation extends _i1.EndpointRef {
       );
 
   /// Obtenir les validations d'un employé
-  _i2.Future<List<_i8.ValidationRequest>> getEmployeeValidations(
+  _i2.Future<List<_i6.ValidationRequest>> getEmployeeValidations(
           String employeeId) =>
-      caller.callServerEndpoint<List<_i8.ValidationRequest>>(
+      caller.callServerEndpoint<List<_i6.ValidationRequest>>(
         'validation',
         'getEmployeeValidations',
         {'employeeId': employeeId},
       );
 
   /// Obtenir les validations à traiter par un manager
-  _i2.Future<List<_i8.ValidationRequest>> getManagerValidations(
+  _i2.Future<List<_i6.ValidationRequest>> getManagerValidations(
           String managerEmail) =>
-      caller.callServerEndpoint<List<_i8.ValidationRequest>>(
+      caller.callServerEndpoint<List<_i6.ValidationRequest>>(
         'validation',
         'getManagerValidations',
         {'managerEmail': managerEmail},
       );
 
   /// Obtenir une validation spécifique
-  _i2.Future<_i8.ValidationRequest?> getValidation(int validationId) =>
-      caller.callServerEndpoint<_i8.ValidationRequest?>(
+  _i2.Future<_i6.ValidationRequest?> getValidation(int validationId) =>
+      caller.callServerEndpoint<_i6.ValidationRequest?>(
         'validation',
         'getValidation',
         {'validationId': validationId},
       );
 
-  /// Télécharger le PDF d'une validation (avec signature optionnelle du manager)
-  _i2.Future<List<int>> downloadValidationPdf(
-    int validationId,
-    String? managerSignature,
-  ) =>
+  /// Télécharger le PDF d'une validation
+  _i2.Future<List<int>> downloadValidationPdf(int validationId) =>
       caller.callServerEndpoint<List<int>>(
         'validation',
         'downloadValidationPdf',
-        {
-          'validationId': validationId,
-          'managerSignature': managerSignature,
-        },
+        {'validationId': validationId},
       );
 
   /// Vérifier et marquer les validations expirées
@@ -512,8 +396,8 @@ class EndpointGreeting extends _i1.EndpointRef {
   String get name => 'greeting';
 
   /// Returns a personalized greeting message: "Hello {name}".
-  _i2.Future<_i9.Greeting> hello(String name) =>
-      caller.callServerEndpoint<_i9.Greeting>(
+  _i2.Future<_i7.Greeting> hello(String name) =>
+      caller.callServerEndpoint<_i7.Greeting>(
         'greeting',
         'hello',
         {'name': name},
@@ -536,7 +420,7 @@ class Client extends _i1.ServerpodClientShared {
     bool? disconnectStreamsOnLostInternetConnection,
   }) : super(
           host,
-          _i10.Protocol(),
+          _i8.Protocol(),
           securityContext: securityContext,
           authenticationKeyManager: authenticationKeyManager,
           streamingConnectionTimeout: streamingConnectionTimeout,
@@ -548,8 +432,6 @@ class Client extends _i1.ServerpodClientShared {
         ) {
     manager = EndpointManager(this);
     notification = EndpointNotification(this);
-    pdfProcessor = EndpointPdfProcessor(this);
-    timesheet = EndpointTimesheet(this);
     validation = EndpointValidation(this);
     greeting = EndpointGreeting(this);
   }
@@ -557,10 +439,6 @@ class Client extends _i1.ServerpodClientShared {
   late final EndpointManager manager;
 
   late final EndpointNotification notification;
-
-  late final EndpointPdfProcessor pdfProcessor;
-
-  late final EndpointTimesheet timesheet;
 
   late final EndpointValidation validation;
 
@@ -570,8 +448,6 @@ class Client extends _i1.ServerpodClientShared {
   Map<String, _i1.EndpointRef> get endpointRefLookup => {
         'manager': manager,
         'notification': notification,
-        'pdfProcessor': pdfProcessor,
-        'timesheet': timesheet,
         'validation': validation,
         'greeting': greeting,
       };

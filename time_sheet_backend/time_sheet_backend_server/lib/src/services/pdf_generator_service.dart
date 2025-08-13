@@ -15,11 +15,9 @@ class PdfGeneratorService {
     print('\n========== PDF GENERATOR SERVICE ==========');
     print('Validation ID: ${validation.id}');
     print('Include manager signature param: $includeManagerSignature');
-    print('Manager signature in validation:');
-    print('  - Is null: ${validation.managerSignature == null}');
-    if (validation.managerSignature != null) {
-      print('  - Length: ${validation.managerSignature!.length}');
-      print('  - First 50 chars: ${validation.managerSignature!.substring(0, validation.managerSignature!.length > 50 ? 50 : validation.managerSignature!.length)}');
+    print('Manager signature parameter provided: ${managerSignature != null}');
+    if (managerSignature != null) {
+      print('  - Length: ${managerSignature.length}');
     }
     print('Manager name: ${validation.managerName}');
     
@@ -53,7 +51,7 @@ class PdfGeneratorService {
             pw.SizedBox(height: 40),
             
             // Signatures
-            _buildSignatures(validation, includeManagerSignature),
+            _buildSignatures(validation, includeManagerSignature, managerSignature),
           ];
         },
       ),
@@ -226,7 +224,7 @@ class PdfGeneratorService {
     );
   }
   
-  pw.Widget _buildSignatures(ValidationRequest validation, bool includeManagerSignature) {
+  pw.Widget _buildSignatures(ValidationRequest validation, bool includeManagerSignature, String? managerSignature) {
     return pw.Container(
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -283,8 +281,8 @@ class PdfGeneratorService {
                         ),
                       ),
                       child: pw.Center(
-                        child: (includeManagerSignature && validation.managerSignature != null && validation.managerSignature!.isNotEmpty)
-                            ? _buildSignatureImage(validation.managerSignature!, validation)
+                        child: (includeManagerSignature && managerSignature != null && managerSignature.isNotEmpty)
+                            ? _buildSignatureImage(managerSignature, validation)
                             : pw.Text(''),
                       ),
                     ),

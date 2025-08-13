@@ -1,0 +1,43 @@
+{
+  "actions": [
+    {
+      "type": "alterTable",
+      "alterTable": {
+        "name": "validation_requests",
+        "schema": "public",
+        "addColumns": [],
+        "deleteColumns": [
+          "managerSignature"
+        ],
+        "modifyColumns": [],
+        "addIndexes": [],
+        "deleteIndexes": [],
+        "addForeignKeys": [],
+        "deleteForeignKeys": [],
+        "warnings": [
+          {
+            "type": "columnDropped",
+            "message": "Column \"managerSignature\" of table \"validation_requests\" will be dropped.",
+            "table": "validation_requests",
+            "columns": [
+              "managerSignature"
+            ],
+            "destrucive": true
+          }
+        ]
+      }
+    }
+  ],
+  "warnings": [
+    {
+      "type": "columnDropped",
+      "message": "Column \"managerSignature\" of table \"validation_requests\" will be dropped.",
+      "table": "validation_requests",
+      "columns": [
+        "managerSignature"
+      ],
+      "destrucive": true
+    }
+  ],
+  "migrationApiVersion": 1
+}

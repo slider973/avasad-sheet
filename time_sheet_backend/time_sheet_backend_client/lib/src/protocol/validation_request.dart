@@ -25,7 +25,6 @@ abstract class ValidationRequest implements _i1.SerializableModel {
     required this.pdfPath,
     required this.pdfHash,
     required this.pdfSizeBytes,
-    this.managerSignature,
     this.managerComment,
     this.managerName,
     this.validatedAt,
@@ -46,7 +45,6 @@ abstract class ValidationRequest implements _i1.SerializableModel {
     required String pdfPath,
     required String pdfHash,
     required int pdfSizeBytes,
-    String? managerSignature,
     String? managerComment,
     String? managerName,
     DateTime? validatedAt,
@@ -71,7 +69,6 @@ abstract class ValidationRequest implements _i1.SerializableModel {
       pdfPath: jsonSerialization['pdfPath'] as String,
       pdfHash: jsonSerialization['pdfHash'] as String,
       pdfSizeBytes: jsonSerialization['pdfSizeBytes'] as int,
-      managerSignature: jsonSerialization['managerSignature'] as String?,
       managerComment: jsonSerialization['managerComment'] as String?,
       managerName: jsonSerialization['managerName'] as String?,
       validatedAt: jsonSerialization['validatedAt'] == null
@@ -115,8 +112,6 @@ abstract class ValidationRequest implements _i1.SerializableModel {
 
   int pdfSizeBytes;
 
-  String? managerSignature;
-
   String? managerComment;
 
   String? managerName;
@@ -144,7 +139,6 @@ abstract class ValidationRequest implements _i1.SerializableModel {
     String? pdfPath,
     String? pdfHash,
     int? pdfSizeBytes,
-    String? managerSignature,
     String? managerComment,
     String? managerName,
     DateTime? validatedAt,
@@ -166,7 +160,6 @@ abstract class ValidationRequest implements _i1.SerializableModel {
       'pdfPath': pdfPath,
       'pdfHash': pdfHash,
       'pdfSizeBytes': pdfSizeBytes,
-      if (managerSignature != null) 'managerSignature': managerSignature,
       if (managerComment != null) 'managerComment': managerComment,
       if (managerName != null) 'managerName': managerName,
       if (validatedAt != null) 'validatedAt': validatedAt?.toJson(),
@@ -197,7 +190,6 @@ class _ValidationRequestImpl extends ValidationRequest {
     required String pdfPath,
     required String pdfHash,
     required int pdfSizeBytes,
-    String? managerSignature,
     String? managerComment,
     String? managerName,
     DateTime? validatedAt,
@@ -216,7 +208,6 @@ class _ValidationRequestImpl extends ValidationRequest {
           pdfPath: pdfPath,
           pdfHash: pdfHash,
           pdfSizeBytes: pdfSizeBytes,
-          managerSignature: managerSignature,
           managerComment: managerComment,
           managerName: managerName,
           validatedAt: validatedAt,
@@ -241,7 +232,6 @@ class _ValidationRequestImpl extends ValidationRequest {
     String? pdfPath,
     String? pdfHash,
     int? pdfSizeBytes,
-    Object? managerSignature = _Undefined,
     Object? managerComment = _Undefined,
     Object? managerName = _Undefined,
     Object? validatedAt = _Undefined,
@@ -261,9 +251,6 @@ class _ValidationRequestImpl extends ValidationRequest {
       pdfPath: pdfPath ?? this.pdfPath,
       pdfHash: pdfHash ?? this.pdfHash,
       pdfSizeBytes: pdfSizeBytes ?? this.pdfSizeBytes,
-      managerSignature: managerSignature is String?
-          ? managerSignature
-          : this.managerSignature,
       managerComment:
           managerComment is String? ? managerComment : this.managerComment,
       managerName: managerName is String? ? managerName : this.managerName,

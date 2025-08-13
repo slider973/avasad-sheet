@@ -12,11 +12,6 @@ class ApproveValidationUseCase implements UseCase<ValidationRequest, ApproveVali
   
   @override
   Future<Either<Failure, ValidationRequest>> call(ApproveValidationParams params) async {
-    // Validation des paramètres
-    if (params.managerSignature.isEmpty) {
-      return Left(ValidationFailure('La signature du manager est requise'));
-    }
-    
     return await repository.approveValidation(
       validationId: params.validationId,
       managerSignature: params.managerSignature,

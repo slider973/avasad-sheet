@@ -11,7 +11,6 @@ fields:
   pdfPath: String
   pdfHash: String
   pdfSizeBytes: int
-  managerSignature: String?
   managerComment: String?
   managerName: String?
   validatedAt: DateTime?

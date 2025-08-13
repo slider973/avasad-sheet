@@ -124,7 +124,7 @@ class ValidationRepositoryServerpodImpl implements ValidationRepository {
   @override
   Future<Either<Failure, ValidationRequest>> approveValidation({
     required String validationId,
-    required String managerSignature,
+    required String managerSignature, // Toujours requis par l'interface mais non utilisé
     String? comment,
   }) async {
     try {
@@ -154,6 +154,7 @@ class ValidationRepositoryServerpodImpl implements ValidationRepository {
       
       logger.i('Manager approving: firstName=$firstName, lastName=$lastName, fullName=$managerName');
       
+      // L'endpoint approveValidation ne prend PAS la signature (on ne la stocke pas)
       final result = await ServerpodService.handleServerpodCall(() =>
         _client.validation.approveValidation(
           int.parse(validationId),
@@ -162,7 +163,7 @@ class ValidationRepositoryServerpodImpl implements ValidationRepository {
         )
       );
       
-      // Le serveur retourne maintenant directement un ValidationRequest
+      // Le serveur retourne directement un ValidationRequest
       return Right(_mapToEntity(result));
     } catch (e) {
       logger.e('Erreur lors de l\'approbation de la validation', error: e);
@@ -249,10 +250,10 @@ class ValidationRepositoryServerpodImpl implements ValidationRepository {
   @override
   Future<Either<Failure, Uint8List>> downloadValidationPdf(String validationId, [String? managerSignature]) async {
     try {
+      // Le nouvel endpoint ne prend plus de signature (elle est déjà en BDD)
       final pdfBytes = await ServerpodService.handleServerpodCall(() =>
         _client.validation.downloadValidationPdf(
           int.parse(validationId),
-          managerSignature,
         )
       );
       

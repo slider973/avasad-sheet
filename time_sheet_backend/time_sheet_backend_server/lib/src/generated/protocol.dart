@@ -27,10 +27,8 @@ import 'package:time_sheet_backend_server/src/generated/notification.dart'
     as _i15;
 import 'package:time_sheet_backend_server/src/generated/notification_type.dart'
     as _i16;
-import 'package:time_sheet_backend_server/src/generated/timesheet_entry.dart'
-    as _i17;
 import 'package:time_sheet_backend_server/src/generated/validation_request.dart'
-    as _i18;
+    as _i17;
 export 'greeting.dart';
 export 'timesheet_data.dart';
 export 'timesheet_entry.dart';
@@ -605,12 +603,6 @@ class Protocol extends _i1.SerializationManagerServer {
           dartType: 'int',
         ),
         _i2.ColumnDefinition(
-          name: 'managerSignature',
-          columnType: _i2.ColumnType.text,
-          isNullable: true,
-          dartType: 'String?',
-        ),
-        _i2.ColumnDefinition(
           name: 'managerComment',
           columnType: _i2.ColumnType.text,
           isNullable: true,
@@ -827,17 +819,12 @@ class Protocol extends _i1.SerializationManagerServer {
           deserialize<_i16.NotificationType>(e['k']),
           deserialize<List<_i15.Notification>>(e['v'])))) as T;
     }
-    if (t == List<_i17.TimesheetEntry>) {
-      return (data as List)
-          .map((e) => deserialize<_i17.TimesheetEntry>(e))
-          .toList() as T;
-    }
     if (t == List<int>) {
       return (data as List).map((e) => deserialize<int>(e)).toList() as T;
     }
-    if (t == List<_i18.ValidationRequest>) {
+    if (t == List<_i17.ValidationRequest>) {
       return (data as List)
-          .map((e) => deserialize<_i18.ValidationRequest>(e))
+          .map((e) => deserialize<_i17.ValidationRequest>(e))
           .toList() as T;
     }
     try {

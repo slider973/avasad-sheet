@@ -144,7 +144,7 @@ class ValidationEndpoint extends Endpoint {
       print('Manager name: $managerName');
       session.log('Approving validation $validationId');
 
-      // Mettre à jour la validation (SANS stocker la signature)
+      // Mettre à jour la validation SANS stocker de signature
       validation.status = ValidationStatus.approved;
       validation.managerName = managerName;
       validation.managerComment = comment;
@@ -288,11 +288,10 @@ class ValidationEndpoint extends Endpoint {
     }
   }
 
-  /// Télécharger le PDF d'une validation (avec signature optionnelle du manager)
+  /// Télécharger le PDF d'une validation
   Future<List<int>> downloadValidationPdf(
     Session session,
     int validationId,
-    String? managerSignature,
   ) async {
     try {
       final validation = await ValidationRequest.db.findById(
@@ -304,8 +303,8 @@ class ValidationEndpoint extends Endpoint {
         throw Exception('Validation introuvable');
       }
 
-      // Si la validation est approuvée ET qu'on fournit une signature, générer le PDF avec signature
-      if (validation.status == ValidationStatus.approved && managerSignature != null && managerSignature.isNotEmpty) {
+      // Si la validation est approuvée, générer le PDF SANS signature
+      if (validation.status == ValidationStatus.approved) {
         // Récupérer les données timesheet
         final timesheetData = await TimesheetData.db.findFirstRow(
           session,
@@ -313,20 +312,19 @@ class ValidationEndpoint extends Endpoint {
         );
         
         if (timesheetData != null) {
-          print('\n========== DOWNLOAD PDF - GENERATING WITH SIGNATURE ==========');
+          print('\n========== DOWNLOAD PDF - APPROVED WITHOUT SIGNATURE ==========');
           print('Validation ID: $validationId');
-          print('Manager signature provided: ${managerSignature.length} chars');
+          print('Status: APPROVED');
           
-          // Générer le PDF avec la signature fournie par le client
+          // Générer le PDF SANS signature (juste le statut approuvé)
           final pdfGenerator = PdfGeneratorService();
           final pdfBytes = await pdfGenerator.generateTimesheetPdf(
             timesheetData: timesheetData,
             validation: validation,
-            managerSignature: managerSignature,
-            includeManagerSignature: true,
+            includeManagerSignature: false, // PAS de signature
           );
           
-          print('PDF generated with signature, size: ${pdfBytes.length} bytes');
+          print('PDF generated (approved), size: ${pdfBytes.length} bytes');
           return pdfBytes;
         }
       }
@@ -407,14 +405,14 @@ class ValidationEndpoint extends Endpoint {
       session.log('Generating PDF for validation $validationId');
       session.log('- Employee: ${timesheetData.employeeName}');
       session.log('- Period: ${timesheetData.month}/${timesheetData.year}');
-      session.log('- Manager signature available: ${validation.managerSignature != null}');
+      session.log('- Status: ${validation.status}');
       
-      // Générer le PDF avec les données timesheet et signatures
+      // Générer le PDF avec les données timesheet (sans signature)
       final pdfGenerator = PdfGeneratorService();
       final pdfBytes = await pdfGenerator.generateTimesheetPdf(
         timesheetData: timesheetData,
         validation: validation,
-        includeManagerSignature: validation.managerSignature != null,
+        includeManagerSignature: false, // Jamais de signature stockée
       );
       
       // Sauvegarder le PDF

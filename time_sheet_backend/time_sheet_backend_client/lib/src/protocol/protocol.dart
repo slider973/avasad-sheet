@@ -26,10 +26,8 @@ import 'package:time_sheet_backend_client/src/protocol/notification.dart'
     as _i14;
 import 'package:time_sheet_backend_client/src/protocol/notification_type.dart'
     as _i15;
-import 'package:time_sheet_backend_client/src/protocol/timesheet_entry.dart'
-    as _i16;
 import 'package:time_sheet_backend_client/src/protocol/validation_request.dart'
-    as _i17;
+    as _i16;
 export 'greeting.dart';
 export 'timesheet_data.dart';
 export 'timesheet_entry.dart';
@@ -155,17 +153,12 @@ class Protocol extends _i1.SerializationManager {
           deserialize<_i15.NotificationType>(e['k']),
           deserialize<List<_i14.Notification>>(e['v'])))) as T;
     }
-    if (t == List<_i16.TimesheetEntry>) {
-      return (data as List)
-          .map((e) => deserialize<_i16.TimesheetEntry>(e))
-          .toList() as T;
-    }
     if (t == List<int>) {
       return (data as List).map((e) => deserialize<int>(e)).toList() as T;
     }
-    if (t == List<_i17.ValidationRequest>) {
+    if (t == List<_i16.ValidationRequest>) {
       return (data as List)
-          .map((e) => deserialize<_i17.ValidationRequest>(e))
+          .map((e) => deserialize<_i16.ValidationRequest>(e))
           .toList() as T;
     }
     return super.deserialize<T>(data, t);
