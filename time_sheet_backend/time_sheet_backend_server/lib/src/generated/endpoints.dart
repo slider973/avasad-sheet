@@ -817,6 +817,11 @@ class Endpoints extends _i1.EndpointDispatch {
               type: _i1.getType<List<int>>(),
               nullable: false,
             ),
+            'employeeCompany': _i1.ParameterDescription(
+              name: 'employeeCompany',
+              type: _i1.getType<String?>(),
+              nullable: true,
+            ),
           },
           call: (
             _i1.Session session,
@@ -832,6 +837,50 @@ class Endpoints extends _i1.EndpointDispatch {
             params['periodStart'],
             params['periodEnd'],
             params['pdfBytes'],
+            params['employeeCompany'],
+          ),
+        ),
+        'updateTimesheetData': _i1.MethodConnector(
+          name: 'updateTimesheetData',
+          params: {
+            'validationId': _i1.ParameterDescription(
+              name: 'validationId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'entries': _i1.ParameterDescription(
+              name: 'entries',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+            'totalDays': _i1.ParameterDescription(
+              name: 'totalDays',
+              type: _i1.getType<double>(),
+              nullable: false,
+            ),
+            'totalHours': _i1.ParameterDescription(
+              name: 'totalHours',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+            'totalOvertimeHours': _i1.ParameterDescription(
+              name: 'totalOvertimeHours',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+          },
+          call: (
+            _i1.Session session,
+            Map<String, dynamic> params,
+          ) async =>
+              (endpoints['validation'] as _i6.ValidationEndpoint)
+                  .updateTimesheetData(
+            session,
+            params['validationId'],
+            params['entries'],
+            params['totalDays'],
+            params['totalHours'],
+            params['totalOvertimeHours'],
           ),
         ),
         'approveValidation': _i1.MethodConnector(

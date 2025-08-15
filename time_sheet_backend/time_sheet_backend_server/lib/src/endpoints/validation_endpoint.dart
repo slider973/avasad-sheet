@@ -16,6 +16,7 @@ class ValidationEndpoint extends Endpoint {
     DateTime periodStart,
     DateTime periodEnd,
     List<int> pdfBytes,
+    String? employeeCompany, // Nouveau paramètre optionnel
   ) async {
     try {
       // Calculer le hash du PDF
@@ -71,48 +72,69 @@ class ValidationEndpoint extends Endpoint {
       // Log pour debug
       session.log('Created validation with ID: ${insertedValidation.id}');
 
-      // Sauvegarder les données timesheet si l'ID contient des données JSON
-      // Hack temporaire: on utilise employeeId pour passer les données
-      if (employeeId.startsWith('JSON:')) {
-        try {
-          // Extraire le vrai employeeId et le JSON
-          final parts = employeeId.substring(5).split('|');
-          final realEmployeeId = parts[0];
-          final jsonData = parts.sublist(1).join('|'); // Au cas où il y a des | dans le JSON
-          
-          // Mettre à jour la validation avec le vrai employeeId
-          insertedValidation.employeeId = realEmployeeId;
-          await ValidationRequest.db.updateRow(session, insertedValidation);
-          
-          // Décoder et sauvegarder les données timesheet
-          final data = jsonDecode(jsonData) as Map<String, dynamic>;
-          
-          final timesheetData = TimesheetData(
-            validationRequestId: insertedValidation.id!,
-            employeeId: realEmployeeId,
-            employeeName: data['employeeName'] as String,
-            employeeCompany: data['employeeCompany'] as String,
-            month: data['month'] as int,
-            year: data['year'] as int,
-            entries: jsonEncode(data['entries']),
-            totalDays: (data['totalDays'] as num).toDouble(),
-            totalHours: data['totalHours'] as String,
-            totalOvertimeHours: data['totalOvertimeHours'] as String,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-          );
-          
-          await TimesheetData.db.insertRow(session, timesheetData);
-          session.log('Données timesheet sauvegardées avec succès (hack JSON)');
-        } catch (e) {
-          session.log('Erreur lors du décodage/sauvegarde timesheet: $e');
-        }
+      // Créer automatiquement les données timesheet avec les bonnes dates
+      // On utilise periodEnd pour déterminer le mois et l'année (le 20 du mois sélectionné)
+      try {
+        final timesheetData = TimesheetData(
+          validationRequestId: insertedValidation.id!,
+          employeeId: employeeId,
+          employeeName: employeeName,
+          employeeCompany: employeeCompany ?? 'Avasad', // Utiliser la valeur passée ou Avasad par défaut
+          month: periodEnd.month,  // Utiliser periodEnd (20 du mois) au lieu de periodStart (21 du mois précédent)
+          year: periodEnd.year,
+          entries: '[]', // Sera rempli via updateTimesheetData
+          totalDays: 0.0,
+          totalHours: '0h',
+          totalOvertimeHours: '0h',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+        
+        await TimesheetData.db.insertRow(session, timesheetData);
+        session.log('Données timesheet créées avec mois=${periodEnd.month}, année=${periodEnd.year}');
+      } catch (e) {
+        session.log('Erreur lors de la création des données timesheet: $e');
       }
 
       return insertedValidation;
     } catch (e) {
       session.log('Error creating validation: $e');
       throw Exception('Impossible de créer la validation: $e');
+    }
+  }
+
+  /// Mettre à jour les données timesheet d'une validation
+  Future<void> updateTimesheetData(
+    Session session,
+    int validationId,
+    String entries,
+    double totalDays,
+    String totalHours,
+    String totalOvertimeHours,
+  ) async {
+    try {
+      // Récupérer les données timesheet existantes
+      final existingTimesheet = await TimesheetData.db.findFirstRow(
+        session,
+        where: (t) => t.validationRequestId.equals(validationId),
+      );
+      
+      if (existingTimesheet != null) {
+        // Mettre à jour avec les nouvelles données
+        existingTimesheet.entries = entries;
+        existingTimesheet.totalDays = totalDays;
+        existingTimesheet.totalHours = totalHours;
+        existingTimesheet.totalOvertimeHours = totalOvertimeHours;
+        existingTimesheet.updatedAt = DateTime.now();
+        
+        await TimesheetData.db.updateRow(session, existingTimesheet);
+        session.log('Données timesheet mises à jour pour la validation $validationId');
+      } else {
+        session.log('Aucune donnée timesheet trouvée pour la validation $validationId');
+      }
+    } catch (e) {
+      session.log('Erreur lors de la mise à jour des données timesheet: $e');
+      throw Exception('Impossible de mettre à jour les données timesheet: $e');
     }
   }
 

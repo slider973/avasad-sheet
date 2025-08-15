@@ -11,7 +11,7 @@ import 'dart:typed_data';
 /// Page de création d'une demande de validation
 class CreateValidationPage extends StatefulWidget {
   const CreateValidationPage({super.key});
-  
+
   @override
   State<CreateValidationPage> createState() => _CreateValidationPageState();
 }
@@ -19,19 +19,19 @@ class CreateValidationPage extends StatefulWidget {
 class _CreateValidationPageState extends State<CreateValidationPage> {
   final _formKey = GlobalKey<FormState>();
   late final CreateValidationBloc _bloc;
-  
+
   @override
   void initState() {
     super.initState();
     _bloc = di.getIt<CreateValidationBloc>()..add(const LoadManagers());
   }
-  
+
   @override
   void dispose() {
     _bloc.close();
     super.dispose();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return BlocProvider.value(
@@ -41,75 +41,75 @@ class _CreateValidationPageState extends State<CreateValidationPage> {
           title: const Text('Nouvelle demande de validation'),
         ),
         body: BlocConsumer<CreateValidationBloc, CreateValidationState>(
-        listener: (context, state) {
-          if (state is CreateValidationSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Demande de validation créée avec succès'),
-                backgroundColor: Colors.green,
-              ),
-            );
-            Navigator.pop(context, true);
-          }
-          
-          if (state is CreateValidationError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-        },
-        builder: (context, state) {
-          if (state is CreateValidationLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          
-          if (state is CreateValidationSubmitting) {
-            return const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Envoi en cours...'),
-                ],
-              ),
-            );
-          }
-          
-          if (state is CreateValidationError && !(state is CreateValidationForm)) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                  const SizedBox(height: 16),
-                  Text(state.message, textAlign: TextAlign.center),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () {
-                      _bloc.add(const LoadManagers());
-                    },
-                    child: const Text('Réessayer'),
-                  ),
-                ],
-              ),
-            );
-          }
-          
-          if (state is CreateValidationForm) {
-            return _buildForm(state);
-          }
-          
-          return const SizedBox();
-        },
+          listener: (context, state) {
+            if (state is CreateValidationSuccess) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Demande de validation créée avec succès'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+              Navigator.pop(context, true);
+            }
+
+            if (state is CreateValidationError) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          },
+          builder: (context, state) {
+            if (state is CreateValidationLoading) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            if (state is CreateValidationSubmitting) {
+              return const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text('Envoi en cours...'),
+                  ],
+                ),
+              );
+            }
+
+            if (state is CreateValidationError && !(state is CreateValidationForm)) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                    const SizedBox(height: 16),
+                    Text(state.message, textAlign: TextAlign.center),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () {
+                        _bloc.add(const LoadManagers());
+                      },
+                      child: const Text('Réessayer'),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            if (state is CreateValidationForm) {
+              return _buildForm(state);
+            }
+
+            return const SizedBox();
+          },
+        ),
       ),
-    ),
-  );
+    );
   }
-  
+
   Widget _buildForm(CreateValidationForm state) {
     return Form(
       key: _formKey,
@@ -166,9 +166,9 @@ class _CreateValidationPageState extends State<CreateValidationPage> {
               ),
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Section PDF à sélectionner
           Card(
             child: Padding(
@@ -273,7 +273,7 @@ class _CreateValidationPageState extends State<CreateValidationPage> {
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
-                                'Période: ${DateFormat('MMMM yyyy', 'fr').format(state.periodStart!)}',
+                                'Période: ${DateFormat('MMMM yyyy', 'fr').format(state.periodEnd!)}',
                                 style: const TextStyle(color: Colors.blue),
                               ),
                             ),
@@ -286,8 +286,7 @@ class _CreateValidationPageState extends State<CreateValidationPage> {
               ),
             ),
           ),
-          
-          
+
           // Message d'erreur
           if (state.error != null) ...[
             const SizedBox(height: 16),
@@ -312,9 +311,9 @@ class _CreateValidationPageState extends State<CreateValidationPage> {
               ),
             ),
           ],
-          
+
           const SizedBox(height: 32),
-          
+
           // Boutons d'action
           Row(
             children: [
@@ -341,13 +340,13 @@ class _CreateValidationPageState extends State<CreateValidationPage> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
         ],
       ),
     );
   }
-  
+
   Widget _buildDateField(
     String label,
     DateTime? value,
@@ -371,9 +370,7 @@ class _CreateValidationPageState extends State<CreateValidationPage> {
           prefixIcon: const Icon(Icons.calendar_today),
         ),
         child: Text(
-          value != null
-              ? DateFormat('dd/MM/yyyy').format(value)
-              : 'Sélectionner',
+          value != null ? DateFormat('dd/MM/yyyy').format(value) : 'Sélectionner',
           style: TextStyle(
             color: value != null ? null : Colors.grey,
           ),
@@ -381,7 +378,7 @@ class _CreateValidationPageState extends State<CreateValidationPage> {
       ),
     );
   }
-  
+
   String _calculateDuration(DateTime start, DateTime end) {
     final duration = end.difference(start).inDays + 1;
     if (duration == 1) {
@@ -398,16 +395,16 @@ class _CreateValidationPageState extends State<CreateValidationPage> {
       }
     }
   }
-  
+
   String _formatFileSize(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
     return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
-  
+
   Future<void> _selectMonth(BuildContext context, CreateValidationForm state) async {
     final DateTime initialDate = state.periodStart ?? DateTime.now();
-    
+
     // Utiliser le month picker existant
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -427,22 +424,22 @@ class _CreateValidationPageState extends State<CreateValidationPage> {
         );
       },
     );
-    
+
     if (picked != null) {
       // Définir le premier et dernier jour du mois
       final firstDay = DateTime(picked.year, picked.month, 1);
       final lastDay = DateTime(picked.year, picked.month + 1, 0);
-      
+
       _bloc.add(SelectPeriod(
         startDate: firstDay,
         endDate: lastDay,
       ));
     }
   }
-  
+
   Future<void> _generatePdf(CreateValidationForm state) async {
     if (state.periodStart == null || state.periodEnd == null) return;
-    
+
     // Navigation vers la page de génération PDF
     final result = await Navigator.push<Map<String, dynamic>>(
       context,
@@ -454,11 +451,11 @@ class _CreateValidationPageState extends State<CreateValidationPage> {
         ),
       ),
     );
-    
+
     if (result != null && result['pdfBytes'] != null) {
       final pdfBytes = result['pdfBytes'] as Uint8List;
       final fileName = result['fileName'] as String? ?? 'timesheet.pdf';
-      
+
       _bloc.add(
         SetPdfData(
           pdfBytes: pdfBytes,

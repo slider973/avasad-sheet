@@ -409,6 +409,7 @@ class EndpointValidation extends _i1.EndpointRef {
     DateTime periodStart,
     DateTime periodEnd,
     List<int> pdfBytes,
+    String? employeeCompany,
   ) =>
       caller.callServerEndpoint<_i8.ValidationRequest>(
         'validation',
@@ -421,6 +422,27 @@ class EndpointValidation extends _i1.EndpointRef {
           'periodStart': periodStart,
           'periodEnd': periodEnd,
           'pdfBytes': pdfBytes,
+          'employeeCompany': employeeCompany,
+        },
+      );
+
+  /// Mettre à jour les données timesheet d'une validation
+  _i2.Future<void> updateTimesheetData(
+    int validationId,
+    String entries,
+    double totalDays,
+    String totalHours,
+    String totalOvertimeHours,
+  ) =>
+      caller.callServerEndpoint<void>(
+        'validation',
+        'updateTimesheetData',
+        {
+          'validationId': validationId,
+          'entries': entries,
+          'totalDays': totalDays,
+          'totalHours': totalHours,
+          'totalOvertimeHours': totalOvertimeHours,
         },
       );
 

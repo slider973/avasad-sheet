@@ -64,7 +64,7 @@ class ValidationRepositoryServerpodImpl implements ValidationRepository {
         logger.w('Could not fetch manager email: $e');
       }
       
-      // Créer la validation d'abord
+      // Créer la validation
       final result = await ServerpodService.handleServerpodCall(() => 
         _client.validation.createValidation(
           employeeId,
@@ -74,32 +74,26 @@ class ValidationRepositoryServerpodImpl implements ValidationRepository {
           periodStart,
           periodEnd,
           pdfBytes.toList(),
+          finalEmployeeCompany, // Passer l'entreprise
         )
       );
       
-      // Si on a des données timesheet, les sauvegarder via l'endpoint dédié
+      // Si on a des données timesheet, les mettre à jour
       if (timesheetEntries != null && timesheetEntries.isNotEmpty && result.id != null) {
         try {
-          // Convertir les Map<String, dynamic> en TimesheetEntry
-          final entries = timesheetEntries.map((entry) => 
-            serverpod.TimesheetEntry(
-              dayDate: entry['dayDate'] ?? '',
-              startMorning: entry['startMorning'] ?? '',
-              endMorning: entry['endMorning'] ?? '',
-              startAfternoon: entry['startAfternoon'] ?? '',
-              endAfternoon: entry['endAfternoon'] ?? '',
-              isAbsence: entry['isAbsence'] ?? false,
-              hasOvertimeHours: entry['hasOvertimeHours'] ?? false,
+          await ServerpodService.handleServerpodCall(() =>
+            _client.validation.updateTimesheetData(
+              result.id!,
+              jsonEncode(timesheetEntries),
+              totalDays ?? 0.0,
+              totalHours ?? '0h',
+              totalOvertimeHours ?? '0h',
             )
-          ).toList();
-          
-          // NOTE: L'endpoint timesheet n'existe plus dans le client généré
-          // Les données timesheet sont maintenant gérées directement côté serveur
-          // via le hack JSON dans employeeId lors de la création
-          logger.i('✅ Données timesheet sauvegardées via endpoint dédié');
+          );
+          logger.i('✅ Données timesheet mises à jour avec succès');
         } catch (e) {
-          logger.w('Impossible de sauvegarder les données timesheet: $e');
-          // On ne fait pas échouer la création de validation si les données timesheet échouent
+          logger.w('Impossible de mettre à jour les données timesheet: $e');
+          // On ne fait pas échouer la création si la mise à jour échoue
         }
       }
       

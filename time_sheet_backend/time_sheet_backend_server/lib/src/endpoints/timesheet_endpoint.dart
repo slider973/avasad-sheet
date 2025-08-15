@@ -55,7 +55,7 @@ class TimesheetEndpoint extends Endpoint {
       if (validationRequestId == null) {
         throw Exception('validationRequestId est requis');
       }
-
+      session.log(data['employeeCompany']);
       // Extraction des données avec valeurs par défaut
       final employeeId = data['employeeId'] as String? ?? '';
       final employeeName = data['employeeName'] as String? ?? '';
@@ -298,15 +298,17 @@ class TimesheetEndpoint extends Endpoint {
       print('Saving timesheet data...');
       // Utiliser la nouvelle méthode processTimesheet
       // Convertir les TimesheetEntry en Map pour la méthode processTimesheet
-      final entriesData = entries.map((e) => {
-        'dayDate': e.dayDate,
-        'startMorning': e.startMorning,
-        'endMorning': e.endMorning,
-        'startAfternoon': e.startAfternoon,
-        'endAfternoon': e.endAfternoon,
-        'isAbsence': e.isAbsence,
-        'hasOvertimeHours': e.hasOvertimeHours,
-      }).toList();
+      final entriesData = entries
+          .map((e) => {
+                'dayDate': e.dayDate,
+                'startMorning': e.startMorning,
+                'endMorning': e.endMorning,
+                'startAfternoon': e.startAfternoon,
+                'endAfternoon': e.endAfternoon,
+                'isAbsence': e.isAbsence,
+                'hasOvertimeHours': e.hasOvertimeHours,
+              })
+          .toList();
       final result = await processTimesheet(session, 'save', {
         'validationRequestId': validationRequestId,
         'employeeId': employeeId,
@@ -405,28 +407,28 @@ class TimesheetEndpoint extends Endpoint {
         session,
         validationRequestId,
       );
-      
+
       if (validation == null) {
         throw Exception('Validation non trouvée');
       }
-      
+
       // Récupérer les données timesheet
       final timesheetData = await TimesheetData.db.findFirstRow(
         session,
         where: (t) => t.validationRequestId.equals(validationRequestId),
       );
-      
+
       if (timesheetData == null) {
         throw Exception('Données timesheet non trouvées');
       }
-      
+
       // Plus de signature stockée en BDD - gérée côté client
       // if (managerSignature != null && managerSignature.isNotEmpty) {
       //   validation.managerSignature = managerSignature;
       //   validation.managerName = managerName;
       //   await ValidationRequest.db.updateRow(session, validation);
       // }
-      
+
       // Générer le PDF avec les signatures
       final pdfGenerator = PdfGeneratorService();
       final pdfBytes = await pdfGenerator.generateTimesheetPdf(
@@ -434,7 +436,7 @@ class TimesheetEndpoint extends Endpoint {
         validation: validation,
         includeManagerSignature: false, // Plus de signature depuis BDD
       );
-      
+
       session.log('PDF généré avec succès pour validation $validationRequestId');
       return pdfBytes;
     } catch (e) {

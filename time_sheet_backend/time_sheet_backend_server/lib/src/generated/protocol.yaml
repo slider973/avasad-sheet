@@ -32,6 +32,7 @@ timesheet:
   - generateSignedPdf:
 validation:
   - createValidation:
+  - updateTimesheetData:
   - approveValidation:
   - rejectValidation:
   - getEmployeeValidations:
