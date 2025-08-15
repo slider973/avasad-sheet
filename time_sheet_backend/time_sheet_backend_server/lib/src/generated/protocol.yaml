@@ -22,6 +22,14 @@ notification:
   - cleanupOldNotifications:
   - getNotificationsByType:
   - sendValidationReminders:
+pdfProcessor:
+  - processPdfQueue:
+  - cleanupOldJobs:
+timesheet:
+  - processTimesheet:
+  - saveTimesheetData:
+  - getTimesheetData:
+  - generateSignedPdf:
 validation:
   - createValidation:
   - approveValidation:
@@ -30,6 +38,7 @@ validation:
   - getManagerValidations:
   - getValidation:
   - downloadValidationPdf:
+  - getValidationTimesheetData:
   - checkExpiredValidations:
 greeting:
   - hello:

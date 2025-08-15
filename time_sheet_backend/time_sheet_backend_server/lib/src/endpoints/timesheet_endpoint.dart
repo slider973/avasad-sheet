@@ -420,19 +420,19 @@ class TimesheetEndpoint extends Endpoint {
         throw Exception('Données timesheet non trouvées');
       }
       
-      // Si on a une signature de manager, la sauvegarder dans la validation
-      if (managerSignature != null && managerSignature.isNotEmpty) {
-        validation.managerSignature = managerSignature;
-        validation.managerName = managerName;
-        await ValidationRequest.db.updateRow(session, validation);
-      }
+      // Plus de signature stockée en BDD - gérée côté client
+      // if (managerSignature != null && managerSignature.isNotEmpty) {
+      //   validation.managerSignature = managerSignature;
+      //   validation.managerName = managerName;
+      //   await ValidationRequest.db.updateRow(session, validation);
+      // }
       
       // Générer le PDF avec les signatures
       final pdfGenerator = PdfGeneratorService();
       final pdfBytes = await pdfGenerator.generateTimesheetPdf(
         timesheetData: timesheetData,
         validation: validation,
-        includeManagerSignature: validation.managerSignature != null,
+        includeManagerSignature: false, // Plus de signature depuis BDD
       );
       
       session.log('PDF généré avec succès pour validation $validationRequestId');

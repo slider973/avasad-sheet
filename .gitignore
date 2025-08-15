@@ -46,3 +46,5 @@ app.*.map.json
 /android/app/release
 
 lib/claude_files.md
+
+time_sheet_backend/time_sheet_backend_server/uploads/validations/

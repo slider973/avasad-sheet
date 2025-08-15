@@ -104,6 +104,73 @@ class GeneratePdfUseCase {
       return Left("Erreur lors de la génération du PDF: ${e.toString()}");
     }
   }
+  
+  /// Génère un PDF directement à partir d'entries fournies (pour les validations)
+  Future<Either<Failure, Uint8List>> generateFromEntries({
+    required List<TimesheetEntry> entries,
+    required int monthNumber,
+    required int year,
+    String? managerSignature,
+    String? managerName,
+  }) async {
+    try {
+      debugPrint('🚀 Génération du PDF à partir d\'entries fournies');
+      debugPrint('📊 ${entries.length} entrées fournies');
+      
+      // Génération des semaines
+      debugPrint('📅 Organisation des entrées par semaine...');
+      final weeks = WeekGeneratorUseCase().execute(entries);
+      debugPrint('✅ ${weeks.length} semaines générées');
+      
+      // Récupération des préférences utilisateur
+      debugPrint('👤 Récupération des préférences utilisateur...');
+      final userEither = await _getUserFromPreferences();
+      
+      if (userEither.isLeft()) {
+        final errorMessage = userEither.getLeft().getOrElse(() =>
+            "Erreur inconnue lors de la récupération des préférences utilisateur");
+        debugPrint('❌ Échec de récupération des préférences: $errorMessage');
+        return Left(GeneralFailure(errorMessage));
+      }
+      
+      final user = userEither.getRight().getOrElse(() {
+        debugPrint('❌ Erreur critique: impossible d\'extraire les données utilisateur');
+        throw "Erreur inconnue lors de la récupération des préférences utilisateur";
+      });
+      debugPrint('✅ Préférences utilisateur récupérées pour: ${user.firstName} ${user.lastName}');
+      
+      // Décoder la signature du manager si elle est fournie
+      Uint8List? managerSignatureBytes;
+      if (managerSignature != null && managerSignature.isNotEmpty) {
+        try {
+          managerSignatureBytes = base64Decode(managerSignature);
+          debugPrint('📝 Signature du manager décodée avec succès');
+        } catch (e) {
+          logger.e('Erreur lors du décodage de la signature du manager: $e');
+        }
+      }
+      
+      // Génération du PDF
+      debugPrint('📄 Génération du fichier PDF...');
+      final pdfFile = await generatePdf(
+        weeks, 
+        monthNumber, 
+        user, 
+        entries,
+        managerSignature: managerSignatureBytes,
+        managerName: managerName,
+      );
+      
+      // Lire le fichier et retourner les bytes
+      final bytes = await pdfFile.readAsBytes();
+      debugPrint('✅ PDF généré avec succès: ${bytes.length} octets');
+      
+      return Right(bytes);
+    } catch (e) {
+      debugPrint('❌ Erreur lors de la génération du PDF: $e');
+      return Left(GeneralFailure('Erreur lors de la génération du PDF: $e'));
+    }
+  }
 
   // Future<Either<String, String>> _generatePdf(int monthNumber) async {
   //   final timesheetEntryList =

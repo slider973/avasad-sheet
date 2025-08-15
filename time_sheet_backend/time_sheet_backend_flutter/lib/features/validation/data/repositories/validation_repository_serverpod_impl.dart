@@ -93,20 +93,9 @@ class ValidationRepositoryServerpodImpl implements ValidationRepository {
             )
           ).toList();
           
-          await ServerpodService.handleServerpodCall(() =>
-            _client.timesheet.saveTimesheetData(
-              result.id!,  // validationRequestId
-              employeeId,
-              finalEmployeeName,
-              finalEmployeeCompany,
-              periodStart.month,
-              periodStart.year,
-              entries,
-              totalDays ?? 0.0,
-              totalHours ?? '0:00',
-              totalOvertimeHours ?? '0:00',
-            )
-          );
+          // NOTE: L'endpoint timesheet n'existe plus dans le client généré
+          // Les données timesheet sont maintenant gérées directement côté serveur
+          // via le hack JSON dans employeeId lors de la création
           logger.i('✅ Données timesheet sauvegardées via endpoint dédié');
         } catch (e) {
           logger.w('Impossible de sauvegarder les données timesheet: $e');
@@ -154,12 +143,13 @@ class ValidationRepositoryServerpodImpl implements ValidationRepository {
       
       logger.i('Manager approving: firstName=$firstName, lastName=$lastName, fullName=$managerName');
       
-      // L'endpoint approveValidation ne prend PAS la signature (on ne la stocke pas)
+      // L'endpoint approveValidation accepte maintenant un PDF signé optionnel
       final result = await ServerpodService.handleServerpodCall(() =>
         _client.validation.approveValidation(
           int.parse(validationId),
           managerName.isNotEmpty ? managerName : 'Manager', // Fallback si pas de nom
           comment,
+          null, // Pas de PDF signé dans cette méthode (fallback)
         )
       );
       
@@ -377,6 +367,79 @@ class ValidationRepositoryServerpodImpl implements ValidationRepository {
   }
 
   @override
+  Future<Either<Failure, ValidationRequest>> approveValidationWithSignedPdf({
+    required String validationId,
+    required Uint8List signedPdfBytes,
+    required String managerName,
+    String? comment,
+  }) async {
+    try {
+      logger.i('📤 Envoi du PDF signé au serveur');
+      logger.i('   - Validation ID: $validationId');
+      logger.i('   - Taille du PDF: ${signedPdfBytes.length} octets');
+      logger.i('   - Manager: $managerName');
+      
+      // Appeler le nouvel endpoint avec le PDF signé
+      final result = await ServerpodService.handleServerpodCall(() =>
+        _client.validation.approveValidation(
+          int.parse(validationId),
+          managerName,
+          comment,
+          signedPdfBytes.toList(), // Convertir Uint8List en List<int>
+        )
+      );
+      
+      logger.i('✅ PDF signé envoyé et validation approuvée avec succès');
+      
+      return Right(_mapToEntity(result));
+    } catch (e) {
+      logger.e('Erreur lors de l\'envoi du PDF signé', error: e);
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> getValidationTimesheetData(String validationId) async {
+    try {
+      logger.i('📊 Récupération des données timesheet pour validation $validationId');
+      
+      final response = await ServerpodService.handleServerpodCall(() =>
+        _client.validation.getValidationTimesheetData(int.parse(validationId))
+      );
+      
+      // Convertir TimesheetDataResponse en Map pour le use case
+      final data = {
+        'validationId': response.validationId,
+        'employeeId': response.employeeId,
+        'employeeName': response.employeeName,
+        'employeeCompany': response.employeeCompany,
+        'month': response.month,
+        'year': response.year,
+        'entries': jsonDecode(response.entries), // Décoder le JSON des entries
+        'totalDays': response.totalDays,
+        'totalHours': response.totalHours,
+        'totalOvertimeHours': response.totalOvertimeHours,
+        'periodStart': response.periodStart.toIso8601String(),
+        'periodEnd': response.periodEnd.toIso8601String(),
+        'status': response.status,
+        'managerName': response.managerName,
+        'managerComment': response.managerComment,
+        'validatedAt': response.validatedAt?.toIso8601String(),
+      };
+      
+      logger.i('✅ Données timesheet récupérées avec succès');
+      logger.i('   - Mois: ${data['month']}/${data['year']}');
+      logger.i('   - Employé: ${data['employeeName']}');
+      logger.i('   - Statut: ${data['status']}');
+      
+      return Right(data);
+    } catch (e) {
+      logger.e('Erreur lors de la récupération des données timesheet', error: e);
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
   Future<Either<Failure, void>> updateFCMToken(String token) async {
     try {
       // TODO: Implémenter la mise à jour du token FCM
@@ -413,7 +476,7 @@ class ValidationRepositoryServerpodImpl implements ValidationRepository {
       periodStart: request.periodStart,
       periodEnd: request.periodEnd,
       status: _mapStatus(request.status),
-      managerSignature: request.managerSignature,
+      managerSignature: null, // Plus de signature stockée en BDD
       managerComment: request.managerComment,
       managerName: request.managerName,
       validatedAt: request.validatedAt,

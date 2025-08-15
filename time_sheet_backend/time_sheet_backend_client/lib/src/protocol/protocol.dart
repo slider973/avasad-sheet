@@ -19,15 +19,18 @@ import 'notification.dart' as _i7;
 import 'notification_type.dart' as _i8;
 import 'pdf_regeneration_queue.dart' as _i9;
 import 'queue_status.dart' as _i10;
-import 'validation_request.dart' as _i11;
-import 'validation_status.dart' as _i12;
-import 'package:time_sheet_backend_client/src/protocol/manager.dart' as _i13;
+import 'timesheet_data_response.dart' as _i11;
+import 'validation_request.dart' as _i12;
+import 'validation_status.dart' as _i13;
+import 'package:time_sheet_backend_client/src/protocol/manager.dart' as _i14;
 import 'package:time_sheet_backend_client/src/protocol/notification.dart'
-    as _i14;
-import 'package:time_sheet_backend_client/src/protocol/notification_type.dart'
     as _i15;
-import 'package:time_sheet_backend_client/src/protocol/validation_request.dart'
+import 'package:time_sheet_backend_client/src/protocol/notification_type.dart'
     as _i16;
+import 'package:time_sheet_backend_client/src/protocol/timesheet_entry.dart'
+    as _i17;
+import 'package:time_sheet_backend_client/src/protocol/validation_request.dart'
+    as _i18;
 export 'greeting.dart';
 export 'timesheet_data.dart';
 export 'timesheet_entry.dart';
@@ -37,6 +40,7 @@ export 'notification.dart';
 export 'notification_type.dart';
 export 'pdf_regeneration_queue.dart';
 export 'queue_status.dart';
+export 'timesheet_data_response.dart';
 export 'validation_request.dart';
 export 'validation_status.dart';
 export 'client.dart';
@@ -81,11 +85,14 @@ class Protocol extends _i1.SerializationManager {
     if (t == _i10.QueueStatus) {
       return _i10.QueueStatus.fromJson(data) as T;
     }
-    if (t == _i11.ValidationRequest) {
-      return _i11.ValidationRequest.fromJson(data) as T;
+    if (t == _i11.TimesheetDataResponse) {
+      return _i11.TimesheetDataResponse.fromJson(data) as T;
     }
-    if (t == _i12.ValidationStatus) {
-      return _i12.ValidationStatus.fromJson(data) as T;
+    if (t == _i12.ValidationRequest) {
+      return _i12.ValidationRequest.fromJson(data) as T;
+    }
+    if (t == _i13.ValidationStatus) {
+      return _i13.ValidationStatus.fromJson(data) as T;
     }
     if (t == _i1.getType<_i2.Greeting?>()) {
       return (data != null ? _i2.Greeting.fromJson(data) : null) as T;
@@ -115,14 +122,18 @@ class Protocol extends _i1.SerializationManager {
     if (t == _i1.getType<_i10.QueueStatus?>()) {
       return (data != null ? _i10.QueueStatus.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i11.ValidationRequest?>()) {
-      return (data != null ? _i11.ValidationRequest.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i11.TimesheetDataResponse?>()) {
+      return (data != null ? _i11.TimesheetDataResponse.fromJson(data) : null)
+          as T;
     }
-    if (t == _i1.getType<_i12.ValidationStatus?>()) {
-      return (data != null ? _i12.ValidationStatus.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i12.ValidationRequest?>()) {
+      return (data != null ? _i12.ValidationRequest.fromJson(data) : null) as T;
     }
-    if (t == List<_i13.Manager>) {
-      return (data as List).map((e) => deserialize<_i13.Manager>(e)).toList()
+    if (t == _i1.getType<_i13.ValidationStatus?>()) {
+      return (data != null ? _i13.ValidationStatus.fromJson(data) : null) as T;
+    }
+    if (t == List<_i14.Manager>) {
+      return (data as List).map((e) => deserialize<_i14.Manager>(e)).toList()
           as T;
     }
     if (t == Map<String, dynamic>) {
@@ -134,9 +145,9 @@ class Protocol extends _i1.SerializationManager {
           .map((e) => deserialize<Map<String, dynamic>>(e))
           .toList() as T;
     }
-    if (t == List<_i14.Notification>) {
+    if (t == List<_i15.Notification>) {
       return (data as List)
-          .map((e) => deserialize<_i14.Notification>(e))
+          .map((e) => deserialize<_i15.Notification>(e))
           .toList() as T;
     }
     if (t == _i1.getType<Map<String, dynamic>?>()) {
@@ -148,17 +159,27 @@ class Protocol extends _i1.SerializationManager {
     if (t == List<String>) {
       return (data as List).map((e) => deserialize<String>(e)).toList() as T;
     }
-    if (t == Map<_i15.NotificationType, List<_i14.Notification>>) {
+    if (t == Map<_i16.NotificationType, List<_i15.Notification>>) {
       return Map.fromEntries((data as List).map((e) => MapEntry(
-          deserialize<_i15.NotificationType>(e['k']),
-          deserialize<List<_i14.Notification>>(e['v'])))) as T;
+          deserialize<_i16.NotificationType>(e['k']),
+          deserialize<List<_i15.Notification>>(e['v'])))) as T;
+    }
+    if (t == List<_i17.TimesheetEntry>) {
+      return (data as List)
+          .map((e) => deserialize<_i17.TimesheetEntry>(e))
+          .toList() as T;
     }
     if (t == List<int>) {
       return (data as List).map((e) => deserialize<int>(e)).toList() as T;
     }
-    if (t == List<_i16.ValidationRequest>) {
+    if (t == _i1.getType<List<int>?>()) {
+      return (data != null
+          ? (data as List).map((e) => deserialize<int>(e)).toList()
+          : null) as T;
+    }
+    if (t == List<_i18.ValidationRequest>) {
       return (data as List)
-          .map((e) => deserialize<_i16.ValidationRequest>(e))
+          .map((e) => deserialize<_i18.ValidationRequest>(e))
           .toList() as T;
     }
     return super.deserialize<T>(data, t);
@@ -195,10 +216,13 @@ class Protocol extends _i1.SerializationManager {
     if (data is _i10.QueueStatus) {
       return 'QueueStatus';
     }
-    if (data is _i11.ValidationRequest) {
+    if (data is _i11.TimesheetDataResponse) {
+      return 'TimesheetDataResponse';
+    }
+    if (data is _i12.ValidationRequest) {
       return 'ValidationRequest';
     }
-    if (data is _i12.ValidationStatus) {
+    if (data is _i13.ValidationStatus) {
       return 'ValidationStatus';
     }
     return null;
@@ -237,11 +261,14 @@ class Protocol extends _i1.SerializationManager {
     if (dataClassName == 'QueueStatus') {
       return deserialize<_i10.QueueStatus>(data['data']);
     }
+    if (dataClassName == 'TimesheetDataResponse') {
+      return deserialize<_i11.TimesheetDataResponse>(data['data']);
+    }
     if (dataClassName == 'ValidationRequest') {
-      return deserialize<_i11.ValidationRequest>(data['data']);
+      return deserialize<_i12.ValidationRequest>(data['data']);
     }
     if (dataClassName == 'ValidationStatus') {
-      return deserialize<_i12.ValidationStatus>(data['data']);
+      return deserialize<_i13.ValidationStatus>(data['data']);
     }
     return super.deserializeByClassName(data);
   }

@@ -1,0 +1,18 @@
+class: TimesheetDataResponse
+fields:
+  validationId: int
+  employeeId: String
+  employeeName: String
+  employeeCompany: String
+  month: int
+  year: int
+  entries: String
+  totalDays: double
+  totalHours: String
+  totalOvertimeHours: String
+  periodStart: DateTime
+  periodEnd: DateTime
+  status: String
+  managerName: String?
+  managerComment: String?
+  validatedAt: DateTime?

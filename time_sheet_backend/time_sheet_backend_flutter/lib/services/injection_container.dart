@@ -260,7 +260,12 @@ Future<void> setup() async {
   );
   
   getIt.registerLazySingleton<ApproveValidationUseCase>(
-    () => ApproveValidationUseCase(getIt<ValidationRepository>()),
+    () => ApproveValidationUseCase(
+      getIt<ValidationRepository>(),
+      getIt<GeneratePdfUseCase>(),
+      getIt<GetSignatureUseCase>(),
+      getIt<GetUserPreferenceUseCase>(),
+    ),
   );
   
   getIt.registerLazySingleton<RejectValidationUseCase>(
@@ -276,7 +281,12 @@ Future<void> setup() async {
   );
   
   getIt.registerLazySingleton<DownloadValidationPdfUseCase>(
-    () => DownloadValidationPdfUseCase(getIt<ValidationRepository>()),
+    () => DownloadValidationPdfUseCase(
+      getIt<ValidationRepository>(),
+      getIt<GeneratePdfUseCase>(),
+      getIt<GetSignatureUseCase>(),
+      getIt<GetUserPreferenceUseCase>(),
+    ),
   );
   
   getIt.registerLazySingleton<GetAvailableManagersUseCase>(

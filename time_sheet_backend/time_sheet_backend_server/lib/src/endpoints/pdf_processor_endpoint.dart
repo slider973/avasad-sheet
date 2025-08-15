@@ -35,9 +35,10 @@ class PdfProcessorEndpoint extends Endpoint {
             throw Exception('Validation ${job.validationId} not found');
           }
           
-          if (validation.managerSignature == null) {
-            throw Exception('No manager signature for validation ${job.validationId}');
-          }
+          // Plus de signature stockée en BDD - elle sera gérée côté client
+          // if (validation.managerSignature == null) {
+          //   throw Exception('No manager signature for validation ${job.validationId}');
+          // }
           
           // Régénérer le PDF avec la signature
           final newPdfPath = await _regeneratePdfWithSignature(
@@ -112,7 +113,8 @@ class PdfProcessorEndpoint extends Endpoint {
       await newFile.writeAsBytes(originalBytes);
       
       session.log('PDF copied to: $newFileName');
-      session.log('Manager signature available: ${validation.managerSignature != null}');
+      // Plus de signature stockée en BDD
+      // session.log('Manager signature available: ${validation.managerSignature != null}');
       session.log('This is a temporary implementation - PDF fusion not yet implemented');
       
       return newFileName;

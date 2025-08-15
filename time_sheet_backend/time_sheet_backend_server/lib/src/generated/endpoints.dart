@@ -12,10 +12,14 @@
 import 'package:serverpod/serverpod.dart' as _i1;
 import '../endpoints/manager_endpoint.dart' as _i2;
 import '../endpoints/notification_endpoint.dart' as _i3;
-import '../endpoints/validation_endpoint.dart' as _i4;
-import '../greeting_endpoint.dart' as _i5;
+import '../endpoints/pdf_processor_endpoint.dart' as _i4;
+import '../endpoints/timesheet_endpoint.dart' as _i5;
+import '../endpoints/validation_endpoint.dart' as _i6;
+import '../greeting_endpoint.dart' as _i7;
 import 'package:time_sheet_backend_server/src/generated/notification_type.dart'
-    as _i6;
+    as _i8;
+import 'package:time_sheet_backend_server/src/generated/timesheet_entry.dart'
+    as _i9;
 
 class Endpoints extends _i1.EndpointDispatch {
   @override
@@ -33,13 +37,25 @@ class Endpoints extends _i1.EndpointDispatch {
           'notification',
           null,
         ),
-      'validation': _i4.ValidationEndpoint()
+      'pdfProcessor': _i4.PdfProcessorEndpoint()
+        ..initialize(
+          server,
+          'pdfProcessor',
+          null,
+        ),
+      'timesheet': _i5.TimesheetEndpoint()
+        ..initialize(
+          server,
+          'timesheet',
+          null,
+        ),
+      'validation': _i6.ValidationEndpoint()
         ..initialize(
           server,
           'validation',
           null,
         ),
-      'greeting': _i5.GreetingEndpoint()
+      'greeting': _i7.GreetingEndpoint()
         ..initialize(
           server,
           'greeting',
@@ -456,7 +472,7 @@ class Endpoints extends _i1.EndpointDispatch {
             ),
             'type': _i1.ParameterDescription(
               name: 'type',
-              type: _i1.getType<_i6.NotificationType>(),
+              type: _i1.getType<_i8.NotificationType>(),
               nullable: false,
             ),
             'title': _i1.ParameterDescription(
@@ -499,7 +515,7 @@ class Endpoints extends _i1.EndpointDispatch {
             ),
             'type': _i1.ParameterDescription(
               name: 'type',
-              type: _i1.getType<_i6.NotificationType>(),
+              type: _i1.getType<_i8.NotificationType>(),
               nullable: false,
             ),
             'title': _i1.ParameterDescription(
@@ -573,6 +589,192 @@ class Endpoints extends _i1.EndpointDispatch {
         ),
       },
     );
+    connectors['pdfProcessor'] = _i1.EndpointConnector(
+      name: 'pdfProcessor',
+      endpoint: endpoints['pdfProcessor']!,
+      methodConnectors: {
+        'processPdfQueue': _i1.MethodConnector(
+          name: 'processPdfQueue',
+          params: {},
+          call: (
+            _i1.Session session,
+            Map<String, dynamic> params,
+          ) async =>
+              (endpoints['pdfProcessor'] as _i4.PdfProcessorEndpoint)
+                  .processPdfQueue(session),
+        ),
+        'cleanupOldJobs': _i1.MethodConnector(
+          name: 'cleanupOldJobs',
+          params: {},
+          call: (
+            _i1.Session session,
+            Map<String, dynamic> params,
+          ) async =>
+              (endpoints['pdfProcessor'] as _i4.PdfProcessorEndpoint)
+                  .cleanupOldJobs(session),
+        ),
+      },
+    );
+    connectors['timesheet'] = _i1.EndpointConnector(
+      name: 'timesheet',
+      endpoint: endpoints['timesheet']!,
+      methodConnectors: {
+        'processTimesheet': _i1.MethodConnector(
+          name: 'processTimesheet',
+          params: {
+            'action': _i1.ParameterDescription(
+              name: 'action',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+            'data': _i1.ParameterDescription(
+              name: 'data',
+              type: _i1.getType<Map<String, dynamic>>(),
+              nullable: false,
+            ),
+          },
+          call: (
+            _i1.Session session,
+            Map<String, dynamic> params,
+          ) async =>
+              (endpoints['timesheet'] as _i5.TimesheetEndpoint)
+                  .processTimesheet(
+            session,
+            params['action'],
+            params['data'],
+          ),
+        ),
+        'saveTimesheetData': _i1.MethodConnector(
+          name: 'saveTimesheetData',
+          params: {
+            'validationRequestId': _i1.ParameterDescription(
+              name: 'validationRequestId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'employeeId': _i1.ParameterDescription(
+              name: 'employeeId',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+            'employeeName': _i1.ParameterDescription(
+              name: 'employeeName',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+            'employeeCompany': _i1.ParameterDescription(
+              name: 'employeeCompany',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+            'month': _i1.ParameterDescription(
+              name: 'month',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'year': _i1.ParameterDescription(
+              name: 'year',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'entries': _i1.ParameterDescription(
+              name: 'entries',
+              type: _i1.getType<List<_i9.TimesheetEntry>>(),
+              nullable: false,
+            ),
+            'totalDays': _i1.ParameterDescription(
+              name: 'totalDays',
+              type: _i1.getType<double>(),
+              nullable: false,
+            ),
+            'totalHours': _i1.ParameterDescription(
+              name: 'totalHours',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+            'totalOvertimeHours': _i1.ParameterDescription(
+              name: 'totalOvertimeHours',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+          },
+          call: (
+            _i1.Session session,
+            Map<String, dynamic> params,
+          ) async =>
+              (endpoints['timesheet'] as _i5.TimesheetEndpoint)
+                  .saveTimesheetData(
+            session,
+            params['validationRequestId'],
+            params['employeeId'],
+            params['employeeName'],
+            params['employeeCompany'],
+            params['month'],
+            params['year'],
+            params['entries'],
+            params['totalDays'],
+            params['totalHours'],
+            params['totalOvertimeHours'],
+          ),
+        ),
+        'getTimesheetData': _i1.MethodConnector(
+          name: 'getTimesheetData',
+          params: {
+            'validationRequestId': _i1.ParameterDescription(
+              name: 'validationRequestId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            )
+          },
+          call: (
+            _i1.Session session,
+            Map<String, dynamic> params,
+          ) async =>
+              (endpoints['timesheet'] as _i5.TimesheetEndpoint)
+                  .getTimesheetData(
+            session,
+            params['validationRequestId'],
+          ),
+        ),
+        'generateSignedPdf': _i1.MethodConnector(
+          name: 'generateSignedPdf',
+          params: {
+            'validationRequestId': _i1.ParameterDescription(
+              name: 'validationRequestId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'employeeSignature': _i1.ParameterDescription(
+              name: 'employeeSignature',
+              type: _i1.getType<String?>(),
+              nullable: true,
+            ),
+            'managerSignature': _i1.ParameterDescription(
+              name: 'managerSignature',
+              type: _i1.getType<String?>(),
+              nullable: true,
+            ),
+            'managerName': _i1.ParameterDescription(
+              name: 'managerName',
+              type: _i1.getType<String?>(),
+              nullable: true,
+            ),
+          },
+          call: (
+            _i1.Session session,
+            Map<String, dynamic> params,
+          ) async =>
+              (endpoints['timesheet'] as _i5.TimesheetEndpoint)
+                  .generateSignedPdf(
+            session,
+            params['validationRequestId'],
+            params['employeeSignature'],
+            params['managerSignature'],
+            params['managerName'],
+          ),
+        ),
+      },
+    );
     connectors['validation'] = _i1.EndpointConnector(
       name: 'validation',
       endpoint: endpoints['validation']!,
@@ -620,7 +822,7 @@ class Endpoints extends _i1.EndpointDispatch {
             _i1.Session session,
             Map<String, dynamic> params,
           ) async =>
-              (endpoints['validation'] as _i4.ValidationEndpoint)
+              (endpoints['validation'] as _i6.ValidationEndpoint)
                   .createValidation(
             session,
             params['employeeId'],
@@ -650,17 +852,23 @@ class Endpoints extends _i1.EndpointDispatch {
               type: _i1.getType<String?>(),
               nullable: true,
             ),
+            'signedPdfBytes': _i1.ParameterDescription(
+              name: 'signedPdfBytes',
+              type: _i1.getType<List<int>?>(),
+              nullable: true,
+            ),
           },
           call: (
             _i1.Session session,
             Map<String, dynamic> params,
           ) async =>
-              (endpoints['validation'] as _i4.ValidationEndpoint)
+              (endpoints['validation'] as _i6.ValidationEndpoint)
                   .approveValidation(
             session,
             params['validationId'],
             params['managerName'],
             params['comment'],
+            params['signedPdfBytes'],
           ),
         ),
         'rejectValidation': _i1.MethodConnector(
@@ -686,7 +894,7 @@ class Endpoints extends _i1.EndpointDispatch {
             _i1.Session session,
             Map<String, dynamic> params,
           ) async =>
-              (endpoints['validation'] as _i4.ValidationEndpoint)
+              (endpoints['validation'] as _i6.ValidationEndpoint)
                   .rejectValidation(
             session,
             params['validationId'],
@@ -707,7 +915,7 @@ class Endpoints extends _i1.EndpointDispatch {
             _i1.Session session,
             Map<String, dynamic> params,
           ) async =>
-              (endpoints['validation'] as _i4.ValidationEndpoint)
+              (endpoints['validation'] as _i6.ValidationEndpoint)
                   .getEmployeeValidations(
             session,
             params['employeeId'],
@@ -726,7 +934,7 @@ class Endpoints extends _i1.EndpointDispatch {
             _i1.Session session,
             Map<String, dynamic> params,
           ) async =>
-              (endpoints['validation'] as _i4.ValidationEndpoint)
+              (endpoints['validation'] as _i6.ValidationEndpoint)
                   .getManagerValidations(
             session,
             params['managerEmail'],
@@ -745,7 +953,7 @@ class Endpoints extends _i1.EndpointDispatch {
             _i1.Session session,
             Map<String, dynamic> params,
           ) async =>
-              (endpoints['validation'] as _i4.ValidationEndpoint).getValidation(
+              (endpoints['validation'] as _i6.ValidationEndpoint).getValidation(
             session,
             params['validationId'],
           ),
@@ -763,8 +971,27 @@ class Endpoints extends _i1.EndpointDispatch {
             _i1.Session session,
             Map<String, dynamic> params,
           ) async =>
-              (endpoints['validation'] as _i4.ValidationEndpoint)
+              (endpoints['validation'] as _i6.ValidationEndpoint)
                   .downloadValidationPdf(
+            session,
+            params['validationId'],
+          ),
+        ),
+        'getValidationTimesheetData': _i1.MethodConnector(
+          name: 'getValidationTimesheetData',
+          params: {
+            'validationId': _i1.ParameterDescription(
+              name: 'validationId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            )
+          },
+          call: (
+            _i1.Session session,
+            Map<String, dynamic> params,
+          ) async =>
+              (endpoints['validation'] as _i6.ValidationEndpoint)
+                  .getValidationTimesheetData(
             session,
             params['validationId'],
           ),
@@ -776,7 +1003,7 @@ class Endpoints extends _i1.EndpointDispatch {
             _i1.Session session,
             Map<String, dynamic> params,
           ) async =>
-              (endpoints['validation'] as _i4.ValidationEndpoint)
+              (endpoints['validation'] as _i6.ValidationEndpoint)
                   .checkExpiredValidations(session),
         ),
       },
@@ -798,7 +1025,7 @@ class Endpoints extends _i1.EndpointDispatch {
             _i1.Session session,
             Map<String, dynamic> params,
           ) async =>
-              (endpoints['greeting'] as _i5.GreetingEndpoint).hello(
+              (endpoints['greeting'] as _i7.GreetingEndpoint).hello(
             session,
             params['name'],
           ),

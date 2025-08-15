@@ -36,6 +36,14 @@ abstract class ValidationRepository {
     required String managerSignature,
     String? comment,
   });
+
+  /// Approuve une demande de validation avec un PDF déjà signé
+  Future<Either<Failure, ValidationRequest>> approveValidationWithSignedPdf({
+    required String validationId,
+    required Uint8List signedPdfBytes,
+    required String managerName,
+    String? comment,
+  });
   
   /// Rejette une demande de validation
   Future<Either<Failure, ValidationRequest>> rejectValidation({
@@ -45,6 +53,9 @@ abstract class ValidationRepository {
   
   /// Télécharge le PDF déchiffré d'une validation (avec signature optionnelle pour les managers)
   Future<Either<Failure, Uint8List>> downloadValidationPdf(String validationId, [String? managerSignature]);
+  
+  /// Récupère les données timesheet pour générer le PDF localement
+  Future<Either<Failure, Map<String, dynamic>>> getValidationTimesheetData(String validationId);
   
   /// Récupère les notifications de l'utilisateur
   Future<Either<Failure, List<NotificationEntity>>> getUserNotifications(String userId);

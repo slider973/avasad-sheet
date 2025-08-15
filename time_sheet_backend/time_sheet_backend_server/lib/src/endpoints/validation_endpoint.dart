@@ -122,6 +122,7 @@ class ValidationEndpoint extends Endpoint {
     int validationId,
     String managerName,
     String? comment,
+    List<int>? signedPdfBytes, // PDF signé généré côté client
   ) async {
     try {
       // Récupérer la validation
@@ -142,9 +143,28 @@ class ValidationEndpoint extends Endpoint {
       print('\n========== APPROVING VALIDATION ==========');
       print('Validation ID: $validationId');
       print('Manager name: $managerName');
+      print('Signed PDF provided: ${signedPdfBytes != null}');
+      if (signedPdfBytes != null) {
+        print('Signed PDF size: ${signedPdfBytes.length} bytes');
+      }
       session.log('Approving validation $validationId');
 
-      // Mettre à jour la validation SANS stocker de signature
+      // Si un PDF signé est fourni, le sauvegarder
+      if (signedPdfBytes != null && signedPdfBytes.isNotEmpty) {
+        final fileName = 'timesheet_${validationId}_approved_${DateTime.now().millisecondsSinceEpoch}.pdf';
+        final filePath = '/tmp/$fileName';
+        final file = File(filePath);
+        await file.writeAsBytes(signedPdfBytes);
+        
+        // Mettre à jour le chemin du PDF
+        validation.pdfPath = filePath;
+        validation.pdfSizeBytes = signedPdfBytes.length;
+        validation.pdfHash = signedPdfBytes.hashCode.toString();
+        
+        print('PDF signé sauvegardé: $filePath');
+      }
+
+      // Mettre à jour la validation
       validation.status = ValidationStatus.approved;
       validation.managerName = managerName;
       validation.managerComment = comment;
@@ -303,33 +323,7 @@ class ValidationEndpoint extends Endpoint {
         throw Exception('Validation introuvable');
       }
 
-      // Si la validation est approuvée, générer le PDF SANS signature
-      if (validation.status == ValidationStatus.approved) {
-        // Récupérer les données timesheet
-        final timesheetData = await TimesheetData.db.findFirstRow(
-          session,
-          where: (t) => t.validationRequestId.equals(validationId),
-        );
-        
-        if (timesheetData != null) {
-          print('\n========== DOWNLOAD PDF - APPROVED WITHOUT SIGNATURE ==========');
-          print('Validation ID: $validationId');
-          print('Status: APPROVED');
-          
-          // Générer le PDF SANS signature (juste le statut approuvé)
-          final pdfGenerator = PdfGeneratorService();
-          final pdfBytes = await pdfGenerator.generateTimesheetPdf(
-            timesheetData: timesheetData,
-            validation: validation,
-            includeManagerSignature: false, // PAS de signature
-          );
-          
-          print('PDF generated (approved), size: ${pdfBytes.length} bytes');
-          return pdfBytes;
-        }
-      }
-
-      // Sinon, retourner le PDF original
+      // Retourner simplement le PDF stocké (qu'il soit approuvé ou non)
       final file = File(validation.pdfPath);
       if (!await file.exists()) {
         throw Exception('Fichier PDF introuvable');
@@ -339,6 +333,56 @@ class ValidationEndpoint extends Endpoint {
     } catch (e) {
       session.log('Error downloading PDF: $e');
       throw Exception('Impossible de télécharger le PDF: $e');
+    }
+  }
+
+  /// Obtenir les données timesheet pour une validation
+  Future<TimesheetDataResponse> getValidationTimesheetData(
+    Session session,
+    int validationId,
+  ) async {
+    try {
+      final validation = await ValidationRequest.db.findById(
+        session,
+        validationId,
+      );
+
+      if (validation == null) {
+        throw Exception('Validation introuvable');
+      }
+
+      // Récupérer les données timesheet
+      final timesheetData = await TimesheetData.db.findFirstRow(
+        session,
+        where: (t) => t.validationRequestId.equals(validationId),
+      );
+
+      if (timesheetData == null) {
+        throw Exception('Données timesheet introuvables');
+      }
+
+      // Retourner les données structurées avec le modèle Serverpod
+      return TimesheetDataResponse(
+        validationId: validationId,
+        employeeId: timesheetData.employeeId,
+        employeeName: timesheetData.employeeName,
+        employeeCompany: timesheetData.employeeCompany,
+        month: timesheetData.month,
+        year: timesheetData.year,
+        entries: timesheetData.entries, // Garder en JSON string
+        totalDays: timesheetData.totalDays,
+        totalHours: timesheetData.totalHours,
+        totalOvertimeHours: timesheetData.totalOvertimeHours,
+        periodStart: validation.periodStart,
+        periodEnd: validation.periodEnd,
+        status: validation.status.toString(),
+        managerName: validation.managerName,
+        managerComment: validation.managerComment,
+        validatedAt: validation.validatedAt,
+      );
+    } catch (e) {
+      session.log('Error getting timesheet data: $e');
+      throw Exception('Impossible de récupérer les données: $e');
     }
   }
 
