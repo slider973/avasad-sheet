@@ -238,6 +238,23 @@ class _ValidationListPageState extends State<ValidationListPage> {
                 ],
               ),
               const SizedBox(height: 8),
+              // Afficher le nom de l'employé pour les managers
+              if (widget.viewType == ValidationViewType.manager && validation.employeeName != null) ...[
+                Row(
+                  children: [
+                    const Icon(Icons.person, size: 16, color: Colors.blue),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Employé: ${validation.employeeName}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+              ],
               Row(
                 children: [
                   const Icon(Icons.calendar_today, size: 16, color: Colors.grey),

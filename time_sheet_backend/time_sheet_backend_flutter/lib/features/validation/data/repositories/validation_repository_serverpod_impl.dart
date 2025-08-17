@@ -456,6 +456,7 @@ class ValidationRepositoryServerpodImpl implements ValidationRepository {
       id: request.id?.toString() ?? '',
       organizationId: '', // TODO: Obtenir l'organisation depuis le contexte
       employeeId: request.employeeId,
+      employeeName: request.employeeName,
       managerId: request.managerId,
       periodStart: request.periodStart,
       periodEnd: request.periodEnd,

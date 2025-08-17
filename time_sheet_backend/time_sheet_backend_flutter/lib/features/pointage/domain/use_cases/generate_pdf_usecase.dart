@@ -184,17 +184,8 @@ class GeneratePdfUseCase {
         logger.i('   - Nom manager fourni: $finalManagerName');
       }
       
-      // Si pas de signature manager fournie, récupérer depuis les préférences
-      if (managerSignature == null || managerSignature.isEmpty) {
-        logger.i('   - Récupération signature depuis préférences...');
-        final signature = await getSignatureUseCase.execute();
-        if (signature != null) {
-          managerSignatureBytes = signature;
-          logger.i('✅ Signature manager récupérée depuis préférences: ${managerSignatureBytes.length} octets');
-        } else {
-          logger.w('⚠️ Pas de signature dans les préférences');
-        }
-      } else {
+      // Ne récupérer la signature manager que si elle est explicitement fournie
+      if (managerSignature != null && managerSignature.isNotEmpty) {
         logger.i('   - Signature manager fournie, décodage...');
         try {
           if (managerSignature.startsWith('data:image/')) {
@@ -207,6 +198,8 @@ class GeneratePdfUseCase {
         } catch (e) {
           logger.e('❌ Erreur décodage signature: $e');
         }
+      } else {
+        logger.i('   - Pas de signature manager fournie, génération sans signature manager');
       }
 
       // Génération du PDF

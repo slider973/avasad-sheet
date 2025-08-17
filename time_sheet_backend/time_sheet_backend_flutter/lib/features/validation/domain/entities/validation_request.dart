@@ -5,6 +5,7 @@ class ValidationRequest extends Equatable {
   final String id;
   final String organizationId;
   final String employeeId;
+  final String? employeeName;
   final String managerId;
   final DateTime periodStart;
   final DateTime periodEnd;
@@ -27,6 +28,7 @@ class ValidationRequest extends Equatable {
     required this.id,
     required this.organizationId,
     required this.employeeId,
+    this.employeeName,
     required this.managerId,
     required this.periodStart,
     required this.periodEnd,
@@ -64,6 +66,7 @@ class ValidationRequest extends Equatable {
     String? id,
     String? organizationId,
     String? employeeId,
+    String? employeeName,
     String? managerId,
     DateTime? periodStart,
     DateTime? periodEnd,
@@ -84,6 +87,7 @@ class ValidationRequest extends Equatable {
       id: id ?? this.id,
       organizationId: organizationId ?? this.organizationId,
       employeeId: employeeId ?? this.employeeId,
+      employeeName: employeeName ?? this.employeeName,
       managerId: managerId ?? this.managerId,
       periodStart: periodStart ?? this.periodStart,
       periodEnd: periodEnd ?? this.periodEnd,
@@ -107,6 +111,7 @@ class ValidationRequest extends Equatable {
     id,
     organizationId,
     employeeId,
+    employeeName,
     managerId,
     periodStart,
     periodEnd,

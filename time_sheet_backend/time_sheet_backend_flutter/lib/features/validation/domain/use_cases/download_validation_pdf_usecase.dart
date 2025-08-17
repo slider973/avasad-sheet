@@ -1,5 +1,4 @@
 import 'dart:typed_data';
-import 'dart:convert';
 import 'package:fpdart/fpdart.dart';
 import 'package:intl/intl.dart';
 import 'package:isar/isar.dart';
@@ -10,12 +9,10 @@ import 'package:time_sheet/features/pointage/domain/entities/timesheet_entry.dar
 import 'package:time_sheet/features/absence/domain/entities/absence_entity.dart';
 import 'package:time_sheet/features/absence/domain/value_objects/absence_type.dart';
 import 'package:time_sheet/features/pointage/domain/use_cases/generate_pdf_usecase.dart';
-import 'package:time_sheet/features/pointage/domain/use_cases/generate_pdf_params.dart';
 import 'package:time_sheet/features/preference/domain/use_cases/get_signature_usecase.dart';
 import 'package:time_sheet/features/preference/domain/use_cases/get_user_preference_use_case.dart';
-import 'package:time_sheet/features/validation/data/models/manager_signature.dart';
 import '../repositories/validation_repository.dart';
-import './get_employee_validations_usecase.dart';
+import '../entities/validation_request.dart';
 
 /// Use case pour générer le PDF d'une validation localement
 class DownloadValidationPdfUseCase implements UseCase<Uint8List, DownloadPdfParams> {
@@ -113,9 +110,16 @@ class DownloadValidationPdfUseCase implements UseCase<Uint8List, DownloadPdfPara
       String? managerName;
 
       logger.i('📝 Vérification du statut pour la signature du manager...');
+      logger.i('   - Statut brut reçu: ${data['status']}');
 
       // Si la validation est approuvée, récupérer la signature du manager LOCALEMENT
-      if (data['status'] == 'ValidationStatus.approved') {
+      final statusString = data['status'] as String? ?? 'pending';
+      final validationStatus = ValidationStatusExtension.fromString(statusString);
+      
+      logger.i('   - Statut parsé: $validationStatus');
+      logger.i('   - Est approuvé? ${validationStatus == ValidationStatus.approved}');
+      
+      if (validationStatus == ValidationStatus.approved) {
         logger.i('   - Validation approuvée, récupération de la signature du manager LOCALEMENT');
 
         managerName = data['managerName'] as String?;
