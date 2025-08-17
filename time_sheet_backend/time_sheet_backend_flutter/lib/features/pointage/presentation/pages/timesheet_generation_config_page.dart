@@ -4,13 +4,13 @@ import 'package:time_sheet/features/pointage/domain/entities/timesheet_generatio
 import 'package:time_sheet/features/pointage/presentation/pages/time-sheet/bloc/time_sheet/time_sheet_bloc.dart';
 
 class TimesheetGenerationConfigPage extends StatefulWidget {
+  const TimesheetGenerationConfigPage({super.key});
+
   @override
-  _TimesheetGenerationConfigPageState createState() =>
-      _TimesheetGenerationConfigPageState();
+  _TimesheetGenerationConfigPageState createState() => _TimesheetGenerationConfigPageState();
 }
 
-class _TimesheetGenerationConfigPageState
-    extends State<TimesheetGenerationConfigPage> {
+class _TimesheetGenerationConfigPageState extends State<TimesheetGenerationConfigPage> {
   late TimesheetGenerationConfig config;
   final _formKey = GlobalKey<FormState>();
   DateTime selectedMonth = DateTime.now();
@@ -27,12 +27,11 @@ class _TimesheetGenerationConfigPageState
 
   DateTime _timeOfDayToDateTime(TimeOfDay timeOfDay) {
     final now = DateTime.now();
-    return DateTime(
-        now.year, now.month, now.day, timeOfDay.hour, timeOfDay.minute);
+    return DateTime(now.year, now.month, now.day, timeOfDay.hour, timeOfDay.minute);
   }
 
-  Future<void> _selectTime(BuildContext context, String label,
-      DateTime initialTime, Function(DateTime) onTimeSelected) async {
+  Future<void> _selectTime(
+      BuildContext context, String label, DateTime initialTime, Function(DateTime) onTimeSelected) async {
     final TimeOfDay? picked = await showTimePicker(
       context: context,
       initialTime: _dateTimeToTimeOfDay(initialTime),
@@ -187,26 +186,21 @@ class _TimesheetGenerationConfigPageState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        Text(label, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         Row(
           children: [
             Expanded(
               child: ListTile(
                 title: Text('Minimum'),
-                subtitle:
-                    Text('${_dateTimeToTimeOfDay(minTime).format(context)}'),
-                onTap: () =>
-                    _selectTime(context, 'Minimum', minTime, onMinSelected),
+                subtitle: Text(_dateTimeToTimeOfDay(minTime).format(context)),
+                onTap: () => _selectTime(context, 'Minimum', minTime, onMinSelected),
               ),
             ),
             Expanded(
               child: ListTile(
                 title: Text('Maximum'),
-                subtitle:
-                    Text('${_dateTimeToTimeOfDay(maxTime).format(context)}'),
-                onTap: () =>
-                    _selectTime(context, 'Maximum', maxTime, onMaxSelected),
+                subtitle: Text(_dateTimeToTimeOfDay(maxTime).format(context)),
+                onTap: () => _selectTime(context, 'Maximum', maxTime, onMaxSelected),
               ),
             ),
           ],
@@ -235,7 +229,7 @@ class _TimesheetGenerationConfigPageState
                 final result = await showModalBottomSheet<DateTime>(
                   context: context,
                   builder: (BuildContext context) {
-                    return Container(
+                    return SizedBox(
                       height: 300,
                       child: Column(
                         children: [
@@ -243,8 +237,7 @@ class _TimesheetGenerationConfigPageState
                             padding: EdgeInsets.all(16),
                             child: Text(
                               'Sélectionner le mois',
-                              style: TextStyle(
-                                  fontSize: 18, fontWeight: FontWeight.bold),
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                             ),
                           ),
                           Expanded(
@@ -252,17 +245,14 @@ class _TimesheetGenerationConfigPageState
                               itemCount: 12,
                               itemBuilder: (context, index) {
                                 final month = index + 1;
-                                final monthDate =
-                                    DateTime(selectedMonth.year, month);
+                                final monthDate = DateTime(selectedMonth.year, month);
                                 final isSelected = selectedMonth.month == month;
 
                                 return ListTile(
                                   title: Text(
                                     '${_getMonthName(month)} ${selectedMonth.year}',
                                     style: TextStyle(
-                                      fontWeight: isSelected
-                                          ? FontWeight.bold
-                                          : FontWeight.normal,
+                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                                       color: isSelected ? Colors.teal : null,
                                     ),
                                   ),
@@ -272,9 +262,7 @@ class _TimesheetGenerationConfigPageState
                                         : 'Du 21 ${_getMonthName(month - 1)} au 20 ${_getMonthName(month)} ${selectedMonth.year}',
                                     style: TextStyle(fontSize: 12),
                                   ),
-                                  trailing: isSelected
-                                      ? Icon(Icons.check, color: Colors.teal)
-                                      : null,
+                                  trailing: isSelected ? Icon(Icons.check, color: Colors.teal) : null,
                                   onTap: () {
                                     Navigator.pop(context, monthDate);
                                   },
@@ -289,9 +277,7 @@ class _TimesheetGenerationConfigPageState
                                 onPressed: () {
                                   // Année précédente
                                   setState(() {
-                                    selectedMonth = DateTime(
-                                        selectedMonth.year - 1,
-                                        selectedMonth.month);
+                                    selectedMonth = DateTime(selectedMonth.year - 1, selectedMonth.month);
                                   });
                                   Navigator.pop(context);
                                 },
@@ -305,9 +291,7 @@ class _TimesheetGenerationConfigPageState
                                 onPressed: () {
                                   // Année suivante
                                   setState(() {
-                                    selectedMonth = DateTime(
-                                        selectedMonth.year + 1,
-                                        selectedMonth.month);
+                                    selectedMonth = DateTime(selectedMonth.year + 1, selectedMonth.month);
                                   });
                                   Navigator.pop(context);
                                 },

@@ -23,7 +23,7 @@ class TimesheetCalendarLayout extends StatelessWidget {
   final Function() onLoadEvents;
 
   const TimesheetCalendarLayout({
-    Key? key,
+    super.key,
     required this.firstDay,
     required this.lastDay,
     required this.focusedDay,
@@ -36,7 +36,7 @@ class TimesheetCalendarLayout extends StatelessWidget {
     required this.onPageChanged,
     required this.onEventTap,
     required this.onLoadEvents,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

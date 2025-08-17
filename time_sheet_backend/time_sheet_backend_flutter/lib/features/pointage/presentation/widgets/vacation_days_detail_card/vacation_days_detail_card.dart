@@ -9,12 +9,12 @@ class VacationDaysDetailCard extends StatelessWidget {
   final int remainingTotal;
 
   const VacationDaysDetailCard({
-    Key? key,
+    super.key,
     required this.currentYearTotal,
     required this.lastYearRemaining,
     required this.usedDays,
     required this.remainingTotal,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -35,8 +35,7 @@ class VacationDaysDetailCard extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             _buildDetailRow('Congés ${DateTime.now().year}', currentYearTotal),
-            if (lastYearRemaining > 0)
-              _buildDetailRow('Report ${DateTime.now().year - 1}', lastYearRemaining),
+            if (lastYearRemaining > 0) _buildDetailRow('Report ${DateTime.now().year - 1}', lastYearRemaining),
             const Divider(height: 24),
             _buildDetailRow('Total disponible', currentYearTotal + lastYearRemaining, isTotal: true),
             _buildDetailRow('Utilisés', usedDays),

@@ -5,6 +5,7 @@ fields:
   employeeId: String
   employeeName: String
   employeeCompany: String
+  employeeSignature: String? # Signature en base64 de l'employé
   month: int
   year: int
   entries: String # JSON string containing all timesheet entries

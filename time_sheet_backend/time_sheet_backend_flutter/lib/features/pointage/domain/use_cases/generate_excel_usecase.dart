@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:excel/excel.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
-import '../entities/timesheet_entry.dart';
 import '../repositories/timesheet_repository.dart';
 import '../../domain/entities/generated_pdf.dart';
 import '../../../preference/domain/entities/user.dart';
@@ -22,12 +21,12 @@ class GenerateExcelUseCase {
 
       // Créer le fichier Excel
       final excel = Excel.createExcel();
-      
+
       // Supprimer la feuille par défaut si elle existe
       if (excel.sheets.containsKey('Sheet1')) {
         excel.delete('Sheet1');
       }
-      
+
       // Créer une nouvelle feuille
       final sheet = excel['Timesheet'];
 
@@ -57,12 +56,12 @@ class GenerateExcelUseCase {
 
       // Vérifier qu'on a des données
       print('Nombre d\'entrées à exporter: ${entries.length}');
-      
+
       // Ajouter les données
       for (var entry in entries) {
         final date = DateFormat('dd-MMM-yy').parse(entry.dayDate);
         final formattedDate = DateFormat('dd/MM/yyyy').format(date);
-        
+
         // Calculer le total d'heures
         final totalHours = entry.calculateDailyTotal();
         final hours = totalHours.inHours;
@@ -98,7 +97,7 @@ class GenerateExcelUseCase {
       );
       final totalHours = totalMonthHours.inHours;
       final totalMinutes = totalMonthHours.inMinutes.remainder(60);
-      
+
       sheet.cell(CellIndex.indexByColumnRow(columnIndex: 6, rowIndex: totalRow))
         ..value = TextCellValue('${totalHours}h${totalMinutes.toString().padLeft(2, '0')}')
         ..cellStyle = CellStyle(bold: true);
@@ -107,7 +106,7 @@ class GenerateExcelUseCase {
       final infoRow = totalRow + 2;
       sheet.appendRow([TextCellValue('Employé: ${user.firstName} ${user.lastName}')]);
       sheet.appendRow([TextCellValue('Entreprise: ${user.company}')]);
-      
+
       final monthName = DateFormat('MMMM yyyy', 'fr_FR').format(DateTime(DateTime.now().year, monthNumber));
       sheet.appendRow([TextCellValue('Période: $monthName')]);
 
@@ -121,7 +120,7 @@ class GenerateExcelUseCase {
       final path = directory.path;
       final fileName = 'timesheet_${monthName.replaceAll(' ', '_')}.xlsx';
       final file = File('$path/$fileName');
-      
+
       // S'assurer que le fichier est bien généré
       final excelBytes = excel.save(fileName: fileName);
       if (excelBytes != null && excelBytes.isNotEmpty) {

@@ -5,10 +5,10 @@ class PerformanceInsightsWidget extends StatelessWidget {
   final double progress;
 
   const PerformanceInsightsWidget({
-    Key? key,
+    super.key,
     required this.totalHours,
     required this.progress,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -79,6 +79,7 @@ class PerformanceInsightsWidget extends StatelessWidget {
       ),
     );
   }
+
   String _getPerformanceTrend(double progress) {
     final double daysInMonth = DateTime.now().day.toDouble();
     final double expectedProgress = (daysInMonth / 21.0) * 100.0;
@@ -91,6 +92,7 @@ class PerformanceInsightsWidget extends StatelessWidget {
       return 'Dans les temps';
     }
   }
+
   String _formatTime(double hours) {
     final int wholeHours = hours.floor();
     final int minutes = ((hours - wholeHours) * 60.0).round();

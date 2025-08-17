@@ -18,6 +18,7 @@ abstract class TimesheetDataResponse
     required this.employeeId,
     required this.employeeName,
     required this.employeeCompany,
+    this.employeeSignature,
     required this.month,
     required this.year,
     required this.entries,
@@ -37,6 +38,7 @@ abstract class TimesheetDataResponse
     required String employeeId,
     required String employeeName,
     required String employeeCompany,
+    String? employeeSignature,
     required int month,
     required int year,
     required String entries,
@@ -58,6 +60,7 @@ abstract class TimesheetDataResponse
       employeeId: jsonSerialization['employeeId'] as String,
       employeeName: jsonSerialization['employeeName'] as String,
       employeeCompany: jsonSerialization['employeeCompany'] as String,
+      employeeSignature: jsonSerialization['employeeSignature'] as String?,
       month: jsonSerialization['month'] as int,
       year: jsonSerialization['year'] as int,
       entries: jsonSerialization['entries'] as String,
@@ -85,6 +88,8 @@ abstract class TimesheetDataResponse
   String employeeName;
 
   String employeeCompany;
+
+  String? employeeSignature;
 
   int month;
 
@@ -118,6 +123,7 @@ abstract class TimesheetDataResponse
     String? employeeId,
     String? employeeName,
     String? employeeCompany,
+    String? employeeSignature,
     int? month,
     int? year,
     String? entries,
@@ -138,6 +144,7 @@ abstract class TimesheetDataResponse
       'employeeId': employeeId,
       'employeeName': employeeName,
       'employeeCompany': employeeCompany,
+      if (employeeSignature != null) 'employeeSignature': employeeSignature,
       'month': month,
       'year': year,
       'entries': entries,
@@ -160,6 +167,7 @@ abstract class TimesheetDataResponse
       'employeeId': employeeId,
       'employeeName': employeeName,
       'employeeCompany': employeeCompany,
+      if (employeeSignature != null) 'employeeSignature': employeeSignature,
       'month': month,
       'year': year,
       'entries': entries,
@@ -189,6 +197,7 @@ class _TimesheetDataResponseImpl extends TimesheetDataResponse {
     required String employeeId,
     required String employeeName,
     required String employeeCompany,
+    String? employeeSignature,
     required int month,
     required int year,
     required String entries,
@@ -206,6 +215,7 @@ class _TimesheetDataResponseImpl extends TimesheetDataResponse {
           employeeId: employeeId,
           employeeName: employeeName,
           employeeCompany: employeeCompany,
+          employeeSignature: employeeSignature,
           month: month,
           year: year,
           entries: entries,
@@ -229,6 +239,7 @@ class _TimesheetDataResponseImpl extends TimesheetDataResponse {
     String? employeeId,
     String? employeeName,
     String? employeeCompany,
+    Object? employeeSignature = _Undefined,
     int? month,
     int? year,
     String? entries,
@@ -247,6 +258,9 @@ class _TimesheetDataResponseImpl extends TimesheetDataResponse {
       employeeId: employeeId ?? this.employeeId,
       employeeName: employeeName ?? this.employeeName,
       employeeCompany: employeeCompany ?? this.employeeCompany,
+      employeeSignature: employeeSignature is String?
+          ? employeeSignature
+          : this.employeeSignature,
       month: month ?? this.month,
       year: year ?? this.year,
       entries: entries ?? this.entries,

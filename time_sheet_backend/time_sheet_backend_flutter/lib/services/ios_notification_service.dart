@@ -29,24 +29,20 @@ class DynamicMultiplatformNotificationService {
   }
 
   Future<void> _initIOSNotifications() async {
-    const DarwinInitializationSettings initializationSettingsIOS =
-        DarwinInitializationSettings(
+    const DarwinInitializationSettings initializationSettingsIOS = DarwinInitializationSettings(
       requestSoundPermission: true,
       requestBadgePermission: true,
       requestAlertPermission: true,
       defaultPresentBadge: false,
     );
 
-    const InitializationSettings initializationSettings =
-        InitializationSettings(iOS: initializationSettingsIOS);
+    const InitializationSettings initializationSettings = InitializationSettings(iOS: initializationSettingsIOS);
 
     await flutterLocalNotificationsPlugin.initialize(
       initializationSettings,
       onDidReceiveNotificationResponse: _onDidReceiveNotificationResponse,
     );
-    await flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation()
-        ?.cancelAll();
+    await flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation()?.cancelAll();
 
     await _resetBadge();
   }
@@ -77,8 +73,7 @@ class DynamicMultiplatformNotificationService {
   Future<void> testNotification() async {
     const int testId = 0;
     const String testTitle = "Test de notification";
-    const String testBody =
-        "Si vous voyez ceci, les notifications fonctionnent !";
+    const String testBody = "Si vous voyez ceci, les notifications fonctionnent !";
 
     if (Platform.isIOS) {
       await flutterLocalNotificationsPlugin.show(
@@ -102,18 +97,19 @@ class DynamicMultiplatformNotificationService {
     print("Notification de test envoyée. Vérifiez votre appareil.");
   }
 
-  Future<void> _onDidReceiveNotificationResponse(
-      NotificationResponse response) async {
+  Future<void> _onDidReceiveNotificationResponse(NotificationResponse response) async {
     final String? payload = response.payload;
     if (payload != null) {
       await _handlePointageAction(payload);
     }
     await _resetBadge();
   }
+
   // Méthode à appeler lorsque l'application est fermée
   Future<void> onAppClosed() async {
     await _resetBadge();
   }
+
   // Méthode à appeler lorsque l'application est ouverte
   Future<void> onAppOpened() async {
     final currentState = preferencesBloc.state;
@@ -121,7 +117,6 @@ class DynamicMultiplatformNotificationService {
       await _updateBadgeCount(currentState.badgeCount);
     }
   }
-
 
   Future<void> _updateNotifications() async {
     if (Platform.isIOS) {
@@ -178,6 +173,7 @@ class DynamicMultiplatformNotificationService {
       }
     }
   }
+
   Future<void> _incrementBadge() async {
     if (Platform.isIOS) {
       final currentState = preferencesBloc.state;
@@ -187,7 +183,6 @@ class DynamicMultiplatformNotificationService {
       }
     }
   }
-
 
   Future<void> _scheduleNotification({
     required int id,
@@ -218,7 +213,8 @@ class DynamicMultiplatformNotificationService {
     if (currentState is PreferencesLoaded) {
       currentBadgeCount = currentState.badgeCount;
     }
-    logger.i('Scheduling notification with id $id at $scheduledDate with payload $payload and current badge count $currentBadgeCount');
+    logger.i(
+        'Scheduling notification with id $id at $scheduledDate with payload $payload and current badge count $currentBadgeCount');
     await flutterLocalNotificationsPlugin.zonedSchedule(
       id,
       title,
@@ -240,7 +236,6 @@ class DynamicMultiplatformNotificationService {
     );
     await _incrementBadge();
   }
-
 
   void _scheduleWindowsNotification(
     int id,
@@ -273,7 +268,7 @@ class DynamicMultiplatformNotificationService {
       0,
       className,
       windowName,
-      WINDOW_STYLE.WS_OVERLAPPEDWINDOW,
+      WS_OVERLAPPEDWINDOW,
       CW_USEDEFAULT,
       CW_USEDEFAULT,
       CW_USEDEFAULT,
@@ -288,12 +283,12 @@ class DynamicMultiplatformNotificationService {
     nid.ref.cbSize = sizeOf<NOTIFYICONDATA>();
     nid.ref.hWnd = hwnd;
     nid.ref.uID = 100;
-    nid.ref.uFlags = NOTIFY_ICON_DATA_FLAGS.NIF_INFO;
-    nid.ref.dwInfoFlags = NOTIFY_ICON_INFOTIP_FLAGS.NIIF_INFO;
+    nid.ref.uFlags = NIF_INFO;
+    nid.ref.dwInfoFlags = NIIF_INFO;
     nid.ref.szInfoTitle = title.toString();
     nid.ref.szInfo = body.toString();
 
-    Shell_NotifyIcon(NOTIFY_ICON_MESSAGE.NIM_ADD, nid);
+    Shell_NotifyIcon(NIM_ADD, nid);
 
     free(className);
     free(windowName);
@@ -303,8 +298,7 @@ class DynamicMultiplatformNotificationService {
 
   tz.TZDateTime _timeFor(int hour, int minute) {
     final now = tz.TZDateTime.now(tz.local);
-    var scheduledDate =
-        tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
+    var scheduledDate = tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
     if (scheduledDate.isBefore(now)) {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }

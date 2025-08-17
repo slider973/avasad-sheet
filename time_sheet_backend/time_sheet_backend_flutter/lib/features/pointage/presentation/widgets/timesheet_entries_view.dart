@@ -6,12 +6,12 @@ import '../../domain/entities/timesheet_entry.dart';
 import '../pages/time-sheet/bloc/time_sheet_list/time_sheet_list_bloc.dart';
 import 'timesheet_entry_card.dart';
 
-
 class TimesheetEntriesWidget extends StatelessWidget {
+  const TimesheetEntriesWidget({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-
       appBar: AppBar(
         title: const Text('Heures enregistrées'),
         actions: [

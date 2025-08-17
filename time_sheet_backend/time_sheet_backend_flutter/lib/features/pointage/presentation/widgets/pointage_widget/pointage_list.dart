@@ -7,10 +7,10 @@ class PointageList extends StatelessWidget {
   final Function(Map<String, dynamic>) onModifier;
 
   const PointageList({
-    Key? key,
+    super.key,
     required this.pointages,
     required this.onModifier,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

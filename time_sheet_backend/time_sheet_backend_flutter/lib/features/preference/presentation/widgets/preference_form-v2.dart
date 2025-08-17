@@ -13,6 +13,8 @@ import '../../../../services/backup.dart';
 import '../../../../services/restart_service.dart';
 
 class PreferencesFormV2 extends StatefulWidget {
+  const PreferencesFormV2({super.key});
+
   @override
   _PreferencesFormV2State createState() => _PreferencesFormV2State();
 }
@@ -62,9 +64,7 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
                   title: 'Notifications',
                   value: state.notificationsEnabled,
                   onChanged: (value) {
-                    context
-                        .read<PreferencesBloc>()
-                        .add(ToggleNotifications(value));
+                    context.read<PreferencesBloc>().add(ToggleNotifications(value));
                   },
                 ),
                 _buildSwitchListTile(
@@ -72,9 +72,7 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
                   title: 'Manager de livraison',
                   value: state.isDeliveryManager,
                   onChanged: (value) {
-                    context
-                        .read<PreferencesBloc>()
-                        .add(ToggleDeliveryManager(value));
+                    context.read<PreferencesBloc>().add(ToggleDeliveryManager(value));
                   },
                 ),
                 _buildListTile(
@@ -95,14 +93,10 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
                         builder: (context) => TimesheetGenerationConfigPage(),
                       ),
                     );
-                    
+
                     if (result != null && mounted) {
-                      context
-                          .read<TimeSheetBloc>()
-                          .add(GenerateMonthlyTimesheetEvent(config: result));
-                      context
-                          .read<PreferencesBloc>()
-                          .add(SaveLastGenerationDate(DateTime.now()));
+                      context.read<TimeSheetBloc>().add(GenerateMonthlyTimesheetEvent(config: result));
+                      context.read<PreferencesBloc>().add(SaveLastGenerationDate(DateTime.now()));
                     }
                   },
                 ),
@@ -143,7 +137,7 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
       title: Text(title),
       value: value,
       onChanged: onChanged,
-      activeColor: Colors.teal,
+      activeThumbColor: Colors.teal,
     );
   }
 
@@ -202,9 +196,7 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
       MaterialPageRoute(
         builder: (context) => SignatureScreen(
           onSigned: (Uint8List signature) {
-            context
-                .read<PreferencesBloc>()
-                .add(SaveSignature(signature: signature));
+            context.read<PreferencesBloc>().add(SaveSignature(signature: signature));
           },
         ),
       ),
@@ -255,8 +247,7 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('Erreur lors de la sauvegarde : ${e.toString()}')),
+          SnackBar(content: Text('Erreur lors de la sauvegarde : ${e.toString()}')),
         );
       }
     }
@@ -291,8 +282,7 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('Erreur lors de la restauration : ${e.toString()}')),
+          SnackBar(content: Text('Erreur lors de la restauration : ${e.toString()}')),
         );
       }
     }
@@ -301,8 +291,7 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
   bool _isGeneratedThisMonth(DateTime? lastGenerationDate) {
     if (lastGenerationDate == null) return false;
     final now = DateTime.now();
-    return lastGenerationDate.year == now.year &&
-        lastGenerationDate.month == now.month;
+    return lastGenerationDate.year == now.year && lastGenerationDate.month == now.month;
   }
 
   Widget _buildSignatureTile(PreferencesLoaded state) {
@@ -324,8 +313,8 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
       ),
       onTap: () => _navigateToSignatureScreen(),
     );
-
   }
+
   void _showSignatureDialog(BuildContext context, PreferencesLoaded state) {
     showDialog(
       context: context,
@@ -340,8 +329,8 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
           child: state.signature != null
               ? Image.memory(state.signature!)
               : state.signatureBase64 != null
-              ? Image.memory(base64Decode(state.signatureBase64!))
-              : const Center(child: Text('Aucune signature disponible')),
+                  ? Image.memory(base64Decode(state.signatureBase64!))
+                  : const Center(child: Text('Aucune signature disponible')),
         ),
         actions: [
           TextButton(
@@ -358,7 +347,9 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
         ],
       ),
     );
-  }}
+  }
+}
+
 Widget _buildVersionInfo(String versionNumber, String buildNumber) {
   return ListTile(
     leading: const Icon(Icons.info_outline, color: Colors.teal),

@@ -7,8 +7,8 @@ import '../../../../absence/domain/value_objects/absence_type.dart';
 
 class AbsenceForm extends StatefulWidget {
   final DateTime selectedDate;
-  final Function(DateTime, DateTime, String, AbsenceType, String, String,
-      TimeOfDay?, TimeOfDay?) onSignalerAbsencePeriode;
+  final Function(DateTime, DateTime, String, AbsenceType, String, String, TimeOfDay?, TimeOfDay?)
+      onSignalerAbsencePeriode;
 
   const AbsenceForm({
     super.key,
@@ -62,10 +62,8 @@ class _AbsenceFormState extends State<AbsenceForm> {
               const SizedBox(height: 16),
               _buildDateRangePicker(),
               const SizedBox(height: 16),
-              if (canChangePeriod && motif != AbsenceMotif.other)
-                _buildPeriodSegmentedButton(),
-              if (periode == AbsencePeriod.halfDay &&
-                  motif != AbsenceMotif.other) ...[
+              if (canChangePeriod && motif != AbsenceMotif.other) _buildPeriodSegmentedButton(),
+              if (periode == AbsencePeriod.halfDay && motif != AbsenceMotif.other) ...[
                 const SizedBox(height: 16),
                 _buildTimeRangePicker(),
               ],
@@ -108,7 +106,7 @@ class _AbsenceFormState extends State<AbsenceForm> {
     );
   }
 
-  _getTypeFromMotif(AbsenceMotif motif) {
+  AbsenceType _getTypeFromMotif(AbsenceMotif motif) {
     if (motif == AbsenceMotif.leaveDay) {
       return AbsenceType.vacation;
     } else if (motif == AbsenceMotif.other) {
@@ -121,8 +119,7 @@ class _AbsenceFormState extends State<AbsenceForm> {
   Widget _buildDateRangePicker() {
     return ElevatedButton(
       onPressed: _selectDateRange,
-      child:
-          Text('Période: ${_formatDate(dateDebut)} - ${_formatDate(dateFin)}'),
+      child: Text('Période: ${_formatDate(dateDebut)} - ${_formatDate(dateFin)}'),
     );
   }
 
@@ -198,8 +195,7 @@ class _AbsenceFormState extends State<AbsenceForm> {
                     const SizedBox(height: 4),
                     Text(
                       "Sélectionner les heures de présence (non d'absence)",
-                      style:
-                          TextStyle(fontSize: 14, color: Colors.amber.shade900),
+                      style: TextStyle(fontSize: 14, color: Colors.amber.shade900),
                     ),
                   ],
                 ),
@@ -213,21 +209,15 @@ class _AbsenceFormState extends State<AbsenceForm> {
             Expanded(
               child: ElevatedButton(
                 onPressed: () => _selectTime(isStart: true),
-                child: Text(startTime != null
-                    ? 'Début: ${startTime!.format(context)}'
-                    : 'l\'heure de début'),
-              ).animate().scale(
-                  delay: 200.ms, duration: 400.ms, curve: Curves.easeOutBack),
+                child: Text(startTime != null ? 'Début: ${startTime!.format(context)}' : 'l\'heure de début'),
+              ).animate().scale(delay: 200.ms, duration: 400.ms, curve: Curves.easeOutBack),
             ),
             const SizedBox(width: 16),
             Expanded(
               child: ElevatedButton(
                 onPressed: () => _selectTime(isStart: false),
-                child: Text(endTime != null
-                    ? 'Fin: ${endTime!.format(context)}'
-                    : 'l\'heure de fin'),
-              ).animate().scale(
-                  delay: 400.ms, duration: 400.ms, curve: Curves.easeOutBack),
+                child: Text(endTime != null ? 'Fin: ${endTime!.format(context)}' : 'l\'heure de fin'),
+              ).animate().scale(delay: 400.ms, duration: 400.ms, curve: Curves.easeOutBack),
             ),
           ],
         ),
@@ -308,12 +298,8 @@ class _AbsenceFormState extends State<AbsenceForm> {
     final TimeOfDay? picked = await showTimePicker(
       context: context,
       initialTime: isStart
-          ? (halfDayPeriod == 'Matin'
-              ? const TimeOfDay(hour: 8, minute: 0)
-              : const TimeOfDay(hour: 13, minute: 0))
-          : (halfDayPeriod == 'Matin'
-              ? const TimeOfDay(hour: 12, minute: 0)
-              : const TimeOfDay(hour: 17, minute: 0)),
+          ? (halfDayPeriod == 'Matin' ? const TimeOfDay(hour: 8, minute: 0) : const TimeOfDay(hour: 13, minute: 0))
+          : (halfDayPeriod == 'Matin' ? const TimeOfDay(hour: 12, minute: 0) : const TimeOfDay(hour: 17, minute: 0)),
     );
     if (picked != null) {
       setState(() {
@@ -334,8 +320,8 @@ class _AbsenceFormState extends State<AbsenceForm> {
   }
 
   void _submitAbsence() {
-    widget.onSignalerAbsencePeriode(dateDebut, dateFin, motif.value,
-        absenceType, raison, periode.value, startTime, endTime);
+    widget.onSignalerAbsencePeriode(
+        dateDebut, dateFin, motif.value, absenceType, raison, periode.value, startTime, endTime);
     Navigator.of(context).pop();
   }
 

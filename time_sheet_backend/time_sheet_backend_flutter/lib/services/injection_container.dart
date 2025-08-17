@@ -22,13 +22,11 @@ import '../features/pointage/domain/use_cases/get_overtime_hours_usecase.dart';
 import '../features/pointage/domain/use_cases/get_remaining_vacation_days_usecase.dart';
 import '../features/pointage/domain/use_cases/get_today_timesheet_entry_use_case.dart';
 import '../features/pointage/domain/use_cases/get_weekly_work_time_usecase.dart';
-import '../features/pointage/domain/use_cases/insufficient_hours_detector.dart';
 import '../features/pointage/domain/use_cases/detect_anomalies_with_compensation_usecase.dart';
 import '../features/pointage/domain/use_cases/save_timesheet_entry_usecase.dart';
 import '../features/pointage/domain/use_cases/signaler_absence_periode_usecase.dart';
 import '../features/preference/data/models/user_preference.dart';
 import '../features/preference/data/repositories/user_preference_repository.impl.dart';
-import '../features/preference/presentation/manager/preferences_bloc.dart';
 import 'anomaly/anomaly_service.dart';
 import 'backup.dart';
 import 'watch_service.dart';
@@ -47,6 +45,7 @@ import '../features/pointage/domain/use_cases/calculate_overtime_hours_use_case.
 import '../features/pointage/domain/use_cases/get_days_with_overtime_use_case.dart';
 import '../features/validation/data/models/validation_request_cache.dart';
 import '../features/validation/data/models/notification_cache.dart';
+import '../features/validation/data/models/manager_signature.dart';
 import '../features/validation/data/models/sync_queue_item.dart';
 import '../features/validation/domain/use_cases/create_validation_request_usecase.dart';
 import '../features/validation/domain/use_cases/approve_validation_usecase.dart';
@@ -61,7 +60,6 @@ import '../features/validation/presentation/bloc/validation_list/validation_list
 import '../features/validation/presentation/bloc/create_validation/create_validation_bloc.dart';
 import '../features/validation/presentation/bloc/validation_detail/validation_detail_bloc.dart';
 import '../features/validation/domain/repositories/validation_repository.dart';
-
 
 final getIt = GetIt.instance;
 Future<String> getInstallationPath() async {
@@ -104,14 +102,15 @@ Future<void> setup() async {
     if (!getIt.isRegistered<Isar>()) {
       final isar = await Isar.open(
         [
-          TimeSheetEntryModelSchema, 
-          GeneratedPdfModelSchema, 
-          UserPreferencesSchema, 
-          AbsenceSchema, 
+          TimeSheetEntryModelSchema,
+          GeneratedPdfModelSchema,
+          UserPreferencesSchema,
+          AbsenceSchema,
           AnomalyModelSchema,
           ValidationRequestCacheSchema,
           NotificationCacheSchema,
-          SyncQueueItemSchema
+          SyncQueueItemSchema,
+          ManagerSignatureSchema
         ],
         directory: dir,
       );
@@ -137,40 +136,48 @@ Future<void> setup() async {
 
   // Enregistrer le BackupService avec les nouvelles fonctions
   getIt.registerLazySingleton<BackupService>(() => BackupService(
-    getIsarInstance: getIsarInstance,
-    closeIsarInstance: closeIsarInstance,
-    reopenIsarInstance: reopenIsarInstance,
-  ));
-
+        getIsarInstance: getIsarInstance,
+        closeIsarInstance: closeIsarInstance,
+        reopenIsarInstance: reopenIsarInstance,
+      ));
 
   // Initialiser l'instance Isar
   await getIsarInstance();
-  
+
   // Enregistrer le Logger
   getIt.registerLazySingleton<Logger>(() => Logger());
-  
+
   getIt.registerLazySingleton<LocalDatasourceImpl>(() => LocalDatasourceImpl(getIt<Isar>()));
   getIt.registerLazySingleton<UserPreferencesRepositoryImpl>(() => UserPreferencesRepositoryImpl(getIt<Isar>()));
   getIt.registerLazySingleton<TimesheetRepositoryImpl>(() => TimesheetRepositoryImpl(getIt<LocalDatasourceImpl>()));
-  getIt.registerLazySingleton<SaveTimesheetEntryUseCase>(() => SaveTimesheetEntryUseCase(getIt<TimesheetRepositoryImpl>()));
-  getIt.registerLazySingleton<DeleteTimesheetEntryUsecase>(() => DeleteTimesheetEntryUsecase(getIt<TimesheetRepositoryImpl>()));
+  getIt.registerLazySingleton<SaveTimesheetEntryUseCase>(
+      () => SaveTimesheetEntryUseCase(getIt<TimesheetRepositoryImpl>()));
+  getIt.registerLazySingleton<DeleteTimesheetEntryUsecase>(
+      () => DeleteTimesheetEntryUsecase(getIt<TimesheetRepositoryImpl>()));
   getIt.registerLazySingleton<FindPointedListUseCase>(() => FindPointedListUseCase(getIt<TimesheetRepositoryImpl>()));
-  getIt.registerLazySingleton<GetUserPreferenceUseCase>(() => GetUserPreferenceUseCase(getIt<UserPreferencesRepositoryImpl>()));
-  getIt.registerLazySingleton<SetUserPreferenceUseCase>(() => SetUserPreferenceUseCase(getIt<UserPreferencesRepositoryImpl>()));
+  getIt.registerLazySingleton<GetUserPreferenceUseCase>(
+      () => GetUserPreferenceUseCase(getIt<UserPreferencesRepositoryImpl>()));
+  getIt.registerLazySingleton<SetUserPreferenceUseCase>(
+      () => SetUserPreferenceUseCase(getIt<UserPreferencesRepositoryImpl>()));
   getIt.registerLazySingleton<GetSignatureUseCase>(() => GetSignatureUseCase(getIt<UserPreferencesRepositoryImpl>()));
-  
+
   // Use cases pour la gestion des managers dans Supabase
   getIt.registerLazySingleton<RegisterManagerUseCase>(() => RegisterManagerUseCase());
   getIt.registerLazySingleton<UnregisterManagerUseCase>(() => UnregisterManagerUseCase());
-  getIt.registerLazySingleton<GetTodayTimesheetEntryUseCase>(() => GetTodayTimesheetEntryUseCase(getIt<TimesheetRepositoryImpl>()));
+  getIt.registerLazySingleton<GetTodayTimesheetEntryUseCase>(
+      () => GetTodayTimesheetEntryUseCase(getIt<TimesheetRepositoryImpl>()));
   getIt.registerLazySingleton<SignalerAbsencePeriodeUsecase>(() => SignalerAbsencePeriodeUsecase(
-    getTodayTimesheetEntryUseCase: getIt<GetTodayTimesheetEntryUseCase>(),
-    saveTimesheetEntryUseCase: getIt<SaveTimesheetEntryUseCase>(),
-  ));
-  getIt.registerLazySingleton<GenerateMonthlyTimesheetUseCase>(() => GenerateMonthlyTimesheetUseCase(getIt<TimesheetRepositoryImpl>()));
-  getIt.registerLazySingleton<GetRemainingVacationDaysUseCase>(() => GetRemainingVacationDaysUseCase(getIt<TimesheetRepositoryImpl>()));
-  getIt.registerLazySingleton<GetMonthlyTimesheetEntriesUseCase>(() => GetMonthlyTimesheetEntriesUseCase(getIt<TimesheetRepositoryImpl>()));
-  getIt.registerLazySingleton<GetWeeklyWorkTimeUseCase>(() => GetWeeklyWorkTimeUseCase(getIt<TimesheetRepositoryImpl>()));
+        getTodayTimesheetEntryUseCase: getIt<GetTodayTimesheetEntryUseCase>(),
+        saveTimesheetEntryUseCase: getIt<SaveTimesheetEntryUseCase>(),
+      ));
+  getIt.registerLazySingleton<GenerateMonthlyTimesheetUseCase>(
+      () => GenerateMonthlyTimesheetUseCase(getIt<TimesheetRepositoryImpl>()));
+  getIt.registerLazySingleton<GetRemainingVacationDaysUseCase>(
+      () => GetRemainingVacationDaysUseCase(getIt<TimesheetRepositoryImpl>()));
+  getIt.registerLazySingleton<GetMonthlyTimesheetEntriesUseCase>(
+      () => GetMonthlyTimesheetEntriesUseCase(getIt<TimesheetRepositoryImpl>()));
+  getIt.registerLazySingleton<GetWeeklyWorkTimeUseCase>(
+      () => GetWeeklyWorkTimeUseCase(getIt<TimesheetRepositoryImpl>()));
   getIt.registerLazySingleton<GetOvertimeHoursUseCase>(() => GetOvertimeHoursUseCase());
   getIt.registerLazySingleton<DetectAnomaliesUseCase>(() {
     final allDetectors = AnomalyDetectorFactory.getAllDetectors();
@@ -183,35 +190,33 @@ Future<void> setup() async {
   getIt.registerLazySingleton<ToggleOvertimeHoursUseCase>(
     () => ToggleOvertimeHoursUseCase(getIt<TimesheetRepositoryImpl>()),
   );
-  
+
   getIt.registerLazySingleton<CalculateOvertimeHoursUseCase>(
     () => CalculateOvertimeHoursUseCase(),
   );
-  
+
   getIt.registerLazySingleton<GetDaysWithOvertimeUseCase>(
     () => GetDaysWithOvertimeUseCase(getIt<TimesheetRepositoryImpl>()),
   );
 
   getIt.registerLazySingleton<GeneratePdfUseCase>(() => GeneratePdfUseCase(
-    repository: getIt<TimesheetRepositoryImpl>(),
-    getSignatureUseCase: getIt<GetSignatureUseCase>(),
-    getUserPreferenceUseCase: getIt<GetUserPreferenceUseCase>(),
-    anomalyDetectionService: getIt<AnomalyDetectionService>(),
-    calculateOvertimeHoursUseCase: getIt<CalculateOvertimeHoursUseCase>(),
-  ));
+        repository: getIt<TimesheetRepositoryImpl>(),
+        getSignatureUseCase: getIt<GetSignatureUseCase>(),
+        getUserPreferenceUseCase: getIt<GetUserPreferenceUseCase>(),
+        anomalyDetectionService: getIt<AnomalyDetectionService>(),
+        calculateOvertimeHoursUseCase: getIt<CalculateOvertimeHoursUseCase>(),
+      ));
   getIt.registerLazySingleton<GenerateExcelUseCase>(() => GenerateExcelUseCase(getIt<TimesheetRepositoryImpl>()));
   getIt.registerLazySingleton<GetGeneratedPdfsUseCase>(() => GetGeneratedPdfsUseCase(getIt<TimesheetRepositoryImpl>()));
-  getIt.registerLazySingleton<AnomalyRepository>(
-          () => AnomalyRepositoryImpl(getIt<Isar>())
-  );
+  getIt.registerLazySingleton<AnomalyRepository>(() => AnomalyRepositoryImpl(getIt<Isar>()));
 
   // Enregistrez AnomalyService
   final anomalyService = AnomalyService(getIt<Isar>());
   GetIt.instance.registerSingleton<AnomalyService>(anomalyService);
-  
+
   // Enregistrer le nouveau service de détection d'anomalies
   getIt.registerLazySingleton<AnomalyDetectionService>(() => AnomalyDetectionService());
-  
+
   // Enregistrer le use case de détection avec compensation
   getIt.registerLazySingleton<DetectAnomaliesWithCompensationUseCase>(
     () => DetectAnomaliesWithCompensationUseCase(
@@ -220,31 +225,31 @@ Future<void> setup() async {
       AnomalyDetectorFactory.getWeeklyCompensationDetector(),
     ),
   );
-  
+
   // Enregistrer le service Watch
   getIt.registerLazySingleton<WatchService>(() => WatchService());
 
   // Initialisez le service des anomalies
   await anomalyService.createAnomaliesForCurrentMonth();
-  
+
   // Initialiser le service Watch
   await getIt<WatchService>().initialize();
-  
+
   // Enregistrer les services de validation
-  
+
   getIt.registerLazySingleton<ValidationLocalDataSource>(
     () => ValidationLocalDataSourceImpl(
       isar: getIt<Isar>(),
     ),
   );
-  
+
   // Utiliser la nouvelle implémentation Serverpod
   getIt.registerLazySingleton<ValidationRepository>(
     () => ValidationRepositoryServerpodImpl(
       getUserPreferenceUseCase: getIt<GetUserPreferenceUseCase>(),
     ),
   );
-  
+
   // Ancienne implémentation Supabase (commentée pour référence)
   // getIt.registerLazySingleton<ValidationRepositoryImpl>(
   //   () => ValidationRepositoryImpl(
@@ -253,12 +258,12 @@ Future<void> setup() async {
   //     supabaseService: SupabaseService.instance,
   //   ),
   // );
-  
+
   // Enregistrer les use cases de validation
   getIt.registerLazySingleton<CreateValidationRequestUseCase>(
     () => CreateValidationRequestUseCase(getIt<ValidationRepository>()),
   );
-  
+
   getIt.registerLazySingleton<ApproveValidationUseCase>(
     () => ApproveValidationUseCase(
       getIt<ValidationRepository>(),
@@ -267,32 +272,33 @@ Future<void> setup() async {
       getIt<GetUserPreferenceUseCase>(),
     ),
   );
-  
+
   getIt.registerLazySingleton<RejectValidationUseCase>(
     () => RejectValidationUseCase(getIt<ValidationRepository>()),
   );
-  
+
   getIt.registerLazySingleton<GetEmployeeValidationsUseCase>(
     () => GetEmployeeValidationsUseCase(getIt<ValidationRepository>()),
   );
-  
+
   getIt.registerLazySingleton<GetManagerValidationsUseCase>(
     () => GetManagerValidationsUseCase(getIt<ValidationRepository>()),
   );
-  
+
   getIt.registerLazySingleton<DownloadValidationPdfUseCase>(
     () => DownloadValidationPdfUseCase(
       getIt<ValidationRepository>(),
       getIt<GeneratePdfUseCase>(),
       getIt<GetSignatureUseCase>(),
       getIt<GetUserPreferenceUseCase>(),
+      getIt<Isar>(),
     ),
   );
-  
+
   getIt.registerLazySingleton<GetAvailableManagersUseCase>(
     () => GetAvailableManagersUseCase(getIt<ValidationRepository>()),
   );
-  
+
   // Enregistrer les BLoCs de validation
   getIt.registerFactory<ValidationListBloc>(
     () => ValidationListBloc(
@@ -300,7 +306,7 @@ Future<void> setup() async {
       getManagerValidations: getIt<GetManagerValidationsUseCase>(),
     ),
   );
-  
+
   getIt.registerFactory<CreateValidationBloc>(
     () => CreateValidationBloc(
       createValidationRequest: getIt<CreateValidationRequestUseCase>(),
@@ -310,7 +316,7 @@ Future<void> setup() async {
       getMonthlyTimesheetEntries: getIt<GetMonthlyTimesheetEntriesUseCase>(),
     ),
   );
-  
+
   getIt.registerFactory<ValidationDetailBloc>(
     () => ValidationDetailBloc(
       repository: getIt<ValidationRepository>(),

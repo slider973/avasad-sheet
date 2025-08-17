@@ -433,6 +433,7 @@ class EndpointValidation extends _i1.EndpointRef {
     double totalDays,
     String totalHours,
     String totalOvertimeHours,
+    String? employeeSignature,
   ) =>
       caller.callServerEndpoint<void>(
         'validation',
@@ -443,6 +444,7 @@ class EndpointValidation extends _i1.EndpointRef {
           'totalDays': totalDays,
           'totalHours': totalHours,
           'totalOvertimeHours': totalOvertimeHours,
+          'employeeSignature': employeeSignature,
         },
       );
 

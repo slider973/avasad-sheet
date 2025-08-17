@@ -27,7 +27,7 @@ class PdfDocumentLayout extends StatelessWidget {
   final VoidCallback? onChooseMonthExcel;
 
   const PdfDocumentLayout({
-    Key? key,
+    super.key,
     required this.pdfs,
     required this.onGenerateCurrentMonth,
     required this.onChooseMonth,
@@ -35,7 +35,7 @@ class PdfDocumentLayout extends StatelessWidget {
     required this.onDeletePdf,
     this.onGenerateCurrentMonthExcel,
     this.onChooseMonthExcel,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -223,18 +223,14 @@ class PdfDocumentLayout extends StatelessWidget {
                     leading: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: pdf.fileName.endsWith('.xlsx') 
+                        color: pdf.fileName.endsWith('.xlsx')
                             ? Colors.green.withOpacity(0.1)
                             : Colors.red.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
-                        pdf.fileName.endsWith('.xlsx') 
-                            ? Icons.table_chart 
-                            : Icons.picture_as_pdf,
-                        color: pdf.fileName.endsWith('.xlsx') 
-                            ? Colors.green 
-                            : Colors.red,
+                        pdf.fileName.endsWith('.xlsx') ? Icons.table_chart : Icons.picture_as_pdf,
+                        color: pdf.fileName.endsWith('.xlsx') ? Colors.green : Colors.red,
                         size: 24,
                       ),
                     ),
@@ -249,7 +245,7 @@ class PdfDocumentLayout extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
-                            color: pdf.fileName.endsWith('.xlsx') 
+                            color: pdf.fileName.endsWith('.xlsx')
                                 ? Colors.green.withOpacity(0.2)
                                 : Colors.red.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(12),
@@ -258,9 +254,7 @@ class PdfDocumentLayout extends StatelessWidget {
                             pdf.fileName.endsWith('.xlsx') ? 'Excel' : 'PDF',
                             style: TextStyle(
                               fontSize: 12,
-                              color: pdf.fileName.endsWith('.xlsx') 
-                                  ? Colors.green[700]
-                                  : Colors.red[700],
+                              color: pdf.fileName.endsWith('.xlsx') ? Colors.green[700] : Colors.red[700],
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -278,9 +272,8 @@ class PdfDocumentLayout extends StatelessWidget {
                           IconButton(
                             icon: const Icon(Icons.share, color: Colors.blue),
                             tooltip: 'Partager',
-                            onPressed: () => pdf.fileName.endsWith('.xlsx')
-                                ? shareExcel(pdf.filePath)
-                                : sharePdf(pdf.filePath),
+                            onPressed: () =>
+                                pdf.fileName.endsWith('.xlsx') ? shareExcel(pdf.filePath) : sharePdf(pdf.filePath),
                           ),
                           IconButton(
                             icon: const Icon(Icons.delete, color: Colors.red),
@@ -305,11 +298,11 @@ class PdfDocumentLayout extends StatelessWidget {
     final now = DateTime.now();
     final currentMonth = now.month;
     final currentYear = now.year;
-    
+
     // Déterminer la période en fonction du jour actuel
     DateTime startDate;
     DateTime endDate;
-    
+
     if (now.day > 21) {
       // Si on est après le 21, la période est du 21 du mois courant au 20 du mois suivant
       startDate = DateTime(currentYear, currentMonth, 21);
@@ -327,7 +320,7 @@ class PdfDocumentLayout extends StatelessWidget {
       }
       endDate = DateTime(currentYear, currentMonth, 20);
     }
-    
+
     final format = DateFormat('dd MMM', 'fr_FR');
     return '${format.format(startDate)} - ${format.format(endDate)}';
   }
@@ -386,47 +379,46 @@ class PdfDocumentLayout extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             ...actions.map((action) => Padding(
-              padding: const EdgeInsets.only(bottom: 8.0),
-              child: Material(
-                color: action.color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                child: InkWell(
-                  onTap: action.onTap,
-                  borderRadius: BorderRadius.circular(8),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          action.icon,
-                          color: action.color,
-                          size: 20,
+                  padding: const EdgeInsets.only(bottom: 8.0),
+                  child: Material(
+                    color: action.color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    child: InkWell(
+                      onTap: action.onTap,
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            action.label,
-                            style: TextStyle(
+                        child: Row(
+                          children: [
+                            Icon(
+                              action.icon,
                               color: action.color,
-                              fontWeight: FontWeight.w500,
-                              fontSize: 13,
+                              size: 20,
                             ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                action.label,
+                                style: TextStyle(
+                                  color: action.color,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 13,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
-                ),
-              ),
-            )),
+                )),
           ],
         ),
       ),
     );
   }
-
 }

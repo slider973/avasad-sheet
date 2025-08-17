@@ -19,6 +19,7 @@ abstract class TimesheetData
     required this.employeeId,
     required this.employeeName,
     required this.employeeCompany,
+    this.employeeSignature,
     required this.month,
     required this.year,
     required this.entries,
@@ -36,6 +37,7 @@ abstract class TimesheetData
     required String employeeId,
     required String employeeName,
     required String employeeCompany,
+    String? employeeSignature,
     required int month,
     required int year,
     required String entries,
@@ -53,6 +55,7 @@ abstract class TimesheetData
       employeeId: jsonSerialization['employeeId'] as String,
       employeeName: jsonSerialization['employeeName'] as String,
       employeeCompany: jsonSerialization['employeeCompany'] as String,
+      employeeSignature: jsonSerialization['employeeSignature'] as String?,
       month: jsonSerialization['month'] as int,
       year: jsonSerialization['year'] as int,
       entries: jsonSerialization['entries'] as String,
@@ -80,6 +83,8 @@ abstract class TimesheetData
   String employeeName;
 
   String employeeCompany;
+
+  String? employeeSignature;
 
   int month;
 
@@ -109,6 +114,7 @@ abstract class TimesheetData
     String? employeeId,
     String? employeeName,
     String? employeeCompany,
+    String? employeeSignature,
     int? month,
     int? year,
     String? entries,
@@ -126,6 +132,7 @@ abstract class TimesheetData
       'employeeId': employeeId,
       'employeeName': employeeName,
       'employeeCompany': employeeCompany,
+      if (employeeSignature != null) 'employeeSignature': employeeSignature,
       'month': month,
       'year': year,
       'entries': entries,
@@ -145,6 +152,7 @@ abstract class TimesheetData
       'employeeId': employeeId,
       'employeeName': employeeName,
       'employeeCompany': employeeCompany,
+      if (employeeSignature != null) 'employeeSignature': employeeSignature,
       'month': month,
       'year': year,
       'entries': entries,
@@ -195,6 +203,7 @@ class _TimesheetDataImpl extends TimesheetData {
     required String employeeId,
     required String employeeName,
     required String employeeCompany,
+    String? employeeSignature,
     required int month,
     required int year,
     required String entries,
@@ -209,6 +218,7 @@ class _TimesheetDataImpl extends TimesheetData {
           employeeId: employeeId,
           employeeName: employeeName,
           employeeCompany: employeeCompany,
+          employeeSignature: employeeSignature,
           month: month,
           year: year,
           entries: entries,
@@ -229,6 +239,7 @@ class _TimesheetDataImpl extends TimesheetData {
     String? employeeId,
     String? employeeName,
     String? employeeCompany,
+    Object? employeeSignature = _Undefined,
     int? month,
     int? year,
     String? entries,
@@ -244,6 +255,9 @@ class _TimesheetDataImpl extends TimesheetData {
       employeeId: employeeId ?? this.employeeId,
       employeeName: employeeName ?? this.employeeName,
       employeeCompany: employeeCompany ?? this.employeeCompany,
+      employeeSignature: employeeSignature is String?
+          ? employeeSignature
+          : this.employeeSignature,
       month: month ?? this.month,
       year: year ?? this.year,
       entries: entries ?? this.entries,
@@ -273,6 +287,10 @@ class TimesheetDataTable extends _i1.Table<int?> {
     );
     employeeCompany = _i1.ColumnString(
       'employeeCompany',
+      this,
+    );
+    employeeSignature = _i1.ColumnString(
+      'employeeSignature',
       this,
     );
     month = _i1.ColumnInt(
@@ -319,6 +337,8 @@ class TimesheetDataTable extends _i1.Table<int?> {
 
   late final _i1.ColumnString employeeCompany;
 
+  late final _i1.ColumnString employeeSignature;
+
   late final _i1.ColumnInt month;
 
   late final _i1.ColumnInt year;
@@ -342,6 +362,7 @@ class TimesheetDataTable extends _i1.Table<int?> {
         employeeId,
         employeeName,
         employeeCompany,
+        employeeSignature,
         month,
         year,
         entries,

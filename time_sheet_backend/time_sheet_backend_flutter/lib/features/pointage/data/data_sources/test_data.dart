@@ -1,6 +1,3 @@
-import '../../domain/entities/timesheet_entry.dart';
-import '../utils/time_sheet_utils.dart';
-
 // final List<TimesheetEntry> testData = [
 //   TimesheetEntry(TimeSheetUtils.convertFormatDate('2023-12-20'), 'Mercredi', '08:00', '12:00', '13:00', '17:00'),
 //   TimesheetEntry(TimeSheetUtils.convertFormatDate('2023-12-21'), 'Jeudi', '08:00', '12:00', '13:00', '17:00'),

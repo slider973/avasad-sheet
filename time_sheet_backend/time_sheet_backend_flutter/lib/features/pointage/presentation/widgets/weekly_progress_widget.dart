@@ -7,7 +7,7 @@ import '../../domain/entities/timesheet_entry.dart';
 class WeeklyProgressWidget extends StatelessWidget {
   final List<TimesheetEntry> entries;
 
-  const WeeklyProgressWidget({Key? key, required this.entries}) : super(key: key);
+  const WeeklyProgressWidget({super.key, required this.entries});
 
   @override
   Widget build(BuildContext context) {
@@ -144,9 +144,7 @@ class WeeklyProgressWidget extends StatelessWidget {
   }
 
   bool _isSameDay(DateTime date1, DateTime date2) {
-    return date1.year == date2.year &&
-        date1.month == date2.month &&
-        date1.day == date2.day;
+    return date1.year == date2.year && date1.month == date2.month && date1.day == date2.day;
   }
 
   DateTime? _parseTime(String time) {

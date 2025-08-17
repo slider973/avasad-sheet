@@ -23,7 +23,7 @@ class CreateValidationBloc extends Bloc<CreateValidationEvent, CreateValidationS
   final GetUserPreferenceUseCase getUserPreference;
   final GetGeneratedPdfsUseCase getGeneratedPdfs;
   final GetMonthlyTimesheetEntriesUseCase getMonthlyTimesheetEntries;
-  
+
   CreateValidationBloc({
     required this.createValidationRequest,
     required this.getAvailableManagers,
@@ -39,41 +39,41 @@ class CreateValidationBloc extends Bloc<CreateValidationEvent, CreateValidationS
     on<SubmitValidation>(_onSubmitValidation);
     on<ResetForm>(_onResetForm);
   }
-  
+
   Future<void> _onLoadManagers(
     LoadManagers event,
     Emitter<CreateValidationState> emit,
   ) async {
     emit(CreateValidationLoading());
-    
+
     try {
       // Récupérer l'ID utilisateur depuis les préférences
       final firstName = await getUserPreference.execute('firstName') ?? '';
       final lastName = await getUserPreference.execute('lastName') ?? '';
-      
+
       if (firstName.isEmpty || lastName.isEmpty) {
         emit(const CreateValidationError('Veuillez configurer votre nom dans les paramètres'));
         return;
       }
-      
+
       // Utiliser email comme ID unique
       final userId = '${firstName.toLowerCase()}_${lastName.toLowerCase()}';
-      
+
       final result = await getAvailableManagers(userId);
-      
+
       if (result.isLeft()) {
         final failure = result.fold((l) => l, (r) => null);
         emit(CreateValidationError((failure as Failure).message));
         return;
       }
-      
+
       final managers = result.fold((l) => <Manager>[], (r) => r);
-      
+
       if (managers.isEmpty) {
         emit(const CreateValidationError('Aucun manager disponible'));
         return;
       }
-      
+
       // Charger aussi les PDFs disponibles
       final pdfs = await getGeneratedPdfs.execute();
       emit(CreateValidationForm(
@@ -84,7 +84,7 @@ class CreateValidationBloc extends Bloc<CreateValidationEvent, CreateValidationS
       emit(CreateValidationError('Erreur inattendue: $e'));
     }
   }
-  
+
   void _onSelectManager(
     SelectManager event,
     Emitter<CreateValidationState> emit,
@@ -94,14 +94,14 @@ class CreateValidationBloc extends Bloc<CreateValidationEvent, CreateValidationS
       emit(currentState.copyWith(selectedManager: event.manager));
     }
   }
-  
+
   void _onSelectPeriod(
     SelectPeriod event,
     Emitter<CreateValidationState> emit,
   ) {
     if (state is CreateValidationForm) {
       final currentState = state as CreateValidationForm;
-      
+
       // Valider les dates
       if (event.endDate.isBefore(event.startDate)) {
         emit(currentState.copyWith(
@@ -109,7 +109,7 @@ class CreateValidationBloc extends Bloc<CreateValidationEvent, CreateValidationS
         ));
         return;
       }
-      
+
       emit(currentState.copyWith(
         periodStart: event.startDate,
         periodEnd: event.endDate,
@@ -117,61 +117,73 @@ class CreateValidationBloc extends Bloc<CreateValidationEvent, CreateValidationS
       ));
     }
   }
-  
+
   Future<void> _onSelectGeneratedPdf(
     SelectGeneratedPdf event,
     Emitter<CreateValidationState> emit,
   ) async {
     if (state is CreateValidationForm) {
       final currentState = state as CreateValidationForm;
-      
+
       try {
         // Lire le fichier PDF
         final file = File(event.pdf.filePath);
         if (await file.exists()) {
           final bytes = await file.readAsBytes();
-          
+
           // Extraire la période du nom du fichier (format: MonthName_YYYY.pdf)
           final fileName = event.pdf.fileName;
           logger.i('Nom du fichier PDF sélectionné: $fileName');
-          
+
           // Mapping des noms de mois français vers numéros (accepte majuscules et minuscules)
           final monthMap = {
-            'Janvier': 1, 'janvier': 1, 
-            'Février': 2, 'février': 2,
-            'Mars': 3, 'mars': 3,
-            'Avril': 4, 'avril': 4,
-            'Mai': 5, 'mai': 5,
-            'Juin': 6, 'juin': 6,
-            'Juillet': 7, 'juillet': 7,
-            'Août': 8, 'août': 8,
-            'Septembre': 9, 'septembre': 9,
-            'Octobre': 10, 'octobre': 10,
-            'Novembre': 11, 'novembre': 11,
-            'Décembre': 12, 'décembre': 12
+            'Janvier': 1,
+            'janvier': 1,
+            'Février': 2,
+            'février': 2,
+            'Mars': 3,
+            'mars': 3,
+            'Avril': 4,
+            'avril': 4,
+            'Mai': 5,
+            'mai': 5,
+            'Juin': 6,
+            'juin': 6,
+            'Juillet': 7,
+            'juillet': 7,
+            'Août': 8,
+            'août': 8,
+            'Septembre': 9,
+            'septembre': 9,
+            'Octobre': 10,
+            'octobre': 10,
+            'Novembre': 11,
+            'novembre': 11,
+            'Décembre': 12,
+            'décembre': 12
           };
-          
+
           // Regex pour extraire le nom du mois et l'année
           final regex = RegExp(r'(\w+)_(\d{4})\.pdf');
           final match = regex.firstMatch(fileName);
-          
+
           if (match != null) {
             final monthName = match.group(1)!;
             final year = int.parse(match.group(2)!);
             final month = monthMap[monthName];
-            
+
             if (month != null) {
               // Règle métier : du 21 du mois précédent au 20 du mois sélectionné
-              final startDate = month == 1 
-                  ? DateTime(year - 1, 12, 21)  // Si janvier, prendre décembre de l'année précédente
+              final startDate = month == 1
+                  ? DateTime(year - 1, 12, 21) // Si janvier, prendre décembre de l'année précédente
                   : DateTime(year, month - 1, 21);
               final endDate = DateTime(year, month, 20);
-              
+
               logger.i('Mois extrait: $monthName -> $month');
               logger.i('Période extraite du nom de fichier: $month/$year');
               logger.i('Date début: $startDate (21 du mois précédent)');
               logger.i('Date fin: $endDate (20 du mois sélectionné)');
-              
+
               emit(currentState.copyWith(
                 selectedPdf: event.pdf,
                 periodStart: startDate,
@@ -185,11 +197,9 @@ class CreateValidationBloc extends Bloc<CreateValidationEvent, CreateValidationS
               // Utiliser la date de génération comme fallback avec la règle métier
               final month = event.pdf.generatedDate.month;
               final year = event.pdf.generatedDate.year;
-              final startDate = month == 1 
-                  ? DateTime(year - 1, 12, 21)
-                  : DateTime(year, month - 1, 21);
+              final startDate = month == 1 ? DateTime(year - 1, 12, 21) : DateTime(year, month - 1, 21);
               final endDate = DateTime(year, month, 20);
-              
+
               emit(currentState.copyWith(
                 selectedPdf: event.pdf,
                 periodStart: startDate,
@@ -203,11 +213,9 @@ class CreateValidationBloc extends Bloc<CreateValidationEvent, CreateValidationS
             // Si on ne peut pas extraire la période, utiliser la date de génération avec la règle métier
             final month = event.pdf.generatedDate.month;
             final year = event.pdf.generatedDate.year;
-            final startDate = month == 1 
-                ? DateTime(year - 1, 12, 21)
-                : DateTime(year, month - 1, 21);
+            final startDate = month == 1 ? DateTime(year - 1, 12, 21) : DateTime(year, month - 1, 21);
             final endDate = DateTime(year, month, 20);
-            
+
             emit(currentState.copyWith(
               selectedPdf: event.pdf,
               periodStart: startDate,
@@ -229,7 +237,7 @@ class CreateValidationBloc extends Bloc<CreateValidationEvent, CreateValidationS
       }
     }
   }
-  
+
   void _onSetPdfData(
     SetPdfData event,
     Emitter<CreateValidationState> emit,
@@ -242,102 +250,114 @@ class CreateValidationBloc extends Bloc<CreateValidationEvent, CreateValidationS
       ));
     }
   }
-  
+
   Future<void> _onSubmitValidation(
     SubmitValidation event,
     Emitter<CreateValidationState> emit,
   ) async {
     if (state is CreateValidationForm) {
       final currentState = state as CreateValidationForm;
-      
+
       // Valider le formulaire
       if (currentState.selectedManager == null) {
         emit(currentState.copyWith(error: 'Veuillez sélectionner un manager'));
         return;
       }
-      
+
       if (currentState.selectedPdf == null) {
         emit(currentState.copyWith(error: 'Veuillez sélectionner un PDF'));
         return;
       }
-      
+
       if (currentState.pdfBytes == null) {
         emit(currentState.copyWith(error: 'Erreur lors de la lecture du PDF'));
         return;
       }
-      
+
       emit(CreateValidationSubmitting());
-      
+
       try {
         // Récupérer l'ID utilisateur depuis les préférences
         final firstName = await getUserPreference.execute('firstName') ?? '';
         final lastName = await getUserPreference.execute('lastName') ?? '';
         final company = await getUserPreference.execute('company') ?? '';
-        
+
         if (firstName.isEmpty || lastName.isEmpty) {
           emit(const CreateValidationError('Veuillez configurer votre nom dans les paramètres'));
           return;
         }
-        
+
+        // Vérifier que l'utilisateur a une signature
+        final userSignature = await getUserPreference.execute('signature');
+        if (userSignature == null || userSignature.toString().isEmpty) {
+          emit(const CreateValidationError(
+              'Veuillez configurer votre signature dans les paramètres avant de créer une validation'));
+          return;
+        }
+        logger.i('✅ Signature utilisateur trouvée dans les préférences');
+
         // Utiliser email comme ID unique
         final userId = '${firstName.toLowerCase()}_${lastName.toLowerCase()}';
         final employeeName = '$firstName $lastName';
-        
+
         // Récupérer les données timesheet pour la période
         List<Map<String, dynamic>>? timesheetEntries;
         double totalDays = 0.0;
         String totalHours = '0:00';
         String totalOvertimeHours = '0:00';
-        
+
         logger.i('État actuel - periodStart: ${currentState.periodStart}, periodEnd: ${currentState.periodEnd}');
         logger.i('PDF sélectionné: ${currentState.pdfFileName}');
-        
+
         if (currentState.periodStart != null && currentState.periodEnd != null) {
           try {
             // Extraire le mois de la période (le mois du 20, qui est le mois sélectionné)
             final month = currentState.periodEnd!.month;
-            
+
             logger.i('Récupération des entrées timesheet pour le mois $month');
-            
+
             // Utiliser le use case qui applique automatiquement la règle métier du 21 au 20
             final entries = await getMonthlyTimesheetEntries.execute(month);
-            
+
             logger.i('Nombre d\'entrées trouvées: ${entries.length}');
-            
+
             if (entries.isEmpty) {
               logger.w('Aucune entrée timesheet trouvée pour la période');
             } else {
               // Log quelques entrées pour debug
               for (var i = 0; i < 3 && i < entries.length; i++) {
-                logger.i('Entrée $i: date=${entries[i].dayDate}, matin=${entries[i].startMorning}-${entries[i].endMorning}, après-midi=${entries[i].startAfternoon}-${entries[i].endAfternoon}');
+                logger.i(
+                    'Entrée $i: date=${entries[i].dayDate}, matin=${entries[i].startMorning}-${entries[i].endMorning}, après-midi=${entries[i].startAfternoon}-${entries[i].endAfternoon}');
               }
             }
-            
+
             // Convertir en format TimesheetEntryData (Serverpod)
             // Pour l'instant, on garde le format Map<String, dynamic> côté client
             // TODO: Utiliser TimesheetEntryData une fois les modèles régénérés
-            timesheetEntries = entries.map((entry) => {
-              'dayDate': entry.dayDate, // dayDate est déjà une String au format "dd-MMM-yy"
-              'startMorning': entry.startMorning,
-              'endMorning': entry.endMorning,
-              'startAfternoon': entry.startAfternoon,
-              'endAfternoon': entry.endAfternoon,
-              'isAbsence': entry.absence != null,
-              'absenceType': entry.absence?.type.name ?? '',
-              'absenceMotif': entry.absenceReason ?? '',
-              'absencePeriod': entry.period ?? '',
-              'hasOvertimeHours': entry.hasOvertimeHours,
-              'overtimeHours': entry.hasOvertimeHours 
-                ? '${entry.calculateDailyTotal().inHours - 8}:${((entry.calculateDailyTotal().inMinutes - 480) % 60).toString().padLeft(2, '0')}'
-                : null,
-            }).toList();
-            
+            timesheetEntries = entries
+                .map((entry) => {
+                      'dayDate': entry.dayDate, // dayDate est déjà une String au format "dd-MMM-yy"
+                      'startMorning': entry.startMorning,
+                      'endMorning': entry.endMorning,
+                      'startAfternoon': entry.startAfternoon,
+                      'endAfternoon': entry.endAfternoon,
+                      'isAbsence': entry.absence != null,
+                      'absenceType': entry.absence?.type.name ?? '',
+                      'absenceMotif': entry.absenceReason ?? '',
+                      'absencePeriod': entry.period ?? '',
+                      'hasOvertimeHours': entry.hasOvertimeHours,
+                      'overtimeHours': entry.hasOvertimeHours
+                          ? '${entry.calculateDailyTotal().inHours - 8}:${((entry.calculateDailyTotal().inMinutes - 480) % 60).toString().padLeft(2, '0')}'
+                          : null,
+                    })
+                .toList();
+
             // Calculer les totaux
-            totalDays = entries.where((e) => 
-              e.absence == null && 
-              (e.startMorning.isNotEmpty || e.startAfternoon.isNotEmpty)
-            ).length.toDouble();
-            
+            totalDays = entries
+                .where((e) => e.absence == null && (e.startMorning.isNotEmpty || e.startAfternoon.isNotEmpty))
+                .length
+                .toDouble();
+
             // Calculer total heures
             Duration totalDuration = Duration.zero;
             for (final entry in entries) {
@@ -346,7 +366,7 @@ class CreateValidationBloc extends Bloc<CreateValidationEvent, CreateValidationS
               }
             }
             totalHours = '${totalDuration.inHours}:${(totalDuration.inMinutes % 60).toString().padLeft(2, '0')}';
-            
+
             // Calculer heures supplémentaires
             Duration totalOvertimeDuration = Duration.zero;
             for (final entry in entries) {
@@ -358,20 +378,20 @@ class CreateValidationBloc extends Bloc<CreateValidationEvent, CreateValidationS
                 }
               }
             }
-            totalOvertimeHours = '${totalOvertimeDuration.inHours}:${(totalOvertimeDuration.inMinutes % 60).toString().padLeft(2, '0')}';
-            
+            totalOvertimeHours =
+                '${totalOvertimeDuration.inHours}:${(totalOvertimeDuration.inMinutes % 60).toString().padLeft(2, '0')}';
           } catch (e) {
             logger.w('Impossible de récupérer les données timesheet: $e');
             // On continue sans les données timesheet
           }
         }
-        
+
         logger.i('Création des paramètres de validation:');
         logger.i('- timesheetEntries: ${timesheetEntries?.length ?? 0} entrées');
         logger.i('- totalDays: $totalDays');
         logger.i('- totalHours: $totalHours');
         logger.i('- totalOvertimeHours: $totalOvertimeHours');
-        
+
         final params = CreateValidationParams(
           employeeId: userId,
           managerId: currentState.selectedManager!.id,
@@ -385,11 +405,11 @@ class CreateValidationBloc extends Bloc<CreateValidationEvent, CreateValidationS
           totalHours: totalHours,
           totalOvertimeHours: totalOvertimeHours,
         );
-        
+
         final result = await createValidationRequest(params);
-        
+
         result.fold(
-          (failure) => emit(CreateValidationError((failure as Failure).message)),
+          (failure) => emit(CreateValidationError((failure).message)),
           (validation) => emit(CreateValidationSuccess(validation)),
         );
       } catch (e) {
@@ -397,7 +417,7 @@ class CreateValidationBloc extends Bloc<CreateValidationEvent, CreateValidationS
       }
     }
   }
-  
+
   void _onResetForm(
     ResetForm event,
     Emitter<CreateValidationState> emit,

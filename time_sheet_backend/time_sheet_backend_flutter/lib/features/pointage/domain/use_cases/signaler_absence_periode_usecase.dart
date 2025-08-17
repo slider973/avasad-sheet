@@ -12,34 +12,26 @@ class SignalerAbsencePeriodeUsecase {
   final GetTodayTimesheetEntryUseCase getTodayTimesheetEntryUseCase;
   final SaveTimesheetEntryUseCase saveTimesheetEntryUseCase;
 
-  SignalerAbsencePeriodeUsecase({
-    required this.getTodayTimesheetEntryUseCase,
-    required this.saveTimesheetEntryUseCase
-  });
+  SignalerAbsencePeriodeUsecase({required this.getTodayTimesheetEntryUseCase, required this.saveTimesheetEntryUseCase});
 
-  Future<List<Map<String, TimesheetEntry>>> execute(
-      TimeSheetSignalerAbsencePeriodeEvent event) async {
+  Future<List<Map<String, TimesheetEntry>>> execute(TimeSheetSignalerAbsencePeriodeEvent event) async {
     print("🔍 Starting execute with event type: ${event.type}, period: ${event.period}");
 
-    DateTime currentDate = DateTime.utc(
-        event.dateDebut.year, event.dateDebut.month, event.dateDebut.day);
-    DateTime endDate = DateTime.utc(
-        event.dateFin.year, event.dateFin.month, event.dateFin.day);
+    DateTime currentDate = DateTime.utc(event.dateDebut.year, event.dateDebut.month, event.dateDebut.day);
+    DateTime endDate = DateTime.utc(event.dateFin.year, event.dateFin.month, event.dateFin.day);
     List<Map<String, TimesheetEntry>> entries = [];
 
-    print("📅 Date range: ${currentDate} to ${endDate}");
+    print("📅 Date range: $currentDate to $endDate");
 
     while (currentDate.isBefore(endDate.add(Duration(days: 1)))) {
-      if (currentDate.weekday >= DateTime.monday &&
-          currentDate.weekday <= DateTime.friday) {
+      if (currentDate.weekday >= DateTime.monday && currentDate.weekday <= DateTime.friday) {
         final formattedDate = DateFormat("dd-MMM-yy").format(currentDate);
-        print("📝 Processing date: ${formattedDate}");
+        print("📝 Processing date: $formattedDate");
 
-        String absenceReason = event.type == AbsenceMotif.leaveDay.value ||
-            event.type == AbsenceMotif.other.value
+        String absenceReason = event.type == AbsenceMotif.leaveDay.value || event.type == AbsenceMotif.other.value
             ? event.type
             : "${event.type}: ${event.raison}";
-        print("📋 Calculated absenceReason: ${absenceReason}");
+        print("📋 Calculated absenceReason: $absenceReason");
 
         final entry = await getTodayTimesheetEntryUseCase.execute(formattedDate);
         print("📎 Retrieved existing entry: ${entry != null ? 'Entry exists' : 'No existing entry'}");
@@ -58,7 +50,7 @@ class SignalerAbsencePeriodeUsecase {
           if (event.startTime != null && event.endTime != null) {
             final startTimeStr = _formatTimeOfDay(event.startTime!);
             final endTimeStr = _formatTimeOfDay(event.endTime!);
-            print("⏰ Half day times: ${startTimeStr} - ${endTimeStr}");
+            print("⏰ Half day times: $startTimeStr - $endTimeStr");
 
             if (event.startTime!.hour < 12) {
               startMorning = startTimeStr;
@@ -111,7 +103,7 @@ class SignalerAbsencePeriodeUsecase {
         print("   endAfternoon: ${updatedEntry.endAfternoon}");
 
         final id = await saveTimesheetEntryUseCase.execute(updatedEntry);
-        print("💾 Saved entry with ID: ${id}");
+        print("💾 Saved entry with ID: $id");
 
         final finalEntry = updatedEntry.copyWith(id: id);
         print("🏁 Final entry absenceReason: ${finalEntry.absenceReason}");

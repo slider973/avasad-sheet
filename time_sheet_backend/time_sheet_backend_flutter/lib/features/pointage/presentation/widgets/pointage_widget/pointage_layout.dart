@@ -23,8 +23,8 @@ class PointageLayout extends StatelessWidget {
   final List<Map<String, dynamic>> pointages;
   final VoidCallback onActionPointage;
   final Function(Map<String, dynamic>) onModifierPointage;
-  final Function(DateTime, DateTime, String, AbsenceType, String, String,
-      TimeOfDay?, TimeOfDay?) onSignalerAbsencePeriode;
+  final Function(DateTime, DateTime, String, AbsenceType, String, String, TimeOfDay?, TimeOfDay?)
+      onSignalerAbsencePeriode;
   final VoidCallback onDeleteEntry;
   final Duration totalDayHours;
   final String monthlyHoursStatus;
@@ -39,7 +39,7 @@ class PointageLayout extends StatelessWidget {
   final VoidCallback onToggleOvertime;
 
   const PointageLayout({
-    Key? key,
+    super.key,
     required this.etatActuel,
     required this.dernierPointage,
     required this.selectedDate,
@@ -60,7 +60,7 @@ class PointageLayout extends StatelessWidget {
     required this.overtimeHours,
     this.currentEntry,
     required this.onToggleOvertime,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -90,14 +90,12 @@ class PointageLayout extends StatelessWidget {
                     children: [
                       Text(
                         'Total du jour : ${_formatDuration(totalDayHours)}',
-                        style: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold),
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 10),
                       Text(
                         'Temps de pause : ${_formatDuration(totalBreakTime)}',
-                        style: const TextStyle(
-                            fontSize: 14, fontStyle: FontStyle.italic),
+                        style: const TextStyle(fontSize: 14, fontStyle: FontStyle.italic),
                       ),
                     ],
                   ),
@@ -174,20 +172,17 @@ class PointageLayout extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Résumé hebdomadaire',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const Text('Résumé hebdomadaire', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             LinearProgressIndicator(
               value: weeklyTarget.inMinutes > 0
-                  ? (weeklyWorkTime.inMinutes / weeklyTarget.inMinutes)
-                      .clamp(0.0, 1.0)
+                  ? (weeklyWorkTime.inMinutes / weeklyTarget.inMinutes).clamp(0.0, 1.0)
                   : 0.0,
               backgroundColor: Colors.grey[200],
               valueColor: const AlwaysStoppedAnimation<Color>(Colors.teal),
             ),
             const SizedBox(height: 8),
-            Text(
-                '${_formatDuration(weeklyWorkTime)} / ${_formatDuration(weeklyTarget)}'),
+            Text('${_formatDuration(weeklyWorkTime)} / ${_formatDuration(weeklyTarget)}'),
           ],
         ),
       ),
@@ -214,6 +209,4 @@ class PointageLayout extends StatelessWidget {
     String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
     return "${twoDigits(duration.inHours)}:$twoDigitMinutes";
   }
-  
-
 }

@@ -33,7 +33,7 @@ class TimesheetEntryMapper {
       ..hasOvertimeHours = entity.hasOvertimeHours;
 
     if (entity.absence != null) {
-      model.absence.value = AbsenceMapper.fromEntity(entity.absence!);;
+      model.absence.value = AbsenceMapper.fromEntity(entity.absence!);
     }
     if (entity.id != null) {
       model.id = entity.id!;

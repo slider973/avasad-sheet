@@ -10,15 +10,16 @@ import '../pdf/bloc/anomaly/anomaly_bloc.dart';
 import '../../../../bottom_nav_tab/presentation/pages/app_drawer.dart';
 
 class AnomalyView extends StatefulWidget {
+  const AnomalyView({super.key});
+
   @override
   State<AnomalyView> createState() => _AnomalyViewState();
 }
 
-
 class _AnomalyViewState extends State<AnomalyView> {
   String _searchQuery = '';
   bool _showOnlyActive = false;
-  
+
   @override
   void initState() {
     super.initState();
@@ -132,14 +133,12 @@ class _AnomalyViewState extends State<AnomalyView> {
 
                   // Ancien système (fallback)
                   if (state is AnomalyLoaded) {
-                    final unresolvedAnomalies = state.anomalies
-                        .where((a) => !a.isResolved)
-                        .toList();
-                    
+                    final unresolvedAnomalies = state.anomalies.where((a) => !a.isResolved).toList();
+
                     if (unresolvedAnomalies.isEmpty) {
                       return _buildEmptyState(false);
                     }
-                    
+
                     return _buildAnomaliesList(context, unresolvedAnomalies);
                   }
 
@@ -147,8 +146,7 @@ class _AnomalyViewState extends State<AnomalyView> {
                     return Center(child: Text(state.message));
                   }
 
-                  return const Center(
-                      child: Text('Aucune donnée à afficher pour le moment.'));
+                  return const Center(child: Text('Aucune donnée à afficher pour le moment.'));
                 },
               ),
             ),
@@ -157,7 +155,6 @@ class _AnomalyViewState extends State<AnomalyView> {
       ),
     );
   }
-
 
   Widget _buildEmptyState(bool resolved) {
     return Center(
@@ -183,7 +180,6 @@ class _AnomalyViewState extends State<AnomalyView> {
       ),
     );
   }
-
 
   Widget _buildAnomaliesList(BuildContext context, List<AnomalyModel> anomalies) {
     return ListView.builder(
@@ -223,7 +219,6 @@ class _AnomalyViewState extends State<AnomalyView> {
     );
   }
 
-
   Future<void> _refreshAnomalies() async {
     context.read<AnomalyBloc>().add(const DetectAnomalies(forceRegenerate: true));
     await Future.delayed(const Duration(milliseconds: 500));
@@ -250,6 +245,7 @@ class _AnomalyViewState extends State<AnomalyView> {
 
     return Icon(iconData, color: iconColor);
   }
+
   void _navigateToCorrection(BuildContext context, AnomalyModel anomaly) {
     Navigator.of(context)
         .push(
@@ -269,7 +265,7 @@ class _AnomalyViewState extends State<AnomalyView> {
       ),
     )
         .then(
-          (value) {
+      (value) {
         // Recharger les anomalies au retour de la page de correction
         if (mounted) {
           context.read<AnomalyBloc>().add(const DetectAnomalies());
@@ -285,15 +281,17 @@ class _AnomalyViewState extends State<AnomalyView> {
 
     // Appliquer les filtres
     if (_searchQuery.isNotEmpty) {
-      activeAnomalies = activeAnomalies.where((a) => 
-        a.message.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-        DateFormat('dd/MM/yyyy').format(a.date).contains(_searchQuery)
-      ).toList();
-      
-      compensatedAnomalies = compensatedAnomalies.where((a) => 
-        a.message.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-        DateFormat('dd/MM/yyyy').format(a.date).contains(_searchQuery)
-      ).toList();
+      activeAnomalies = activeAnomalies
+          .where((a) =>
+              a.message.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+              DateFormat('dd/MM/yyyy').format(a.date).contains(_searchQuery))
+          .toList();
+
+      compensatedAnomalies = compensatedAnomalies
+          .where((a) =>
+              a.message.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+              DateFormat('dd/MM/yyyy').format(a.date).contains(_searchQuery))
+          .toList();
     }
 
     if (_showOnlyActive) {
@@ -311,16 +309,12 @@ class _AnomalyViewState extends State<AnomalyView> {
       padding: const EdgeInsets.symmetric(vertical: 16),
       children: [
         // Carte de résumé avec un design moderne
-        if (weeklyStats.isNotEmpty && _searchQuery.isEmpty) 
-          _buildModernSummaryCard(weeklyStats),
-        
+        if (weeklyStats.isNotEmpty && _searchQuery.isEmpty) _buildModernSummaryCard(weeklyStats),
+
         // Afficher les anomalies groupées par semaine
-        ...groupedAnomalies.entries.map((entry) => 
-          _buildWeekSection(entry.key, entry.value)
-        ),
-        
-        if (groupedAnomalies.isEmpty && _searchQuery.isNotEmpty)
-          _buildNoResultsFound(),
+        ...groupedAnomalies.entries.map((entry) => _buildWeekSection(entry.key, entry.value)),
+
+        if (groupedAnomalies.isEmpty && _searchQuery.isNotEmpty) _buildNoResultsFound(),
       ],
     );
   }
@@ -464,7 +458,7 @@ class _AnomalyViewState extends State<AnomalyView> {
   Widget _buildModernAnomalyCard(Anomaly anomaly, bool isCompensated) {
     final dayName = DateFormat('EEEE', 'fr_FR').format(anomaly.date);
     final formattedDate = DateFormat('dd MMMM', 'fr_FR').format(anomaly.date);
-    
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
@@ -492,9 +486,7 @@ class _AnomalyViewState extends State<AnomalyView> {
                   width: 50,
                   height: 50,
                   decoration: BoxDecoration(
-                    color: isCompensated 
-                      ? Colors.green.withOpacity(0.1)
-                      : Colors.orange.withOpacity(0.1),
+                    color: isCompensated ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
@@ -595,7 +587,7 @@ class _AnomalyViewState extends State<AnomalyView> {
       ),
     )
         .then(
-          (value) {
+      (value) {
         if (mounted) {
           context.read<AnomalyBloc>().add(const DetectAnomalies());
         }
@@ -608,20 +600,19 @@ class _AnomalyViewState extends State<AnomalyView> {
     List<Anomaly> compensatedAnomalies,
   ) {
     final grouped = <String, List<Anomaly>>{};
-    
+
     // Grouper toutes les anomalies
     final allAnomalies = [...activeAnomalies, ...compensatedAnomalies];
-    
+
     for (var anomaly in allAnomalies) {
       final weekKey = anomaly.weekReference ?? _getWeekKey(anomaly.date);
       grouped.putIfAbsent(weekKey, () => []);
       grouped[weekKey]!.add(anomaly);
     }
-    
+
     // Trier les semaines par date décroissante
-    final sortedEntries = grouped.entries.toList()
-      ..sort((a, b) => b.key.compareTo(a.key));
-    
+    final sortedEntries = grouped.entries.toList()..sort((a, b) => b.key.compareTo(a.key));
+
     return Map.fromEntries(sortedEntries);
   }
 
@@ -630,7 +621,7 @@ class _AnomalyViewState extends State<AnomalyView> {
     final weekNumber = _getWeekNumber(monday);
     return '${monday.year}-${weekNumber.toString().padLeft(2, '0')}';
   }
-  
+
   int _getWeekNumber(DateTime date) {
     final firstDayOfYear = DateTime(date.year, 1, 1);
     final daysSinceFirstDay = date.difference(firstDayOfYear).inDays;
@@ -642,20 +633,21 @@ class _AnomalyViewState extends State<AnomalyView> {
     final parts = weekKey.split('-');
     final year = int.parse(parts[0]);
     final week = int.parse(parts[1]);
-    
+
     // Calculer les dates de début et fin de semaine
     final firstDayOfYear = DateTime(year, 1, 1);
     final daysToFirstMonday = (8 - firstDayOfYear.weekday) % 7;
     final firstMonday = firstDayOfYear.add(Duration(days: daysToFirstMonday));
     final weekStart = firstMonday.add(Duration(days: (week - 1) * 7));
     final weekEnd = weekStart.add(const Duration(days: 6));
-    
-    final formattedPeriod = '${DateFormat('dd MMM', 'fr_FR').format(weekStart)} - ${DateFormat('dd MMM', 'fr_FR').format(weekEnd)}';
-    
+
+    final formattedPeriod =
+        '${DateFormat('dd MMM', 'fr_FR').format(weekStart)} - ${DateFormat('dd MMM', 'fr_FR').format(weekEnd)}';
+
     // Séparer les anomalies actives et compensées
     final activeCount = anomalies.where((a) => !a.isCompensated).length;
     final compensatedCount = anomalies.where((a) => a.isCompensated).length;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -775,4 +767,3 @@ class _AnomalyViewState extends State<AnomalyView> {
     );
   }
 }
-

@@ -14,6 +14,8 @@ import '../../../../services/backup.dart';
 import '../manager/preferences_bloc.dart';
 
 class PreferencesForm extends StatefulWidget {
+  const PreferencesForm({super.key});
+
   @override
   _PreferencesFormState createState() => _PreferencesFormState();
 }
@@ -40,8 +42,7 @@ class _PreferencesFormState extends State<PreferencesForm> {
       backgroundColor: Colors.teal[50],
       appBar: AppBar(
         elevation: 0,
-        title: const Text('Réglages',
-            style: TextStyle(color: Colors.white, fontSize: 20)),
+        title: const Text('Réglages', style: TextStyle(color: Colors.white, fontSize: 20)),
         backgroundColor: Colors.teal,
       ),
       body: SafeArea(
@@ -63,10 +64,8 @@ class _PreferencesFormState extends State<PreferencesForm> {
             } else if (state is PreferencesLoaded) {
               _firstNameController.text = state.firstName;
               _lastNameController.text = state.lastName;
-              _signature =
-                  state.signature ?? base64Decode(state.signatureBase64 ?? '');
-              _isAlreadyGenerateForThisMonth =
-                  _isGeneratedThisMonth(state.lastGenerationDate);
+              _signature = state.signature ?? base64Decode(state.signatureBase64 ?? '');
+              _isAlreadyGenerateForThisMonth = _isGeneratedThisMonth(state.lastGenerationDate);
               _notificationsEnabled = state.notificationsEnabled;
               _isDeliveryManager = state.isDeliveryManager;
               return SingleChildScrollView(
@@ -108,10 +107,7 @@ class _PreferencesFormState extends State<PreferencesForm> {
           children: [
             const Text(
               'Informations personnelles',
-              style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.teal),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.teal),
             ),
             const SizedBox(height: 16),
             _buildTextField(_firstNameController, 'Prénom'),
@@ -136,17 +132,12 @@ class _PreferencesFormState extends State<PreferencesForm> {
           children: [
             const Text(
               'Signature',
-              style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.teal),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.teal),
             ),
             const SizedBox(height: 16),
             _buildSignatureSection(),
             const SizedBox(height: 16),
-            _buildButton(
-                'Ajouter/Modifier la signature', _navigateToSignatureScreen,
-                isPrimary: false),
+            _buildButton('Ajouter/Modifier la signature', _navigateToSignatureScreen, isPrimary: false),
           ],
         ),
       ),
@@ -165,12 +156,8 @@ class _PreferencesFormState extends State<PreferencesForm> {
     return Column(
       children: [
         _buildButton('Générer les heures de timesheet pour le mois', () {
-          context
-              .read<TimeSheetBloc>()
-              .add(const GenerateMonthlyTimesheetEvent());
-          context
-              .read<PreferencesBloc>()
-              .add(SaveLastGenerationDate(DateTime.now()));
+          context.read<TimeSheetBloc>().add(const GenerateMonthlyTimesheetEvent());
+          context.read<PreferencesBloc>().add(SaveLastGenerationDate(DateTime.now()));
         }, isPrimary: false, disabled: _isAlreadyGenerateForThisMonth),
       ],
     );
@@ -187,10 +174,7 @@ class _PreferencesFormState extends State<PreferencesForm> {
           children: [
             const Text(
               'Notifications',
-              style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.teal),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.teal),
             ),
             const SizedBox(height: 16),
             SwitchListTile(
@@ -202,7 +186,7 @@ class _PreferencesFormState extends State<PreferencesForm> {
                 });
                 context.read<PreferencesBloc>().add(ToggleNotifications(value));
               },
-              activeColor: Colors.teal,
+              activeThumbColor: Colors.teal,
             ),
           ],
         ),
@@ -221,10 +205,7 @@ class _PreferencesFormState extends State<PreferencesForm> {
           children: [
             const Text(
               'Manager de livraison',
-              style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.teal),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.teal),
             ),
             const SizedBox(height: 16),
             SwitchListTile(
@@ -234,11 +215,9 @@ class _PreferencesFormState extends State<PreferencesForm> {
                 setState(() {
                   _isDeliveryManager = value;
                 });
-                context
-                    .read<PreferencesBloc>()
-                    .add(ToggleDeliveryManager(value));
+                context.read<PreferencesBloc>().add(ToggleDeliveryManager(value));
               },
-              activeColor: Colors.teal,
+              activeThumbColor: Colors.teal,
             ),
           ],
         ),
@@ -258,8 +237,7 @@ class _PreferencesFormState extends State<PreferencesForm> {
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       ),
     );
   }
@@ -281,8 +259,7 @@ class _PreferencesFormState extends State<PreferencesForm> {
     );
   }
 
-  Widget _buildButton(String text, VoidCallback onPressed,
-      {bool disabled = false, bool isPrimary = true}) {
+  Widget _buildButton(String text, VoidCallback onPressed, {bool disabled = false, bool isPrimary = true}) {
     return SizedBox(
       width: double.infinity,
       height: 40,
@@ -304,8 +281,7 @@ class _PreferencesFormState extends State<PreferencesForm> {
   bool _isGeneratedThisMonth(DateTime? lastGenerationDate) {
     if (lastGenerationDate == null) return false;
     final now = DateTime.now();
-    return lastGenerationDate.year == now.year &&
-        lastGenerationDate.month == now.month;
+    return lastGenerationDate.year == now.year && lastGenerationDate.month == now.month;
   }
 
   void _navigateToSignatureScreen() async {
@@ -314,9 +290,7 @@ class _PreferencesFormState extends State<PreferencesForm> {
       MaterialPageRoute(
         builder: (context) => SignatureScreen(
           onSigned: (Uint8List signature) {
-            context
-                .read<PreferencesBloc>()
-                .add(SaveSignature(signature: signature));
+            context.read<PreferencesBloc>().add(SaveSignature(signature: signature));
           },
         ),
       ),
@@ -329,8 +303,7 @@ class _PreferencesFormState extends State<PreferencesForm> {
   }
 
   void _savePreferences() {
-    if (_firstNameController.text.isNotEmpty &&
-        _lastNameController.text.isNotEmpty) {
+    if (_firstNameController.text.isNotEmpty && _lastNameController.text.isNotEmpty) {
       context.read<PreferencesBloc>().add(SavePreferences(
             firstName: _firstNameController.text,
             lastName: _lastNameController.text,
@@ -361,10 +334,7 @@ class _PreferencesFormState extends State<PreferencesForm> {
           children: [
             const Text(
               'Sauvegarde et Restauration',
-              style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.teal),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.teal),
             ),
             const SizedBox(height: 16),
             _buildButton('Sauvegarder', _performBackup),
@@ -385,8 +355,7 @@ class _PreferencesFormState extends State<PreferencesForm> {
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text('Erreur lors de la sauvegarde : ${e.toString()}')),
+        SnackBar(content: Text('Erreur lors de la sauvegarde : ${e.toString()}')),
       );
     }
   }
@@ -419,8 +388,7 @@ class _PreferencesFormState extends State<PreferencesForm> {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text('Erreur lors de la restauration : ${e.toString()}')),
+        SnackBar(content: Text('Erreur lors de la restauration : ${e.toString()}')),
       );
     }
   }

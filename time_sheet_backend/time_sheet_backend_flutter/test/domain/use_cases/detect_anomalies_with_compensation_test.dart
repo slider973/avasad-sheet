@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
-import 'package:time_sheet/features/pointage/domain/entities/anomaly.dart';
 import 'package:time_sheet/features/pointage/domain/entities/timesheet_entry.dart';
 import 'package:time_sheet/features/pointage/domain/repositories/timesheet_repository.dart';
 import 'package:time_sheet/features/pointage/domain/strategies/anomaly_detector.dart';
@@ -82,8 +81,7 @@ void main() {
       ];
       // Total: 6 + 11 + 9 + 8.5 + 7 = 41.5h (>= 41h30)
 
-      when(mockRepository.findEntriesFromMonthOf(2, 2024))
-          .thenAnswer((_) async => entries);
+      when(mockRepository.findEntriesFromMonthOf(2, 2024)).thenAnswer((_) async => entries);
 
       // Act
       final result = await useCase.execute(1, 2024);
@@ -91,7 +89,7 @@ void main() {
       // Assert
       final mondayAnomalies = result.where((a) => a.message.contains('01-Jan-24')).toList();
       final fridayAnomalies = result.where((a) => a.message.contains('05-Jan-24')).toList();
-      
+
       expect(mondayAnomalies.first.isCompensated, true);
       expect(fridayAnomalies.first.isCompensated, true);
       expect(mondayAnomalies.first.compensationReason, contains('Objectif hebdomadaire atteint'));
@@ -148,8 +146,7 @@ void main() {
       ];
       // Total: 36h (< 41h30)
 
-      when(mockRepository.findEntriesFromMonthOf(2, 2024))
-          .thenAnswer((_) async => entries);
+      when(mockRepository.findEntriesFromMonthOf(2, 2024)).thenAnswer((_) async => entries);
 
       // Act
       final result = await useCase.execute(1, 2024);
@@ -157,7 +154,7 @@ void main() {
       // Assert
       final dailyAnomalies = result.where((a) => a.detectorId == 'insufficient_hours').toList();
       expect(dailyAnomalies.every((a) => !a.isCompensated), true);
-      
+
       // Should have a weekly anomaly
       final weeklyAnomaly = result.firstWhere((a) => a.detectorId == 'weekly_insufficient');
       expect(weeklyAnomaly.message, contains('Manque'));
@@ -196,8 +193,7 @@ void main() {
         ),
       ];
 
-      when(mockRepository.findEntriesFromMonthOf(2, 2024))
-          .thenAnswer((_) async => entries);
+      when(mockRepository.findEntriesFromMonthOf(2, 2024)).thenAnswer((_) async => entries);
 
       // Act
       final result = await useCase.execute(1, 2024);
@@ -233,8 +229,7 @@ void main() {
         ),
       ];
 
-      when(mockRepository.findEntriesFromMonthOf(2, 2024))
-          .thenAnswer((_) async => entries);
+      when(mockRepository.findEntriesFromMonthOf(2, 2024)).thenAnswer((_) async => entries);
 
       // Act
       final result = await useCase.execute(1, 2024);

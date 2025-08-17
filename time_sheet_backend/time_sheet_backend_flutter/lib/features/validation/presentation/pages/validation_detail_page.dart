@@ -14,13 +14,13 @@ import 'package:time_sheet/features/preference/presentation/manager/preferences_
 class ValidationDetailPage extends StatefulWidget {
   final String validationId;
   final bool isManager;
-  
+
   const ValidationDetailPage({
     super.key,
     required this.validationId,
     required this.isManager,
   });
-  
+
   @override
   State<ValidationDetailPage> createState() => _ValidationDetailPageState();
 }
@@ -28,20 +28,20 @@ class ValidationDetailPage extends StatefulWidget {
 class _ValidationDetailPageState extends State<ValidationDetailPage> {
   final _commentController = TextEditingController();
   Uint8List? _managerSignature;
-  
+
   @override
   void initState() {
     super.initState();
     context.read<ValidationDetailBloc>().add(
-      LoadValidationDetail(widget.validationId),
-    );
-    
+          LoadValidationDetail(widget.validationId),
+        );
+
     // Charger la signature du manager si c'est un manager
     if (widget.isManager) {
       _loadManagerSignature();
     }
   }
-  
+
   void _loadManagerSignature() {
     final preferencesState = context.read<PreferencesBloc>().state;
     if (preferencesState is PreferencesLoaded) {
@@ -52,13 +52,13 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
       }
     }
   }
-  
+
   @override
   void dispose() {
     _commentController.dispose();
     super.dispose();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -90,7 +90,7 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
             );
             Navigator.pop(context, true);
           }
-          
+
           if (state is ValidationDetailError) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -104,8 +104,8 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
           if (state is ValidationDetailLoading) {
             return const Center(child: CircularProgressIndicator());
           }
-          
-          if (state is ValidationDetailError && !(state is ValidationDetailLoaded)) {
+
+          if (state is ValidationDetailError && state is! ValidationDetailLoaded) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -117,8 +117,8 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
                   ElevatedButton(
                     onPressed: () {
                       context.read<ValidationDetailBloc>().add(
-                        LoadValidationDetail(widget.validationId),
-                      );
+                            LoadValidationDetail(widget.validationId),
+                          );
                     },
                     child: const Text('Réessayer'),
                   ),
@@ -126,21 +126,21 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
               ),
             );
           }
-          
+
           if (state is ValidationDetailLoaded) {
             return _buildContent(state.validation);
           }
-          
+
           return const SizedBox();
         },
       ),
     );
   }
-  
+
   Widget _buildContent(ValidationRequest validation) {
     final dateFormat = DateFormat('dd/MM/yyyy');
     final dateTimeFormat = DateFormat('dd/MM/yyyy HH:mm');
-    
+
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -197,9 +197,9 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
             ),
           ),
         ),
-        
+
         const SizedBox(height: 16),
-        
+
         // Document PDF
         Card(
           child: Padding(
@@ -228,7 +228,7 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
             ),
           ),
         ),
-        
+
         // Commentaire et signature du manager pour les validations approuvées
         if (validation.isApproved && (validation.managerComment != null || validation.managerSignature != null)) ...[
           const SizedBox(height: 16),
@@ -288,7 +288,7 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
             ),
           ),
         ],
-        
+
         // Commentaire du manager pour les validations rejetées
         if (validation.isRejected && validation.managerComment != null && validation.managerComment!.isNotEmpty) ...[
           const SizedBox(height: 16),
@@ -320,7 +320,7 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
             ),
           ),
         ],
-        
+
         // Actions pour le manager
         if (widget.isManager && validation.isPending) ...[
           const SizedBox(height: 32),
@@ -392,9 +392,7 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
                       const SizedBox(width: 16),
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: _managerSignature != null
-                              ? () => _showApproveConfirmation(validation.id)
-                              : null,
+                          onPressed: _managerSignature != null ? () => _showApproveConfirmation(validation.id) : null,
                           icon: const Icon(Icons.check_circle),
                           label: const Text('Approuver'),
                           style: ElevatedButton.styleFrom(
@@ -409,12 +407,12 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
             ),
           ),
         ],
-        
+
         const SizedBox(height: 32),
       ],
     );
   }
-  
+
   Widget _buildInfoRow(IconData icon, String label, String value, {Color? color}) {
     return Row(
       children: [
@@ -439,12 +437,12 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
       ],
     );
   }
-  
+
   Widget _buildStatusChip(ValidationStatus status) {
     final color = _getStatusColor(status);
     final label = _getStatusLabel(status);
     final icon = _getStatusIcon(status);
-    
+
     return Chip(
       avatar: Icon(icon, color: color, size: 18),
       label: Text(
@@ -455,7 +453,7 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
       side: BorderSide(color: color),
     );
   }
-  
+
   Color _getStatusColor(ValidationStatus status) {
     switch (status) {
       case ValidationStatus.pending:
@@ -466,7 +464,7 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
         return Colors.red;
     }
   }
-  
+
   String _getStatusLabel(ValidationStatus status) {
     switch (status) {
       case ValidationStatus.pending:
@@ -477,7 +475,7 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
         return 'Rejetée';
     }
   }
-  
+
   IconData _getStatusIcon(ValidationStatus status) {
     switch (status) {
       case ValidationStatus.pending:
@@ -488,13 +486,13 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
         return Icons.cancel;
     }
   }
-  
+
   String _formatFileSize(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
     return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
-  
+
   void _showApproveConfirmation(String validationId) {
     final bloc = context.read<ValidationDetailBloc>();
     showDialog(
@@ -516,9 +514,7 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
                 ApproveValidation(
                   validationId: validationId,
                   managerSignature: _managerSignature != null ? base64Encode(_managerSignature!) : '',
-                  comment: _commentController.text.isNotEmpty
-                      ? _commentController.text
-                      : null,
+                  comment: _commentController.text.isNotEmpty ? _commentController.text : null,
                 ),
               );
             },
@@ -529,7 +525,7 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
       ),
     );
   }
-  
+
   void _showRejectConfirmation(String validationId) {
     if (_commentController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -540,7 +536,7 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
       );
       return;
     }
-    
+
     final bloc = context.read<ValidationDetailBloc>();
     showDialog(
       context: context,
@@ -571,19 +567,19 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
       ),
     );
   }
-  
+
   Future<void> _downloadPdf(String validationId) async {
     // Si c'est un manager ET que la validation est approuvée, envoyer la signature
     String? managerSignature;
     if (widget.isManager && _managerSignature != null) {
       managerSignature = base64Encode(_managerSignature!);
     }
-    
+
     // Télécharger le PDF depuis le serveur
     context.read<ValidationDetailBloc>().add(
-      DownloadValidationPdf(validationId, managerSignature),
-    );
-    
+          DownloadValidationPdf(validationId, managerSignature),
+        );
+
     // Afficher un indicateur de chargement
     showDialog(
       context: context,
@@ -604,25 +600,27 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
         ),
       ),
     );
-    
+
     // Attendre le résultat
-    context.read<ValidationDetailBloc>().stream
+    context
+        .read<ValidationDetailBloc>()
+        .stream
         .firstWhere((state) => state is ValidationDetailPdfDownloaded || state is ValidationDetailError)
         .then((state) {
       Navigator.pop(context); // Fermer le dialog
-      
+
       if (state is ValidationDetailPdfDownloaded) {
         _openPdf(state.pdfBytes, state.fileName);
       }
     });
   }
-  
+
   Future<void> _openPdf(List<int> bytes, String fileName) async {
     try {
       final tempDir = await getTemporaryDirectory();
       final file = File('${tempDir.path}/$fileName');
       await file.writeAsBytes(bytes);
-      
+
       final result = await OpenFile.open(file.path);
       if (result.type != ResultType.done) {
         ScaffoldMessenger.of(context).showSnackBar(

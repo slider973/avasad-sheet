@@ -5,7 +5,6 @@ import '../entities/timesheet_entry.dart';
 import '../repositories/timesheet_repository.dart';
 import '../entities/timesheet_generation_config.dart';
 
-
 class GenerateMonthlyTimesheetUseCase {
   final TimesheetRepository repository;
   final Random random = Random();
@@ -15,7 +14,7 @@ class GenerateMonthlyTimesheetUseCase {
   Future<void> execute([TimesheetGenerationConfig? config, DateTime? targetMonth]) async {
     // Utiliser le mois fourni ou le mois actuel par défaut
     DateTime baseDate = targetMonth ?? DateTime.now();
-    
+
     // Calcul des bornes dynamiques de la période pour le mois sélectionné
     // Gérer le cas de janvier où month - 1 = 0
     DateTime startDate;
@@ -31,15 +30,15 @@ class GenerateMonthlyTimesheetUseCase {
 
     // Récupérer TOUTES les entrées existantes pour vérifier celles dans notre période
     List<TimesheetEntry> allEntries = await repository.getTimesheetEntries();
-    
+
     // Filtrer les entrées qui sont dans notre période
     Set<String> existingDates = {};
     Map<String, TimesheetEntry> existingEntriesMap = {};
-    
+
     for (var entry in allEntries) {
       // Parser la date de l'entrée
       DateTime entryDate = DateFormat('dd-MMM-yy').parse(entry.dayDate);
-      
+
       // Vérifier si cette date est dans notre période
       if (!entryDate.isBefore(startDate) && !entryDate.isAfter(endDate)) {
         existingDates.add(entry.dayDate);
@@ -50,7 +49,9 @@ class GenerateMonthlyTimesheetUseCase {
 
     try {
       // Parcourir les jours de la période
-      for (DateTime date = startDate; date.isBefore(endDate.add(const Duration(days: 1))); date = date.add(const Duration(days: 1))) {
+      for (DateTime date = startDate;
+          date.isBefore(endDate.add(const Duration(days: 1)));
+          date = date.add(const Duration(days: 1))) {
         // Ignorer les week-ends
         if (date.weekday >= DateTime.monday && date.weekday <= DateTime.friday) {
           String formattedDate = DateFormat('dd-MMM-yy').format(date);
@@ -63,14 +64,14 @@ class GenerateMonthlyTimesheetUseCase {
           } else {
             // Une entrée existe, vérifier si elle a des données réelles
             TimesheetEntry existingEntry = existingEntriesMap[formattedDate]!;
-            
+
             // Vérifier si l'entrée a des pointages réels (non vides)
-            bool hasRealData = existingEntry.startMorning.isNotEmpty || 
-                              existingEntry.endMorning.isNotEmpty ||
-                              existingEntry.startAfternoon.isNotEmpty ||
-                              existingEntry.endAfternoon.isNotEmpty ||
-                              existingEntry.absenceReason != null;
-            
+            bool hasRealData = existingEntry.startMorning.isNotEmpty ||
+                existingEntry.endMorning.isNotEmpty ||
+                existingEntry.startAfternoon.isNotEmpty ||
+                existingEntry.endAfternoon.isNotEmpty ||
+                existingEntry.absenceReason != null;
+
             if (hasRealData) {
               print("Entry has real data for $formattedDate, skipping...");
             } else {
@@ -88,15 +89,12 @@ class GenerateMonthlyTimesheetUseCase {
     }
   }
 
-
   TimesheetEntry _generateDayEntry(DateTime date, TimesheetGenerationConfig? config) {
     // Utiliser la configuration fournie ou la configuration par défaut
     final conf = config ?? TimesheetGenerationConfig.defaultConfig();
 
     // 1. Générer l'heure de début aléatoire
-    int startMinutes = random.nextInt(
-      conf.startTimeMax.difference(conf.startTimeMin).inMinutes + 1
-    );
+    int startMinutes = random.nextInt(conf.startTimeMax.difference(conf.startTimeMin).inMinutes + 1);
     DateTime startTime = DateTime(
       date.year,
       date.month,
@@ -122,19 +120,17 @@ class GenerateMonthlyTimesheetUseCase {
       conf.lunchStartMax.hour,
       conf.lunchStartMax.minute,
     );
-    
+
     // Utiliser le plus tard entre earliestLunchStart et configuredLunchMin
-    DateTime actualLunchMin = earliestLunchStart.isAfter(configuredLunchMin) 
-        ? earliestLunchStart 
-        : configuredLunchMin;
-    
+    DateTime actualLunchMin = earliestLunchStart.isAfter(configuredLunchMin) ? earliestLunchStart : configuredLunchMin;
+
     // S'assurer que actualLunchMin ne dépasse pas configuredLunchMax
     if (actualLunchMin.isAfter(configuredLunchMax)) {
       actualLunchMin = configuredLunchMax;
     }
-    
-    int lunchStartMinutes = actualLunchMin == configuredLunchMax 
-        ? 0 
+
+    int lunchStartMinutes = actualLunchMin == configuredLunchMax
+        ? 0
         : random.nextInt(configuredLunchMax.difference(actualLunchMin).inMinutes + 1);
     DateTime lunchStart = actualLunchMin.add(Duration(minutes: lunchStartMinutes));
 
@@ -153,20 +149,19 @@ class GenerateMonthlyTimesheetUseCase {
       conf.lunchEndMax.hour,
       conf.lunchEndMax.minute,
     );
-    
+
     // S'assurer que la fin de pause est après le début de pause (minimum 30 minutes)
     DateTime earliestLunchEnd = lunchStart.add(Duration(minutes: 30));
-    DateTime actualLunchEndMin = earliestLunchEnd.isAfter(configuredLunchEndMin) 
-        ? earliestLunchEnd 
-        : configuredLunchEndMin;
-    
+    DateTime actualLunchEndMin =
+        earliestLunchEnd.isAfter(configuredLunchEndMin) ? earliestLunchEnd : configuredLunchEndMin;
+
     // S'assurer que actualLunchEndMin ne dépasse pas configuredLunchEndMax
     if (actualLunchEndMin.isAfter(configuredLunchEndMax)) {
       actualLunchEndMin = configuredLunchEndMax;
     }
-    
-    int lunchEndMinutes = actualLunchEndMin == configuredLunchEndMax 
-        ? 0 
+
+    int lunchEndMinutes = actualLunchEndMin == configuredLunchEndMax
+        ? 0
         : random.nextInt(configuredLunchEndMax.difference(actualLunchEndMin).inMinutes + 1);
     DateTime lunchEnd = actualLunchEndMin.add(Duration(minutes: lunchEndMinutes));
 
@@ -185,29 +180,25 @@ class GenerateMonthlyTimesheetUseCase {
       conf.endTimeMax.hour,
       conf.endTimeMax.minute,
     );
-    
+
     // S'assurer que l'heure de fin est au moins 3h après la fin de pause
     DateTime earliestEndTime = lunchEnd.add(Duration(hours: 3));
-    DateTime actualEndMin = earliestEndTime.isAfter(configuredEndMin) 
-        ? earliestEndTime 
-        : configuredEndMin;
-    
+    DateTime actualEndMin = earliestEndTime.isAfter(configuredEndMin) ? earliestEndTime : configuredEndMin;
+
     // S'assurer que actualEndMin ne dépasse pas configuredEndMax
     if (actualEndMin.isAfter(configuredEndMax)) {
       actualEndMin = configuredEndMax;
     }
-    
-    int endMinutes = actualEndMin == configuredEndMax 
-        ? 0 
-        : random.nextInt(configuredEndMax.difference(actualEndMin).inMinutes + 1);
+
+    int endMinutes =
+        actualEndMin == configuredEndMax ? 0 : random.nextInt(configuredEndMax.difference(actualEndMin).inMinutes + 1);
     DateTime endTime = actualEndMin.add(Duration(minutes: endMinutes));
-    
+
     // 5. Vérifier le temps de travail total (optionnel)
-    int totalWorkMinutes = lunchStart.difference(startTime).inMinutes + 
-                          endTime.difference(lunchEnd).inMinutes;
+    int totalWorkMinutes = lunchStart.difference(startTime).inMinutes + endTime.difference(lunchEnd).inMinutes;
     int lunchDurationMinutes = lunchEnd.difference(lunchStart).inMinutes;
     print("Generated work time: ${totalWorkMinutes / 60} hours");
-    print("Generated lunch duration: ${lunchDurationMinutes} minutes");
+    print("Generated lunch duration: $lunchDurationMinutes minutes");
 
     return TimesheetEntry(
       dayDate: DateFormat('dd-MMM-yy').format(date),

@@ -5,34 +5,34 @@ class PointageButton extends StatelessWidget {
   final VoidCallback onPressed;
 
   const PointageButton({
-    Key? key,
+    super.key,
     required this.etatActuel,
     required this.onPressed,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
-   if(etatActuel == 'Sortie') {
+    if (etatActuel == 'Sortie') {
       return _construireMessageFelicitations();
     }
-   return SizedBox(
-     width: 320,
-     height: 40,
-     child: ElevatedButton(
-       onPressed: onPressed,
-       style: ElevatedButton.styleFrom(
-         elevation: 0,
-         backgroundColor: _getButtonColor(etatActuel),
-         shape: RoundedRectangleBorder(
-           borderRadius: BorderRadius.circular(15),
-         ),
-       ),
-       child: Text(
-         _getButtonText(),
-         style: const TextStyle(fontSize: 15),
-       ),
-     ),
-   );
+    return SizedBox(
+      width: 320,
+      height: 40,
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          elevation: 0,
+          backgroundColor: _getButtonColor(etatActuel),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+        ),
+        child: Text(
+          _getButtonText(),
+          style: const TextStyle(fontSize: 15),
+        ),
+      ),
+    );
   }
 
   String _getButtonText() {
@@ -64,6 +64,7 @@ class PointageButton extends StatelessWidget {
         return const Color(0xFFFD9B63);
     }
   }
+
   Widget _construireMessageFelicitations() {
     return Container(
       padding: const EdgeInsets.all(16),

@@ -1158,6 +1158,7 @@ class _ValidationEndpoint {
     double totalDays,
     String totalHours,
     String totalOvertimeHours,
+    String? employeeSignature,
   ) async {
     return _i1.callAwaitableFunctionAndHandleExceptions(() async {
       var _localUniqueSession =
@@ -1176,6 +1177,7 @@ class _ValidationEndpoint {
             'totalDays': totalDays,
             'totalHours': totalHours,
             'totalOvertimeHours': totalOvertimeHours,
+            'employeeSignature': employeeSignature,
           }),
           serializationManager: _serializationManager,
         );

@@ -41,7 +41,7 @@ class SignPdfEvent extends PdfEvent {
   final String filePath;
   final Uint8List signature;
 
-  SignPdfEvent(this.filePath, this.signature);
+  const SignPdfEvent(this.filePath, this.signature);
 
   @override
   List<Object> get props => [filePath, signature];
@@ -58,4 +58,3 @@ class GenerateExcelEvent extends PdfEvent {
   @override
   List<Object> get props => [monthNumber, year];
 }
-

@@ -5,7 +5,7 @@ import 'package:signature/signature.dart';
 class SignatureScreen extends StatefulWidget {
   final Function(Uint8List) onSigned;
 
-  SignatureScreen({required this.onSigned});
+  const SignatureScreen({super.key, required this.onSigned});
 
   @override
   _SignatureScreenState createState() => _SignatureScreenState();

@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -7,8 +6,6 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:time_sheet/services/logger_service.dart';
 import 'package:time_sheet/services/service_factory.dart';
-import 'package:time_sheet/core/services/supabase/supabase_service.dart';
-import 'package:time_sheet/core/services/firebase/firebase_service.dart';
 import 'package:time_sheet/core/services/serverpod/serverpod_service.dart';
 import 'dart:io';
 import 'package:timezone/data/latest_all.dart' as tz;
@@ -32,8 +29,7 @@ void main() async {
 
   await SentryFlutter.init(
     (options) {
-      options.dsn =
-          'https://881fc425e6497d1454c99fe537d80968@o4507600245817344.ingest.de.sentry.io/4507600249159760';
+      options.dsn = 'https://881fc425e6497d1454c99fe537d80968@o4507600245817344.ingest.de.sentry.io/4507600249159760';
       // Set tracesSampleRate to 1.0 to capture 100% of transactions for performance monitoring.
       // We recommend adjusting this value in production.
       options.tracesSampleRate = 1.0;
@@ -47,7 +43,7 @@ void main() async {
 
   // Initialiser les services
   await ServerpodService.initialize(); // Nouveau service Serverpod
-  
+
   // Temporairement garder Supabase et Firebase pendant la migration
   // TODO: Supprimer après migration complète
   // await SupabaseService.instance.initialize();

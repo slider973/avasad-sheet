@@ -11,12 +11,12 @@ import 'package:time_sheet/services/injection_container.dart' as di;
 /// Page de liste des validations
 class ValidationListPage extends StatefulWidget {
   final ValidationViewType viewType;
-  
+
   const ValidationListPage({
     super.key,
     required this.viewType,
   });
-  
+
   @override
   State<ValidationListPage> createState() => _ValidationListPageState();
 }
@@ -26,18 +26,16 @@ class _ValidationListPageState extends State<ValidationListPage> {
   void initState() {
     super.initState();
     context.read<ValidationListBloc>().add(
-      LoadValidations(viewType: widget.viewType),
-    );
+          LoadValidations(viewType: widget.viewType),
+        );
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          widget.viewType == ValidationViewType.employee
-              ? 'Mes validations'
-              : 'Validations à traiter',
+          widget.viewType == ValidationViewType.employee ? 'Mes validations' : 'Validations à traiter',
         ),
         actions: [
           IconButton(
@@ -51,7 +49,7 @@ class _ValidationListPageState extends State<ValidationListPage> {
           if (state is ValidationListLoading) {
             return const Center(child: CircularProgressIndicator());
           }
-          
+
           if (state is ValidationListError) {
             return Center(
               child: Column(
@@ -63,20 +61,20 @@ class _ValidationListPageState extends State<ValidationListPage> {
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () => context.read<ValidationListBloc>().add(
-                      LoadValidations(viewType: widget.viewType),
-                    ),
+                          LoadValidations(viewType: widget.viewType),
+                        ),
                     child: const Text('Réessayer'),
                   ),
                 ],
               ),
             );
           }
-          
+
           if (state is ValidationListLoaded) {
             if (state.validations.isEmpty) {
               return _buildEmptyState();
             }
-            
+
             return Column(
               children: [
                 _buildStatistics(state),
@@ -98,7 +96,7 @@ class _ValidationListPageState extends State<ValidationListPage> {
               ],
             );
           }
-          
+
           return const SizedBox();
         },
       ),
@@ -113,8 +111,8 @@ class _ValidationListPageState extends State<ValidationListPage> {
                 ).then((_) {
                   // Recharger la liste après création
                   context.read<ValidationListBloc>().add(
-                    LoadValidations(viewType: widget.viewType),
-                  );
+                        LoadValidations(viewType: widget.viewType),
+                      );
                 });
               },
               icon: const Icon(Icons.add),
@@ -123,7 +121,7 @@ class _ValidationListPageState extends State<ValidationListPage> {
           : null,
     );
   }
-  
+
   Widget _buildStatistics(ValidationListLoaded state) {
     return Container(
       height: 140,
@@ -160,7 +158,7 @@ class _ValidationListPageState extends State<ValidationListPage> {
       ),
     );
   }
-  
+
   Widget _buildStatCard(String label, int count, Color color, IconData icon) {
     return Card(
       child: Container(
@@ -197,11 +195,11 @@ class _ValidationListPageState extends State<ValidationListPage> {
       ),
     );
   }
-  
+
   Widget _buildValidationCard(ValidationRequest validation) {
     final dateFormat = DateFormat('dd/MM/yyyy');
     final color = _getStatusColor(validation.status);
-    
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
@@ -291,11 +289,11 @@ class _ValidationListPageState extends State<ValidationListPage> {
       ),
     );
   }
-  
+
   Widget _buildStatusChip(ValidationStatus status) {
     final color = _getStatusColor(status);
     final label = _getStatusLabel(status);
-    
+
     return Chip(
       label: Text(
         label,
@@ -306,7 +304,7 @@ class _ValidationListPageState extends State<ValidationListPage> {
       padding: const EdgeInsets.symmetric(horizontal: 8),
     );
   }
-  
+
   Color _getStatusColor(ValidationStatus status) {
     switch (status) {
       case ValidationStatus.pending:
@@ -317,7 +315,7 @@ class _ValidationListPageState extends State<ValidationListPage> {
         return Colors.red;
     }
   }
-  
+
   String _getStatusLabel(ValidationStatus status) {
     switch (status) {
       case ValidationStatus.pending:
@@ -328,16 +326,14 @@ class _ValidationListPageState extends State<ValidationListPage> {
         return 'Rejetée';
     }
   }
-  
+
   Widget _buildEmptyState() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            widget.viewType == ValidationViewType.employee
-                ? Icons.assignment_outlined
-                : Icons.inbox_outlined,
+            widget.viewType == ValidationViewType.employee ? Icons.assignment_outlined : Icons.inbox_outlined,
             size: 64,
             color: Colors.grey,
           ),
@@ -354,19 +350,19 @@ class _ValidationListPageState extends State<ValidationListPage> {
                 ? 'Créez une nouvelle demande de validation'
                 : 'Vous n\'avez pas de validations en attente',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.grey,
-            ),
+                  color: Colors.grey,
+                ),
             textAlign: TextAlign.center,
           ),
         ],
       ),
     );
   }
-  
+
   void _showFilterDialog() {
     final bloc = context.read<ValidationListBloc>();
     final currentState = bloc.state;
-    
+
     if (currentState is ValidationListLoaded) {
       showDialog(
         context: context,
@@ -385,12 +381,12 @@ class _ValidationListPageState extends State<ValidationListPage> {
 class _FilterDialog extends StatefulWidget {
   final ValidationFilters currentFilters;
   final Function(ValidationFilters) onApply;
-  
+
   const _FilterDialog({
     required this.currentFilters,
     required this.onApply,
   });
-  
+
   @override
   State<_FilterDialog> createState() => _FilterDialogState();
 }
@@ -400,7 +396,7 @@ class _FilterDialogState extends State<_FilterDialog> {
   late DateTime? _startDate;
   late DateTime? _endDate;
   late SortBy _sortBy;
-  
+
   @override
   void initState() {
     super.initState();
@@ -409,7 +405,7 @@ class _FilterDialogState extends State<_FilterDialog> {
     _endDate = widget.currentFilters.endDate;
     _sortBy = widget.currentFilters.sortBy;
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
@@ -422,7 +418,7 @@ class _FilterDialogState extends State<_FilterDialog> {
             const Text('Statut', style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             DropdownButtonFormField<ValidationStatus?>(
-              value: _selectedStatus,
+              initialValue: _selectedStatus,
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
                 contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -470,7 +466,7 @@ class _FilterDialogState extends State<_FilterDialog> {
             const Text('Trier par', style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             DropdownButtonFormField<SortBy>(
-              value: _sortBy,
+              initialValue: _sortBy,
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
                 contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -530,7 +526,7 @@ class _FilterDialogState extends State<_FilterDialog> {
       ],
     );
   }
-  
+
   Widget _buildDateField(
     String label,
     DateTime? value,
@@ -561,9 +557,7 @@ class _FilterDialogState extends State<_FilterDialog> {
               : null,
         ),
         child: Text(
-          value != null
-              ? DateFormat('dd/MM/yyyy').format(value)
-              : 'Sélectionner',
+          value != null ? DateFormat('dd/MM/yyyy').format(value) : 'Sélectionner',
           style: TextStyle(
             color: value != null ? null : Colors.grey,
           ),

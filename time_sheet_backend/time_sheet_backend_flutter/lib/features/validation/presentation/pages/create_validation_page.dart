@@ -79,7 +79,7 @@ class _CreateValidationPageState extends State<CreateValidationPage> {
               );
             }
 
-            if (state is CreateValidationError && !(state is CreateValidationForm)) {
+            if (state is CreateValidationError && state is! CreateValidationForm) {
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -138,7 +138,7 @@ class _CreateValidationPageState extends State<CreateValidationPage> {
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<Manager>(
-                    value: state.selectedManager,
+                    initialValue: state.selectedManager,
                     decoration: const InputDecoration(
                       labelText: 'Sélectionner un manager',
                       border: OutlineInputBorder(),
@@ -213,7 +213,7 @@ class _CreateValidationPageState extends State<CreateValidationPage> {
                     ),
                   ] else ...[
                     DropdownButtonFormField<GeneratedPdf>(
-                      value: state.selectedPdf,
+                      initialValue: state.selectedPdf,
                       isExpanded: true,
                       decoration: const InputDecoration(
                         labelText: 'Sélectionner un PDF',
@@ -297,16 +297,38 @@ class _CreateValidationPageState extends State<CreateValidationPage> {
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: Colors.red),
               ),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.error_outline, color: Colors.red),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      state.error!,
-                      style: const TextStyle(color: Colors.red),
-                    ),
+                  Row(
+                    children: [
+                      const Icon(Icons.error_outline, color: Colors.red),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          state.error!,
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                      ),
+                    ],
                   ),
+                  // Ajouter un bouton pour aller aux paramètres si l'erreur concerne la signature
+                  if (state.error!.contains('signature')) ...[
+                    const SizedBox(height: 8),
+                    TextButton.icon(
+                      onPressed: () {
+                        Navigator.pushNamed(context, '/settings').then((_) {
+                          // Recharger les managers au retour
+                          _bloc.add(const LoadManagers());
+                        });
+                      },
+                      icon: const Icon(Icons.settings, size: 16),
+                      label: const Text('Aller aux paramètres'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.red,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

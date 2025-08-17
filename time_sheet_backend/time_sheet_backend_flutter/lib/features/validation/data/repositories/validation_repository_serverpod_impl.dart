@@ -13,12 +13,12 @@ import 'package:time_sheet/features/preference/domain/use_cases/get_user_prefere
 class ValidationRepositoryServerpodImpl implements ValidationRepository {
   final serverpod.Client _client;
   final GetUserPreferenceUseCase _getUserPreferenceUseCase;
-  
+
   ValidationRepositoryServerpodImpl({
     serverpod.Client? client,
     required GetUserPreferenceUseCase getUserPreferenceUseCase,
-  }) : _client = client ?? ServerpodService.client,
-       _getUserPreferenceUseCase = getUserPreferenceUseCase;
+  })  : _client = client ?? ServerpodService.client,
+        _getUserPreferenceUseCase = getUserPreferenceUseCase;
 
   @override
   Future<Either<Failure, ValidationRequest>> createValidationRequest({
@@ -38,23 +38,21 @@ class ValidationRepositoryServerpodImpl implements ValidationRepository {
       // Récupérer les informations de l'employé si non fournies
       String finalEmployeeName = employeeName ?? '';
       String finalEmployeeCompany = employeeCompany ?? '';
-      
+
       if (finalEmployeeName.isEmpty) {
         final firstName = await _getUserPreferenceUseCase.execute('firstName') ?? '';
         final lastName = await _getUserPreferenceUseCase.execute('lastName') ?? '';
         finalEmployeeName = '$firstName $lastName'.trim();
       }
-      
+
       if (finalEmployeeCompany.isEmpty) {
         finalEmployeeCompany = await _getUserPreferenceUseCase.execute('company') ?? '';
       }
-      
+
       // Récupérer l'email du manager
       String managerEmail = '';
       try {
-        final managers = await ServerpodService.handleServerpodCall(() =>
-          _client.manager.getActiveManagers()
-        );
+        final managers = await ServerpodService.handleServerpodCall(() => _client.manager.getActiveManagers());
         final manager = managers.firstWhere(
           (m) => m.id.toString() == managerId,
           orElse: () => throw Exception('Manager not found'),
@@ -63,40 +61,51 @@ class ValidationRepositoryServerpodImpl implements ValidationRepository {
       } catch (e) {
         logger.w('Could not fetch manager email: $e');
       }
-      
+
       // Créer la validation
-      final result = await ServerpodService.handleServerpodCall(() => 
-        _client.validation.createValidation(
-          employeeId,
-          finalEmployeeName,
-          managerId,
-          managerEmail,
-          periodStart,
-          periodEnd,
-          pdfBytes.toList(),
-          finalEmployeeCompany, // Passer l'entreprise
-        )
-      );
-      
+      final result = await ServerpodService.handleServerpodCall(() => _client.validation.createValidation(
+            employeeId,
+            finalEmployeeName,
+            managerId,
+            managerEmail,
+            periodStart,
+            periodEnd,
+            pdfBytes.toList(),
+            finalEmployeeCompany, // Passer l'entreprise
+          ));
+
       // Si on a des données timesheet, les mettre à jour
       if (timesheetEntries != null && timesheetEntries.isNotEmpty && result.id != null) {
         try {
-          await ServerpodService.handleServerpodCall(() =>
-            _client.validation.updateTimesheetData(
-              result.id!,
-              jsonEncode(timesheetEntries),
-              totalDays ?? 0.0,
-              totalHours ?? '0h',
-              totalOvertimeHours ?? '0h',
-            )
-          );
-          logger.i('✅ Données timesheet mises à jour avec succès');
+          // Récupérer la signature de l'employé depuis les préférences
+          String? employeeSignature;
+          try {
+            final signatureBytes = await _getUserPreferenceUseCase.execute('signature');
+            if (signatureBytes != null && signatureBytes.isNotEmpty) {
+              employeeSignature = signatureBytes;
+              logger.i('✅ Signature de l\'employé récupérée: ${employeeSignature.substring(0, 50)}...');
+            } else {
+              logger.w('⚠️ Pas de signature d\'employé dans les préférences');
+            }
+          } catch (e) {
+            logger.w('Impossible de récupérer la signature de l\'employé: $e');
+          }
+
+          await ServerpodService.handleServerpodCall(() => _client.validation.updateTimesheetData(
+                result.id!,
+                jsonEncode(timesheetEntries),
+                totalDays ?? 0.0,
+                totalHours ?? '0h',
+                totalOvertimeHours ?? '0h',
+                employeeSignature, // Transmettre la signature de l'employé
+              ));
+          logger.i('✅ Données timesheet mises à jour avec succès (avec signature employé)');
         } catch (e) {
           logger.w('Impossible de mettre à jour les données timesheet: $e');
           // On ne fait pas échouer la création si la mise à jour échoue
         }
       }
-      
+
       return Right(_mapToEntity(result));
     } catch (e) {
       logger.e('Erreur lors de la création de la validation', error: e);
@@ -115,15 +124,13 @@ class ValidationRepositoryServerpodImpl implements ValidationRepository {
       final firstName = await _getUserPreferenceUseCase.execute('firstName') ?? '';
       final lastName = await _getUserPreferenceUseCase.execute('lastName') ?? '';
       String managerName = '$firstName $lastName'.trim();
-      
+
       // Si pas de nom dans les préférences, essayer de récupérer depuis l'email du manager
       if (managerName.isEmpty) {
         final email = await _getUserPreferenceUseCase.execute('email') ?? '';
         if (email.isNotEmpty) {
           try {
-            final managers = await ServerpodService.handleServerpodCall(() =>
-              _client.manager.getActiveManagers()
-            );
+            final managers = await ServerpodService.handleServerpodCall(() => _client.manager.getActiveManagers());
             final currentManager = managers.firstWhere(
               (m) => m.email == email,
               orElse: () => throw Exception('Manager not found'),
@@ -134,19 +141,17 @@ class ValidationRepositoryServerpodImpl implements ValidationRepository {
           }
         }
       }
-      
+
       logger.i('Manager approving: firstName=$firstName, lastName=$lastName, fullName=$managerName');
-      
+
       // L'endpoint approveValidation accepte maintenant un PDF signé optionnel
-      final result = await ServerpodService.handleServerpodCall(() =>
-        _client.validation.approveValidation(
-          int.parse(validationId),
-          managerName.isNotEmpty ? managerName : 'Manager', // Fallback si pas de nom
-          comment,
-          null, // Pas de PDF signé dans cette méthode (fallback)
-        )
-      );
-      
+      final result = await ServerpodService.handleServerpodCall(() => _client.validation.approveValidation(
+            int.parse(validationId),
+            managerName.isNotEmpty ? managerName : 'Manager', // Fallback si pas de nom
+            comment,
+            null, // Pas de PDF signé dans cette méthode (fallback)
+          ));
+
       // Le serveur retourne directement un ValidationRequest
       return Right(_mapToEntity(result));
     } catch (e) {
@@ -165,15 +170,13 @@ class ValidationRepositoryServerpodImpl implements ValidationRepository {
       final firstName = await _getUserPreferenceUseCase.execute('firstName') ?? '';
       final lastName = await _getUserPreferenceUseCase.execute('lastName') ?? '';
       String managerName = '$firstName $lastName'.trim();
-      
+
       // Si pas de nom dans les préférences, essayer de récupérer depuis l'email du manager
       if (managerName.isEmpty) {
         final email = await _getUserPreferenceUseCase.execute('email') ?? '';
         if (email.isNotEmpty) {
           try {
-            final managers = await ServerpodService.handleServerpodCall(() =>
-              _client.manager.getActiveManagers()
-            );
+            final managers = await ServerpodService.handleServerpodCall(() => _client.manager.getActiveManagers());
             final currentManager = managers.firstWhere(
               (m) => m.email == email,
               orElse: () => throw Exception('Manager not found'),
@@ -184,17 +187,15 @@ class ValidationRepositoryServerpodImpl implements ValidationRepository {
           }
         }
       }
-      
+
       logger.i('Manager rejecting: firstName=$firstName, lastName=$lastName, fullName=$managerName');
-      
-      final result = await ServerpodService.handleServerpodCall(() =>
-        _client.validation.rejectValidation(
-          int.parse(validationId),
-          comment,
-          managerName.isNotEmpty ? managerName : 'Manager', // Fallback si pas de nom
-        )
-      );
-      
+
+      final result = await ServerpodService.handleServerpodCall(() => _client.validation.rejectValidation(
+            int.parse(validationId),
+            comment,
+            managerName.isNotEmpty ? managerName : 'Manager', // Fallback si pas de nom
+          ));
+
       return Right(_mapToEntity(result));
     } catch (e) {
       logger.e('Erreur lors du rejet de la validation', error: e);
@@ -205,10 +206,9 @@ class ValidationRepositoryServerpodImpl implements ValidationRepository {
   @override
   Future<Either<Failure, List<ValidationRequest>>> getEmployeeValidations(String employeeId) async {
     try {
-      final results = await ServerpodService.handleServerpodCall(() =>
-        _client.validation.getEmployeeValidations(employeeId)
-      );
-      
+      final results =
+          await ServerpodService.handleServerpodCall(() => _client.validation.getEmployeeValidations(employeeId));
+
       return Right(results.map(_mapToEntity).toList());
     } catch (e) {
       logger.e('Erreur lors de la récupération des validations employé', error: e);
@@ -220,10 +220,9 @@ class ValidationRepositoryServerpodImpl implements ValidationRepository {
   Future<Either<Failure, List<ValidationRequest>>> getManagerValidations(String managerId) async {
     try {
       // Note: managerId est en fait l'email du manager maintenant
-      final results = await ServerpodService.handleServerpodCall(() =>
-        _client.validation.getManagerValidations(managerId)
-      );
-      
+      final results =
+          await ServerpodService.handleServerpodCall(() => _client.validation.getManagerValidations(managerId));
+
       return Right(results.map(_mapToEntity).toList());
     } catch (e) {
       logger.e('Erreur lors de la récupération des validations manager', error: e);
@@ -235,12 +234,10 @@ class ValidationRepositoryServerpodImpl implements ValidationRepository {
   Future<Either<Failure, Uint8List>> downloadValidationPdf(String validationId, [String? managerSignature]) async {
     try {
       // Le nouvel endpoint ne prend plus de signature (elle est déjà en BDD)
-      final pdfBytes = await ServerpodService.handleServerpodCall(() =>
-        _client.validation.downloadValidationPdf(
-          int.parse(validationId),
-        )
-      );
-      
+      final pdfBytes = await ServerpodService.handleServerpodCall(() => _client.validation.downloadValidationPdf(
+            int.parse(validationId),
+          ));
+
       return Right(Uint8List.fromList(pdfBytes));
     } catch (e) {
       logger.e('Erreur lors du téléchargement du PDF', error: e);
@@ -251,14 +248,12 @@ class ValidationRepositoryServerpodImpl implements ValidationRepository {
   @override
   Future<Either<Failure, ValidationRequest>> getValidationRequest(String id) async {
     try {
-      final result = await ServerpodService.handleServerpodCall(() =>
-        _client.validation.getValidation(int.parse(id))
-      );
-      
+      final result = await ServerpodService.handleServerpodCall(() => _client.validation.getValidation(int.parse(id)));
+
       if (result == null) {
         return Left(ServerFailure('Validation request not found'));
       }
-      
+
       return Right(_mapToEntity(result));
     } catch (e) {
       logger.e('Erreur lors de la récupération de la validation', error: e);
@@ -269,10 +264,9 @@ class ValidationRepositoryServerpodImpl implements ValidationRepository {
   @override
   Future<Either<Failure, List<NotificationEntity>>> getUserNotifications(String userId) async {
     try {
-      final notifications = await ServerpodService.handleServerpodCall(() =>
-        _client.notification.getUserNotifications(userId, unreadOnly: false)
-      );
-      
+      final notifications = await ServerpodService.handleServerpodCall(
+          () => _client.notification.getUserNotifications(userId, unreadOnly: false));
+
       return Right(notifications.map(_mapNotificationToEntity).toList());
     } catch (e) {
       logger.e('Erreur lors de la récupération des notifications', error: e);
@@ -283,10 +277,9 @@ class ValidationRepositoryServerpodImpl implements ValidationRepository {
   @override
   Future<Either<Failure, NotificationEntity>> markNotificationAsRead(String notificationId) async {
     try {
-      final result = await ServerpodService.handleServerpodCall(() =>
-        _client.notification.markAsRead(int.parse(notificationId))
-      );
-      
+      final result =
+          await ServerpodService.handleServerpodCall(() => _client.notification.markAsRead(int.parse(notificationId)));
+
       return Right(_mapNotificationToEntity(result));
     } catch (e) {
       logger.e('Erreur lors du marquage de la notification comme lue', error: e);
@@ -297,10 +290,8 @@ class ValidationRepositoryServerpodImpl implements ValidationRepository {
   @override
   Future<Either<Failure, void>> markAllNotificationsAsRead(String userId) async {
     try {
-      await ServerpodService.handleServerpodCall(() =>
-        _client.notification.markAllAsRead(userId)
-      );
-      
+      await ServerpodService.handleServerpodCall(() => _client.notification.markAllAsRead(userId));
+
       return const Right(null);
     } catch (e) {
       logger.e('Erreur lors du marquage de toutes les notifications comme lues', error: e);
@@ -311,10 +302,8 @@ class ValidationRepositoryServerpodImpl implements ValidationRepository {
   @override
   Future<Either<Failure, int>> getUnreadNotificationCount(String userId) async {
     try {
-      final count = await ServerpodService.handleServerpodCall(() =>
-        _client.notification.getUnreadCount(userId)
-      );
-      
+      final count = await ServerpodService.handleServerpodCall(() => _client.notification.getUnreadCount(userId));
+
       return Right(count);
     } catch (e) {
       logger.e('Erreur lors du comptage des notifications non lues', error: e);
@@ -337,10 +326,8 @@ class ValidationRepositoryServerpodImpl implements ValidationRepository {
   @override
   Future<Either<Failure, List<Manager>>> getAvailableManagers(String employeeId) async {
     try {
-      final managers = await ServerpodService.handleServerpodCall(() =>
-        _client.manager.getActiveManagers()
-      );
-      
+      final managers = await ServerpodService.handleServerpodCall(() => _client.manager.getActiveManagers());
+
       return Right(managers.map(_mapManagerToEntity).toList());
     } catch (e) {
       logger.e('Erreur lors de la récupération des managers', error: e);
@@ -372,19 +359,17 @@ class ValidationRepositoryServerpodImpl implements ValidationRepository {
       logger.i('   - Validation ID: $validationId');
       logger.i('   - Taille du PDF: ${signedPdfBytes.length} octets');
       logger.i('   - Manager: $managerName');
-      
+
       // Appeler le nouvel endpoint avec le PDF signé
-      final result = await ServerpodService.handleServerpodCall(() =>
-        _client.validation.approveValidation(
-          int.parse(validationId),
-          managerName,
-          comment,
-          signedPdfBytes.toList(), // Convertir Uint8List en List<int>
-        )
-      );
-      
+      final result = await ServerpodService.handleServerpodCall(() => _client.validation.approveValidation(
+            int.parse(validationId),
+            managerName,
+            comment,
+            signedPdfBytes.toList(), // Convertir Uint8List en List<int>
+          ));
+
       logger.i('✅ PDF signé envoyé et validation approuvée avec succès');
-      
+
       return Right(_mapToEntity(result));
     } catch (e) {
       logger.e('Erreur lors de l\'envoi du PDF signé', error: e);
@@ -396,17 +381,17 @@ class ValidationRepositoryServerpodImpl implements ValidationRepository {
   Future<Either<Failure, Map<String, dynamic>>> getValidationTimesheetData(String validationId) async {
     try {
       logger.i('📊 Récupération des données timesheet pour validation $validationId');
-      
-      final response = await ServerpodService.handleServerpodCall(() =>
-        _client.validation.getValidationTimesheetData(int.parse(validationId))
-      );
-      
+
+      final response = await ServerpodService.handleServerpodCall(
+          () => _client.validation.getValidationTimesheetData(int.parse(validationId)));
+
       // Convertir TimesheetDataResponse en Map pour le use case
       final data = {
         'validationId': response.validationId,
         'employeeId': response.employeeId,
         'employeeName': response.employeeName,
         'employeeCompany': response.employeeCompany,
+        'employeeSignature': response.employeeSignature, // Inclure la signature de l'employé
         'month': response.month,
         'year': response.year,
         'entries': jsonDecode(response.entries), // Décoder le JSON des entries
@@ -420,12 +405,18 @@ class ValidationRepositoryServerpodImpl implements ValidationRepository {
         'managerComment': response.managerComment,
         'validatedAt': response.validatedAt?.toIso8601String(),
       };
-      
+
       logger.i('✅ Données timesheet récupérées avec succès');
       logger.i('   - Mois: ${data['month']}/${data['year']}');
       logger.i('   - Employé: ${data['employeeName']}');
       logger.i('   - Statut: ${data['status']}');
-      
+      if (data['employeeSignature'] != null) {
+        final sig = data['employeeSignature'] as String;
+        logger.i('   - Signature employé: OUI (${sig.length} caractères)');
+      } else {
+        logger.w('   - Signature employé: NON');
+      }
+
       return Right(data);
     } catch (e) {
       logger.e('Erreur lors de la récupération des données timesheet', error: e);
@@ -458,7 +449,6 @@ class ValidationRepositoryServerpodImpl implements ValidationRepository {
     // Serverpod supporte les streams, mais nécessite une implémentation spécifique
     return Stream.value(Left(ServerFailure('Watch user notifications not implemented')));
   }
-
 
   // Mapper serverpod.ValidationRequest vers domain ValidationRequest
   ValidationRequest _mapToEntity(serverpod.ValidationRequest request) {
@@ -500,8 +490,7 @@ class ValidationRepositoryServerpodImpl implements ValidationRepository {
       type: _mapNotificationType(notification.type),
       title: notification.title,
       body: notification.message,
-      data: notification.data != null ? 
-        _parseNotificationData(notification.data!) : null,
+      data: notification.data != null ? _parseNotificationData(notification.data!) : null,
       read: notification.isRead,
       readAt: notification.readAt,
       createdAt: notification.createdAt ?? DateTime.now(),

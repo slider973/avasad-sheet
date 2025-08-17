@@ -20,13 +20,13 @@ class PdfGeneratorService {
       print('  - Length: ${managerSignature.length}');
     }
     print('Manager name: ${validation.managerName}');
-    
+
     final pdf = pw.Document();
-    
+
     // Décoder les entrées JSON
     final entriesJson = jsonDecode(timesheetData.entries) as List;
     final entries = entriesJson.map((e) => e as Map<String, dynamic>).toList();
-    
+
     // Créer le PDF
     pdf.addPage(
       pw.MultiPage(
@@ -37,29 +37,29 @@ class PdfGeneratorService {
             // En-tête
             _buildHeader(timesheetData, validation),
             pw.SizedBox(height: 20),
-            
+
             // Informations de l'employé
             _buildEmployeeInfo(timesheetData),
             pw.SizedBox(height: 20),
-            
+
             // Tableau des entrées
             _buildEntriesTable(entries),
             pw.SizedBox(height: 20),
-            
+
             // Totaux
             _buildTotals(timesheetData),
             pw.SizedBox(height: 40),
-            
+
             // Signatures
             _buildSignatures(validation, includeManagerSignature, managerSignature),
           ];
         },
       ),
     );
-    
+
     return pdf.save();
   }
-  
+
   pw.Widget _buildHeader(TimesheetData timesheetData, ValidationRequest validation) {
     return pw.Container(
       padding: const pw.EdgeInsets.all(10),
@@ -79,13 +79,12 @@ class PdfGeneratorService {
           pw.SizedBox(height: 10),
           pw.Text('Période: ${timesheetData.month}/${timesheetData.year}'),
           pw.Text('Statut: ${_getStatusText(validation.status)}'),
-          if (validation.validatedAt != null)
-            pw.Text('Date de validation: ${_formatDate(validation.validatedAt!)}'),
+          if (validation.validatedAt != null) pw.Text('Date de validation: ${_formatDate(validation.validatedAt!)}'),
         ],
       ),
     );
   }
-  
+
   pw.Widget _buildEmployeeInfo(TimesheetData timesheetData) {
     return pw.Container(
       child: pw.Column(
@@ -121,7 +120,7 @@ class PdfGeneratorService {
       ),
     );
   }
-  
+
   pw.Widget _buildEntriesTable(List<Map<String, dynamic>> entries) {
     return pw.Table(
       border: pw.TableBorder.all(color: PdfColors.black),
@@ -143,14 +142,14 @@ class PdfGeneratorService {
         ...entries.map((entry) {
           final isAbsence = entry['isAbsence'] ?? false;
           final hasOvertime = entry['hasOvertimeHours'] ?? false;
-          
+
           // Calculer le total d'heures pour cette journée
           String totalHours = '0:00';
           if (!isAbsence && entry['startMorning'] != null && entry['endMorning'] != null) {
             // Calculer les heures (simplification)
             totalHours = '8:00'; // À améliorer avec un vrai calcul
           }
-          
+
           return pw.TableRow(
             children: [
               _buildTableCell(entry['dayDate'] ?? ''),
@@ -162,11 +161,11 @@ class PdfGeneratorService {
               _buildTableCell(hasOvertime ? 'Oui' : ''),
             ],
           );
-        }).toList(),
+        }),
       ],
     );
   }
-  
+
   pw.Widget _buildTableCell(String text, {bool isHeader = false}) {
     return pw.Container(
       padding: const pw.EdgeInsets.all(5),
@@ -180,7 +179,7 @@ class PdfGeneratorService {
       ),
     );
   }
-  
+
   pw.Widget _buildTotals(TimesheetData timesheetData) {
     return pw.Container(
       padding: const pw.EdgeInsets.all(10),
@@ -223,7 +222,7 @@ class PdfGeneratorService {
       ),
     );
   }
-  
+
   pw.Widget _buildSignatures(ValidationRequest validation, bool includeManagerSignature, String? managerSignature) {
     return pw.Container(
       child: pw.Column(
@@ -311,28 +310,29 @@ class PdfGeneratorService {
       ),
     );
   }
-  
+
   pw.Widget _buildSignatureImage(String signatureBase64, ValidationRequest validation) {
     try {
       print('\n========== BUILDING SIGNATURE IMAGE ==========');
       print('Input signature length: ${signatureBase64.length}');
-      print('First 100 chars: ${signatureBase64.substring(0, signatureBase64.length > 100 ? 100 : signatureBase64.length)}');
-      
+      print(
+          'First 100 chars: ${signatureBase64.substring(0, signatureBase64.length > 100 ? 100 : signatureBase64.length)}');
+
       // La signature est DÉJÀ en base64 dans la DB, on la décode directement
       String cleanBase64 = signatureBase64;
-      
+
       // Si c'est un data URI (data:image/png;base64,...), on extrait juste la partie base64
       if (signatureBase64.startsWith('data:')) {
         print('Signature has data URI prefix, removing it');
         cleanBase64 = signatureBase64.split(',').last;
       }
-      
+
       print('Clean base64 length: ${cleanBase64.length}');
-      
+
       // Décoder la signature base64 en bytes
       final signatureBytes = base64Decode(cleanBase64);
       print('Decoded to ${signatureBytes.length} bytes');
-      
+
       // Créer l'image pour le PDF
       final image = pw.Image(
         pw.MemoryImage(signatureBytes),
@@ -340,10 +340,9 @@ class PdfGeneratorService {
         height: 50,
         fit: pw.BoxFit.contain,
       );
-      
+
       print('SUCCESS: Signature image created');
       return image;
-      
     } catch (e, stack) {
       print('\n========== ERROR BUILDING SIGNATURE ==========');
       print('Error: $e');
@@ -355,11 +354,11 @@ class PdfGeneratorService {
       );
     }
   }
-  
+
   String _formatDate(DateTime date) {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
-  
+
   String _getStatusText(ValidationStatus status) {
     switch (status) {
       case ValidationStatus.pending:

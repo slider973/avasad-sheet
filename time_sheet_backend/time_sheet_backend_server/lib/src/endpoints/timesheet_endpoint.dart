@@ -119,7 +119,7 @@ class TimesheetEndpoint extends Endpoint {
       };
     } catch (e) {
       session.log('Error in _handleSave: $e');
-      throw e;
+      rethrow;
     }
   }
 
@@ -169,7 +169,7 @@ class TimesheetEndpoint extends Endpoint {
       };
     } catch (e) {
       session.log('Error in _handleGet: $e');
-      throw e;
+      rethrow;
     }
   }
 
@@ -217,7 +217,7 @@ class TimesheetEndpoint extends Endpoint {
       };
     } catch (e) {
       session.log('Error in _handleUpdate: $e');
-      throw e;
+      rethrow;
     }
   }
 
@@ -273,7 +273,7 @@ class TimesheetEndpoint extends Endpoint {
       };
     } catch (e) {
       session.log('Error in _handleGeneratePdf: $e');
-      throw e;
+      rethrow;
     }
   }
 

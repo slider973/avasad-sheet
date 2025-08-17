@@ -16,7 +16,7 @@ class TimesheetCalendarBody extends StatelessWidget {
   final Function(DateTime) onPageChanged;
 
   const TimesheetCalendarBody({
-    Key? key,
+    super.key,
     required this.firstDay,
     required this.lastDay,
     required this.focusedDay,
@@ -26,7 +26,7 @@ class TimesheetCalendarBody extends StatelessWidget {
     required this.onDaySelected,
     required this.onFormatChanged,
     required this.onPageChanged,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

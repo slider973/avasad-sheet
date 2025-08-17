@@ -4,6 +4,7 @@ fields:
   employeeId: String
   employeeName: String
   employeeCompany: String
+  employeeSignature: String?
   month: int
   year: int
   entries: String

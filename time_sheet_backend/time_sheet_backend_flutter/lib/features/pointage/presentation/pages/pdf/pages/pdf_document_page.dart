@@ -15,6 +15,8 @@ import '../../../../../bottom_nav_tab/presentation/pages/bloc/bottom_navigation_
 import '../../../widgets/pdf_document/show_month_picker.dart';
 
 class PdfDocumentPage extends StatefulWidget {
+  const PdfDocumentPage({super.key});
+
   @override
   _PdfDocumentPageState createState() => _PdfDocumentPageState();
 }
@@ -22,7 +24,7 @@ class PdfDocumentPage extends StatefulWidget {
 class _PdfDocumentPageState extends State<PdfDocumentPage> {
   StreamSubscription<PdfState>? _pdfBlocSubscription;
   Timer? _fileCheckTimer;
-  
+
   @override
   void initState() {
     super.initState();
@@ -35,7 +37,7 @@ class _PdfDocumentPageState extends State<PdfDocumentPage> {
     context.read<PdfBloc>().add(LoadGeneratedPdfsEvent());
     _detectAnomalies();
   }
-  
+
   @override
   void dispose() {
     _pdfBlocSubscription?.cancel();
@@ -96,7 +98,6 @@ class _PdfDocumentPageState extends State<PdfDocumentPage> {
                 },
               );
             },
-
           ),
         ),
       ],
@@ -110,8 +111,7 @@ class _PdfDocumentPageState extends State<PdfDocumentPage> {
       onChooseMonth: () => showMonthPicker(context),
       onGenerateCurrentMonthExcel: () => _showConfirmationDialogExcel(context),
       onChooseMonthExcel: () => _showMonthPickerExcel(context),
-      onOpenPdf: (filePath) =>
-          context.read<PdfBloc>().add(OpenPdfEvent(filePath)),
+      onOpenPdf: (filePath) => context.read<PdfBloc>().add(OpenPdfEvent(filePath)),
       onDeletePdf: (id) => context.read<PdfBloc>().add(DeletePdfEvent(id)),
     );
   }
@@ -126,8 +126,7 @@ class _PdfDocumentPageState extends State<PdfDocumentPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Anomalies détectées:',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text('Anomalies détectées:', style: TextStyle(fontWeight: FontWeight.bold)),
               Expanded(
                 child: _buildAnomaliesList(state),
               ),
@@ -161,10 +160,10 @@ class _PdfDocumentPageState extends State<PdfDocumentPage> {
     // Déterminer le mois et l'année à vérifier
     final month = DateTime.now().day > 21 ? DateTime.now().month + 1 : DateTime.now().month;
     final year = DateTime.now().year;
-    
+
     // Déclencher la vérification des anomalies
     context.read<AnomalyBloc>().add(CheckAnomaliesForPdfGeneration(month, year));
-    
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -183,7 +182,7 @@ class _PdfDocumentPageState extends State<PdfDocumentPage> {
                 ),
               );
             }
-            
+
             if (state is PdfAnomalyCheckCompleted) {
               if (state.hasAnyAnomalies) {
                 return _buildAnomalyConfirmationDialog(context, state);
@@ -196,7 +195,7 @@ class _PdfDocumentPageState extends State<PdfDocumentPage> {
                 return const SizedBox.shrink();
               }
             }
-            
+
             if (state is AnomalyError) {
               return AlertDialog(
                 title: const Text('Erreur'),
@@ -216,7 +215,7 @@ class _PdfDocumentPageState extends State<PdfDocumentPage> {
                 ],
               );
             }
-            
+
             // État initial ou inattendu
             return const AlertDialog(
               title: Text('Vérification...'),
@@ -252,8 +251,8 @@ class _PdfDocumentPageState extends State<PdfDocumentPage> {
                 style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
               ),
               const SizedBox(height: 8),
-              ...state.criticalAnomaliesMessages.map((message) => 
-                Padding(
+              ...state.criticalAnomaliesMessages.map(
+                (message) => Padding(
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Text('• $message', style: const TextStyle(fontSize: 12)),
                 ),
@@ -266,20 +265,20 @@ class _PdfDocumentPageState extends State<PdfDocumentPage> {
                 style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange),
               ),
               const SizedBox(height: 8),
-              ...state.minorAnomaliesMessages.take(3).map((message) => 
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Text('• $message', style: const TextStyle(fontSize: 12)),
-                ),
-              ),
+              ...state.minorAnomaliesMessages.take(3).map(
+                    (message) => Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Text('• $message', style: const TextStyle(fontSize: 12)),
+                    ),
+                  ),
               if (state.minorAnomaliesMessages.length > 3)
                 Text('• ... et ${state.minorAnomaliesMessages.length - 3} autres'),
               const SizedBox(height: 16),
             ],
             Text(
-              state.hasCriticalAnomalies 
-                ? 'Il est recommandé de corriger les anomalies critiques avant de générer le PDF.'
-                : 'Vous pouvez générer le PDF ou corriger les anomalies d\'abord.',
+              state.hasCriticalAnomalies
+                  ? 'Il est recommandé de corriger les anomalies critiques avant de générer le PDF.'
+                  : 'Vous pouvez générer le PDF ou corriger les anomalies d\'abord.',
               style: const TextStyle(fontStyle: FontStyle.italic),
             ),
           ],
@@ -309,23 +308,19 @@ class _PdfDocumentPageState extends State<PdfDocumentPage> {
           onPressed: () {
             Navigator.of(context).pop();
             // Naviguer vers l'onglet des anomalies (index 3)
-            BlocProvider.of<BottomNavigationBarBloc>(context)
-                .add(BottomNavigationBarEvent.tab4);
+            BlocProvider.of<BottomNavigationBarBloc>(context).add(BottomNavigationBarEvent.tab4);
           },
         ),
       ],
     );
   }
 
-  void _showErrorDialog(BuildContext context, String errorMessage,
-      {required bool isPdfGeneration}) {
+  void _showErrorDialog(BuildContext context, String errorMessage, {required bool isPdfGeneration}) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text(isPdfGeneration
-              ? 'Erreur de génération du PDF'
-              : 'Erreur d\'ouverture du PDF'),
+          title: Text(isPdfGeneration ? 'Erreur de génération du PDF' : 'Erreur d\'ouverture du PDF'),
           content: Text(errorMessage),
           actions: [
             TextButton(
@@ -337,9 +332,7 @@ class _PdfDocumentPageState extends State<PdfDocumentPage> {
                 child: const Text('Réessayer'),
                 onPressed: () {
                   Navigator.of(context).pop();
-                  context
-                      .read<PdfBloc>()
-                      .add(GeneratePdfEvent(DateTime.now().month, DateTime.now().year));
+                  context.read<PdfBloc>().add(GeneratePdfEvent(DateTime.now().month, DateTime.now().year));
                 },
               ),
           ],
@@ -355,8 +348,7 @@ class _PdfDocumentPageState extends State<PdfDocumentPage> {
         children: [
           Text('Erreur: $error'),
           ElevatedButton(
-            onPressed: () =>
-                context.read<PdfBloc>().add(LoadGeneratedPdfsEvent()),
+            onPressed: () => context.read<PdfBloc>().add(LoadGeneratedPdfsEvent()),
             child: const Text('Réessayer'),
           ),
         ],
@@ -378,7 +370,7 @@ class _PdfDocumentPageState extends State<PdfDocumentPage> {
       });
       return;
     }
-    
+
     // Pour les fichiers PDF
     if (!kIsWeb && Platform.isWindows) {
       OpenFile.open(filePath).then((_) {
@@ -420,7 +412,7 @@ class _PdfDocumentPageState extends State<PdfDocumentPage> {
     // Déterminer le mois et l'année à vérifier
     final month = DateTime.now().day > 21 ? DateTime.now().month + 1 : DateTime.now().month;
     final year = DateTime.now().year;
-    
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -451,7 +443,7 @@ class _PdfDocumentPageState extends State<PdfDocumentPage> {
       builder: (BuildContext context) {
         int selectedMonth = DateTime.now().month;
         int selectedYear = DateTime.now().year;
-        
+
         return AlertDialog(
           title: const Text('Choisir le mois (Excel)'),
           content: Column(
@@ -460,8 +452,20 @@ class _PdfDocumentPageState extends State<PdfDocumentPage> {
               DropdownButton<int>(
                 value: selectedMonth,
                 items: List.generate(12, (index) {
-                  final monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-                                     'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+                  final monthNames = [
+                    'Janvier',
+                    'Février',
+                    'Mars',
+                    'Avril',
+                    'Mai',
+                    'Juin',
+                    'Juillet',
+                    'Août',
+                    'Septembre',
+                    'Octobre',
+                    'Novembre',
+                    'Décembre'
+                  ];
                   return DropdownMenuItem(
                     value: index + 1,
                     child: Text(monthNames[index]),

@@ -1,6 +1,3 @@
-
-import 'package:intl/intl.dart';
-
 import '../repositories/timesheet_repository.dart';
 import '../value_objects/vacation_days_info.dart';
 
@@ -26,8 +23,6 @@ class GetRemainingVacationDaysUseCase {
         currentYearTotal: 25,
         lastYearRemaining: lastYearRemainingDays,
         usedDays: usedVacationDays,
-        remainingTotal: totalVacationDays - usedVacationDays
-    );
+        remainingTotal: totalVacationDays - usedVacationDays);
   }
 }
-

@@ -2,6 +2,7 @@ import 'package:serverpod/serverpod.dart';
 import 'package:crypto/crypto.dart';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 import '../generated/protocol.dart';
 import '../services/pdf_generator_service.dart';
 
@@ -80,7 +81,8 @@ class ValidationEndpoint extends Endpoint {
           employeeId: employeeId,
           employeeName: employeeName,
           employeeCompany: employeeCompany ?? 'Avasad', // Utiliser la valeur passée ou Avasad par défaut
-          month: periodEnd.month,  // Utiliser periodEnd (20 du mois) au lieu de periodStart (21 du mois précédent)
+          employeeSignature: null, // Sera rempli via updateTimesheetData
+          month: periodEnd.month, // Utiliser periodEnd (20 du mois) au lieu de periodStart (21 du mois précédent)
           year: periodEnd.year,
           entries: '[]', // Sera rempli via updateTimesheetData
           totalDays: 0.0,
@@ -89,7 +91,7 @@ class ValidationEndpoint extends Endpoint {
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         );
-        
+
         await TimesheetData.db.insertRow(session, timesheetData);
         session.log('Données timesheet créées avec mois=${periodEnd.month}, année=${periodEnd.year}');
       } catch (e) {
@@ -111,26 +113,40 @@ class ValidationEndpoint extends Endpoint {
     double totalDays,
     String totalHours,
     String totalOvertimeHours,
+    String? employeeSignature, // Signature de l'employé en base64
   ) async {
     try {
+      session.log('📝 updateTimesheetData appelé pour validation $validationId');
+      session.log('   - totalDays: $totalDays');
+      session.log('   - totalHours: $totalHours');
+      session.log('   - totalOvertimeHours: $totalOvertimeHours');
+      session.log(
+          '   - employeeSignature fournie: ${employeeSignature != null ? 'OUI (${employeeSignature.length} caractères)' : 'NON'}');
+
       // Récupérer les données timesheet existantes
       final existingTimesheet = await TimesheetData.db.findFirstRow(
         session,
         where: (t) => t.validationRequestId.equals(validationId),
       );
-      
+
       if (existingTimesheet != null) {
         // Mettre à jour avec les nouvelles données
         existingTimesheet.entries = entries;
         existingTimesheet.totalDays = totalDays;
         existingTimesheet.totalHours = totalHours;
         existingTimesheet.totalOvertimeHours = totalOvertimeHours;
+        existingTimesheet.employeeSignature = employeeSignature; // Sauvegarder la signature
         existingTimesheet.updatedAt = DateTime.now();
-        
+
         await TimesheetData.db.updateRow(session, existingTimesheet);
-        session.log('Données timesheet mises à jour pour la validation $validationId');
+        if (employeeSignature != null && employeeSignature.isNotEmpty) {
+          session.log(
+              '✅ Données timesheet mises à jour avec signature employé (${employeeSignature.substring(0, math.min(50, employeeSignature.length))}...)');
+        } else {
+          session.log('⚠️ Données timesheet mises à jour SANS signature employé');
+        }
       } else {
-        session.log('Aucune donnée timesheet trouvée pour la validation $validationId');
+        session.log('❌ Aucune donnée timesheet trouvée pour la validation $validationId');
       }
     } catch (e) {
       session.log('Erreur lors de la mise à jour des données timesheet: $e');
@@ -138,7 +154,7 @@ class ValidationEndpoint extends Endpoint {
     }
   }
 
-  /// Approuver une validation  
+  /// Approuver une validation
   Future<ValidationRequest> approveValidation(
     Session session,
     int validationId,
@@ -177,12 +193,12 @@ class ValidationEndpoint extends Endpoint {
         final filePath = '/tmp/$fileName';
         final file = File(filePath);
         await file.writeAsBytes(signedPdfBytes);
-        
+
         // Mettre à jour le chemin du PDF
         validation.pdfPath = filePath;
         validation.pdfSizeBytes = signedPdfBytes.length;
         validation.pdfHash = signedPdfBytes.hashCode.toString();
-        
+
         print('PDF signé sauvegardé: $filePath');
       }
 
@@ -383,12 +399,21 @@ class ValidationEndpoint extends Endpoint {
         throw Exception('Données timesheet introuvables');
       }
 
+      // Logs pour debug
+      session.log('📊 Récupération timesheet pour validation $validationId');
+      session.log('   - Employé: ${timesheetData.employeeName}');
+      session.log('   - Mois/Année: ${timesheetData.month}/${timesheetData.year}');
+      session.log(
+          '   - Signature employé: ${timesheetData.employeeSignature != null ? 'OUI (${timesheetData.employeeSignature!.length} caractères)' : 'NON'}');
+      session.log('   - Status validation: ${validation.status}');
+
       // Retourner les données structurées avec le modèle Serverpod
       return TimesheetDataResponse(
         validationId: validationId,
         employeeId: timesheetData.employeeId,
         employeeName: timesheetData.employeeName,
         employeeCompany: timesheetData.employeeCompany,
+        employeeSignature: timesheetData.employeeSignature, // Inclure la signature de l'employé
         month: timesheetData.month,
         year: timesheetData.year,
         entries: timesheetData.entries, // Garder en JSON string
@@ -448,7 +473,7 @@ class ValidationEndpoint extends Endpoint {
       session.log('Error checking expired validations: $e');
     }
   }
-  
+
   /// Traiter la régénération d'un PDF avec signatures
   Future<void> _processSinglePdfRegeneration(Session session, int validationId) async {
     try {
@@ -457,22 +482,22 @@ class ValidationEndpoint extends Endpoint {
       if (validation == null) {
         throw Exception('Validation not found');
       }
-      
+
       // Récupérer les données timesheet
       final timesheetData = await TimesheetData.db.findFirstRow(
         session,
         where: (t) => t.validationRequestId.equals(validationId),
       );
-      
+
       if (timesheetData == null) {
         throw Exception('Timesheet data not found');
       }
-      
+
       session.log('Generating PDF for validation $validationId');
       session.log('- Employee: ${timesheetData.employeeName}');
       session.log('- Period: ${timesheetData.month}/${timesheetData.year}');
       session.log('- Status: ${validation.status}');
-      
+
       // Générer le PDF avec les données timesheet (sans signature)
       final pdfGenerator = PdfGeneratorService();
       final pdfBytes = await pdfGenerator.generateTimesheetPdf(
@@ -480,24 +505,24 @@ class ValidationEndpoint extends Endpoint {
         validation: validation,
         includeManagerSignature: false, // Jamais de signature stockée
       );
-      
+
       // Sauvegarder le PDF
       final fileName = 'timesheet_${validationId}_signed_${DateTime.now().millisecondsSinceEpoch}.pdf';
       final filePath = '/tmp/$fileName'; // Utiliser un répertoire temporaire
       final file = File(filePath);
       await file.writeAsBytes(pdfBytes);
-      
+
       // Mettre à jour le chemin du PDF dans la validation
       validation.pdfPath = filePath;
       validation.updatedAt = DateTime.now();
       await ValidationRequest.db.updateRow(session, validation);
-      
+
       // Marquer le job comme complété
       final jobs = await PdfRegenerationQueue.db.find(
         session,
         where: (j) => j.validationId.equals(validationId),
       );
-      
+
       for (var job in jobs) {
         if (job.status == QueueStatus.pending || job.status == QueueStatus.processing) {
           job.status = QueueStatus.completed;
@@ -505,11 +530,11 @@ class ValidationEndpoint extends Endpoint {
           await PdfRegenerationQueue.db.updateRow(session, job);
         }
       }
-      
+
       session.log('PDF regeneration completed for validation $validationId, saved to: $filePath');
     } catch (e) {
       session.log('Error in _processSinglePdfRegeneration: $e');
-      throw e;
+      rethrow;
     }
   }
 }

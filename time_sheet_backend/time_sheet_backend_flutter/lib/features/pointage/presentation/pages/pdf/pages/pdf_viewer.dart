@@ -11,7 +11,7 @@ import '../bloc/pdf/pdf_bloc.dart';
 class PdfViewerPage extends StatelessWidget {
   final String filePath;
 
-  const PdfViewerPage({Key? key, required this.filePath}) : super(key: key);
+  const PdfViewerPage({super.key, required this.filePath});
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +31,7 @@ class PdfViewerPage extends StatelessWidget {
     return PopScope(
       canPop: false,
       onPopInvoked: (didPop) {
-        if(didPop) return;
+        if (didPop) return;
         context.read<PdfBloc>().add(ClosePdfEvent());
         Navigator.of(context).pop();
       },
@@ -45,7 +45,7 @@ class PdfViewerPage extends StatelessWidget {
           swipeHorizontal: true,
           autoSpacing: false,
           pageFling: false,
-          onRender: (_pages) {
+          onRender: (pages) {
             // Vous pouvez ajouter une logique ici si nécessaire
           },
           onError: (error) {

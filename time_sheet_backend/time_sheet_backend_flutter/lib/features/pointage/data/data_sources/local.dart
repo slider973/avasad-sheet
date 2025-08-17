@@ -8,7 +8,6 @@ import 'package:time_sheet/services/logger_service.dart';
 import '../../../absence/domain/value_objects/absence_type.dart';
 import 'timesheet_data_source.dart';
 import '../../domain/mapper/timesheetEntry.mapper.dart';
-import '../../presentation/widgets/pointage_widget/pointage_absence.dart';
 import '../models/anomalies/anomalies.dart';
 import '../models/generated_pdf/generated_pdf.dart';
 
@@ -70,10 +69,7 @@ class LocalDatasourceImpl implements LocalDataSource {
 
   @override
   Future<List<TimeSheetEntryModel>> getTimesheetEntries() async {
-    return isar.timeSheetEntryModels
-        .where()
-        .sortByDayDateDesc()
-        .findAll();
+    return isar.timeSheetEntryModels.where().sortByDayDateDesc().findAll();
   }
 
   @override
@@ -82,8 +78,7 @@ class LocalDatasourceImpl implements LocalDataSource {
   }
 
   @override
-  Future<List<TimeSheetEntryModel>> findEntriesFromMonthOf(
-      int monthNumber, int year) {
+  Future<List<TimeSheetEntryModel>> findEntriesFromMonthOf(int monthNumber, int year) {
     logger.i('[LocalDatasourceImpl] findEntriesFromMonthOf $monthNumber $year');
 
     // Calcul du 21 du mois précédent
@@ -94,9 +89,7 @@ class LocalDatasourceImpl implements LocalDataSource {
     );
 
     // Si le mois précédent est décembre de l'année précédente
-    final adjustedDatePreviousMonth = (monthNumber == 1)
-        ? DateTime(year - 1, 12, 21)
-        : datePreviousMonth;
+    final adjustedDatePreviousMonth = (monthNumber == 1) ? DateTime(year - 1, 12, 21) : datePreviousMonth;
 
     // Calcul du 20 du mois courant à 23:59:59 pour inclure toute la journée
     final dateCurrentMonth = DateTime(year, monthNumber, 20, 23, 59, 59);
@@ -104,10 +97,7 @@ class LocalDatasourceImpl implements LocalDataSource {
     logger.i('[LocalDatasourceImpl] datePreviousMonth $adjustedDatePreviousMonth');
     logger.i('[LocalDatasourceImpl] dateCurrentMonth $dateCurrentMonth');
 
-    return isar.timeSheetEntryModels
-        .filter()
-        .dayDateBetween(adjustedDatePreviousMonth, dateCurrentMonth)
-        .findAll();
+    return isar.timeSheetEntryModels.filter().dayDateBetween(adjustedDatePreviousMonth, dateCurrentMonth).findAll();
   }
 
   @override
@@ -135,8 +125,7 @@ class LocalDatasourceImpl implements LocalDataSource {
         .filter()
         .dayDateEqualTo(DateTime.parse(date))
         .findFirst()
-        .then((value) =>
-            value == null ? null : TimesheetEntryMapper.fromModel(value));
+        .then((value) => value == null ? null : TimesheetEntryMapper.fromModel(value));
   }
 
   @override
@@ -144,10 +133,7 @@ class LocalDatasourceImpl implements LocalDataSource {
     return isar.writeTxn(() async {
       final timesheet = await isar.timeSheetEntryModels.get(id);
       if (timesheet != null) {
-        final absences = await isar.absences
-            .filter()
-            .timesheetEntry((q) => q.idEqualTo(timesheet.id))
-            .findAll();
+        final absences = await isar.absences.filter().timesheetEntry((q) => q.idEqualTo(timesheet.id)).findAll();
 
         for (final absence in absences) {
           await isar.absences.delete(absence.id);
@@ -159,25 +145,18 @@ class LocalDatasourceImpl implements LocalDataSource {
   }
 
   @override
-  Future<TimesheetEntry?> getTimesheetEntry(String formattedDate) {
+  Future<TimeSheetEntryModel?> getTimesheetEntry(String formattedDate) {
     print(6);
     return isar.timeSheetEntryModels
         .filter()
         .dayDateEqualTo(DateTime.parse(formattedDate))
-        .findFirst()
-        .then((value) =>
-            value == null ? null : TimesheetEntryMapper.fromModel(value));
+        .findFirst();
   }
 
   @override
-  Future<TimesheetEntry?> getTimesheetEntryWhitFrenchFormat(
-      String formattedDate) async {
+  Future<TimeSheetEntryModel?> getTimesheetEntryWhitFrenchFormat(String formattedDate) async {
     final DateFormat formatter = DateFormat("dd-MMM-yyyy", "fr_FR");
-    final model = await isar.timeSheetEntryModels
-        .filter()
-        .dayDateEqualTo(formatter.parse(formattedDate))
-        .findFirst();
-    return model != null ? TimesheetEntryMapper.fromModel(model) : null;
+    return await isar.timeSheetEntryModels.filter().dayDateEqualTo(formatter.parse(formattedDate)).findFirst();
   }
 
   @override
@@ -185,14 +164,10 @@ class LocalDatasourceImpl implements LocalDataSource {
     final DateTime now = DateTime.now();
     final DateTime startOfYear = DateTime(now.year, 1, 1);
     int usedVacationDays = 0;
-    final entries = await isar.timeSheetEntryModels
-        .filter()
-        .dayDateBetween(startOfYear, now)
-        .findAll();
+    final entries = await isar.timeSheetEntryModels.filter().dayDateBetween(startOfYear, now).findAll();
 
     for (var entry in entries) {
-      if (entry.absence.value != null &&
-          entry.absence.value!.type == AbsenceType.vacation) {
+      if (entry.absence.value != null && entry.absence.value!.type == AbsenceType.vacation) {
         usedVacationDays++;
       }
     }
@@ -219,12 +194,10 @@ class LocalDatasourceImpl implements LocalDataSource {
     final lastDayOfMonth = DateTime(now.year, now.month + 1, 0);
     DateTime currentDay = firstDayOfMonth;
 
-    while (currentDay.isBefore(lastDayOfMonth) ||
-        currentDay.isAtSameMomentAs(lastDayOfMonth)) {
+    while (currentDay.isBefore(lastDayOfMonth) || currentDay.isAtSameMomentAs(lastDayOfMonth)) {
       final anomaly = AnomalyModel()
         ..detectedDate = currentDay
-        ..description =
-            "Anomalie détectée pour le ${currentDay.day}/${currentDay.month}/${currentDay.year}"
+        ..description = "Anomalie détectée pour le ${currentDay.day}/${currentDay.month}/${currentDay.year}"
         ..isResolved = false
         ..type = AnomalyType.missingEntry;
 
@@ -237,6 +210,7 @@ class LocalDatasourceImpl implements LocalDataSource {
 
     print('Anomalies créées pour le mois courant.');
   }
+
   @override
   Future<int> getLastYearVacationDaysCount() async {
     final DateTime lastYear = DateTime(DateTime.now().year - 1);
@@ -244,49 +218,44 @@ class LocalDatasourceImpl implements LocalDataSource {
     final DateTime endOfLastYear = DateTime(lastYear.year, 12, 31);
 
     int usedVacationDays = 0;
-    final entries = await isar.timeSheetEntryModels
-        .filter()
-        .dayDateBetween(startOfLastYear, endOfLastYear)
-        .findAll();
+    final entries = await isar.timeSheetEntryModels.filter().dayDateBetween(startOfLastYear, endOfLastYear).findAll();
 
     for (var entry in entries) {
-      if (entry.absence.value != null &&
-          entry.absence.value!.type == AbsenceType.vacation) {
+      if (entry.absence.value != null && entry.absence.value!.type == AbsenceType.vacation) {
         usedVacationDays++;
       }
     }
 
     return 25 - usedVacationDays; // Jours restants de l'année précédente
   }
-  
+
   @override
   Future<TimeSheetEntryModel?> getTimesheetEntryById(int id) async {
     return await isar.timeSheetEntryModels.get(id);
   }
-  
+
   @override
   Future<void> updateTimesheetEntry(TimeSheetEntryModel entry) async {
     await isar.writeTxn(() async {
       await isar.timeSheetEntryModels.put(entry);
     });
   }
-  
+
   @override
-  Future<List<TimeSheetEntryModel>> getTimesheetEntriesForPeriod(
-      DateTime startDate, DateTime endDate) async {
+  Future<List<TimeSheetEntryModel>> getTimesheetEntriesForPeriod(DateTime startDate, DateTime endDate) async {
     logger.i('[LocalDataSource] getTimesheetEntriesForPeriod - startDate: $startDate, endDate: $endDate');
-    
+
     final entries = await isar.timeSheetEntryModels
         .filter()
         .dayDateBetween(startDate, endDate, includeLower: true, includeUpper: true)
         .findAll();
-    
+
     logger.i('[LocalDataSource] Found ${entries.length} entries for period');
     if (entries.isNotEmpty) {
       logger.i('[LocalDataSource] First entry date: ${entries.first.dayDate}');
       logger.i('[LocalDataSource] Last entry date: ${entries.last.dayDate}');
     }
-    
+
     return entries;
   }
 }

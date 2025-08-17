@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -19,8 +18,6 @@ class PdfDocumentParser extends PdfDocumentParserBase {
     if (_signatureImage != null) {
       final signatureWidget = pw.MemoryImage(_signatureImage!);
 
-
-
       // Créer une nouvelle page avec le contenu existant et la signature
       final newPage = pw.Page(
         build: (pw.Context context) {
@@ -38,8 +35,6 @@ class PdfDocumentParser extends PdfDocumentParserBase {
           );
         },
       );
-
-
     }
   }
 

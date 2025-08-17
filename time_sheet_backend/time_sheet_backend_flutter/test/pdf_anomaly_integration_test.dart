@@ -39,25 +39,25 @@ void main() {
 
       // Act
       final results = await anomalyService.detectAnomaliesForEntries(problemEntries);
-      
+
       // Rassembler toutes les anomalies
       final allAnomalies = results.values.expand((list) => list).toList();
-      
+
       // Filtrer les anomalies critiques
-      final criticalAnomalies = allAnomalies.where((anomaly) => 
-        anomaly.severity.priority >= 3 // high et critical
-      ).toList();
+      final criticalAnomalies = allAnomalies
+          .where((anomaly) => anomaly.severity.priority >= 3 // high et critical
+              )
+          .toList();
 
       // Assert
-      expect(allAnomalies.length, greaterThan(0), 
-          reason: 'Should detect anomalies in problematic entries');
-      
-      expect(criticalAnomalies.length, greaterThan(0), 
+      expect(allAnomalies.length, greaterThan(0), reason: 'Should detect anomalies in problematic entries');
+
+      expect(criticalAnomalies.length, greaterThan(0),
           reason: 'Should detect critical anomalies that would block PDF generation');
-      
+
       print('🔍 Anomalies détectées: ${allAnomalies.length}');
       print('🚨 Anomalies critiques: ${criticalAnomalies.length}');
-      
+
       for (final anomaly in criticalAnomalies) {
         print('• ${anomaly.severity.displayName}: ${anomaly.type.displayName} - ${anomaly.description}');
       }
@@ -79,22 +79,23 @@ void main() {
 
       // Act
       final results = await anomalyService.detectAnomaliesForEntries(goodEntries);
-      
+
       // Rassembler toutes les anomalies
       final allAnomalies = results.values.expand((list) => list).toList();
-      
+
       // Filtrer les anomalies critiques
-      final criticalAnomalies = allAnomalies.where((anomaly) => 
-        anomaly.severity.priority >= 3 // high et critical
-      ).toList();
+      final criticalAnomalies = allAnomalies
+          .where((anomaly) => anomaly.severity.priority >= 3 // high et critical
+              )
+          .toList();
 
       // Assert
-      expect(criticalAnomalies.length, equals(0), 
+      expect(criticalAnomalies.length, equals(0),
           reason: 'Should not have critical anomalies that would block PDF generation');
-      
+
       print('🔍 Anomalies détectées: ${allAnomalies.length}');
       print('✅ Anomalies critiques: ${criticalAnomalies.length} (PDF generation allowed)');
-      
+
       if (allAnomalies.isNotEmpty) {
         print('ℹ️  Anomalies mineures détectées:');
         for (final anomaly in allAnomalies) {
@@ -119,14 +120,13 @@ void main() {
 
       // Act
       final results = await anomalyService.detectAnomaliesForEntries(perfectEntries);
-      
+
       // Rassembler toutes les anomalies
       final allAnomalies = results.values.expand((list) => list).toList();
 
       // Assert
-      expect(allAnomalies.length, equals(0), 
-          reason: 'Perfect entries should have no anomalies');
-      
+      expect(allAnomalies.length, equals(0), reason: 'Perfect entries should have no anomalies');
+
       print('✅ Aucune anomalie détectée - PDF generation allowed');
     });
 
@@ -156,40 +156,41 @@ void main() {
       // Act
       final results = await anomalyService.detectAnomaliesForEntries(mixedEntries);
       final allAnomalies = results.values.expand((list) => list).toList();
-      
+
       // Simuler le message qui serait affiché à l'utilisateur
       final criticalAnomalies = allAnomalies.where((a) => a.severity.priority >= 3).toList();
       final minorAnomalies = allAnomalies.where((a) => a.severity.priority < 3).toList();
-      
+
       final messageBuffer = StringBuffer();
       messageBuffer.writeln('⚠️  ANOMALIES DÉTECTÉES DANS LE POINTAGE ⚠️');
       messageBuffer.writeln('');
-      messageBuffer.writeln('La génération du PDF a été interrompue car ${allAnomalies.length} anomalie(s) ont été détectées.');
-      
+      messageBuffer
+          .writeln('La génération du PDF a été interrompue car ${allAnomalies.length} anomalie(s) ont été détectées.');
+
       if (criticalAnomalies.isNotEmpty) {
         messageBuffer.writeln('');
         messageBuffer.writeln('🚨 ANOMALIES CRITIQUES ET ÉLEVÉES (${criticalAnomalies.length}):');
         messageBuffer.writeln('Ces anomalies doivent être corrigées avant de générer le PDF.');
         messageBuffer.writeln('');
-        
+
         for (final anomaly in criticalAnomalies) {
           messageBuffer.writeln('• ${anomaly.severity.displayName.toUpperCase()} - ${anomaly.type.displayName}');
           messageBuffer.writeln('  ${anomaly.description}');
           messageBuffer.writeln('');
         }
       }
-      
+
       if (minorAnomalies.isNotEmpty) {
         messageBuffer.writeln('');
         messageBuffer.writeln('ℹ️  ANOMALIES MINEURES (${minorAnomalies.length}):');
         messageBuffer.writeln('Ces anomalies n\'empêchent pas la génération mais sont à vérifier.');
         messageBuffer.writeln('');
-        
+
         for (final anomaly in minorAnomalies) {
           messageBuffer.writeln('• ${anomaly.severity.displayName} - ${anomaly.type.displayName}');
         }
       }
-      
+
       messageBuffer.writeln('');
       messageBuffer.writeln('📋 ACTIONS RECOMMANDÉES:');
       messageBuffer.writeln('1. Corrigez les heures de pointage dans l\'application');
@@ -200,12 +201,12 @@ void main() {
       // Assert et affichage du message
       expect(allAnomalies.length, greaterThan(0));
       expect(criticalAnomalies.length, greaterThan(0));
-      
-      print('\n' + '='*60);
+
+      print('\n${'=' * 60}');
       print('EXEMPLE DE MESSAGE UTILISATEUR:');
-      print('='*60);
+      print('=' * 60);
       print(messageBuffer.toString());
-      print('='*60);
+      print('=' * 60);
     });
   });
 }

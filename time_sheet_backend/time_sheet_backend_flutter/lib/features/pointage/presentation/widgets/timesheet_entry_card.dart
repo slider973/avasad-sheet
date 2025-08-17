@@ -11,17 +11,17 @@ class TimesheetEntryCard extends StatelessWidget {
   final VoidCallback onRefresh;
 
   const TimesheetEntryCard({
-    Key? key,
+    super.key,
     required this.entry,
     required this.onRefresh,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
     final duration = entry.calculateDailyTotal();
     final hours = duration.inHours;
     final minutes = duration.inMinutes.remainder(60);
-    
+
     return Card(
       elevation: 2,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -40,15 +40,15 @@ class TimesheetEntryCard extends StatelessWidget {
                       Text(
                         entry.dayOfWeekDate,
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         entry.dayDate,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey[600],
-                        ),
+                              color: Colors.grey[600],
+                            ),
                       ),
                     ],
                   ),
@@ -109,9 +109,7 @@ class TimesheetEntryCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            start.isEmpty && end.isEmpty 
-              ? '-' 
-              : '${start.isEmpty ? '-' : start} → ${end.isEmpty ? '-' : end}',
+            start.isEmpty && end.isEmpty ? '-' : '${start.isEmpty ? '-' : start} → ${end.isEmpty ? '-' : end}',
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,

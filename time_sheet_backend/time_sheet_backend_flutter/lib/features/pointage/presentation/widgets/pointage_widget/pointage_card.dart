@@ -7,15 +7,15 @@ class PointageCard extends StatelessWidget {
   final VoidCallback onModifier;
 
   const PointageCard({
-    Key? key,
+    super.key,
     required this.type,
     required this.heure,
     required this.onModifier,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
-    return  Card(
+    return Card(
       child: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Row(

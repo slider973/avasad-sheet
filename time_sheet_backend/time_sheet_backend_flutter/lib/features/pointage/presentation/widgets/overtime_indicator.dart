@@ -5,10 +5,10 @@ class OvertimeIndicator extends StatelessWidget {
   final VoidCallback onToggle;
 
   const OvertimeIndicator({
-    Key? key,
+    super.key,
     required this.isActive,
     required this.onToggle,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +32,7 @@ class OvertimeIndicator extends StatelessWidget {
         Switch(
           value: isActive,
           onChanged: (_) => onToggle(),
-          activeColor: Colors.orange,
+          activeThumbColor: Colors.orange,
           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
       ],

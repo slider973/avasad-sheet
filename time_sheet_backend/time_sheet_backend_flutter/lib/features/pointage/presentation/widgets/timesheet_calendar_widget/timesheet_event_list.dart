@@ -14,12 +14,12 @@ class TimesheetEventList extends StatelessWidget {
   final VoidCallback onEventsUpdated;
 
   const TimesheetEventList({
-    Key? key,
+    super.key,
     required this.selectedEvents,
     required this.onEventTap,
     required this.selectedDay,
     required this.onEventsUpdated,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -73,8 +73,7 @@ class TimesheetEventList extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(
                     eventTitle,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 18),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                   ),
                 ],
               ),
@@ -119,6 +118,7 @@ class TimesheetEventList extends StatelessWidget {
       }
     }
   }
+
   Widget _buildAvatars() {
     return Row(
       mainAxisSize: MainAxisSize.min,

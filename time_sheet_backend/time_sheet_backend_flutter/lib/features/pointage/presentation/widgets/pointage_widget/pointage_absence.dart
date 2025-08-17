@@ -140,15 +140,14 @@ class _PointageAbsenceState extends State<PointageAbsence> {
 
     return GestureDetector(
       onTap: type == AbsenceType.vacation ? _changePhrase : null,
-      child: Container(
+      child: SizedBox(
         height: 60,
         width: 300,
         child: Center(
           child: Animate(
             effects: [
               FadeEffect(duration: 500.ms),
-              SlideEffect(
-                  duration: 500.ms, begin: Offset(0, 0.1), end: Offset.zero),
+              SlideEffect(duration: 500.ms, begin: Offset(0, 0.1), end: Offset.zero),
             ],
             child: Text(
               subtitle,
@@ -178,11 +177,7 @@ class _PointageAbsenceState extends State<PointageAbsence> {
             ),
             Divider(),
             _buildInfoRow(
-                context,
-                'Raison',
-                widget.absence!.motif.isNotEmpty
-                    ? widget.absence!.motif
-                    : getMotifFromType()),
+                context, 'Raison', widget.absence!.motif.isNotEmpty ? widget.absence!.motif : getMotifFromType()),
           ],
         ),
       ),
@@ -226,4 +221,3 @@ class _PointageAbsenceState extends State<PointageAbsence> {
     }
   }
 }
-
