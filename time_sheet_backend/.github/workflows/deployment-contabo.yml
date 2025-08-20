@@ -1,0 +1,200 @@
+name: Deploy to Contabo VPS
+
+on:
+  push:
+    branches: [ main, production ]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Target Environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - 'production'
+          - 'staging'
+
+env:
+  VPS_HOST: 31.220.80.133
+  VPS_USER: root
+  DEPLOY_PATH: /root/time_sheet_backend
+
+jobs:
+  deploy:
+    name: Deploy to Contabo VPS
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup SSH
+      uses: webfactory/ssh-agent@v0.8.0
+      with:
+        ssh-private-key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+        
+    - name: Add VPS to known hosts
+      run: |
+        ssh-keyscan -H ${{ env.VPS_HOST }} >> ~/.ssh/known_hosts
+        
+    - name: Test SSH connection
+      run: |
+        ssh -o ConnectTimeout=10 ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "echo 'SSH connection successful'"
+        
+    - name: Create deployment directory
+      run: |
+        ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "mkdir -p ${{ env.DEPLOY_PATH }}"
+        
+    - name: Stop running services
+      run: |
+        ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
+          cd ${{ env.DEPLOY_PATH }} || exit 0
+          if [ -f docker-compose.production.yml ]; then
+            docker-compose -f docker-compose.production.yml down || true
+          fi
+        "
+        
+    - name: Backup database
+      run: |
+        ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
+          cd ${{ env.DEPLOY_PATH }} || exit 0
+          if [ -f docker-compose.production.yml ]; then
+            docker-compose -f docker-compose.production.yml exec -T postgres pg_dump -U postgres time_sheet_backend > backup_\$(date +%Y%m%d_%H%M%S).sql || true
+          fi
+        "
+        
+    - name: Deploy files to VPS
+      run: |
+        # Sync all files except .git and node_modules
+        rsync -avz --delete \
+          --exclude='.git' \
+          --exclude='node_modules' \
+          --exclude='*.log' \
+          --exclude='.dart_tool' \
+          --exclude='build' \
+          ./ ${{ env.VPS_USER }}@${{ env.VPS_HOST }}:${{ env.DEPLOY_PATH }}/
+          
+    - name: Create environment file
+      run: |
+        ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
+          cd ${{ env.DEPLOY_PATH }}
+          if [ ! -f .env ]; then
+            cp .env.production .env
+            echo 'Please configure .env file with your actual values'
+          fi
+        "
+        
+    - name: Install Docker and Docker Compose if needed
+      run: |
+        ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
+          # Check if Docker is installed
+          if ! command -v docker &> /dev/null; then
+            echo 'Installing Docker...'
+            apt update
+            apt install -y docker.io docker-compose
+            systemctl enable docker
+            systemctl start docker
+          fi
+          
+          # Check if Docker Compose is installed
+          if ! command -v docker-compose &> /dev/null; then
+            echo 'Installing Docker Compose...'
+            curl -L \"https://github.com/docker/compose/releases/download/v2.21.0/docker-compose-\$(uname -s)-\$(uname -m)\" -o /usr/local/bin/docker-compose
+            chmod +x /usr/local/bin/docker-compose
+          fi
+        "
+        
+    - name: Build and start services
+      run: |
+        ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
+          cd ${{ env.DEPLOY_PATH }}
+          
+          # Build the application
+          docker-compose -f docker-compose.production.yml build
+          
+          # Start services
+          docker-compose -f docker-compose.production.yml up -d
+          
+          # Wait for services to be ready
+          sleep 30
+          
+          # Check if services are running
+          docker-compose -f docker-compose.production.yml ps
+        "
+        
+    - name: Run database migrations
+      run: |
+        ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
+          cd ${{ env.DEPLOY_PATH }}
+          
+          # Wait for database to be ready
+          timeout 60 bash -c 'until docker-compose -f docker-compose.production.yml exec -T postgres pg_isready -U postgres; do sleep 2; done'
+          
+          # Run migrations if they exist
+          if [ -d time_sheet_backend_server/migrations ]; then
+            docker-compose -f docker-compose.production.yml exec -T timesheet-backend dart run bin/main.dart --apply-migrations || true
+          fi
+        "
+        
+    - name: Setup SSL certificates (first time only)
+      run: |
+        ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
+          cd ${{ env.DEPLOY_PATH }}
+          
+          # Check if certificates already exist
+          if [ ! -d /etc/letsencrypt/live ]; then
+            echo 'Setting up SSL certificates...'
+            
+            # Stop nginx temporarily
+            docker-compose -f docker-compose.production.yml stop nginx
+            
+            # Get certificates
+            docker-compose -f docker-compose.production.yml run --rm certbot || true
+            
+            # Restart nginx
+            docker-compose -f docker-compose.production.yml start nginx
+          else
+            echo 'SSL certificates already exist'
+          fi
+        "
+        
+    - name: Verify deployment
+      run: |
+        ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
+          cd ${{ env.DEPLOY_PATH }}
+          
+          # Check container status
+          echo '=== Container Status ==='
+          docker-compose -f docker-compose.production.yml ps
+          
+          # Check application logs
+          echo '=== Application Logs (last 20 lines) ==='
+          docker-compose -f docker-compose.production.yml logs --tail=20 timesheet-backend
+          
+          # Test internal connectivity
+          echo '=== Testing Internal Connectivity ==='
+          docker-compose -f docker-compose.production.yml exec -T timesheet-backend curl -f http://localhost:8080/health || echo 'Health check failed'
+        "
+        
+    - name: Cleanup old images
+      run: |
+        ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
+          # Remove unused Docker images to save space
+          docker image prune -f || true
+          
+          # Remove old backups (keep last 5)
+          cd ${{ env.DEPLOY_PATH }}
+          ls -t backup_*.sql 2>/dev/null | tail -n +6 | xargs rm -f || true
+        "
+        
+    - name: Send deployment notification
+      if: always()
+      run: |
+        if [ "${{ job.status }}" == "success" ]; then
+          echo "✅ Deployment to Contabo VPS successful!"
+          echo "🔗 API: https://api-timesheet.wefamily.ch"
+          echo "🔗 Insights: https://insights.wefamily.ch"
+          echo "🔗 Web: https://app.wefamily.ch"
+        else
+          echo "❌ Deployment to Contabo VPS failed!"
+        fi
