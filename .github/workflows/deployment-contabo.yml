@@ -115,8 +115,8 @@ jobs:
         chmod 600 .env config/passwords.yaml
         
         # Build and deploy
-        docker compose -f ${COMPOSE_FILE} build timesheet-backend || true
-        docker compose -f ${COMPOSE_FILE} up -d postgres redis
+        docker-compose -f ${COMPOSE_FILE} build --no-cache timesheet-backend || true
+        docker-compose -f ${COMPOSE_FILE} up -d postgres redis
         
         sleep 10
         
@@ -131,7 +131,7 @@ jobs:
           done
         fi
         
-        docker compose -f ${COMPOSE_FILE} up -d
+        docker-compose -f ${COMPOSE_FILE} up -d
         
         echo "=== Status ==="
         docker ps
