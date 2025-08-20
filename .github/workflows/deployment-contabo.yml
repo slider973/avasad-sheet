@@ -63,6 +63,11 @@ jobs:
           fi
         "
         
+    - name: Install rsync
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y rsync
+        
     - name: Deploy files to VPS
       run: |
         # Sync all files except .git and node_modules
