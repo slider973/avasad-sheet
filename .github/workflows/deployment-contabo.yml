@@ -6,9 +6,9 @@ on:
   workflow_dispatch:
 
 env:
-  VPS_HOST: ${{ secrets.VPS_HOST }}
-  VPS_USER: ${{ secrets.VPS_USER }}
-  DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+  VPS_HOST: ${{ secrets.VPS_HOST || '31.220.80.133' }}
+  VPS_USER: ${{ secrets.VPS_USER || 'root' }}
+  DEPLOY_PATH: ${{ secrets.DEPLOY_PATH || '/root/avasad-sheet/time_sheet_backend/time_sheet_backend_server' }}
 
 jobs:
   deploy:
@@ -44,108 +44,121 @@ jobs:
           --exclude='caddy_config' \
           ./ ${{ env.VPS_USER }}@${{ env.VPS_HOST }}:${{ env.DEPLOY_PATH }}/
           
-    - name: Configure environment and deploy
+    - name: Configure and deploy
+      env:
+        DEPLOY_PATH: ${{ env.DEPLOY_PATH }}
+        DB_PASSWORD: ${{ secrets.DB_PASSWORD || 'D3fPoHe2kANkIBLhARsxX3XyqtzZVS7g' }}
+        REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD || '_C0f52i_lp0gETHNnCMs4iIK1BfeKy-W' }}
+        API_DOMAIN: ${{ secrets.API_DOMAIN || 'api-timesheet.wefamily.ch' }}
+        INSIGHTS_DOMAIN: ${{ secrets.INSIGHTS_DOMAIN || 'insights.wefamily.ch' }}
+        WEB_DOMAIN: ${{ secrets.WEB_DOMAIN || 'app.wefamily.ch' }}
+        LETSENCRYPT_EMAIL: ${{ secrets.LETSENCRYPT_EMAIL || 'admin@wefamily.ch' }}
       run: |
-        # Export variables before SSH pour les passer correctement
-        export DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
-        export REDIS_PASSWORD="${{ secrets.REDIS_PASSWORD }}"
-        export API_DOMAIN="${{ secrets.API_DOMAIN }}"
-        export INSIGHTS_DOMAIN="${{ secrets.INSIGHTS_DOMAIN }}"
-        export WEB_DOMAIN="${{ secrets.WEB_DOMAIN }}"
-        export LETSENCRYPT_EMAIL="${{ secrets.LETSENCRYPT_EMAIL }}"
+        cat << 'SCRIPT' > /tmp/deploy.sh
+        #!/bin/bash
+        set -e
         
-        # Passer le DEPLOY_PATH comme variable
-        ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "DEPLOY_PATH='${{ env.DEPLOY_PATH }}' DB_PASSWORD='${{ secrets.DB_PASSWORD }}' REDIS_PASSWORD='${{ secrets.REDIS_PASSWORD }}' API_DOMAIN='${{ secrets.API_DOMAIN }}' INSIGHTS_DOMAIN='${{ secrets.INSIGHTS_DOMAIN }}' WEB_DOMAIN='${{ secrets.WEB_DOMAIN }}' LETSENCRYPT_EMAIL='${{ secrets.LETSENCRYPT_EMAIL }}' bash -s" << 'ENDSSH'
-          set -e
-          cd ${DEPLOY_PATH}
-          
-          # Recevoir les variables depuis l'environnement SSH
-          DB_PASSWORD="${DB_PASSWORD:-D3fPoHe2kANkIBLhARsxX3XyqtzZVS7g}"
-          REDIS_PASSWORD="${REDIS_PASSWORD:-_C0f52i_lp0gETHNnCMs4iIK1BfeKy-W}"
-          API_DOMAIN="${API_DOMAIN:-api-timesheet.wefamily.ch}"
-          INSIGHTS_DOMAIN="${INSIGHTS_DOMAIN:-insights.wefamily.ch}"
-          WEB_DOMAIN="${WEB_DOMAIN:-app.wefamily.ch}"
-          LETSENCRYPT_EMAIL="${LETSENCRYPT_EMAIL:-admin@wefamily.ch}"
-          
-          # Create .env file
-          cat > .env << ENVFILE
-DB_PASSWORD=${DB_PASSWORD}
-REDIS_PASSWORD=${REDIS_PASSWORD}
-API_DOMAIN=${API_DOMAIN}
-INSIGHTS_DOMAIN=${INSIGHTS_DOMAIN}
-WEB_DOMAIN=${WEB_DOMAIN}
-LETSENCRYPT_EMAIL=${LETSENCRYPT_EMAIL}
-ENVIRONMENT=production
-PORT=8080
-ENVFILE
-          
-          # Create Serverpod passwords.yaml
-          mkdir -p config
-          cat > config/passwords.yaml << PASSFILE
-production:
-  database: '${DB_PASSWORD}'
-  redis: '${REDIS_PASSWORD}'
-PASSFILE
-          
-          # Set proper permissions
-          chmod 600 .env config/passwords.yaml
-          
-          # Build
-          docker compose -f docker-compose.production.yml build --no-cache timesheet-backend
-          
-          # Start services
-          docker compose -f docker-compose.production.yml up -d postgres redis
-          
-          # Wait for postgres
-          echo "Waiting for PostgreSQL..."
-          for i in {1..30}; do
-            if docker exec timesheet-postgres pg_isready -U postgres 2>/dev/null; then
-              echo "PostgreSQL is ready"
-              break
-            fi
-            echo "Waiting... ($i/30)"
-            sleep 2
-          done
-          
-          # Run migrations
-          echo "Running database migrations..."
-          for migration in migrations/*/migration.sql; do
-            if [ -f "$migration" ]; then
-              echo "Applying: $(basename $(dirname $migration))"
-              cat "$migration" | docker exec -i -e PGPASSWORD="${DB_PASSWORD}" \
-                timesheet-postgres psql -U postgres -d time_sheet_backend 2>&1 | \
-                grep -E "(BEGIN|COMMIT|CREATE|ALTER|INSERT|already exists)" || true
-            fi
-          done
-          
-          # Start application
-          docker compose -f docker-compose.production.yml up -d timesheet-backend caddy
-          
-          # Verify
-          sleep 10
-          echo "=== Service Status ==="
-          docker ps --format "table {{.Names}}\t{{.Status}}"
-          
-          # Test API
-          echo "=== Testing API ==="
-          if curl -f -I https://${API_DOMAIN}/ 2>/dev/null; then
-            echo "✅ API is responding on HTTPS"
-          else
-            echo "Testing HTTP..."
-            curl -I http://localhost:8080/ || echo "⚠️ Backend might need more time"
+        # Variables passées depuis GitHub Actions
+        DEPLOY_PATH="${DEPLOY_PATH}"
+        DB_PASSWORD="${DB_PASSWORD}"
+        REDIS_PASSWORD="${REDIS_PASSWORD}"
+        API_DOMAIN="${API_DOMAIN}"
+        INSIGHTS_DOMAIN="${INSIGHTS_DOMAIN}"
+        WEB_DOMAIN="${WEB_DOMAIN}"
+        LETSENCRYPT_EMAIL="${LETSENCRYPT_EMAIL}"
+        
+        cd "${DEPLOY_PATH}"
+        
+        echo "Deploying to: ${API_DOMAIN}"
+        
+        # Create .env file
+        cat > .env << EOF
+        DB_PASSWORD=${DB_PASSWORD}
+        REDIS_PASSWORD=${REDIS_PASSWORD}
+        API_DOMAIN=${API_DOMAIN}
+        INSIGHTS_DOMAIN=${INSIGHTS_DOMAIN}
+        WEB_DOMAIN=${WEB_DOMAIN}
+        LETSENCRYPT_EMAIL=${LETSENCRYPT_EMAIL}
+        ENVIRONMENT=production
+        PORT=8080
+        EOF
+        
+        # Create Serverpod passwords.yaml
+        mkdir -p config
+        cat > config/passwords.yaml << EOF
+        production:
+          database: '${DB_PASSWORD}'
+          redis: '${REDIS_PASSWORD}'
+        EOF
+        
+        # Set permissions
+        chmod 600 .env config/passwords.yaml
+        
+        # Build
+        echo "Building Docker image..."
+        docker compose -f docker-compose.production.yml build --no-cache timesheet-backend
+        
+        # Start database services
+        echo "Starting PostgreSQL and Redis..."
+        docker compose -f docker-compose.production.yml up -d postgres redis
+        
+        # Wait for PostgreSQL
+        echo "Waiting for PostgreSQL..."
+        for i in {1..30}; do
+          if docker exec timesheet-postgres pg_isready -U postgres 2>/dev/null; then
+            echo "PostgreSQL is ready!"
+            break
           fi
-        ENDSSH
+          echo "Waiting... ($i/30)"
+          sleep 2
+        done
+        
+        # Run migrations
+        echo "Running database migrations..."
+        for migration in migrations/*/migration.sql; do
+          if [ -f "$migration" ]; then
+            migration_name=$(basename $(dirname $migration))
+            echo "Applying migration: $migration_name"
+            
+            cat "$migration" | docker exec -i -e PGPASSWORD="${DB_PASSWORD}" \
+              timesheet-postgres psql -U postgres -d time_sheet_backend 2>&1 | \
+              grep -E "(BEGIN|COMMIT|CREATE|ALTER|INSERT|already exists)" || true
+          fi
+        done
+        
+        # Start application
+        echo "Starting backend and Caddy..."
+        docker compose -f docker-compose.production.yml up -d timesheet-backend caddy
+        
+        # Wait and verify
+        sleep 10
+        
+        echo "=== Service Status ==="
+        docker ps --format "table {{.Names}}\t{{.Status}}"
+        
+        echo "=== Testing API ==="
+        if curl -f -I https://${API_DOMAIN}/ 2>/dev/null; then
+          echo "✅ API is responding on HTTPS"
+        else
+          echo "Testing HTTP..."
+          curl -I http://localhost:8080/ || echo "⚠️ Backend might need more time"
+        fi
+        SCRIPT
+        
+        # Copy script to server and execute
+        scp /tmp/deploy.sh ${{ env.VPS_USER }}@${{ env.VPS_HOST }}:/tmp/deploy.sh
+        ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "chmod +x /tmp/deploy.sh && /tmp/deploy.sh && rm /tmp/deploy.sh"
         
     - name: Cleanup
       if: always()
       run: |
-        ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "DEPLOY_PATH='${{ env.DEPLOY_PATH }}' bash -s" << 'ENDSSH'
-          cd ${DEPLOY_PATH}
+        ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} << 'EOF'
+          cd ${{ env.DEPLOY_PATH }}
           
           # Clean up
           docker image prune -f 2>/dev/null || true
           
-          # Show logs without sensitive data
+          # Show logs
           echo "=== Recent Logs ==="
           docker logs timesheet-backend --tail 10 2>&1 | grep -v password || true
-        ENDSSH
+        EOF
