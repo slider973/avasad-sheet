@@ -54,7 +54,7 @@ jobs:
         WEB_DOMAIN: ${{ secrets.WEB_DOMAIN || 'app.wefamily.ch' }}
         LETSENCRYPT_EMAIL: ${{ secrets.LETSENCRYPT_EMAIL || 'admin@wefamily.ch' }}
       run: |
-        cat << 'SCRIPT' > /tmp/deploy.sh
+        cat << SCRIPT > /tmp/deploy.sh
         #!/bin/bash
         set -e
         
@@ -67,7 +67,7 @@ jobs:
         WEB_DOMAIN="${WEB_DOMAIN}"
         LETSENCRYPT_EMAIL="${LETSENCRYPT_EMAIL}"
         
-        cd "${DEPLOY_PATH}"
+        cd "${{ env.DEPLOY_PATH }}"
         
         echo "Deploying to: ${API_DOMAIN}"
         
