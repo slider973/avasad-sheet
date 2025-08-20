@@ -1,28 +1,20 @@
-name: Deploy to Contabo VPS
+name: Deploy to Production (Secure)
 
 on:
   push:
     branches: [ main, production ]
   workflow_dispatch:
-    inputs:
-      target:
-        description: 'Target Environment'
-        required: true
-        default: 'production'
-        type: choice
-        options:
-          - 'production'
-          - 'staging'
 
 env:
-  VPS_HOST: 31.220.80.133
-  VPS_USER: root
-  DEPLOY_PATH: /root/avasad-sheet/time_sheet_backend/time_sheet_backend_server
+  VPS_HOST: ${{ secrets.VPS_HOST }}
+  VPS_USER: ${{ secrets.VPS_USER }}
+  DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
 
 jobs:
   deploy:
-    name: Deploy to Contabo VPS
+    name: Deploy to VPS
     runs-on: ubuntu-latest
+    environment: production  # GitHub Environment pour protection supplémentaire
     
     steps:
     - name: Checkout code
@@ -37,169 +29,168 @@ jobs:
       run: |
         ssh-keyscan -H ${{ env.VPS_HOST }} >> ~/.ssh/known_hosts
         
-    - name: Test SSH connection
-      run: |
-        ssh -o ConnectTimeout=10 ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "echo 'SSH connection successful'"
-        
-    - name: Create deployment directory
-      run: |
-        ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "mkdir -p ${{ env.DEPLOY_PATH }}"
-        
-    - name: Stop running services
-      run: |
-        ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
-          cd ${{ env.DEPLOY_PATH }} || exit 0
-          if [ -f docker-compose.production.yml ]; then
-            docker-compose -f docker-compose.production.yml down || true
-          fi
-        "
-        
-    - name: Backup database
-      run: |
-        ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
-          cd ${{ env.DEPLOY_PATH }} || exit 0
-          if [ -f docker-compose.production.yml ]; then
-            docker-compose -f docker-compose.production.yml exec -T postgres pg_dump -U postgres time_sheet_backend > backup_\$(date +%Y%m%d_%H%M%S).sql || true
-          fi
-        "
-        
-    - name: Install rsync
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y rsync
-        
     - name: Deploy files to VPS
       run: |
-        # Sync all files except .git and node_modules
         rsync -avz --delete \
           --exclude='.git' \
           --exclude='node_modules' \
           --exclude='*.log' \
           --exclude='.dart_tool' \
           --exclude='build' \
-          ./time_sheet_backend/time_sheet_backend_server/ ${{ env.VPS_USER }}@${{ env.VPS_HOST }}:${{ env.DEPLOY_PATH }}/
+          --exclude='.env*' \
+          --exclude='config/passwords.yaml' \
+          --exclude='**/secrets' \
+          --exclude='postgres_data' \
+          --exclude='redis_data' \
+          --exclude='caddy_data' \
+          --exclude='caddy_config' \
+          ./ ${{ env.VPS_USER }}@${{ env.VPS_HOST }}:${{ env.DEPLOY_PATH }}/
           
-    - name: Create environment file
+    - name: Configure environment and deploy
+      env:
+        DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+        API_DOMAIN: ${{ secrets.API_DOMAIN }}
+        INSIGHTS_DOMAIN: ${{ secrets.INSIGHTS_DOMAIN }}
+        WEB_DOMAIN: ${{ secrets.WEB_DOMAIN }}
+        LETSENCRYPT_EMAIL: ${{ secrets.LETSENCRYPT_EMAIL }}
       run: |
-        ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
-          cd ${{ env.DEPLOY_PATH }}
-          if [ ! -f .env ]; then
-            cp .env.production .env
-            echo 'Please configure .env file with your actual values'
-          fi
-        "
-        
-    - name: Install Docker and Docker Compose if needed
-      run: |
-        ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
-          # Check if Docker is installed
-          if ! command -v docker &> /dev/null; then
-            echo 'Installing Docker...'
-            apt update
-            apt install -y docker.io docker-compose
-            systemctl enable docker
-            systemctl start docker
-          fi
-          
-          # Check if Docker Compose is installed
-          if ! command -v docker-compose &> /dev/null; then
-            echo 'Installing Docker Compose...'
-            curl -L \"https://github.com/docker/compose/releases/download/v2.21.0/docker-compose-\$(uname -s)-\$(uname -m)\" -o /usr/local/bin/docker-compose
-            chmod +x /usr/local/bin/docker-compose
-          fi
-        "
-        
-    - name: Build and start services
-      run: |
-        ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
+        ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} << 'ENDSSH'
+          set -e
           cd ${{ env.DEPLOY_PATH }}
           
-          # Build the application
-          docker-compose -f docker-compose.production.yml build
+          # Create .env file from secrets
+          cat > .env << EOF
+DB_PASSWORD="${DB_PASSWORD}"
+REDIS_PASSWORD="${REDIS_PASSWORD}"
+API_DOMAIN="${API_DOMAIN}"
+INSIGHTS_DOMAIN="${INSIGHTS_DOMAIN}"
+WEB_DOMAIN="${WEB_DOMAIN}"
+LETSENCRYPT_EMAIL="${LETSENCRYPT_EMAIL}"
+ENVIRONMENT=production
+PORT=8080
+EOF
           
-          # Start services
-          docker-compose -f docker-compose.production.yml up -d
+          # Create Serverpod passwords.yaml from secrets
+          mkdir -p config
+          cat > config/passwords.yaml << EOF
+production:
+  database: '${DB_PASSWORD}'
+  redis: '${REDIS_PASSWORD}'
+EOF
           
-          # Wait for services to be ready
-          sleep 30
+          # Set proper permissions (security)
+          chmod 600 .env config/passwords.yaml
           
-          # Check if services are running
-          docker-compose -f docker-compose.production.yml ps
-        "
-        
-    - name: Run database migrations
-      run: |
-        ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
-          cd ${{ env.DEPLOY_PATH }}
+          # Build with BuildKit for better caching
+          export DOCKER_BUILDKIT=1
+          docker compose -f docker-compose.production.yml build --no-cache timesheet-backend
           
-          # Wait for database to be ready
-          timeout 60 bash -c 'until docker-compose -f docker-compose.production.yml exec -T postgres pg_isready -U postgres; do sleep 2; done'
-          
-          # Run migrations if they exist
-          if [ -d time_sheet_backend_server/migrations ]; then
-            docker-compose -f docker-compose.production.yml exec -T timesheet-backend dart run bin/main.dart --apply-migrations || true
-          fi
-        "
-        
-    - name: Setup SSL certificates (first time only)
-      run: |
-        ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
-          cd ${{ env.DEPLOY_PATH }}
-          
-          # Check if certificates already exist
-          if [ ! -d /etc/letsencrypt/live ]; then
-            echo 'Setting up SSL certificates...'
+          # Health check function
+          wait_for_service() {
+            local service=$1
+            local max_attempts=30
+            local attempt=0
             
-            # Stop nginx temporarily
-            docker-compose -f docker-compose.production.yml stop nginx
+            while [ $attempt -lt $max_attempts ]; do
+              if docker compose -f docker-compose.production.yml exec -T $service echo "OK" 2>/dev/null; then
+                echo "✅ $service is ready"
+                return 0
+              fi
+              echo "Waiting for $service... ($attempt/$max_attempts)"
+              sleep 2
+              attempt=$((attempt + 1))
+            done
             
-            # Get certificates
-            docker-compose -f docker-compose.production.yml run --rm certbot || true
-            
-            # Restart nginx
-            docker-compose -f docker-compose.production.yml start nginx
+            echo "❌ $service failed to start"
+            return 1
+          }
+          
+          # Start services with health checks
+          docker compose -f docker-compose.production.yml up -d postgres redis
+          wait_for_service postgres
+          wait_for_service redis
+          
+          # Run migrations safely
+          echo "Running database migrations..."
+          for migration in migrations/*/migration.sql; do
+            if [ -f "$migration" ]; then
+              migration_name=$(basename $(dirname $migration))
+              echo "Applying migration: $migration_name"
+              
+              # Check if migration was already applied
+              if docker exec -e PGPASSWORD="${DB_PASSWORD}" timesheet-postgres \
+                psql -U postgres -d time_sheet_backend -tAc \
+                "SELECT 1 FROM serverpod_migrations WHERE module='time_sheet_backend' AND version='$migration_name'" 2>/dev/null | grep -q 1; then
+                echo "Migration $migration_name already applied, skipping..."
+              else
+                cat "$migration" | docker exec -i -e PGPASSWORD="${DB_PASSWORD}" \
+                  timesheet-postgres psql -U postgres -d time_sheet_backend || {
+                    echo "Migration $migration_name failed!"
+                    exit 1
+                  }
+              fi
+            fi
+          done
+          
+          # Start application services
+          docker compose -f docker-compose.production.yml up -d timesheet-backend caddy
+          
+          # Wait for services to be healthy
+          wait_for_service timesheet-backend
+          
+          # Verify deployment
+          sleep 5
+          if curl -f -I https://${API_DOMAIN}/ >/dev/null 2>&1; then
+            echo "✅ Deployment successful! API is responding."
           else
-            echo 'SSL certificates already exist'
+            echo "⚠️ API not responding on HTTPS yet, checking HTTP..."
+            curl -I http://localhost:8080/ || echo "❌ Backend not responding"
           fi
-        "
+          
+          # Clean sensitive files from environment
+          unset DB_PASSWORD REDIS_PASSWORD
+        ENDSSH
         
-    - name: Verify deployment
+    - name: Cleanup and monitoring
+      if: always()
       run: |
-        ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
+        ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} << 'ENDSSH'
           cd ${{ env.DEPLOY_PATH }}
           
-          # Check container status
-          echo '=== Container Status ==='
-          docker-compose -f docker-compose.production.yml ps
+          # Show service status
+          echo "=== Service Status ==="
+          docker compose -f docker-compose.production.yml ps
           
-          # Check application logs
-          echo '=== Application Logs (last 20 lines) ==='
-          docker-compose -f docker-compose.production.yml logs --tail=20 timesheet-backend
+          # Clean up
+          docker image prune -f >/dev/null 2>&1
+          docker builder prune -f >/dev/null 2>&1
           
-          # Test internal connectivity
-          echo '=== Testing Internal Connectivity ==='
-          docker-compose -f docker-compose.production.yml exec -T timesheet-backend curl -f http://localhost:8080/health || echo 'Health check failed'
-        "
-        
-    - name: Cleanup old images
-      run: |
-        ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
-          # Remove unused Docker images to save space
-          docker image prune -f || true
+          # Keep only last 5 backups
+          ls -t backup_*.sql 2>/dev/null | tail -n +6 | xargs rm -f 2>/dev/null || true
           
-          # Remove old backups (keep last 5)
-          cd ${{ env.DEPLOY_PATH }}
-          ls -t backup_*.sql 2>/dev/null | tail -n +6 | xargs rm -f || true
-        "
+          # Show recent logs (without sensitive data)
+          echo "=== Recent Backend Logs ==="
+          docker logs timesheet-backend --tail 10 2>&1 | grep -v password || true
+        ENDSSH
         
     - name: Send deployment notification
       if: always()
-      run: |
-        if [ "${{ job.status }}" == "success" ]; then
-          echo "✅ Deployment to Contabo VPS successful!"
-          echo "🔗 API: https://api-timesheet.wefamily.ch"
-          echo "🔗 Insights: https://insights.wefamily.ch"
-          echo "🔗 Web: https://app.wefamily.ch"
-        else
-          echo "❌ Deployment to Contabo VPS failed!"
-        fi
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const status = '${{ job.status }}';
+          const emoji = status === 'success' ? '✅' : '❌';
+          const message = `${emoji} Deployment ${status} for commit ${context.sha.substring(0, 7)}`;
+          
+          // Create deployment status
+          await github.rest.repos.createDeploymentStatus({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            deployment_id: context.payload.deployment?.id || 1,
+            state: status === 'success' ? 'success' : 'failure',
+            environment_url: status === 'success' ? 'https://${{ secrets.API_DOMAIN }}' : '',
+            description: message
+          }).catch(err => console.log('Could not create deployment status'));
+          
+          console.log(message);
