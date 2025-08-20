@@ -17,7 +17,7 @@ on:
 env:
   VPS_HOST: 31.220.80.133
   VPS_USER: root
-  DEPLOY_PATH: /root/time_sheet_backend
+  DEPLOY_PATH: /root/avasad-sheet/time_sheet_backend/time_sheet_backend_server
 
 jobs:
   deploy:
@@ -72,7 +72,7 @@ jobs:
           --exclude='*.log' \
           --exclude='.dart_tool' \
           --exclude='build' \
-          ./ ${{ env.VPS_USER }}@${{ env.VPS_HOST }}:${{ env.DEPLOY_PATH }}/
+          ./time_sheet_backend/time_sheet_backend_server/ ${{ env.VPS_USER }}@${{ env.VPS_HOST }}:${{ env.DEPLOY_PATH }}/
           
     - name: Create environment file
       run: |
