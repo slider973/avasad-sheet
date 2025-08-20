@@ -5,51 +5,146 @@ on:
     branches: [ main, production ]
   workflow_dispatch:
 
+env:
+  VPS_HOST: ${{ secrets.VPS_HOST || '31.220.80.133' }}
+  VPS_USER: ${{ secrets.VPS_USER || 'root' }}
+  DEPLOY_PATH: ${{ secrets.DEPLOY_PATH || '/root/avasad-sheet/time_sheet_backend/time_sheet_backend_server' }}
+
 jobs:
   deploy:
+    name: Deploy to Contabo VPS
     runs-on: ubuntu-latest
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Deploy via SSH
-      uses: appleboy/ssh-action@v1.0.0
+    - name: Setup SSH
+      uses: webfactory/ssh-agent@v0.8.0
       with:
-        host: ${{ secrets.VPS_HOST || '31.220.80.133' }}
-        username: ${{ secrets.VPS_USER || 'root' }}
-        key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
-        script: |
-          cd /root/avasad-sheet/time_sheet_backend/time_sheet_backend_server
+        ssh-private-key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+        
+    - name: Add VPS to known hosts
+      run: |
+        ssh-keyscan -H ${{ env.VPS_HOST }} >> ~/.ssh/known_hosts
+        
+    - name: Deploy files to VPS
+      run: |
+        # Handle both possible repo structures
+        if [ -d "time_sheet_backend/time_sheet_backend_server" ]; then
+          rsync -avz --delete \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='*.log' \
+            --exclude='.dart_tool' \
+            --exclude='build' \
+            time_sheet_backend/time_sheet_backend_server/ \
+            ${{ env.VPS_USER }}@${{ env.VPS_HOST }}:${{ env.DEPLOY_PATH }}/
+        else
+          rsync -avz --delete \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='*.log' \
+            --exclude='.dart_tool' \
+            --exclude='build' \
+            ./ \
+            ${{ env.VPS_USER }}@${{ env.VPS_HOST }}:${{ env.DEPLOY_PATH }}/
+        fi
           
-          # Variables
-          DB_PASSWORD="${{ secrets.DB_PASSWORD || 'D3fPoHe2kANkIBLhARsxX3XyqtzZVS7g' }}"
-          REDIS_PASSWORD="${{ secrets.REDIS_PASSWORD || '_C0f52i_lp0gETHNnCMs4iIK1BfeKy-W' }}"
-          
-          # Create config
-          mkdir -p config
-          cat > config/passwords.yaml << EOF
-          production:
-            database: '$DB_PASSWORD'
-            redis: '$REDIS_PASSWORD'
-          EOF
-          
-          # Use existing docker-compose
-          if [ -f docker-compose.production.yml ]; then
-            COMPOSE="docker-compose.production.yml"
-          elif [ -f docker-compose.yaml ]; then
-            COMPOSE="docker-compose.yaml"
-          else
-            COMPOSE="docker-compose.yml"
-          fi
-          
-          # Build and deploy
-          docker compose -f $COMPOSE build
-          docker compose -f $COMPOSE up -d
-          
-          # Migrations
-          for sql in migrations/*/migration.sql; do
-            [ -f "$sql" ] && cat "$sql" | docker exec -i -e PGPASSWORD="$DB_PASSWORD" timesheet-postgres psql -U postgres -d time_sheet_backend || true
+    - name: Configure and deploy
+      env:
+        DB_PASSWORD: ${{ secrets.DB_PASSWORD || 'D3fPoHe2kANkIBLhARsxX3XyqtzZVS7g' }}
+        REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD || '_C0f52i_lp0gETHNnCMs4iIK1BfeKy-W' }}
+        API_DOMAIN: ${{ secrets.API_DOMAIN || 'api-timesheet.wefamily.ch' }}
+        INSIGHTS_DOMAIN: ${{ secrets.INSIGHTS_DOMAIN || 'insights.wefamily.ch' }}
+        WEB_DOMAIN: ${{ secrets.WEB_DOMAIN || 'app.wefamily.ch' }}
+        LETSENCRYPT_EMAIL: ${{ secrets.LETSENCRYPT_EMAIL || 'admin@wefamily.ch' }}
+      run: |
+        # Create script locally with substituted values
+        cat > /tmp/deploy.sh << 'SCRIPT'
+        #!/bin/bash
+        set -e
+        
+        # These will be replaced by envsubst
+        DEPLOY_PATH="$DEPLOY_PATH"
+        DB_PASSWORD="$DB_PASSWORD"
+        REDIS_PASSWORD="$REDIS_PASSWORD"
+        API_DOMAIN="$API_DOMAIN"
+        INSIGHTS_DOMAIN="$INSIGHTS_DOMAIN"
+        WEB_DOMAIN="$WEB_DOMAIN"
+        LETSENCRYPT_EMAIL="$LETSENCRYPT_EMAIL"
+        
+        echo "Deploying to: ${API_DOMAIN}"
+        cd "${DEPLOY_PATH}"
+        
+        # Check for docker-compose file
+        if [ -f "docker-compose.production.yml" ]; then
+          COMPOSE_FILE="docker-compose.production.yml"
+        elif [ -f "docker-compose.yaml" ]; then
+          COMPOSE_FILE="docker-compose.yaml"
+        elif [ -f "docker-compose.yml" ]; then
+          COMPOSE_FILE="docker-compose.yml"
+        else
+          echo "ERROR: No docker-compose file found!"
+          ls -la
+          exit 1
+        fi
+        
+        echo "Using: ${COMPOSE_FILE}"
+        
+        # Create .env file
+        cat > .env << EOF
+        DB_PASSWORD=${DB_PASSWORD}
+        REDIS_PASSWORD=${REDIS_PASSWORD}
+        API_DOMAIN=${API_DOMAIN}
+        INSIGHTS_DOMAIN=${INSIGHTS_DOMAIN}
+        WEB_DOMAIN=${WEB_DOMAIN}
+        LETSENCRYPT_EMAIL=${LETSENCRYPT_EMAIL}
+        ENVIRONMENT=production
+        PORT=8080
+        EOF
+        
+        # Create passwords.yaml
+        mkdir -p config
+        cat > config/passwords.yaml << EOF
+        production:
+          database: '${DB_PASSWORD}'
+          redis: '${REDIS_PASSWORD}'
+        EOF
+        
+        chmod 600 .env config/passwords.yaml
+        
+        # Build and deploy
+        docker compose -f ${COMPOSE_FILE} build --no-cache timesheet-backend || true
+        docker compose -f ${COMPOSE_FILE} up -d postgres redis
+        
+        sleep 10
+        
+        # Run migrations
+        if [ -d "migrations" ]; then
+          for migration in migrations/*/migration.sql; do
+            if [ -f "${migration}" ]; then
+              echo "Applying: $(basename $(dirname ${migration}))"
+              cat "${migration}" | docker exec -i -e PGPASSWORD="${DB_PASSWORD}" \
+                timesheet-postgres psql -U postgres -d time_sheet_backend || true
+            fi
           done
-          
-          docker ps
+        fi
+        
+        docker compose -f ${COMPOSE_FILE} up -d
+        
+        echo "=== Status ==="
+        docker ps
+        SCRIPT
+        
+        # Use envsubst to replace variables
+        export DEPLOY_PATH="${{ env.DEPLOY_PATH }}"
+        export DB_PASSWORD="${DB_PASSWORD}"
+        export REDIS_PASSWORD="${REDIS_PASSWORD}"
+        export API_DOMAIN="${API_DOMAIN}"
+        export INSIGHTS_DOMAIN="${INSIGHTS_DOMAIN}"
+        export WEB_DOMAIN="${WEB_DOMAIN}"
+        export LETSENCRYPT_EMAIL="${LETSENCRYPT_EMAIL}"
+        
+        # Replace variables and execute
+        envsubst < /tmp/deploy.sh | ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} 'bash -s'
