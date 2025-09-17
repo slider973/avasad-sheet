@@ -1,4 +1,5 @@
 import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart';
 import 'package:time_sheet_backend_client/time_sheet_backend_client.dart';
 import 'package:get_it/get_it.dart';
 
@@ -14,22 +15,25 @@ class ServerpodService {
   }
   
   static Future<void> initialize() async {
-    // Configuration pour le développement local
     String serverUrl;
     
-    if (Platform.isAndroid) {
-      // Pour l'émulateur Android
-      serverUrl = 'http://10.0.2.2:8080/';
-    } else if (Platform.isIOS) {
-      // Pour le simulateur iOS
-      serverUrl = 'http://localhost:8080/';
+    // Configuration basée sur l'environnement (debug vs release)
+    if (kDebugMode) {
+      // Mode développement - serveur local
+      if (Platform.isAndroid) {
+        // Pour l'émulateur Android
+        serverUrl = 'http://10.0.2.2:8080/';
+      } else if (Platform.isIOS) {
+        // Pour le simulateur iOS
+        serverUrl = 'http://localhost:8080/';
+      } else {
+        // Pour Web, macOS, Windows, Linux
+        serverUrl = 'http://localhost:8080/';
+      }
     } else {
-      // Pour Web, macOS, Windows, Linux
-      serverUrl = 'http://localhost:8080/';
+      // Mode production - serveur déployé
+      serverUrl = 'https://api-timesheet.wefamily.ch/';
     }
-    
-    // TODO: Pour la production, utiliser une URL différente
-    // serverUrl = 'https://api.timesheet.com/';
     
     _client = Client(serverUrl);
     

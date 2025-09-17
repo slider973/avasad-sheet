@@ -30,6 +30,10 @@
 	<string>Cette application nécessite l&apos;accès aux documents pour lire et écrire des fichiers.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Cette application nécessite l&apos;accès à la galerie pour sélectionner des photos.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Cette application utilise la localisation pour améliorer l'expérience utilisateur lors du pointage.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Cette application nécessite l'accès à la caméra pour prendre des photos et scanner des documents.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIBackgroundModes</key>
@@ -66,6 +70,12 @@
                 <string>timesheet</string>
             </array>
         </dict>
+    </array>
+    
+    <!-- Configuration App Groups pour le widget -->
+    <key>com.apple.security.application-groups</key>
+    <array>
+        <string>group.com.heytalent.timesheet</string>
     </array>
     
 </dict>
