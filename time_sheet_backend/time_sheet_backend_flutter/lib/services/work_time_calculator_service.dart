@@ -1,8 +1,7 @@
-import 'dart:async';
 import 'package:time_sheet/features/pointage/domain/entities/work_time_info.dart';
 import 'package:time_sheet/features/pointage/domain/entities/work_time_configuration.dart';
 import 'package:time_sheet/features/pointage/domain/entities/extended_timer_state.dart';
-import 'package:time_sheet/services/timer_service.dart';
+
 import 'package:time_sheet/services/logger_service.dart';
 
 /// Service responsible for calculating work time information in real-time
@@ -20,7 +19,6 @@ class WorkTimeCalculatorService {
 
   WorkTimeCalculatorService._internal();
 
-  final TimerService _timerService = TimerService();
   WorkTimeConfiguration _configuration = WorkTimeConfiguration.defaultConfig();
 
   // Break tracking
@@ -37,22 +35,33 @@ class WorkTimeCalculatorService {
         '[WorkTimeCalculatorService] Configuration updated: $newConfiguration');
   }
 
-  /// Calculates comprehensive work time information from current TimerService state
-  WorkTimeInfo calculateWorkTimeInfo() {
+  /// Calculates comprehensive work time information from provided timer data
+  WorkTimeInfo calculateWorkTimeInfo({
+    required String currentState,
+    required Duration elapsedTime,
+    DateTime? startTime,
+    required bool isWeekend,
+    required bool weekendOvertimeEnabled,
+  }) {
     try {
-      final timerState = _timerService.currentState;
-      final elapsedTime = _timerService.elapsedTime;
-      final startTime = _timerService.startTime;
-      final isWeekend = _timerService.isWeekendDay;
-      final weekendOvertimeEnabled = _timerService.weekendOvertimeEnabled;
+      final timerState = currentState;
+      final elapsedTimeParam = elapsedTime;
+      final startTimeParam = startTime;
+      final isWeekendParam = isWeekend;
+      final weekendOvertimeEnabledParam = weekendOvertimeEnabled;
 
       // Calculate effective work time (excluding breaks)
       final effectiveWorkTime =
-          _calculateEffectiveWorkTime(elapsedTime, timerState);
+          _calculateEffectiveWorkTime(elapsedTimeParam, timerState);
 
       // Calculate break time
-      final breakTime =
-          _calculateTotalBreakTime(elapsedTime, effectiveWorkTime);
+      final breakTime = _calculateTotalBreakTime();
+
+      // Add current break time if on break
+      Duration totalBreakTime = breakTime;
+      if (timerState == 'Pause' && _currentBreakStart != null) {
+        totalBreakTime += DateTime.now().difference(_currentBreakStart!);
+      }
 
       // Calculate remaining time to complete standard work day
       final remainingTime = _calculateRemainingWorkTime(effectiveWorkTime);
@@ -60,29 +69,29 @@ class WorkTimeCalculatorService {
       // Determine if overtime has started
       final isOvertimeStarted = _shouldStartOvertime(
         effectiveWorkTime,
-        isWeekend,
-        weekendOvertimeEnabled,
+        isWeekendParam,
+        weekendOvertimeEnabledParam,
       );
 
       // Calculate overtime hours
       final overtimeHours = _calculateOvertimeHours(
         effectiveWorkTime,
-        isWeekend,
-        weekendOvertimeEnabled,
+        isWeekendParam,
+        weekendOvertimeEnabledParam,
       );
 
       // Calculate estimated end time
       final estimatedEndTime = _calculateEstimatedEndTime(
-        startTime,
+        startTimeParam,
         effectiveWorkTime,
-        breakTime,
+        totalBreakTime,
         remainingTime,
       );
 
       final workTimeInfo = WorkTimeInfo(
         estimatedEndTime: estimatedEndTime,
         remainingTime: remainingTime,
-        breakTime: breakTime,
+        breakTime: totalBreakTime,
         isOvertimeStarted: isOvertimeStarted,
         overtimeHours: overtimeHours,
       );
@@ -99,17 +108,29 @@ class WorkTimeCalculatorService {
     }
   }
 
-  /// Generates an ExtendedTimerState combining TimerService data with calculated work time info
-  ExtendedTimerState generateExtendedTimerState() {
+  /// Generates an ExtendedTimerState combining provided timer data with calculated work time info
+  ExtendedTimerState generateExtendedTimerState({
+    required String currentState,
+    required Duration elapsedTime,
+    DateTime? startTime,
+    required bool isWeekendDay,
+    required bool weekendOvertimeEnabled,
+  }) {
     try {
-      final workTimeInfo = calculateWorkTimeInfo();
+      final workTimeInfo = calculateWorkTimeInfo(
+        currentState: currentState,
+        elapsedTime: elapsedTime,
+        startTime: startTime,
+        isWeekend: isWeekendDay,
+        weekendOvertimeEnabled: weekendOvertimeEnabled,
+      );
 
       return ExtendedTimerState(
-        currentState: _timerService.currentState,
-        elapsedTime: _timerService.elapsedTime,
-        startTime: _timerService.startTime,
-        isWeekendDay: _timerService.isWeekendDay,
-        weekendOvertimeEnabled: _timerService.weekendOvertimeEnabled,
+        currentState: currentState,
+        elapsedTime: elapsedTime,
+        startTime: startTime,
+        isWeekendDay: isWeekendDay,
+        weekendOvertimeEnabled: weekendOvertimeEnabled,
         workTimeInfo: workTimeInfo,
         configuration: _configuration,
       );
@@ -121,11 +142,11 @@ class WorkTimeCalculatorService {
 
       // Return a safe default state
       return ExtendedTimerState(
-        currentState: 'Non commencé',
-        elapsedTime: Duration.zero,
-        startTime: null,
-        isWeekendDay: false,
-        weekendOvertimeEnabled: true,
+        currentState: currentState,
+        elapsedTime: elapsedTime,
+        startTime: startTime,
+        isWeekendDay: isWeekendDay,
+        weekendOvertimeEnabled: weekendOvertimeEnabled,
         workTimeInfo: WorkTimeInfo.empty(),
         configuration: _configuration,
       );
@@ -135,36 +156,35 @@ class WorkTimeCalculatorService {
   /// Calculates effective work time by excluding break periods
   Duration _calculateEffectiveWorkTime(
       Duration totalElapsedTime, String currentState) {
-    // For now, we'll use a simplified approach where we assume all elapsed time is work time
-    // In a future iteration, we'll implement proper break tracking
+    // Calculate total break time from tracked breaks
+    final totalBreakTime = _calculateTotalBreakTime();
 
-    // If currently on break, don't count the current break time
+    // If currently on break, add the current break duration
+    Duration currentBreakDuration = Duration.zero;
     if (currentState == 'Pause' && _currentBreakStart != null) {
-      final currentBreakDuration =
-          DateTime.now().difference(_currentBreakStart!);
-      final totalBreakTime =
-          _calculateTotalBreakTime(totalElapsedTime, totalElapsedTime);
-      return totalElapsedTime - totalBreakTime - currentBreakDuration;
+      currentBreakDuration = DateTime.now().difference(_currentBreakStart!);
     }
 
-    // Calculate total break time and subtract from elapsed time
-    final totalBreakTime =
-        _calculateTotalBreakTime(totalElapsedTime, totalElapsedTime);
-    return totalElapsedTime - totalBreakTime;
+    // Effective work time = total elapsed time - completed breaks - current break
+    final effectiveTime =
+        totalElapsedTime - totalBreakTime - currentBreakDuration;
+
+    // Ensure effective work time is not negative
+    return effectiveTime.isNegative ? Duration.zero : effectiveTime;
   }
 
   /// Calculates total break time from tracked breaks
-  Duration _calculateTotalBreakTime(
-      Duration totalElapsedTime, Duration effectiveWorkTime) {
-    // Simple calculation: total elapsed time minus effective work time
-    final breakTime = totalElapsedTime - effectiveWorkTime;
+  Duration _calculateTotalBreakTime() {
+    Duration totalBreakTime = Duration.zero;
 
-    // Ensure break time is not negative and is reasonable
-    if (breakTime.isNegative) return Duration.zero;
+    // Sum up all completed break periods
+    for (final breakPeriod in _breaks) {
+      totalBreakTime += breakPeriod.duration;
+    }
 
     // Cap break time at a reasonable maximum (e.g., 4 hours)
     const maxBreakTime = Duration(hours: 4);
-    return breakTime > maxBreakTime ? maxBreakTime : breakTime;
+    return totalBreakTime > maxBreakTime ? maxBreakTime : totalBreakTime;
   }
 
   /// Calculates remaining time to complete the standard work day
@@ -335,6 +355,11 @@ class WorkTimeCalculatorService {
   void reset() {
     clearBreakPeriods();
     logger.d('[WorkTimeCalculatorService] Service reset');
+  }
+
+  /// Sets a custom minimum break duration for testing purposes
+  void setMinimumBreakDurationForTesting(Duration duration) {
+    _configuration = _configuration.copyWith(minimumBreakDuration: duration);
   }
 }
 

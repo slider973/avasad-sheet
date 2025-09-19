@@ -3,7 +3,11 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:time_sheet/services/weekend_detection_service.dart';
 import 'package:time_sheet/services/overtime_configuration_service.dart';
+import 'package:time_sheet/services/work_time_calculator_service.dart';
 import 'package:time_sheet/services/logger_service.dart';
+import 'package:time_sheet/features/pointage/domain/entities/extended_timer_state.dart';
+import 'package:time_sheet/features/pointage/domain/entities/work_time_info.dart';
+import 'package:time_sheet/features/pointage/domain/entities/work_time_configuration.dart';
 
 // Classe pour encapsuler les données sauvegardées
 class _SavedTimerData {
@@ -31,11 +35,13 @@ class TimerService {
 
   TimerService._internal();
 
-  // Services for weekend detection and overtime configuration
+  // Services for weekend detection, overtime configuration, and work time calculations
   final WeekendDetectionService _weekendDetectionService =
       WeekendDetectionService();
   final OvertimeConfigurationService _overtimeConfigService =
       OvertimeConfigurationService();
+  final WorkTimeCalculatorService _workTimeCalculatorService =
+      WorkTimeCalculatorService();
 
   // État du timer
   DateTime? _startTime;
@@ -91,6 +97,9 @@ class TimerService {
 
     // Detect weekend status and load overtime configuration
     await _updateWeekendStatus();
+
+    // Initialize work time calculator with current configuration
+    await _initializeWorkTimeCalculator();
 
     // D'abord, toujours essayer de charger l'état sauvegardé pour aujourd'hui
     final bool stateLoaded = await _loadSavedTimerState();
@@ -377,6 +386,9 @@ class TimerService {
     String oldState = _currentState;
     _currentState = newState;
 
+    // Track break periods for work time calculations
+    _trackBreakTransitions(oldState, newState);
+
     // Changement d'état du timer
 
     if (newState == 'Non commencé' || newState == 'Sortie') {
@@ -386,6 +398,11 @@ class TimerService {
       _elapsedTime = Duration.zero;
       _timer?.cancel();
       _timer = null;
+
+      // Reset work time calculator for new day
+      if (newState == 'Non commencé') {
+        _workTimeCalculatorService.reset();
+      }
     } else if (newState == 'Pause') {
       // Si on passe en pause, on accumule le temps écoulé jusqu'à maintenant
       if (_startTime != null) {
@@ -416,6 +433,36 @@ class TimerService {
     }
 
     _saveTimerState();
+  }
+
+  /// Tracks break transitions for work time calculations
+  void _trackBreakTransitions(String oldState, String newState) {
+    try {
+      // Starting a break
+      if ((oldState == 'Entrée' || oldState == 'Reprise') &&
+          newState == 'Pause') {
+        _workTimeCalculatorService.startBreak();
+        logger.d(
+            '[TimerService] Break started - transition from $oldState to $newState');
+      }
+
+      // Ending a break
+      if (oldState == 'Pause' &&
+          (newState == 'Reprise' || newState == 'Sortie')) {
+        _workTimeCalculatorService.endBreak();
+        logger.d(
+            '[TimerService] Break ended - transition from $oldState to $newState');
+      }
+
+      // Reset breaks for new day
+      if (oldState != 'Non commencé' && newState == 'Non commencé') {
+        _workTimeCalculatorService.clearBreakPeriods();
+        logger.d('[TimerService] Break periods cleared for new day');
+      }
+    } catch (e, stackTrace) {
+      logger.e('[TimerService] Error tracking break transitions: $e',
+          error: e, stackTrace: stackTrace);
+    }
   }
 
   // Gérer l'application qui passe en arrière-plan
@@ -548,7 +595,38 @@ class TimerService {
   Future<void> refreshWeekendConfiguration() async {
     logger.i('[TimerService] Refreshing weekend configuration');
     await _updateWeekendStatus();
+    await _initializeWorkTimeCalculator();
     await _saveTimerState();
+  }
+
+  /// Initializes the work time calculator with current configuration
+  Future<void> _initializeWorkTimeCalculator() async {
+    try {
+      // Load work time configuration from overtime configuration service
+      final overtimeConfig =
+          await _overtimeConfigService.getConfigurationObject();
+
+      // Create work time configuration from overtime settings
+      final workTimeConfig = WorkTimeConfiguration(
+        standardWorkDay: overtimeConfig.dailyWorkThreshold,
+        maxBreakTime: const Duration(hours: 1), // Default 1 hour max break
+        weekendOvertimeEnabled: _weekendOvertimeEnabled,
+        weekdayOvertimeRate: overtimeConfig.weekdayOvertimeRate,
+        weekendOvertimeRate: overtimeConfig.weekendOvertimeRate,
+      );
+
+      // Update work time calculator configuration
+      _workTimeCalculatorService.updateConfiguration(workTimeConfig);
+
+      logger.d(
+          '[TimerService] Work time calculator initialized with config: $workTimeConfig');
+    } catch (e, stackTrace) {
+      logger.e('[TimerService] Error initializing work time calculator: $e',
+          error: e, stackTrace: stackTrace);
+      // Continue with default configuration on error
+      _workTimeCalculatorService
+          .updateConfiguration(WorkTimeConfiguration.defaultConfig());
+    }
   }
 
   /// Returns overtime information for the current session
@@ -561,6 +639,150 @@ class TimerService {
       'overtimeType':
           _isWeekendDay && _weekendOvertimeEnabled ? 'weekend' : 'weekday',
     };
+  }
+
+  /// Returns extended timer state with automatic work time calculations
+  ///
+  /// This method combines the current timer state with calculated work time information
+  /// including estimated end time, remaining work time, and overtime detection.
+  ExtendedTimerState getExtendedTimerState() {
+    try {
+      // Generate extended state using WorkTimeCalculatorService
+      final extendedState =
+          _workTimeCalculatorService.generateExtendedTimerState(
+        currentState: _currentState,
+        elapsedTime: elapsedTime,
+        startTime: _startTime,
+        isWeekendDay: _isWeekendDay,
+        weekendOvertimeEnabled: _weekendOvertimeEnabled,
+      );
+
+      logger.d('[TimerService] Generated extended timer state: $extendedState');
+      return extendedState;
+    } catch (e, stackTrace) {
+      logger.e('[TimerService] Error generating extended timer state: $e',
+          error: e, stackTrace: stackTrace);
+
+      // Return a safe fallback state
+      return ExtendedTimerState(
+        currentState: _currentState,
+        elapsedTime: elapsedTime,
+        startTime: _startTime,
+        isWeekendDay: _isWeekendDay,
+        weekendOvertimeEnabled: _weekendOvertimeEnabled,
+        workTimeInfo: WorkTimeInfo.empty(),
+        configuration: _workTimeCalculatorService.configuration,
+      );
+    }
+  }
+
+  /// Gets calculated work time information
+  ///
+  /// This provides real-time calculations of work time, breaks, overtime, and estimated end time.
+  WorkTimeInfo getWorkTimeInfo() {
+    try {
+      return _workTimeCalculatorService.calculateWorkTimeInfo(
+        currentState: _currentState,
+        elapsedTime: elapsedTime,
+        startTime: _startTime,
+        isWeekend: _isWeekendDay,
+        weekendOvertimeEnabled: _weekendOvertimeEnabled,
+      );
+    } catch (e, stackTrace) {
+      logger.e('[TimerService] Error getting work time info: $e',
+          error: e, stackTrace: stackTrace);
+      return WorkTimeInfo.empty();
+    }
+  }
+
+  /// Gets estimated end time for completing the standard work day
+  DateTime? getEstimatedEndTime() {
+    try {
+      final workTimeInfo = _workTimeCalculatorService.calculateWorkTimeInfo(
+        currentState: _currentState,
+        elapsedTime: elapsedTime,
+        startTime: _startTime,
+        isWeekend: _isWeekendDay,
+        weekendOvertimeEnabled: _weekendOvertimeEnabled,
+      );
+      return workTimeInfo.estimatedEndTime;
+    } catch (e, stackTrace) {
+      logger.e('[TimerService] Error getting estimated end time: $e',
+          error: e, stackTrace: stackTrace);
+      return null;
+    }
+  }
+
+  /// Gets remaining time to complete the standard work day
+  Duration getRemainingWorkTime() {
+    try {
+      final workTimeInfo = _workTimeCalculatorService.calculateWorkTimeInfo(
+        currentState: _currentState,
+        elapsedTime: elapsedTime,
+        startTime: _startTime,
+        isWeekend: _isWeekendDay,
+        weekendOvertimeEnabled: _weekendOvertimeEnabled,
+      );
+      return workTimeInfo.remainingTime;
+    } catch (e, stackTrace) {
+      logger.e('[TimerService] Error getting remaining work time: $e',
+          error: e, stackTrace: stackTrace);
+      return Duration.zero;
+    }
+  }
+
+  /// Returns true if overtime has started based on effective work time
+  bool get isOvertimeStartedCalculated {
+    try {
+      final workTimeInfo = _workTimeCalculatorService.calculateWorkTimeInfo(
+        currentState: _currentState,
+        elapsedTime: elapsedTime,
+        startTime: _startTime,
+        isWeekend: _isWeekendDay,
+        weekendOvertimeEnabled: _weekendOvertimeEnabled,
+      );
+      return workTimeInfo.isOvertimeStarted;
+    } catch (e, stackTrace) {
+      logger.e('[TimerService] Error checking calculated overtime status: $e',
+          error: e, stackTrace: stackTrace);
+      return isOvertimeSession; // Fallback to existing logic
+    }
+  }
+
+  /// Gets calculated overtime hours based on effective work time
+  Duration getCalculatedOvertimeHours() {
+    try {
+      final workTimeInfo = _workTimeCalculatorService.calculateWorkTimeInfo(
+        currentState: _currentState,
+        elapsedTime: elapsedTime,
+        startTime: _startTime,
+        isWeekend: _isWeekendDay,
+        weekendOvertimeEnabled: _weekendOvertimeEnabled,
+      );
+      return workTimeInfo.overtimeHours;
+    } catch (e, stackTrace) {
+      logger.e('[TimerService] Error getting calculated overtime hours: $e',
+          error: e, stackTrace: stackTrace);
+      return Duration.zero;
+    }
+  }
+
+  /// Gets total break time for the current work session
+  Duration getTotalBreakTime() {
+    try {
+      final workTimeInfo = _workTimeCalculatorService.calculateWorkTimeInfo(
+        currentState: _currentState,
+        elapsedTime: elapsedTime,
+        startTime: _startTime,
+        isWeekend: _isWeekendDay,
+        weekendOvertimeEnabled: _weekendOvertimeEnabled,
+      );
+      return workTimeInfo.breakTime;
+    } catch (e, stackTrace) {
+      logger.e('[TimerService] Error getting total break time: $e',
+          error: e, stackTrace: stackTrace);
+      return Duration.zero;
+    }
   }
 
   // Arrêter le timer
