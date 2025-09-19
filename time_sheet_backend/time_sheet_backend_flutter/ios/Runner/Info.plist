@@ -54,12 +54,68 @@
 	<false/>
 	  
     <key>NSUserNotificationUsageDescription</key>
-    <string>Nous avons besoin d'envoyer des notifications pour vous informer des événements importants.</string>
+    <string>Nous avons besoin d'envoyer des notifications pour vous rappeler de pointer vos heures de travail.</string>
+    
+    <!-- Enhanced notification configuration for reminders -->
+    <key>NSUserNotificationsUsageDescription</key>
+    <string>Cette application envoie des rappels pour vous aider à ne pas oublier de pointer vos heures de travail.</string>
     
     <key>UIBackgroundModes</key>
     <array>
         <string>fetch</string>
         <string>remote-notification</string>
+        <string>background-processing</string>
+    </array>
+    
+    <!-- Notification categories for enhanced iOS actions -->
+    <key>UNNotificationCategories</key>
+    <array>
+        <dict>
+            <key>identifier</key>
+            <string>clock_in_reminder</string>
+            <key>actions</key>
+            <array>
+                <dict>
+                    <key>identifier</key>
+                    <string>quick_clock_in</string>
+                    <key>title</key>
+                    <string>Clock In Now</string>
+                    <key>options</key>
+                    <integer>1</integer>
+                </dict>
+                <dict>
+                    <key>identifier</key>
+                    <string>snooze_action</string>
+                    <key>title</key>
+                    <string>Snooze 15min</string>
+                    <key>options</key>
+                    <integer>0</integer>
+                </dict>
+            </array>
+        </dict>
+        <dict>
+            <key>identifier</key>
+            <string>clock_out_reminder</string>
+            <key>actions</key>
+            <array>
+                <dict>
+                    <key>identifier</key>
+                    <string>quick_clock_out</string>
+                    <key>title</key>
+                    <string>Clock Out Now</string>
+                    <key>options</key>
+                    <integer>1</integer>
+                </dict>
+                <dict>
+                    <key>identifier</key>
+                    <string>snooze_action</string>
+                    <key>title</key>
+                    <string>Snooze 15min</string>
+                    <key>options</key>
+                    <integer>0</integer>
+                </dict>
+            </array>
+        </dict>
     </array>
     
     <key>CFBundleURLTypes</key>

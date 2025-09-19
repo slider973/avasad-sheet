@@ -1,10 +1,21 @@
+import 'package:isar/isar.dart';
 import 'package:time_sheet/features/pointage/domain/entities/timesheet_entry.dart';
+import 'package:time_sheet/features/pointage/data/models/timesheet_entry/timesheet_entry.dart';
+import 'package:time_sheet/features/preference/data/models/overtime_configuration.dart';
 
-List<TimesheetEntry> generateMockTimeSheetEntries({
-  required int monthNumber,
-  required int year,
-  bool includeWeekends = false
-}) {
+/// Setup test Isar database for integration tests
+Future<Isar> setupTestIsar() async {
+  return await Isar.open(
+    [TimesheetEntryModelSchema, OvertimeConfigurationSchema],
+    directory: '',
+    name: 'test_db_${DateTime.now().millisecondsSinceEpoch}',
+  );
+}
+
+List<TimesheetEntry> generateMockTimeSheetEntries(
+    {required int monthNumber,
+    required int year,
+    bool includeWeekends = false}) {
   // Calculer les dates de début et de fin de la période
   final startDate = DateTime(year, monthNumber, 21);
   final endDate = DateTime(year, monthNumber + 1, 20);
@@ -13,9 +24,12 @@ List<TimesheetEntry> generateMockTimeSheetEntries({
   var currentDate = startDate;
   var id = 1;
 
-  while (currentDate.isBefore(endDate) || currentDate.isAtSameMomentAs(endDate)) {
+  while (
+      currentDate.isBefore(endDate) || currentDate.isAtSameMomentAs(endDate)) {
     // Sauter les weekends si includeWeekends est false
-    if (!includeWeekends && (currentDate.weekday == DateTime.saturday || currentDate.weekday == DateTime.sunday)) {
+    if (!includeWeekends &&
+        (currentDate.weekday == DateTime.saturday ||
+            currentDate.weekday == DateTime.sunday)) {
       currentDate = currentDate.add(const Duration(days: 1));
       continue;
     }
@@ -31,8 +45,18 @@ List<TimesheetEntry> generateMockTimeSheetEntries({
     };
 
     final monthNames = {
-      1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun',
-      7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'
+      1: 'Jan',
+      2: 'Feb',
+      3: 'Mar',
+      4: 'Apr',
+      5: 'May',
+      6: 'Jun',
+      7: 'Jul',
+      8: 'Aug',
+      9: 'Sep',
+      10: 'Oct',
+      11: 'Nov',
+      12: 'Dec'
     };
 
     // Formater la date comme "dd-MMM-yy"

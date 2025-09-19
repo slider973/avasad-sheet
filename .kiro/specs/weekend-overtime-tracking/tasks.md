@@ -71,53 +71,53 @@
   - Créer des graphiques ou indicateurs visuels pour les différents types d'heures
   - _Requirements: 2.2, 2.3_
 
-- [-] 7. Modifier le générateur PDF pour inclure les heures de weekend
-- [-] 7.1 Étendre le template PDF avec les sections weekend
+- [x] 7. Modifier le générateur PDF pour inclure les heures de weekend
+- [x] 7.1 Étendre le template PDF avec les sections weekend
   - Ajouter une section "Heures supplémentaires - Weekend" dans le PDF
   - Séparer les totaux entre "Heures supplémentaires semaine" et "Heures supplémentaires weekend"
   - Inclure les taux de majoration appliqués dans le rapport
   - _Requirements: 1.3, 2.2_
 
-- [ ] 7.2 Mettre à jour la logique de génération PDF
+- [x] 7.2 Mettre à jour la logique de génération PDF
   - Modifier les calculs pour utiliser WeekendOvertimeCalculator
   - Implémenter la séparation des données par type d'heures supplémentaires
   - Ajouter la validation des données avant génération PDF
   - _Requirements: 1.3, 2.2_
 
-- [ ] 8. Étendre le système de validation manager
-- [ ] 8.1 Modifier l'interface de validation pour les heures weekend
+- [x] 8. Étendre le système de validation manager
+- [x] 8.1 Modifier l'interface de validation pour les heures weekend
   - Ajouter des alertes visuelles pour les employés ayant travaillé le weekend
   - Implémenter l'affichage du récapitulatif des heures weekend avant validation
   - Créer des filtres pour identifier rapidement les feuilles avec heures weekend
   - _Requirements: 5.1, 5.2_
 
-- [ ] 8.2 Mettre à jour le workflow d'approbation
+- [x] 8.2 Mettre à jour le workflow d'approbation
   - Inclure les heures de weekend dans le calcul total des heures supplémentaires
   - Ajouter la validation des taux de majoration avant signature
   - Implémenter les notifications pour les heures weekend exceptionnelles
   - _Requirements: 5.2, 5.3_
 
-- [ ] 9. Créer le système de migration des données existantes
-- [ ] 9.1 Implémenter WeekendOvertimeMigration
+- [x] 9. Créer le système de migration des données existantes
+- [x] 9.1 Implémenter WeekendOvertimeMigration
   - Créer le script de migration pour identifier les anciens pointages de weekend
   - Implémenter la logique de conversion des heures weekend existantes
   - Ajouter la validation et les logs de migration
   - _Requirements: 6.3_
 
-- [ ] 9.2 Mettre à jour le TimerService pour la détection automatique
+- [x] 9.2 Mettre à jour le TimerService pour la détection automatique
   - Modifier TimerService pour détecter automatiquement les jours de weekend
   - Implémenter l'application automatique des règles d'heures supplémentaires weekend
   - Ajouter la sauvegarde des paramètres weekend dans les préférences
   - _Requirements: 4.1, 4.2_
 
-- [ ] 10. Créer les tests d'intégration complets
-- [ ] 10.1 Tests end-to-end du workflow weekend
+- [x] 10. Créer les tests d'intégration complets
+- [x] 10.1 Tests end-to-end du workflow weekend
   - Créer des tests simulant un pointage complet le weekend
   - Tester la génération PDF avec heures de weekend
   - Valider le workflow de validation manager avec heures weekend
   - _Requirements: 1.1, 1.2, 1.3, 5.1, 5.2_
 
-- [ ] 10.2 Tests de configuration et migration
+- [x] 10.2 Tests de configuration et migration
   - Tester les changements de configuration et leur impact sur les calculs
   - Valider la migration des données existantes
   - Tester les cas limites et la gestion d'erreurs

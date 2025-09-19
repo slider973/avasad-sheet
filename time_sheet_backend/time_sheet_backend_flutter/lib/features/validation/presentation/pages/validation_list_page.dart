@@ -35,7 +35,9 @@ class _ValidationListPageState extends State<ValidationListPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          widget.viewType == ValidationViewType.employee ? 'Mes validations' : 'Validations à traiter',
+          widget.viewType == ValidationViewType.employee
+              ? 'Mes validations'
+              : 'Validations à traiter',
         ),
         actions: [
           IconButton(
@@ -81,7 +83,9 @@ class _ValidationListPageState extends State<ValidationListPage> {
                 Expanded(
                   child: RefreshIndicator(
                     onRefresh: () async {
-                      context.read<ValidationListBloc>().add(const RefreshValidations());
+                      context
+                          .read<ValidationListBloc>()
+                          .add(const RefreshValidations());
                     },
                     child: ListView.builder(
                       padding: const EdgeInsets.all(16),
@@ -239,7 +243,8 @@ class _ValidationListPageState extends State<ValidationListPage> {
               ),
               const SizedBox(height: 8),
               // Afficher le nom de l'employé pour les managers
-              if (widget.viewType == ValidationViewType.manager && validation.employeeName != null) ...[
+              if (widget.viewType == ValidationViewType.manager &&
+                  validation.employeeName != null) ...[
                 Row(
                   children: [
                     const Icon(Icons.person, size: 16, color: Colors.blue),
@@ -255,9 +260,17 @@ class _ValidationListPageState extends State<ValidationListPage> {
                 ),
                 const SizedBox(height: 4),
               ],
+
+              // Indicateur weekend pour les managers
+              if (widget.viewType == ValidationViewType.manager) ...[
+                _buildWeekendIndicator(validation),
+                const SizedBox(height: 4),
+              ],
+
               Row(
                 children: [
-                  const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
+                  const Icon(Icons.calendar_today,
+                      size: 16, color: Colors.grey),
                   const SizedBox(width: 4),
                   Text(
                     'Créé le ${dateFormat.format(validation.createdAt)}',
@@ -268,7 +281,8 @@ class _ValidationListPageState extends State<ValidationListPage> {
               if (validation.isExpired) ...[
                 const SizedBox(height: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.red.shade100,
                     borderRadius: BorderRadius.circular(4),
@@ -283,7 +297,8 @@ class _ValidationListPageState extends State<ValidationListPage> {
                   ),
                 ),
               ],
-              if (validation.managerComment != null && validation.managerComment!.isNotEmpty) ...[
+              if (validation.managerComment != null &&
+                  validation.managerComment!.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 Row(
                   children: [
@@ -305,6 +320,67 @@ class _ValidationListPageState extends State<ValidationListPage> {
         ),
       ),
     );
+  }
+
+  /// Construit un indicateur pour les heures de weekend
+  Widget _buildWeekendIndicator(ValidationRequest validation) {
+    // Pour l'instant, on affiche un indicateur générique
+    // Dans une implémentation complète, on analyserait les données timesheet
+    return FutureBuilder<bool>(
+      future: _hasWeekendHours(validation),
+      builder: (context, snapshot) {
+        if (snapshot.hasData && snapshot.data == true) {
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.orange.shade100,
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: Colors.orange.shade300),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.weekend, size: 14, color: Colors.orange.shade700),
+                const SizedBox(width: 4),
+                Text(
+                  'Heures weekend',
+                  style: TextStyle(
+                    color: Colors.orange.shade700,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+        return const SizedBox.shrink();
+      },
+    );
+  }
+
+  /// Vérifie si une validation contient des heures de weekend
+  /// Cette méthode pourrait être optimisée en stockant cette info dans la validation
+  Future<bool> _hasWeekendHours(ValidationRequest validation) async {
+    try {
+      // Pour l'instant, on considère qu'il y a des heures weekend si la période
+      // inclut un weekend (approximation simple)
+      final start = validation.periodStart;
+      final end = validation.periodEnd;
+
+      for (var date = start;
+          date.isBefore(end) || date.isAtSameMomentAs(end);
+          date = date.add(const Duration(days: 1))) {
+        if (date.weekday == DateTime.saturday ||
+            date.weekday == DateTime.sunday) {
+          return true;
+        }
+      }
+
+      return false;
+    } catch (e) {
+      return false;
+    }
   }
 
   Widget _buildStatusChip(ValidationStatus status) {
@@ -350,7 +426,9 @@ class _ValidationListPageState extends State<ValidationListPage> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            widget.viewType == ValidationViewType.employee ? Icons.assignment_outlined : Icons.inbox_outlined,
+            widget.viewType == ValidationViewType.employee
+                ? Icons.assignment_outlined
+                : Icons.inbox_outlined,
             size: 64,
             color: Colors.grey,
           ),
@@ -413,6 +491,7 @@ class _FilterDialogState extends State<_FilterDialog> {
   late DateTime? _startDate;
   late DateTime? _endDate;
   late SortBy _sortBy;
+  late bool? _hasWeekendHours;
 
   @override
   void initState() {
@@ -421,6 +500,7 @@ class _FilterDialogState extends State<_FilterDialog> {
     _startDate = widget.currentFilters.startDate;
     _endDate = widget.currentFilters.endDate;
     _sortBy = widget.currentFilters.sortBy;
+    _hasWeekendHours = widget.currentFilters.hasWeekendHours;
   }
 
   @override
@@ -438,7 +518,8 @@ class _FilterDialogState extends State<_FilterDialog> {
               initialValue: _selectedStatus,
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                contentPadding:
+                    EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               ),
               items: const [
                 DropdownMenuItem(value: null, child: Text('Tous')),
@@ -458,7 +539,8 @@ class _FilterDialogState extends State<_FilterDialog> {
               onChanged: (value) => setState(() => _selectedStatus = value),
             ),
             const SizedBox(height: 16),
-            const Text('Période', style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text('Période',
+                style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -480,13 +562,35 @@ class _FilterDialogState extends State<_FilterDialog> {
               ],
             ),
             const SizedBox(height: 16),
-            const Text('Trier par', style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text('Heures de weekend',
+                style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<bool?>(
+              value: _hasWeekendHours,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                contentPadding:
+                    EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              ),
+              items: const [
+                DropdownMenuItem(value: null, child: Text('Toutes')),
+                DropdownMenuItem(
+                    value: true, child: Text('Avec heures weekend')),
+                DropdownMenuItem(
+                    value: false, child: Text('Sans heures weekend')),
+              ],
+              onChanged: (value) => setState(() => _hasWeekendHours = value),
+            ),
+            const SizedBox(height: 16),
+            const Text('Trier par',
+                style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             DropdownButtonFormField<SortBy>(
               initialValue: _sortBy,
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                contentPadding:
+                    EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               ),
               items: const [
                 DropdownMenuItem(
@@ -523,6 +627,7 @@ class _FilterDialogState extends State<_FilterDialog> {
               _startDate = null;
               _endDate = null;
               _sortBy = SortBy.dateDesc;
+              _hasWeekendHours = null;
             });
           },
           child: const Text('Réinitialiser'),
@@ -534,6 +639,7 @@ class _FilterDialogState extends State<_FilterDialog> {
               startDate: _startDate,
               endDate: _endDate,
               sortBy: _sortBy,
+              hasWeekendHours: _hasWeekendHours,
             );
             widget.onApply(filters);
             Navigator.pop(context);
@@ -565,7 +671,8 @@ class _FilterDialogState extends State<_FilterDialog> {
         decoration: InputDecoration(
           labelText: label,
           border: const OutlineInputBorder(),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           suffixIcon: value != null
               ? IconButton(
                   icon: const Icon(Icons.clear, size: 18),
@@ -574,7 +681,9 @@ class _FilterDialogState extends State<_FilterDialog> {
               : null,
         ),
         child: Text(
-          value != null ? DateFormat('dd/MM/yyyy').format(value) : 'Sélectionner',
+          value != null
+              ? DateFormat('dd/MM/yyyy').format(value)
+              : 'Sélectionner',
           style: TextStyle(
             color: value != null ? null : Colors.grey,
           ),

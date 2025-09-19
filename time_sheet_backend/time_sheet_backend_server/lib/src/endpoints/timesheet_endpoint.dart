@@ -2,6 +2,7 @@ import 'package:serverpod/serverpod.dart';
 import 'dart:convert';
 import '../generated/protocol.dart';
 import '../services/pdf_generator_service.dart';
+import '../services/weekend_overtime_calculator_service.dart';
 
 class TimesheetEndpoint extends Endpoint {
   /// Endpoint unique et professionnel pour gérer toutes les opérations timesheet
@@ -65,7 +66,8 @@ class TimesheetEndpoint extends Endpoint {
       final entries = data['entries'] ?? [];
       final totalDays = (data['totalDays'] as num?)?.toDouble() ?? 0.0;
       final totalHours = data['totalHours'] as String? ?? '0:00';
-      final totalOvertimeHours = data['totalOvertimeHours'] as String? ?? '0:00';
+      final totalOvertimeHours =
+          data['totalOvertimeHours'] as String? ?? '0:00';
 
       // Vérifier si les données existent déjà
       final existing = await TimesheetData.db.findFirstRow(
@@ -84,7 +86,8 @@ class TimesheetEndpoint extends Endpoint {
         existing.updatedAt = DateTime.now();
 
         timesheetData = await TimesheetData.db.updateRow(session, existing);
-        session.log('Updated existing timesheet data with id: ${timesheetData.id}');
+        session.log(
+            'Updated existing timesheet data with id: ${timesheetData.id}');
       } else {
         // Création
         final newData = TimesheetData(
@@ -250,13 +253,38 @@ class TimesheetEndpoint extends Endpoint {
         throw Exception('Validation non trouvée');
       }
 
+      // Validation des données avant génération PDF
+      final validationResult = _validateTimesheetData(timesheetData);
+      if (!validationResult['isValid']) {
+        throw Exception(
+            'Données invalides: ${validationResult['errors'].join(', ')}');
+      }
+
       // Signatures optionnelles
       final employeeSignature = data['employeeSignature'] as String?;
       final managerSignature = data['managerSignature'] as String?;
       final managerName = data['managerName'] as String?;
 
-      // TODO: Implémenter la génération réelle du PDF
-      // Pour l'instant, on retourne les métadonnées
+      // Générer le PDF avec les heures supplémentaires séparées
+      final pdfGenerator = PdfGeneratorService();
+      final pdfBytes = await pdfGenerator.generateTimesheetPdf(
+        timesheetData: timesheetData,
+        validation: validation,
+        managerSignature: managerSignature,
+        includeManagerSignature: managerSignature != null,
+      );
+
+      // Calculer les statistiques d'heures supplémentaires pour les métadonnées
+      final overtimeCalculator = WeekendOvertimeCalculatorService();
+      final overtimeSummary =
+          overtimeCalculator.calculateOvertimeSummary(timesheetData);
+
+      session
+          .log('PDF généré avec succès pour validation $validationRequestId');
+      session.log(
+          'Heures supplémentaires - Semaine: ${overtimeSummary.formattedWeekdayOvertime}');
+      session.log(
+          'Heures supplémentaires - Weekend: ${overtimeSummary.formattedWeekendOvertime}');
 
       return {
         'success': true,
@@ -267,9 +295,23 @@ class TimesheetEndpoint extends Endpoint {
           'hasEmployeeSignature': employeeSignature != null,
           'hasManagerSignature': managerSignature != null,
           'managerName': managerName,
-          'pdfGenerated': false, // TODO: changer à true quand implémenté
-          'message': 'Génération PDF pas encore implémentée côté serveur',
+          'pdfGenerated': true,
+          'pdfSize': pdfBytes.length,
+          'overtimeSummary': {
+            'weekdayOvertime': overtimeSummary.formattedWeekdayOvertime,
+            'weekendOvertime': overtimeSummary.formattedWeekendOvertime,
+            'totalOvertime': overtimeSummary.formattedTotalOvertime,
+            'regularHours': overtimeSummary.formattedRegularHours,
+            'weekdayRate':
+                '${(overtimeSummary.weekdayOvertimeRate * 100).toStringAsFixed(0)}%',
+            'weekendRate':
+                '${(overtimeSummary.weekendOvertimeRate * 100).toStringAsFixed(0)}%',
+            'hasWeekendWork': overtimeSummary.hasWeekendOvertime,
+          },
+          'message':
+              'PDF généré avec succès avec séparation des heures supplémentaires weekend/semaine',
         },
+        'pdfBytes': pdfBytes, // Include PDF bytes in response
       };
     } catch (e) {
       session.log('Error in _handleGeneratePdf: $e');
@@ -429,19 +471,146 @@ class TimesheetEndpoint extends Endpoint {
       //   await ValidationRequest.db.updateRow(session, validation);
       // }
 
-      // Générer le PDF avec les signatures
+      // Validation des données avant génération PDF
+      final validationResult = _validateTimesheetData(timesheetData);
+      if (!validationResult['isValid']) {
+        throw Exception(
+            'Données invalides: ${validationResult['errors'].join(', ')}');
+      }
+
+      // Générer le PDF avec les signatures et les heures supplémentaires séparées
       final pdfGenerator = PdfGeneratorService();
       final pdfBytes = await pdfGenerator.generateTimesheetPdf(
         timesheetData: timesheetData,
         validation: validation,
-        includeManagerSignature: false, // Plus de signature depuis BDD
+        managerSignature: managerSignature,
+        includeManagerSignature:
+            managerSignature != null && managerSignature.isNotEmpty,
       );
 
-      session.log('PDF généré avec succès pour validation $validationRequestId');
+      // Log des statistiques d'heures supplémentaires
+      final overtimeCalculator = WeekendOvertimeCalculatorService();
+      final overtimeSummary =
+          overtimeCalculator.calculateOvertimeSummary(timesheetData);
+      session.log(
+          'Heures supplémentaires - Semaine: ${overtimeSummary.formattedWeekdayOvertime}');
+      session.log(
+          'Heures supplémentaires - Weekend: ${overtimeSummary.formattedWeekendOvertime}');
+
+      session
+          .log('PDF généré avec succès pour validation $validationRequestId');
       return pdfBytes;
     } catch (e) {
       session.log('Error in generateSignedPdf: $e');
       throw Exception('Impossible de générer le PDF signé: $e');
+    }
+  }
+
+  /// Validates timesheet data before PDF generation
+  Map<String, dynamic> _validateTimesheetData(TimesheetData timesheetData) {
+    final errors = <String>[];
+
+    // Validate basic data
+    if (timesheetData.employeeName.isEmpty) {
+      errors.add('Nom de l\'employé manquant');
+    }
+
+    if (timesheetData.employeeId.isEmpty) {
+      errors.add('ID de l\'employé manquant');
+    }
+
+    if (timesheetData.month < 1 || timesheetData.month > 12) {
+      errors.add('Mois invalide');
+    }
+
+    if (timesheetData.year < 2020 || timesheetData.year > 2030) {
+      errors.add('Année invalide');
+    }
+
+    // Validate entries JSON
+    try {
+      final entriesJson = jsonDecode(timesheetData.entries) as List;
+      if (entriesJson.isEmpty) {
+        errors.add('Aucune entrée de temps trouvée');
+      }
+
+      // Validate each entry
+      for (int i = 0; i < entriesJson.length; i++) {
+        final entry = entriesJson[i] as Map<String, dynamic>;
+        final dayDate = entry['dayDate'] as String?;
+
+        if (dayDate == null || dayDate.isEmpty) {
+          errors.add('Date manquante pour l\'entrée ${i + 1}');
+          continue;
+        }
+
+        // Try to parse the date
+        try {
+          DateTime.parse(dayDate);
+        } catch (e) {
+          errors
+              .add('Format de date invalide pour l\'entrée ${i + 1}: $dayDate');
+        }
+
+        // Validate time entries if not absence
+        final isAbsence = entry['isAbsence'] as bool? ?? false;
+        if (!isAbsence) {
+          final startMorning = entry['startMorning'] as String?;
+          final endMorning = entry['endMorning'] as String?;
+          final startAfternoon = entry['startAfternoon'] as String?;
+          final endAfternoon = entry['endAfternoon'] as String?;
+
+          // At least one session should have valid times
+          bool hasValidSession = false;
+
+          if (startMorning != null &&
+              endMorning != null &&
+              startMorning.isNotEmpty &&
+              endMorning.isNotEmpty) {
+            if (_isValidTimeFormat(startMorning) &&
+                _isValidTimeFormat(endMorning)) {
+              hasValidSession = true;
+            }
+          }
+
+          if (startAfternoon != null &&
+              endAfternoon != null &&
+              startAfternoon.isNotEmpty &&
+              endAfternoon.isNotEmpty) {
+            if (_isValidTimeFormat(startAfternoon) &&
+                _isValidTimeFormat(endAfternoon)) {
+              hasValidSession = true;
+            }
+          }
+
+          if (!hasValidSession) {
+            errors.add(
+                'Aucune session de travail valide pour l\'entrée ${i + 1}');
+          }
+        }
+      }
+    } catch (e) {
+      errors.add('Format JSON invalide pour les entrées: $e');
+    }
+
+    return {
+      'isValid': errors.isEmpty,
+      'errors': errors,
+    };
+  }
+
+  /// Validates time format (HH:MM)
+  bool _isValidTimeFormat(String timeString) {
+    try {
+      final parts = timeString.split(':');
+      if (parts.length != 2) return false;
+
+      final hour = int.parse(parts[0]);
+      final minute = int.parse(parts[1]);
+
+      return hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59;
+    } catch (e) {
+      return false;
     }
   }
 }

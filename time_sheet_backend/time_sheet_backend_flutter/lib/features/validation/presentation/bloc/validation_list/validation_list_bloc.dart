@@ -10,10 +10,11 @@ part 'validation_list_event.dart';
 part 'validation_list_state.dart';
 
 /// BLoC pour gérer la liste des validations
-class ValidationListBloc extends Bloc<ValidationListEvent, ValidationListState> {
+class ValidationListBloc
+    extends Bloc<ValidationListEvent, ValidationListState> {
   final GetEmployeeValidationsUseCase getEmployeeValidations;
   final GetManagerValidationsUseCase getManagerValidations;
-  
+
   ValidationListBloc({
     required this.getEmployeeValidations,
     required this.getManagerValidations,
@@ -22,28 +23,29 @@ class ValidationListBloc extends Bloc<ValidationListEvent, ValidationListState> 
     on<RefreshValidations>(_onRefreshValidations);
     on<FilterValidations>(_onFilterValidations);
   }
-  
+
   Future<void> _onLoadValidations(
     LoadValidations event,
     Emitter<ValidationListState> emit,
   ) async {
     emit(ValidationListLoading());
-    
+
     try {
       // Récupérer l'ID utilisateur depuis les préférences
       final getUserPref = di.getIt<GetUserPreferenceUseCase>();
       final firstName = await getUserPref.execute('firstName') ?? '';
       final lastName = await getUserPref.execute('lastName') ?? '';
       final company = await getUserPref.execute('company') ?? '';
-      
+
       if (firstName.isEmpty || lastName.isEmpty) {
-        emit(const ValidationListError('Veuillez configurer votre nom dans les paramètres'));
+        emit(const ValidationListError(
+            'Veuillez configurer votre nom dans les paramètres'));
         return;
       }
-      
+
       // Pour les employés : prénom_nom
       final employeeId = '${firstName.toLowerCase()}_${lastName.toLowerCase()}';
-      
+
       // Déterminer le type de liste à charger
       if (event.viewType == ValidationViewType.employee) {
         final result = await getEmployeeValidations(employeeId);
@@ -63,12 +65,14 @@ class ValidationListBloc extends Bloc<ValidationListEvent, ValidationListState> 
       } else {
         // Pour les managers, on doit récupérer leur ID depuis la base de données
         // en utilisant leur email
-        final email = '${firstName.toLowerCase()}.${lastName.toLowerCase()}@${company.toLowerCase().replaceAll(' ', '_')}.ch';
-        
+        final email =
+            '${firstName.toLowerCase()}.${lastName.toLowerCase()}@${company.toLowerCase().replaceAll(' ', '_')}.ch';
+
         // Récupérer toutes les validations et filtrer par email du manager
         // Note: On pourrait améliorer cela en ajoutant une méthode getManagerByEmail
-        final result = await getManagerValidations(email); // On passe l'email au lieu de l'ID
-        
+        final result = await getManagerValidations(
+            email); // On passe l'email au lieu de l'ID
+
         result.fold(
           (failure) => emit(ValidationListError(failure.message)),
           (validations) {
@@ -87,7 +91,7 @@ class ValidationListBloc extends Bloc<ValidationListEvent, ValidationListState> 
       emit(ValidationListError('Erreur inattendue: $e'));
     }
   }
-  
+
   Future<void> _onRefreshValidations(
     RefreshValidations event,
     Emitter<ValidationListState> emit,
@@ -100,7 +104,7 @@ class ValidationListBloc extends Bloc<ValidationListEvent, ValidationListState> 
       ));
     }
   }
-  
+
   void _onFilterValidations(
     FilterValidations event,
     Emitter<ValidationListState> emit,
@@ -111,40 +115,49 @@ class ValidationListBloc extends Bloc<ValidationListEvent, ValidationListState> 
         currentState.allValidations,
         event.filters,
       );
-      
+
       emit(currentState.copyWith(
         validations: filtered,
         currentFilters: event.filters,
       ));
     }
   }
-  
+
   List<ValidationRequest> _applyFilters(
     List<ValidationRequest> validations,
     ValidationFilters filters,
   ) {
     var filtered = validations;
-    
+
     // Filtrer par statut
     if (filters.status != null) {
       filtered = filtered.where((v) => v.status == filters.status).toList();
     }
-    
+
     // Filtrer par période
     if (filters.startDate != null) {
-      filtered = filtered.where((v) => 
-        v.periodStart.isAfter(filters.startDate!) ||
-        v.periodStart.isAtSameMomentAs(filters.startDate!)
-      ).toList();
+      filtered = filtered
+          .where((v) =>
+              v.periodStart.isAfter(filters.startDate!) ||
+              v.periodStart.isAtSameMomentAs(filters.startDate!))
+          .toList();
     }
-    
+
     if (filters.endDate != null) {
-      filtered = filtered.where((v) => 
-        v.periodEnd.isBefore(filters.endDate!) ||
-        v.periodEnd.isAtSameMomentAs(filters.endDate!)
-      ).toList();
+      filtered = filtered
+          .where((v) =>
+              v.periodEnd.isBefore(filters.endDate!) ||
+              v.periodEnd.isAtSameMomentAs(filters.endDate!))
+          .toList();
     }
-    
+
+    // Filtrer par heures de weekend
+    if (filters.hasWeekendHours != null) {
+      filtered = filtered
+          .where((v) => _hasWeekendHoursSync(v) == filters.hasWeekendHours)
+          .toList();
+    }
+
     // Trier
     switch (filters.sortBy) {
       case SortBy.dateDesc:
@@ -160,7 +173,27 @@ class ValidationListBloc extends Bloc<ValidationListEvent, ValidationListState> 
         filtered.sort((a, b) => a.periodStart.compareTo(b.periodStart));
         break;
     }
-    
+
     return filtered;
+  }
+
+  /// Vérifie de manière synchrone si une validation contient des heures de weekend
+  /// (version simplifiée pour le filtrage)
+  bool _hasWeekendHoursSync(ValidationRequest validation) {
+    // Pour l'instant, on considère qu'il y a des heures weekend si la période
+    // inclut un weekend (approximation simple)
+    final start = validation.periodStart;
+    final end = validation.periodEnd;
+
+    for (var date = start;
+        date.isBefore(end) || date.isAtSameMomentAs(end);
+        date = date.add(const Duration(days: 1))) {
+      if (date.weekday == DateTime.saturday ||
+          date.weekday == DateTime.sunday) {
+        return true;
+      }
+    }
+
+    return false;
   }
 }

@@ -7,25 +7,30 @@ import 'package:time_sheet/features/validation/domain/use_cases/get_employee_val
 import 'package:time_sheet/features/validation/domain/use_cases/approve_validation_usecase.dart';
 import 'package:time_sheet/features/validation/domain/use_cases/reject_validation_usecase.dart';
 import 'package:time_sheet/features/validation/domain/use_cases/download_validation_pdf_usecase.dart';
+import 'package:time_sheet/features/validation/domain/use_cases/get_validation_timesheet_data_usecase.dart';
 import 'package:time_sheet/features/validation/domain/repositories/validation_repository.dart';
 
 part 'validation_detail_event.dart';
 part 'validation_detail_state.dart';
 
 /// BLoC pour gérer le détail d'une validation
-class ValidationDetailBloc extends Bloc<ValidationDetailEvent, ValidationDetailState> {
+class ValidationDetailBloc
+    extends Bloc<ValidationDetailEvent, ValidationDetailState> {
   final ValidationRepository repository;
   final ApproveValidationUseCase approveValidation;
   final RejectValidationUseCase rejectValidation;
   final DownloadValidationPdfUseCase downloadPdf;
+  final GetValidationTimesheetDataUseCase getTimesheetData;
 
   ValidationDetailBloc({
     required this.repository,
     required this.approveValidation,
     required this.rejectValidation,
     required this.downloadPdf,
+    required this.getTimesheetData,
   }) : super(ValidationDetailInitial()) {
     on<LoadValidationDetail>(_onLoadValidationDetail);
+    on<LoadValidationTimesheetData>(_onLoadValidationTimesheetData);
     on<ApproveValidation>(_onApproveValidation);
     on<RejectValidation>(_onRejectValidation);
     on<DownloadValidationPdf>(_onDownloadValidationPdf);
@@ -46,6 +51,57 @@ class ValidationDetailBloc extends Bloc<ValidationDetailEvent, ValidationDetailS
       );
     } catch (e) {
       emit(ValidationDetailError('Erreur inattendue: $e'));
+    }
+  }
+
+  Future<void> _onLoadValidationTimesheetData(
+    LoadValidationTimesheetData event,
+    Emitter<ValidationDetailState> emit,
+  ) async {
+    final currentState = state;
+
+    // Si on a déjà les données de validation, on les garde
+    ValidationRequest? validation;
+    if (currentState is ValidationDetailLoaded) {
+      validation = currentState.validation;
+    } else if (currentState is ValidationDetailWithTimesheetLoaded) {
+      validation = currentState.validation;
+    }
+
+    // Si on n'a pas encore les données de validation, les charger d'abord
+    if (validation == null) {
+      emit(ValidationDetailLoading());
+
+      final validationResult =
+          await repository.getValidationRequest(event.validationId);
+      final validationEither = validationResult.fold(
+        (failure) => null,
+        (val) => val,
+      );
+
+      if (validationEither == null) {
+        emit(ValidationDetailError('Impossible de charger la validation'));
+        return;
+      }
+
+      validation = validationEither;
+    }
+
+    try {
+      // Charger les données timesheet
+      final timesheetResult = await getTimesheetData(event.validationId);
+
+      timesheetResult.fold(
+        (failure) => emit(ValidationDetailError(
+            'Impossible de charger les données timesheet: ${failure.message}')),
+        (timesheetData) => emit(ValidationDetailWithTimesheetLoaded(
+          validation: validation!,
+          timesheetData: timesheetData,
+        )),
+      );
+    } catch (e) {
+      emit(ValidationDetailError(
+          'Erreur lors du chargement des données timesheet: $e'));
     }
   }
 

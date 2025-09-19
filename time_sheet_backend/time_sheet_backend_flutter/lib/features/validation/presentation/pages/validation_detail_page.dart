@@ -6,6 +6,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:time_sheet/features/validation/presentation/bloc/validation_detail/validation_detail_bloc.dart';
 import 'package:time_sheet/features/validation/domain/entities/validation_request.dart';
+import 'package:time_sheet/features/validation/domain/services/validation_overtime_analyzer.dart';
+import 'package:time_sheet/features/validation/presentation/widgets/weekend_overtime_summary_widget.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:time_sheet/features/preference/presentation/manager/preferences_bloc.dart';
@@ -28,6 +30,8 @@ class ValidationDetailPage extends StatefulWidget {
 class _ValidationDetailPageState extends State<ValidationDetailPage> {
   final _commentController = TextEditingController();
   Uint8List? _managerSignature;
+  final ValidationOvertimeAnalyzer _overtimeAnalyzer =
+      ValidationOvertimeAnalyzer();
 
   @override
   void initState() {
@@ -36,8 +40,11 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
           LoadValidationDetail(widget.validationId),
         );
 
-    // Charger la signature du manager si c'est un manager
+    // Charger les données timesheet si c'est un manager
     if (widget.isManager) {
+      context.read<ValidationDetailBloc>().add(
+            LoadValidationTimesheetData(widget.validationId),
+          );
       _loadManagerSignature();
     }
   }
@@ -105,7 +112,8 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (state is ValidationDetailError && state is! ValidationDetailLoaded) {
+          if (state is ValidationDetailError &&
+              state is! ValidationDetailLoaded) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -129,6 +137,11 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
 
           if (state is ValidationDetailLoaded) {
             return _buildContent(state.validation);
+          }
+
+          if (state is ValidationDetailWithTimesheetLoaded) {
+            return _buildContentWithTimesheet(
+                state.validation, state.timesheetData);
           }
 
           return const SizedBox();
@@ -216,9 +229,11 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
                 ),
                 const Divider(height: 24),
                 ListTile(
-                  leading: const Icon(Icons.picture_as_pdf, size: 40, color: Colors.red),
+                  leading: const Icon(Icons.picture_as_pdf,
+                      size: 40, color: Colors.red),
                   title: const Text('Timesheet.pdf'),
-                  subtitle: Text('Taille: ${_formatFileSize(validation.pdfSizeBytes)}'),
+                  subtitle: Text(
+                      'Taille: ${_formatFileSize(validation.pdfSizeBytes)}'),
                   trailing: IconButton(
                     icon: const Icon(Icons.download),
                     onPressed: () => _downloadPdf(validation.id),
@@ -230,7 +245,9 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
         ),
 
         // Commentaire et signature du manager pour les validations approuvées
-        if (validation.isApproved && (validation.managerComment != null || validation.managerSignature != null)) ...[
+        if (validation.isApproved &&
+            (validation.managerComment != null ||
+                validation.managerSignature != null)) ...[
           const SizedBox(height: 16),
           Card(
             child: Padding(
@@ -246,7 +263,8 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
                     ),
                   ),
                   const Divider(height: 24),
-                  if (validation.managerComment != null && validation.managerComment!.isNotEmpty) ...[
+                  if (validation.managerComment != null &&
+                      validation.managerComment!.isNotEmpty) ...[
                     const Text(
                       'Commentaire',
                       style: TextStyle(fontWeight: FontWeight.bold),
@@ -262,7 +280,8 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
                     ),
                     const SizedBox(height: 16),
                   ],
-                  if (validation.managerSignature != null && validation.managerSignature!.isNotEmpty) ...[
+                  if (validation.managerSignature != null &&
+                      validation.managerSignature!.isNotEmpty) ...[
                     const Text(
                       'Signature',
                       style: TextStyle(fontWeight: FontWeight.bold),
@@ -290,7 +309,9 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
         ],
 
         // Commentaire du manager pour les validations rejetées
-        if (validation.isRejected && validation.managerComment != null && validation.managerComment!.isNotEmpty) ...[
+        if (validation.isRejected &&
+            validation.managerComment != null &&
+            validation.managerComment!.isNotEmpty) ...[
           const SizedBox(height: 16),
           Card(
             child: Padding(
@@ -380,7 +401,8 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
                     children: [
                       Expanded(
                         child: OutlinedButton.icon(
-                          onPressed: () => _showRejectConfirmation(validation.id),
+                          onPressed: () =>
+                              _showRejectConfirmation(validation.id),
                           icon: const Icon(Icons.cancel, color: Colors.red),
                           label: const Text('Rejeter'),
                           style: OutlinedButton.styleFrom(
@@ -392,7 +414,9 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
                       const SizedBox(width: 16),
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: _managerSignature != null ? () => _showApproveConfirmation(validation.id) : null,
+                          onPressed: _managerSignature != null
+                              ? () => _showApproveConfirmation(validation.id)
+                              : null,
                           icon: const Icon(Icons.check_circle),
                           label: const Text('Approuver'),
                           style: ElevatedButton.styleFrom(
@@ -413,7 +437,327 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value, {Color? color}) {
+  Widget _buildContentWithTimesheet(
+      ValidationRequest validation, Map<String, dynamic> timesheetData) {
+    final dateFormat = DateFormat('dd/MM/yyyy');
+    final dateTimeFormat = DateFormat('dd/MM/yyyy HH:mm');
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        // Carte d'information principale
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Informations générales',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    _buildStatusChip(validation.status),
+                  ],
+                ),
+                const Divider(height: 24),
+                _buildInfoRow(
+                  Icons.date_range,
+                  'Période',
+                  '${dateFormat.format(validation.periodStart)} - ${dateFormat.format(validation.periodEnd)}',
+                ),
+                const SizedBox(height: 12),
+                _buildInfoRow(
+                  Icons.access_time,
+                  'Créée le',
+                  dateTimeFormat.format(validation.createdAt),
+                ),
+                if (validation.validatedAt != null) ...[
+                  const SizedBox(height: 12),
+                  _buildInfoRow(
+                    Icons.check_circle,
+                    'Validée le',
+                    dateTimeFormat.format(validation.validatedAt!),
+                  ),
+                ],
+                if (validation.expiresAt != null) ...[
+                  const SizedBox(height: 12),
+                  _buildInfoRow(
+                    Icons.timer_off,
+                    'Expire le',
+                    dateTimeFormat.format(validation.expiresAt!),
+                    color: validation.isExpired ? Colors.red : null,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Résumé des heures supplémentaires weekend
+        FutureBuilder(
+          future: _overtimeAnalyzer.analyzeTimesheetData(timesheetData),
+          builder: (context, snapshot) {
+            if (snapshot.hasData) {
+              final overtimeSummary = snapshot.data!;
+              return WeekendOvertimeSummaryWidget(
+                overtimeSummary: overtimeSummary,
+                showAlert: widget.isManager && validation.isPending,
+              );
+            } else if (snapshot.hasError) {
+              return Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                      'Erreur lors du calcul des heures: ${snapshot.error}'),
+                ),
+              );
+            } else {
+              return const Card(
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+              );
+            }
+          },
+        ),
+
+        const SizedBox(height: 16),
+
+        // Document PDF
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Document',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const Divider(height: 24),
+                ListTile(
+                  leading: const Icon(Icons.picture_as_pdf,
+                      size: 40, color: Colors.red),
+                  title: const Text('Timesheet.pdf'),
+                  subtitle: Text(
+                      'Taille: ${_formatFileSize(validation.pdfSizeBytes)}'),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.download),
+                    onPressed: () => _downloadPdf(validation.id),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // Commentaire et signature du manager pour les validations approuvées
+        if (validation.isApproved &&
+            (validation.managerComment != null ||
+                validation.managerSignature != null)) ...[
+          const SizedBox(height: 16),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Validation du manager',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Divider(height: 24),
+                  if (validation.managerComment != null &&
+                      validation.managerComment!.isNotEmpty) ...[
+                    const Text(
+                      'Commentaire',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(validation.managerComment!),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                  if (validation.managerSignature != null &&
+                      validation.managerSignature!.isNotEmpty) ...[
+                    const Text(
+                      'Signature',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      height: 100,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.memory(
+                          base64Decode(validation.managerSignature!),
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
+
+        // Commentaire du manager pour les validations rejetées
+        if (validation.isRejected &&
+            validation.managerComment != null &&
+            validation.managerComment!.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Raison du rejet',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.red,
+                    ),
+                  ),
+                  const Divider(height: 24),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(validation.managerComment!),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+
+        // Actions pour le manager
+        if (widget.isManager && validation.isPending) ...[
+          const SizedBox(height: 32),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Actions',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Divider(height: 24),
+                  TextField(
+                    controller: _commentController,
+                    decoration: const InputDecoration(
+                      labelText: 'Commentaire (optionnel pour approbation)',
+                      border: OutlineInputBorder(),
+                      alignLabelWithHint: true,
+                    ),
+                    maxLines: 3,
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Signature',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    height: 150,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: _managerSignature != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.memory(
+                              _managerSignature!,
+                              fit: BoxFit.contain,
+                            ),
+                          )
+                        : const Center(
+                            child: Text(
+                              'Aucune signature trouvée.\nVeuillez configurer votre signature dans les paramètres.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          ),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () =>
+                              _showRejectConfirmation(validation.id),
+                          icon: const Icon(Icons.cancel, color: Colors.red),
+                          label: const Text('Rejeter'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.red,
+                            side: const BorderSide(color: Colors.red),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: _managerSignature != null
+                              ? () => _showApproveConfirmation(validation.id)
+                              : null,
+                          icon: const Icon(Icons.check_circle),
+                          label: const Text('Approuver'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+
+        const SizedBox(height: 32),
+      ],
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String label, String value,
+      {Color? color}) {
     return Row(
       children: [
         Icon(icon, size: 20, color: color ?? Colors.grey),
@@ -513,8 +857,12 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
               bloc.add(
                 ApproveValidation(
                   validationId: validationId,
-                  managerSignature: _managerSignature != null ? base64Encode(_managerSignature!) : '',
-                  comment: _commentController.text.isNotEmpty ? _commentController.text : null,
+                  managerSignature: _managerSignature != null
+                      ? base64Encode(_managerSignature!)
+                      : '',
+                  comment: _commentController.text.isNotEmpty
+                      ? _commentController.text
+                      : null,
                 ),
               );
             },
@@ -605,7 +953,9 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
     context
         .read<ValidationDetailBloc>()
         .stream
-        .firstWhere((state) => state is ValidationDetailPdfDownloaded || state is ValidationDetailError)
+        .firstWhere((state) =>
+            state is ValidationDetailPdfDownloaded ||
+            state is ValidationDetailError)
         .then((state) {
       Navigator.pop(context); // Fermer le dialog
 

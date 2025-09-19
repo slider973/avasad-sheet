@@ -10,6 +10,7 @@ import '../../domain/use_cases/get_user_preference_use_case.dart';
 import '../../domain/use_cases/set_user_preference_use_case.dart';
 import '../../domain/use_cases/register_manager_use_case.dart';
 import '../../domain/use_cases/unregister_manager_use_case.dart';
+import '../../data/models/reminder_settings.dart';
 
 part 'preferences_event.dart';
 
@@ -35,6 +36,9 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
     on<ToggleDeliveryManager>(_onToggleDeliveryManager);
     on<SaveBadgeCount>(_onSaveBadgeCount);
     on<SaveUserInfoEvent>(_onSaveUserInfo);
+    on<SaveReminderSettings>(_onSaveReminderSettings);
+    on<LoadReminderSettings>(_onLoadReminderSettings);
+    on<ToggleReminders>(_onToggleReminders);
   }
 
   Future<void> _onLoadPreferences(
@@ -54,7 +58,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
           await getUserPreferenceUseCase.execute('lastGenerationDate');
       final notificationsEnabled =
           await getUserPreferenceUseCase.execute('notificationsEnabled') ??
-              'false';  // Désactivé par défaut
+              'false'; // Désactivé par défaut
       final isDeliveryManager =
           await getUserPreferenceUseCase.execute('isDeliveryManager') ??
               'false';
@@ -63,6 +67,8 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
           : null;
       final badgeCountString =
           await getUserPreferenceUseCase.execute('badgeCount');
+      final reminderSettingsJson =
+          await getUserPreferenceUseCase.execute('reminderSettings');
 
       Uint8List? signature;
       if (signatureBase64 != null) {
@@ -72,6 +78,22 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
           logger.e('Erreur lors du décodage de la signature: $e');
         }
       }
+
+      // Load reminder settings or use default (disabled by default per requirement 1.1)
+      ReminderSettings? reminderSettings;
+      if (reminderSettingsJson != null) {
+        try {
+          final Map<String, dynamic> reminderData =
+              jsonDecode(reminderSettingsJson);
+          reminderSettings = ReminderSettings.fromJson(reminderData);
+        } catch (e) {
+          logger.e('Erreur lors du décodage des paramètres de rappel: $e');
+          reminderSettings = ReminderSettings.defaultSettings;
+        }
+      } else {
+        reminderSettings = ReminderSettings.defaultSettings;
+      }
+
       // Obtenez les informations de version
       PackageInfo packageInfo = await PackageInfo.fromPlatform();
       String versionNumber = packageInfo.version;
@@ -87,7 +109,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
         badgeCount: int.tryParse(badgeCountString ?? '0') ?? 0,
         versionNumber: versionNumber,
         buildNumber: buildNumber,
-
+        reminderSettings: reminderSettings,
       ));
     } catch (e) {
       emit(PreferencesError(e.toString()));
@@ -108,10 +130,12 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
       Uint8List? signature;
       bool notificationsEnabled = true;
       bool isDeliveryManager = false;
+      ReminderSettings? reminderSettings;
       if (currentState is PreferencesLoaded) {
         signature = currentState.signature;
         notificationsEnabled = currentState.notificationsEnabled;
         isDeliveryManager = currentState.isDeliveryManager;
+        reminderSettings = currentState.reminderSettings;
       }
 
       // Charger les préférences mises à jour
@@ -141,6 +165,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
         badgeCount: int.tryParse(badgeCountString ?? '0') ?? 0,
         versionNumber: versionNumber,
         buildNumber: buildNumber,
+        reminderSettings: reminderSettings,
       ));
     } catch (e) {
       logger.e(e);
@@ -194,6 +219,9 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
         badgeCount: int.tryParse(badgeCountString ?? '0') ?? 0,
         versionNumber: versionNumber,
         buildNumber: buildNumber,
+        reminderSettings: state is PreferencesLoaded
+            ? (state as PreferencesLoaded).reminderSettings
+            : ReminderSettings.defaultSettings,
       ));
     } catch (e) {
       logger.e('Erreur lors de la sauvegarde de la signature: $e');
@@ -241,6 +269,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
           badgeCount: currentState.badgeCount,
           versionNumber: versionNumber,
           buildNumber: buildNumber,
+          reminderSettings: currentState.reminderSettings,
         ));
       } catch (e) {
         logger.e(e);
@@ -276,6 +305,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
           badgeCount: currentState.badgeCount,
           versionNumber: versionNumber,
           buildNumber: buildNumber,
+          reminderSettings: currentState.reminderSettings,
         ));
       } catch (e) {
         logger.e(e);
@@ -297,7 +327,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
           'isDeliveryManager',
           event.enabled.toString(),
         );
-        
+
         // Synchroniser avec Supabase via les use cases
         if (event.enabled) {
           // Enregistrer comme manager
@@ -306,9 +336,10 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
             lastName: currentState.lastName,
             company: currentState.company,
           );
-          
+
           if (!success) {
-            logger.w('Échec de l\'enregistrement dans Supabase, mais préférences locales mises à jour');
+            logger.w(
+                'Échec de l\'enregistrement dans Supabase, mais préférences locales mises à jour');
           }
         } else {
           // Retirer de la liste des managers
@@ -317,12 +348,13 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
             lastName: currentState.lastName,
             company: currentState.company,
           );
-          
+
           if (!success) {
-            logger.w('Échec de la suppression dans Supabase, mais préférences locales mises à jour');
+            logger.w(
+                'Échec de la suppression dans Supabase, mais préférences locales mises à jour');
           }
         }
-        
+
         // Obtenez les informations de version
         PackageInfo packageInfo = await PackageInfo.fromPlatform();
         String versionNumber = packageInfo.version;
@@ -338,6 +370,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
           badgeCount: currentState.badgeCount,
           versionNumber: versionNumber,
           buildNumber: buildNumber,
+          reminderSettings: currentState.reminderSettings,
         ));
       } catch (e) {
         logger.e('Erreur lors du toggle delivery manager: $e');
@@ -373,7 +406,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
           badgeCount: event.count,
           versionNumber: versionNumber,
           buildNumber: buildNumber,
-
+          reminderSettings: currentState.reminderSettings,
         ));
       } catch (e) {
         logger.e(e);
@@ -392,17 +425,19 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
       await setUserPreferenceUseCase.execute('firstName', event.firstName);
       await setUserPreferenceUseCase.execute('lastName', event.lastName);
       await setUserPreferenceUseCase.execute('company', event.company);
-      
+
       if (event.signature != null) {
         final signatureBase64 = base64Encode(event.signature!);
         await setUserPreferenceUseCase.execute('signature', signatureBase64);
       }
-      
+
       // Charger les autres préférences existantes
       final notificationsEnabled =
-          await getUserPreferenceUseCase.execute('notificationsEnabled') ?? 'false';
+          await getUserPreferenceUseCase.execute('notificationsEnabled') ??
+              'false';
       final isDeliveryManager =
-          await getUserPreferenceUseCase.execute('isDeliveryManager') ?? 'false';
+          await getUserPreferenceUseCase.execute('isDeliveryManager') ??
+              'false';
       final lastGenerationDateString =
           await getUserPreferenceUseCase.execute('lastGenerationDate');
       final lastGenerationDate = lastGenerationDateString != null
@@ -410,12 +445,29 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
           : null;
       final badgeCountString =
           await getUserPreferenceUseCase.execute('badgeCount');
-      
+      final reminderSettingsJson =
+          await getUserPreferenceUseCase.execute('reminderSettings');
+
+      // Load reminder settings or use default
+      ReminderSettings? reminderSettings;
+      if (reminderSettingsJson != null) {
+        try {
+          final Map<String, dynamic> reminderData =
+              jsonDecode(reminderSettingsJson);
+          reminderSettings = ReminderSettings.fromJson(reminderData);
+        } catch (e) {
+          logger.e('Erreur lors du décodage des paramètres de rappel: $e');
+          reminderSettings = ReminderSettings.defaultSettings;
+        }
+      } else {
+        reminderSettings = ReminderSettings.defaultSettings;
+      }
+
       // Obtenez les informations de version
       PackageInfo packageInfo = await PackageInfo.fromPlatform();
       String versionNumber = packageInfo.version;
       String buildNumber = packageInfo.buildNumber;
-      
+
       emit(PreferencesSaved());
       emit(PreferencesLoaded(
         firstName: event.firstName,
@@ -428,10 +480,156 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
         badgeCount: int.tryParse(badgeCountString ?? '0') ?? 0,
         versionNumber: versionNumber,
         buildNumber: buildNumber,
+        reminderSettings: reminderSettings,
       ));
     } catch (e) {
       logger.e('Erreur lors de la sauvegarde des informations utilisateur: $e');
       emit(PreferencesError(e.toString()));
+    }
+  }
+
+  Future<void> _onSaveReminderSettings(
+    SaveReminderSettings event,
+    Emitter<PreferencesState> emit,
+  ) async {
+    if (state is PreferencesLoaded) {
+      final currentState = state as PreferencesLoaded;
+      try {
+        // Validate reminder settings before saving
+        final validationError = event.reminderSettings.validate();
+        if (validationError != null) {
+          emit(PreferencesError('Configuration invalide: $validationError'));
+          return;
+        }
+
+        // Save reminder settings as JSON
+        final reminderSettingsJson =
+            jsonEncode(event.reminderSettings.toJson());
+        await setUserPreferenceUseCase.execute(
+            'reminderSettings', reminderSettingsJson);
+
+        // Get version information
+        PackageInfo packageInfo = await PackageInfo.fromPlatform();
+        String versionNumber = packageInfo.version;
+        String buildNumber = packageInfo.buildNumber;
+
+        emit(PreferencesLoaded(
+          firstName: currentState.firstName,
+          lastName: currentState.lastName,
+          company: currentState.company,
+          signature: currentState.signature,
+          lastGenerationDate: currentState.lastGenerationDate,
+          notificationsEnabled: currentState.notificationsEnabled,
+          isDeliveryManager: currentState.isDeliveryManager,
+          badgeCount: currentState.badgeCount,
+          versionNumber: versionNumber,
+          buildNumber: buildNumber,
+          reminderSettings: event.reminderSettings,
+        ));
+      } catch (e) {
+        logger.e('Erreur lors de la sauvegarde des paramètres de rappel: $e');
+        emit(PreferencesError(
+            'Erreur lors de la sauvegarde des paramètres de rappel: $e'));
+      }
+    }
+  }
+
+  Future<void> _onLoadReminderSettings(
+    LoadReminderSettings event,
+    Emitter<PreferencesState> emit,
+  ) async {
+    try {
+      final reminderSettingsJson =
+          await getUserPreferenceUseCase.execute('reminderSettings');
+
+      ReminderSettings reminderSettings;
+      if (reminderSettingsJson != null) {
+        try {
+          final Map<String, dynamic> reminderData =
+              jsonDecode(reminderSettingsJson);
+          reminderSettings = ReminderSettings.fromJson(reminderData);
+        } catch (e) {
+          logger.e('Erreur lors du décodage des paramètres de rappel: $e');
+          reminderSettings = ReminderSettings.defaultSettings;
+        }
+      } else {
+        // Use default settings (disabled by default per requirement 1.1)
+        reminderSettings = ReminderSettings.defaultSettings;
+      }
+
+      if (state is PreferencesLoaded) {
+        final currentState = state as PreferencesLoaded;
+
+        // Get version information
+        PackageInfo packageInfo = await PackageInfo.fromPlatform();
+        String versionNumber = packageInfo.version;
+        String buildNumber = packageInfo.buildNumber;
+
+        emit(PreferencesLoaded(
+          firstName: currentState.firstName,
+          lastName: currentState.lastName,
+          company: currentState.company,
+          signature: currentState.signature,
+          lastGenerationDate: currentState.lastGenerationDate,
+          notificationsEnabled: currentState.notificationsEnabled,
+          isDeliveryManager: currentState.isDeliveryManager,
+          badgeCount: currentState.badgeCount,
+          versionNumber: versionNumber,
+          buildNumber: buildNumber,
+          reminderSettings: reminderSettings,
+        ));
+      }
+    } catch (e) {
+      logger.e('Erreur lors du chargement des paramètres de rappel: $e');
+      emit(PreferencesError(
+          'Erreur lors du chargement des paramètres de rappel: $e'));
+    }
+  }
+
+  Future<void> _onToggleReminders(
+    ToggleReminders event,
+    Emitter<PreferencesState> emit,
+  ) async {
+    if (state is PreferencesLoaded) {
+      final currentState = state as PreferencesLoaded;
+      try {
+        // Get current reminder settings or use default
+        ReminderSettings currentReminderSettings =
+            currentState.reminderSettings ?? ReminderSettings.defaultSettings;
+
+        // Create updated reminder settings with new enabled state
+        final updatedReminderSettings =
+            currentReminderSettings.copyWith(enabled: event.enabled);
+
+        // Save updated reminder settings
+        final reminderSettingsJson =
+            jsonEncode(updatedReminderSettings.toJson());
+        await setUserPreferenceUseCase.execute(
+            'reminderSettings', reminderSettingsJson);
+
+        // Get version information
+        PackageInfo packageInfo = await PackageInfo.fromPlatform();
+        String versionNumber = packageInfo.version;
+        String buildNumber = packageInfo.buildNumber;
+
+        emit(PreferencesLoaded(
+          firstName: currentState.firstName,
+          lastName: currentState.lastName,
+          company: currentState.company,
+          signature: currentState.signature,
+          lastGenerationDate: currentState.lastGenerationDate,
+          notificationsEnabled: currentState.notificationsEnabled,
+          isDeliveryManager: currentState.isDeliveryManager,
+          badgeCount: currentState.badgeCount,
+          versionNumber: versionNumber,
+          buildNumber: buildNumber,
+          reminderSettings: updatedReminderSettings,
+        ));
+      } catch (e) {
+        logger.e('Erreur lors du toggle des rappels: $e');
+        emit(
+            PreferencesError('Erreur lors de la modification des rappels: $e'));
+      }
     }
   }
 }

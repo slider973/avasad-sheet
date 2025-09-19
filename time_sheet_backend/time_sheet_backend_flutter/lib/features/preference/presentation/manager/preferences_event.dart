@@ -42,6 +42,7 @@ class SaveUserInfoEvent extends PreferencesEvent {
   @override
   List<Object?> get props => [firstName, lastName, company, signature];
 }
+
 class SaveSignature extends PreferencesEvent {
   final Uint8List signature;
 
@@ -50,6 +51,7 @@ class SaveSignature extends PreferencesEvent {
   @override
   List<Object> get props => [signature];
 }
+
 class SaveLastGenerationDate extends PreferencesEvent {
   final DateTime date;
 
@@ -58,6 +60,7 @@ class SaveLastGenerationDate extends PreferencesEvent {
   @override
   List<Object> get props => [date];
 }
+
 class SaveBadgeCount extends PreferencesEvent {
   final int count;
 
@@ -75,10 +78,31 @@ class ToggleNotifications extends PreferencesEvent {
   @override
   List<Object> get props => [enabled];
 }
+
 class ToggleDeliveryManager extends PreferencesEvent {
   final bool enabled;
 
   const ToggleDeliveryManager(this.enabled);
+
+  @override
+  List<Object> get props => [enabled];
+}
+
+class SaveReminderSettings extends PreferencesEvent {
+  final ReminderSettings reminderSettings;
+
+  const SaveReminderSettings(this.reminderSettings);
+
+  @override
+  List<Object> get props => [reminderSettings];
+}
+
+class LoadReminderSettings extends PreferencesEvent {}
+
+class ToggleReminders extends PreferencesEvent {
+  final bool enabled;
+
+  const ToggleReminders(this.enabled);
 
   @override
   List<Object> get props => [enabled];

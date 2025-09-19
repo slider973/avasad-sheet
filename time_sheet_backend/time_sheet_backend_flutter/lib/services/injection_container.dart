@@ -33,7 +33,11 @@ import '../features/preference/domain/repositories/overtime_configuration_reposi
 import 'anomaly/anomaly_service.dart';
 import 'backup.dart';
 import 'watch_service.dart';
+import 'clock_reminder_service.dart';
 import 'overtime_configuration_service.dart';
+import 'weekend_overtime_calculator.dart';
+import 'weekend_detection_service.dart';
+import 'timer_service.dart';
 import '../features/preference/domain/use_cases/get_signature_usecase.dart';
 import '../features/preference/domain/use_cases/get_user_preference_use_case.dart';
 import '../features/preference/domain/use_cases/set_user_preference_use_case.dart';
@@ -58,6 +62,7 @@ import '../features/validation/domain/use_cases/get_employee_validations_usecase
 import '../features/validation/domain/use_cases/get_manager_validations_usecase.dart';
 import '../features/validation/domain/use_cases/download_validation_pdf_usecase.dart';
 import '../features/validation/domain/use_cases/get_available_managers_usecase.dart';
+import '../features/validation/domain/use_cases/get_validation_timesheet_data_usecase.dart';
 import '../features/validation/data/repositories/validation_repository_serverpod_impl.dart';
 import '../features/validation/data/data_sources/validation_local_data_source.dart';
 import '../features/validation/presentation/bloc/validation_list/validation_list_bloc.dart';
@@ -253,11 +258,35 @@ Future<void> setup() async {
   getIt.registerLazySingleton<OvertimeConfigurationService>(
       () => OvertimeConfigurationService());
 
+  // Enregistrer le service de détection des weekends
+  getIt.registerLazySingleton<WeekendDetectionService>(
+      () => WeekendDetectionService());
+
+  // Enregistrer le calculateur d'heures supplémentaires weekend
+  getIt.registerLazySingleton<WeekendOvertimeCalculator>(
+      () => WeekendOvertimeCalculator(
+            weekendDetectionService: getIt<WeekendDetectionService>(),
+          ));
+
+  // Enregistrer le TimerService comme singleton
+  if (!getIt.isRegistered<TimerService>()) {
+    getIt.registerLazySingleton<TimerService>(() => TimerService());
+  }
+
+  // Enregistrer le service de rappels d'horloge
+  getIt.registerLazySingleton<ClockReminderService>(
+      () => ClockReminderService());
+
   // Initialisez le service des anomalies
   await anomalyService.createAnomaliesForCurrentMonth();
 
   // Initialiser le service Watch
   await getIt<WatchService>().initialize();
+
+  // Initialiser le service de rappels d'horloge avec TimerService
+  await getIt<ClockReminderService>().initialize(
+    timerService: getIt<TimerService>(),
+  );
 
   // Enregistrer les services de validation
 
@@ -323,6 +352,10 @@ Future<void> setup() async {
     () => GetAvailableManagersUseCase(getIt<ValidationRepository>()),
   );
 
+  getIt.registerLazySingleton<GetValidationTimesheetDataUseCase>(
+    () => GetValidationTimesheetDataUseCase(getIt<ValidationRepository>()),
+  );
+
   // Enregistrer les BLoCs de validation
   getIt.registerFactory<ValidationListBloc>(
     () => ValidationListBloc(
@@ -347,6 +380,7 @@ Future<void> setup() async {
       approveValidation: getIt<ApproveValidationUseCase>(),
       rejectValidation: getIt<RejectValidationUseCase>(),
       downloadPdf: getIt<DownloadValidationPdfUseCase>(),
+      getTimesheetData: getIt<GetValidationTimesheetDataUseCase>(),
     ),
   );
 }

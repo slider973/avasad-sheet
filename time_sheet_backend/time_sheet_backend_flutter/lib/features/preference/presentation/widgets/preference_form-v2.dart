@@ -8,6 +8,7 @@ import '../../../pointage/presentation/pages/time-sheet/bloc/time_sheet/time_she
 import '../../../pointage/domain/entities/timesheet_generation_config.dart';
 import '../../../pointage/presentation/pages/timesheet_generation_config_page.dart';
 import '../pages/weekend_settings_page.dart';
+import '../pages/reminder_settings_page.dart';
 import '../manager/preferences_bloc.dart';
 
 import '../../../../services/backup.dart';
@@ -86,6 +87,7 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
                   subtitle: 'Configuration des heures supplémentaires weekend',
                   onTap: () => _navigateToWeekendSettings(context),
                 ),
+                _buildReminderSettingsTile(state),
                 _buildListTile(
                   icon: Icons.backup,
                   title: 'Sauvegarde et Restauration',
@@ -379,6 +381,47 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
         builder: (context) => const WeekendSettingsPage(),
       ),
     );
+  }
+
+  Widget _buildReminderSettingsTile(PreferencesLoaded state) {
+    final reminderSettings = state.reminderSettings;
+    final isEnabled = reminderSettings?.enabled ?? false;
+
+    String subtitle;
+    if (isEnabled) {
+      final clockInTime = reminderSettings!.clockInTime;
+      final clockOutTime = reminderSettings.clockOutTime;
+      subtitle =
+          'Actif - ${_formatTime(clockInTime)} à ${_formatTime(clockOutTime)}';
+    } else {
+      subtitle = 'Rappels désactivés';
+    }
+
+    return ListTile(
+      leading: Icon(
+        isEnabled ? Icons.notifications_active : Icons.notifications_off,
+        color: Colors.teal,
+      ),
+      title: const Text('Rappels de Pointage'),
+      subtitle: Text(subtitle),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () => _navigateToReminderSettings(context),
+    );
+  }
+
+  void _navigateToReminderSettings(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const ReminderSettingsPage(),
+      ),
+    );
+  }
+
+  String _formatTime(TimeOfDay time) {
+    final hour = time.hour.toString().padLeft(2, '0');
+    final minute = time.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
   }
 }
 

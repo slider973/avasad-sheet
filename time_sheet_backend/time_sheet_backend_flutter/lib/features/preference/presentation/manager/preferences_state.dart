@@ -23,6 +23,7 @@ class PreferencesLoaded extends PreferencesState {
   final int badgeCount;
   final String versionNumber;
   final String buildNumber;
+  final ReminderSettings? reminderSettings;
 
   PreferencesLoaded({
     required this.firstName,
@@ -36,6 +37,7 @@ class PreferencesLoaded extends PreferencesState {
     required this.badgeCount,
     required this.versionNumber,
     required this.buildNumber,
+    this.reminderSettings,
   });
 
   @override
@@ -47,7 +49,8 @@ class PreferencesLoaded extends PreferencesState {
         lastGenerationDate,
         notificationsEnabled,
         isDeliveryManager,
-        badgeCount
+        badgeCount,
+        reminderSettings,
       ];
 }
 

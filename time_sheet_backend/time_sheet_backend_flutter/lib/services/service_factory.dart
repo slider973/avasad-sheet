@@ -37,6 +37,8 @@ import '../features/pointage/presentation/pages/pdf/bloc/pdf/pdf_bloc.dart';
 import '../features/pointage/presentation/pages/time-sheet/bloc/time_sheet/time_sheet_bloc.dart';
 import '../features/pointage/presentation/pages/time-sheet/bloc/time_sheet_list/time_sheet_list_bloc.dart';
 import 'ios_notification_service.dart';
+import 'timer_service.dart';
+import 'clock_reminder_service.dart';
 
 class ServiceFactory extends StatelessWidget {
   final getIt = GetIt.instance;
@@ -73,7 +75,8 @@ class ServiceFactory extends StatelessWidget {
                     getOvertimeHoursUseCase: getIt<GetOvertimeHoursUseCase>(),
                     signalerAbsencePeriodeUsecase:
                         getIt<SignalerAbsencePeriodeUsecase>(),
-                getMonthlyTimesheetEntriesUseCase: getIt<GetMonthlyTimesheetEntriesUseCase>(),
+                    getMonthlyTimesheetEntriesUseCase:
+                        getIt<GetMonthlyTimesheetEntriesUseCase>(),
                   )),
           BlocProvider<TimeSheetListBloc>(
             create: (context) => TimeSheetListBloc(
@@ -95,7 +98,8 @@ class ServiceFactory extends StatelessWidget {
           BlocProvider<AnomalyBloc>(
             create: (context) => AnomalyBloc(
               detectAnomaliesUseCase: getIt<DetectAnomaliesUseCase>(),
-              detectAnomaliesWithCompensationUseCase: getIt<DetectAnomaliesWithCompensationUseCase>(),
+              detectAnomaliesWithCompensationUseCase:
+                  getIt<DetectAnomaliesWithCompensationUseCase>(),
               preferencesBloc: BlocProvider.of<PreferencesBloc>(context),
               allDetectors: AnomalyDetectorFactory.getAllDetectors(),
               anomalyRepository: getIt<AnomalyRepository>(),
@@ -107,19 +111,39 @@ class ServiceFactory extends StatelessWidget {
         ],
         child: Builder(builder: (context) {
           final timeSheetBloc = BlocProvider.of<TimeSheetBloc>(context);
+          final timerService =
+              getIt<TimerService>(); // Get TimerService from DI
+          final clockReminderService =
+              getIt<ClockReminderService>(); // Get ClockReminderService from DI
           final dynamicMultiplatformNotificationService =
               DynamicMultiplatformNotificationService(
             flutterLocalNotificationsPlugin: FlutterLocalNotificationsPlugin(),
             timeSheetBloc: timeSheetBloc,
             preferencesBloc: BlocProvider.of<PreferencesBloc>(context),
+            timerService:
+                timerService, // Pass TimerService for intelligent reminders
           );
           dynamicMultiplatformNotificationService.initNotifications();
+
+          // Set up TimeSheetBloc listener for clock state changes
+          timeSheetBloc.stream.listen((state) {
+            if (state is TimeSheetDataState) {
+              final currentStatus = state.entry.currentState;
+              clockReminderService.onTimeSheetStateChanged(currentStatus);
+            }
+          });
 
           SystemChannels.lifecycle.setMessageHandler((msg) async {
             if (msg == AppLifecycleState.paused.toString()) {
               await dynamicMultiplatformNotificationService.onAppClosed();
+              // Handle app going to background for reminder service
+              await clockReminderService.onAppBackground();
+              timerService.appPaused();
             } else if (msg == AppLifecycleState.resumed.toString()) {
               await dynamicMultiplatformNotificationService.onAppOpened();
+              // Handle app returning to foreground for reminder service
+              await clockReminderService.onAppForeground();
+              timerService.appResumed();
             }
             return null;
           });

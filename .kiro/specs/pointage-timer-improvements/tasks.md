@@ -15,7 +15,7 @@
   - Écrire les tests unitaires pour tous les scénarios de calcul
   - _Exigences: 2.1, 2.2, 2.3, 2.4, 3.1_
 
-- [ ] 3. Étendre le TimerService existant avec les calculs automatiques
+- [-] 3. Étendre le TimerService existant avec les calculs automatiques
   - Ajouter WorkTimeCalculatorService comme dépendance dans TimerService
   - Créer une méthode getExtendedTimerState() qui retourne ExtendedTimerState
   - Intégrer les calculs automatiques dans les getters existants

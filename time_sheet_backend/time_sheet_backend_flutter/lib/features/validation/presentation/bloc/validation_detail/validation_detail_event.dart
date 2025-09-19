@@ -3,7 +3,7 @@ part of 'validation_detail_bloc.dart';
 /// Événements pour le BLoC de détail de validation
 abstract class ValidationDetailEvent extends Equatable {
   const ValidationDetailEvent();
-  
+
   @override
   List<Object?> get props => [];
 }
@@ -11,9 +11,19 @@ abstract class ValidationDetailEvent extends Equatable {
 /// Charger le détail d'une validation
 class LoadValidationDetail extends ValidationDetailEvent {
   final String validationId;
-  
+
   const LoadValidationDetail(this.validationId);
-  
+
+  @override
+  List<Object> get props => [validationId];
+}
+
+/// Charger les données timesheet d'une validation
+class LoadValidationTimesheetData extends ValidationDetailEvent {
+  final String validationId;
+
+  const LoadValidationTimesheetData(this.validationId);
+
   @override
   List<Object> get props => [validationId];
 }
@@ -23,13 +33,13 @@ class ApproveValidation extends ValidationDetailEvent {
   final String validationId;
   final String managerSignature;
   final String? comment;
-  
+
   const ApproveValidation({
     required this.validationId,
     required this.managerSignature,
     this.comment,
   });
-  
+
   @override
   List<Object?> get props => [validationId, managerSignature, comment];
 }
@@ -38,12 +48,12 @@ class ApproveValidation extends ValidationDetailEvent {
 class RejectValidation extends ValidationDetailEvent {
   final String validationId;
   final String comment;
-  
+
   const RejectValidation({
     required this.validationId,
     required this.comment,
   });
-  
+
   @override
   List<Object> get props => [validationId, comment];
 }
@@ -52,9 +62,9 @@ class RejectValidation extends ValidationDetailEvent {
 class DownloadValidationPdf extends ValidationDetailEvent {
   final String validationId;
   final String? managerSignature;
-  
+
   const DownloadValidationPdf(this.validationId, [this.managerSignature]);
-  
+
   @override
   List<Object?> get props => [validationId, managerSignature];
 }

@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:time_sheet/services/weekend_detection_service.dart';
+import 'package:time_sheet/services/overtime_configuration_service.dart';
+import 'package:time_sheet/services/logger_service.dart';
 
 // Classe pour encapsuler les données sauvegardées
 class _SavedTimerData {
@@ -9,7 +12,7 @@ class _SavedTimerData {
   final int? savedLastUpdateTimeMillis;
   final String? savedState;
   final String? savedDate;
-  
+
   _SavedTimerData({
     this.savedAccumulatedTimeMillis,
     this.savedElapsedTimeMillis,
@@ -28,6 +31,12 @@ class TimerService {
 
   TimerService._internal();
 
+  // Services for weekend detection and overtime configuration
+  final WeekendDetectionService _weekendDetectionService =
+      WeekendDetectionService();
+  final OvertimeConfigurationService _overtimeConfigService =
+      OvertimeConfigurationService();
+
   // État du timer
   DateTime? _startTime;
   Duration _accumulatedTime = Duration.zero;
@@ -36,27 +45,52 @@ class TimerService {
   DateTime? _lastUpdateTime;
   Timer? _timer;
 
+  // Weekend and overtime tracking
+  bool _isWeekendDay = false;
+  bool _weekendOvertimeEnabled = true;
+
   // Getters
   DateTime? get startTime => _startTime;
   Duration get accumulatedTime => _accumulatedTime;
   // Getter pour le temps écoulé - calcule en temps réel avec synchronisation
   Duration get elapsedTime {
     final now = DateTime.now();
-    
-    if (_startTime != null && (_currentState == 'Entrée' || _currentState == 'Reprise')) {
+
+    if (_startTime != null &&
+        (_currentState == 'Entrée' || _currentState == 'Reprise')) {
       final currentElapsed = _accumulatedTime + now.difference(_startTime!);
       // Assurer la cohérence : pas de temps négatif
       return currentElapsed.isNegative ? Duration.zero : currentElapsed;
     }
-    
+
     // En pause ou arrêté, retourner le temps accumulé
     return _accumulatedTime.isNegative ? Duration.zero : _accumulatedTime;
   }
+
   String get currentState => _currentState;
+
+  // Weekend and overtime getters
+  bool get isWeekendDay => _isWeekendDay;
+  bool get weekendOvertimeEnabled => _weekendOvertimeEnabled;
+
+  /// Returns true if current work session should be considered overtime
+  bool get isOvertimeSession {
+    if (_isWeekendDay && _weekendOvertimeEnabled) {
+      return true; // All weekend work is overtime when enabled
+    }
+
+    // For weekdays, check if we've exceeded the daily threshold
+    final dailyThreshold =
+        Duration(hours: 8); // Default 8 hours, could be configurable
+    return elapsedTime > dailyThreshold;
+  }
 
   // Initialiser le service
   Future<void> initialize(String etatActuel, DateTime? dernierPointage) async {
     _currentState = etatActuel;
+
+    // Detect weekend status and load overtime configuration
+    await _updateWeekendStatus();
 
     // D'abord, toujours essayer de charger l'état sauvegardé pour aujourd'hui
     final bool stateLoaded = await _loadSavedTimerState();
@@ -77,7 +111,7 @@ class TimerService {
       // Si nous n'avons pas pu charger l'état sauvegardé
       if (!stateLoaded) {
         final now = DateTime.now();
-        
+
         // Si nous avons un dernier pointage
         if (dernierPointage != null) {
           final today = DateFormat('yyyy-MM-dd').format(now);
@@ -102,7 +136,7 @@ class TimerService {
           _startTime = now;
           _elapsedTime = Duration.zero;
         }
-        
+
         await _saveTimerState();
       }
     }
@@ -118,15 +152,18 @@ class TimerService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final savedData = _extractSavedData(prefs);
-      
+
       if (!_isDataForToday(savedData.savedDate)) {
         return false;
       }
-      
+
+      // Load weekend preferences along with timer data
+      await _loadWeekendPreferences();
+
       _restoreTimerData(savedData);
       await _handleOfflineTime(savedData);
       _configureTimerForState();
-      
+
       return true;
     } catch (e) {
       // En cas d'erreur, utiliser les valeurs par défaut
@@ -134,7 +171,7 @@ class TimerService {
       return false;
     }
   }
-  
+
   // Extraire les données sauvegardées
   _SavedTimerData _extractSavedData(SharedPreferences prefs) {
     return _SavedTimerData(
@@ -145,45 +182,46 @@ class TimerService {
       savedDate: prefs.getString('timer_date'),
     );
   }
-  
+
   // Vérifier si les données sont pour aujourd'hui
   bool _isDataForToday(String? savedDate) {
     final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
     return savedDate == today;
   }
-  
+
   // Restaurer les données du timer
   void _restoreTimerData(_SavedTimerData data) {
     if (data.savedElapsedTimeMillis != null) {
       _elapsedTime = Duration(milliseconds: data.savedElapsedTimeMillis!);
     }
-    
+
     if (data.savedAccumulatedTimeMillis != null) {
-      _accumulatedTime = Duration(milliseconds: data.savedAccumulatedTimeMillis!);
+      _accumulatedTime =
+          Duration(milliseconds: data.savedAccumulatedTimeMillis!);
     }
   }
-  
+
   // Gérer le temps hors ligne
   Future<void> _handleOfflineTime(_SavedTimerData data) async {
-    if ((_currentState == 'Entrée' || _currentState == 'Reprise') && 
+    if ((_currentState == 'Entrée' || _currentState == 'Reprise') &&
         data.savedLastUpdateTimeMillis != null) {
-      
-      final lastUpdate = DateTime.fromMillisecondsSinceEpoch(data.savedLastUpdateTimeMillis!);
+      final lastUpdate =
+          DateTime.fromMillisecondsSinceEpoch(data.savedLastUpdateTimeMillis!);
       final timeOffline = DateTime.now().difference(lastUpdate);
-      
+
       // Ajouter le temps hors ligne si nous étions en mode actif et dans une limite raisonnable
-      if ((data.savedState == 'Entrée' || data.savedState == 'Reprise') && 
+      if ((data.savedState == 'Entrée' || data.savedState == 'Reprise') &&
           timeOffline.inHours < 12) {
         _accumulatedTime += timeOffline;
         _elapsedTime = _accumulatedTime;
       }
     }
   }
-  
+
   // Configurer le timer selon l'état actuel
   void _configureTimerForState() {
     final now = DateTime.now();
-    
+
     if (_currentState == 'Entrée' || _currentState == 'Reprise') {
       _startTime = now;
     } else if (_currentState == 'Pause') {
@@ -193,7 +231,7 @@ class TimerService {
       _startTime = null;
     }
   }
-  
+
   // Réinitialiser l'état du timer
   void _resetTimerState() {
     _startTime = null;
@@ -207,11 +245,14 @@ class TimerService {
     final now = DateTime.now();
     final today = DateFormat('yyyy-MM-dd').format(now);
 
+    // Apply weekend overtime rules before saving
+    await _applyWeekendOvertimeRules();
+
     // Toujours sauvegarder l'heure de la dernière mise à jour
     await prefs.setInt('timer_last_update_time', now.millisecondsSinceEpoch);
 
     // Sauvegarder l'état actuel
-    
+
     if (_currentState == 'Entrée' || _currentState == 'Reprise') {
       // Calculer le temps écoulé actuel
       Duration currentElapsedTime;
@@ -221,25 +262,29 @@ class TimerService {
         // Si pas de startTime, utiliser directement elapsedTime
         currentElapsedTime = _elapsedTime;
       }
-      
+
       // Sauvegarder les temps calculés
-      
+
       // Toujours sauvegarder le temps de démarrage actuel
       if (_startTime != null) {
-        await prefs.setInt('timer_start_time', _startTime!.millisecondsSinceEpoch);
+        await prefs.setInt(
+            'timer_start_time', _startTime!.millisecondsSinceEpoch);
       }
-      
-      await prefs.setInt('timer_accumulated_time', _accumulatedTime.inMilliseconds);
+
+      await prefs.setInt(
+          'timer_accumulated_time', _accumulatedTime.inMilliseconds);
       await prefs.setString('timer_etat_actuel', _currentState);
       await prefs.setString('timer_date', today);
-      await prefs.setInt('timer_elapsed_time', currentElapsedTime.inMilliseconds);
+      await prefs.setInt(
+          'timer_elapsed_time', currentElapsedTime.inMilliseconds);
     } else if (_currentState == 'Pause') {
       // En pause, on sauvegarde le temps accumulé mais pas l'heure de démarrage
       await prefs.remove('timer_start_time');
-      
+
       // Sauvegarder en mode pause
-      
-      await prefs.setInt('timer_accumulated_time', _accumulatedTime.inMilliseconds);
+
+      await prefs.setInt(
+          'timer_accumulated_time', _accumulatedTime.inMilliseconds);
       await prefs.setString('timer_etat_actuel', _currentState);
       await prefs.setString('timer_date', today);
       await prefs.setInt('timer_elapsed_time', _elapsedTime.inMilliseconds);
@@ -260,7 +305,7 @@ class TimerService {
     // Annuler le timer existant s'il y en a un
     _timer?.cancel();
     _timer = null;
-    
+
     // Démarrage du timer avec état actuel
 
     if (_currentState == 'Non commencé' || _currentState == 'Sortie') {
@@ -276,7 +321,9 @@ class TimerService {
       // Si _startTime est null, utiliser maintenant
       _startTime ??= DateTime.now();
       // Pour Entrée, on réinitialise le temps accumulé seulement si pas déjà fait
-      if (_currentState == 'Entrée' && _accumulatedTime == Duration.zero && _elapsedTime == Duration.zero) {
+      if (_currentState == 'Entrée' &&
+          _accumulatedTime == Duration.zero &&
+          _elapsedTime == Duration.zero) {
         // Calculer le temps écoulé depuis le startTime
         _elapsedTime = DateTime.now().difference(_startTime!);
       }
@@ -293,7 +340,8 @@ class TimerService {
           // Si on est en mode actif et qu'on a une heure de démarrage
           if (_startTime != null) {
             // Calculer le temps écoulé = temps accumulé + temps depuis le démarrage
-            _elapsedTime = _accumulatedTime + DateTime.now().difference(_startTime!);
+            _elapsedTime =
+                _accumulatedTime + DateTime.now().difference(_startTime!);
           }
           break;
 
@@ -349,7 +397,7 @@ class TimerService {
     } else if (newState == 'Entrée' || newState == 'Reprise') {
       // Si on démarre ou reprend, utiliser le temps de pointage fourni ou maintenant
       _startTime = dernierPointage ?? DateTime.now();
-      
+
       // Si on vient de 'Non commencé' et qu'on passe à 'Entrée', réinitialiser
       if (oldState == 'Non commencé' && newState == 'Entrée') {
         _accumulatedTime = Duration.zero;
@@ -360,7 +408,7 @@ class TimerService {
           _elapsedTime = Duration.zero;
         }
       }
-      
+
       // Démarrer ou redémarrer le timer si nécessaire
       if (_timer == null) {
         _startTimer();
@@ -400,6 +448,119 @@ class TimerService {
         _timer == null) {
       _startTimer();
     }
+  }
+
+  /// Updates weekend status and overtime configuration for the current day
+  Future<void> _updateWeekendStatus() async {
+    try {
+      final now = DateTime.now();
+
+      // Detect if today is a weekend day
+      _isWeekendDay = _weekendDetectionService.isWeekend(now);
+
+      // Load weekend overtime configuration
+      _weekendOvertimeEnabled =
+          await _weekendDetectionService.isWeekendOvertimeEnabled();
+
+      // Save weekend preferences for persistence
+      await _saveWeekendPreferences();
+
+      logger.d(
+          '[TimerService] Weekend status updated: isWeekend=$_isWeekendDay, overtimeEnabled=$_weekendOvertimeEnabled');
+    } catch (e, stackTrace) {
+      logger.e('[TimerService] Error updating weekend status: $e',
+          error: e, stackTrace: stackTrace);
+      // Use default values on error
+      _isWeekendDay = false;
+      _weekendOvertimeEnabled = true;
+    }
+  }
+
+  /// Saves weekend preferences to SharedPreferences
+  Future<void> _saveWeekendPreferences() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+      await prefs.setBool('timer_is_weekend_day', _isWeekendDay);
+      await prefs.setBool(
+          'timer_weekend_overtime_enabled', _weekendOvertimeEnabled);
+      await prefs.setString('timer_weekend_date', today);
+    } catch (e, stackTrace) {
+      logger.e('[TimerService] Error saving weekend preferences: $e',
+          error: e, stackTrace: stackTrace);
+    }
+  }
+
+  /// Loads weekend preferences from SharedPreferences
+  Future<void> _loadWeekendPreferences() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      final savedDate = prefs.getString('timer_weekend_date');
+
+      // Only load if the saved data is for today
+      if (savedDate == today) {
+        _isWeekendDay = prefs.getBool('timer_is_weekend_day') ?? false;
+        _weekendOvertimeEnabled =
+            prefs.getBool('timer_weekend_overtime_enabled') ?? true;
+
+        logger.d(
+            '[TimerService] Weekend preferences loaded: isWeekend=$_isWeekendDay, overtimeEnabled=$_weekendOvertimeEnabled');
+      } else {
+        // Data is stale, update weekend status
+        await _updateWeekendStatus();
+      }
+    } catch (e, stackTrace) {
+      logger.e('[TimerService] Error loading weekend preferences: $e',
+          error: e, stackTrace: stackTrace);
+      // Update weekend status on error
+      await _updateWeekendStatus();
+    }
+  }
+
+  /// Applies weekend overtime rules automatically when saving timer state
+  Future<void> _applyWeekendOvertimeRules() async {
+    try {
+      if (_isWeekendDay && _weekendOvertimeEnabled) {
+        // On weekends with overtime enabled, all work time is considered overtime
+        logger.d(
+            '[TimerService] Weekend overtime rules applied - all time is overtime');
+
+        // Save additional weekend-specific preferences
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('timer_weekend_overtime_applied', true);
+        await prefs.setInt(
+            'timer_weekend_work_time', elapsedTime.inMilliseconds);
+      } else {
+        // Clear weekend overtime flags for non-weekend days
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('timer_weekend_overtime_applied');
+        await prefs.remove('timer_weekend_work_time');
+      }
+    } catch (e, stackTrace) {
+      logger.e('[TimerService] Error applying weekend overtime rules: $e',
+          error: e, stackTrace: stackTrace);
+    }
+  }
+
+  /// Refreshes weekend configuration (useful when settings change)
+  Future<void> refreshWeekendConfiguration() async {
+    logger.i('[TimerService] Refreshing weekend configuration');
+    await _updateWeekendStatus();
+    await _saveTimerState();
+  }
+
+  /// Returns overtime information for the current session
+  Map<String, dynamic> getOvertimeInfo() {
+    return {
+      'isWeekendDay': _isWeekendDay,
+      'weekendOvertimeEnabled': _weekendOvertimeEnabled,
+      'isOvertimeSession': isOvertimeSession,
+      'elapsedTime': elapsedTime.inMilliseconds,
+      'overtimeType':
+          _isWeekendDay && _weekendOvertimeEnabled ? 'weekend' : 'weekday',
+    };
   }
 
   // Arrêter le timer

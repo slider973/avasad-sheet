@@ -1,0 +1,19 @@
+{
+  "enabled": true,
+  "name": "Atomic Feature Commit",
+  "description": "Monitors for feature completion indicators and prompts for atomic commits when a feature is finished",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "**/*.dart",
+      "**/*.yaml",
+      "**/*.md",
+      "**/*.json"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A feature appears to be completed based on recent file changes. Please review the changes and create an atomic commit that captures this complete feature. The commit should:\n\n1. Include all related files for this feature\n2. Have a clear, descriptive commit message that explains what feature was completed\n3. Be atomic - containing only the changes for this specific feature\n4. Follow conventional commit format if applicable (feat:, fix:, etc.)\n\nPlease analyze the recent changes and suggest an appropriate commit message and file selection for this atomic commit."
+  }
+}
