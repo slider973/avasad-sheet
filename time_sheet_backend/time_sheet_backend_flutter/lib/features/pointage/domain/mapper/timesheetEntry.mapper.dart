@@ -17,6 +17,9 @@ class TimesheetEntryMapper {
       absence: model.absence.value?.toEntity(),
       period: model.period,
       hasOvertimeHours: model.hasOvertimeHours,
+      isWeekendDay: model.isWeekendDay,
+      isWeekendOvertimeEnabled: model.isWeekendOvertimeEnabled,
+      overtimeType: model.overtimeType,
     );
   }
 
@@ -30,7 +33,13 @@ class TimesheetEntryMapper {
       ..absenceReason = entity.absenceReason ?? ''
       ..period = entity.period ?? ''
       ..endAfternoon = entity.endAfternoon
-      ..hasOvertimeHours = entity.hasOvertimeHours;
+      ..hasOvertimeHours = entity.hasOvertimeHours
+      ..isWeekendDay = entity.isWeekendDay
+      ..isWeekendOvertimeEnabled = entity.isWeekendOvertimeEnabled
+      ..overtimeType = entity.overtimeType;
+
+    // Update weekend status based on the date
+    model.updateWeekendStatus();
 
     if (entity.absence != null) {
       model.absence.value = AbsenceMapper.fromEntity(entity.absence!);

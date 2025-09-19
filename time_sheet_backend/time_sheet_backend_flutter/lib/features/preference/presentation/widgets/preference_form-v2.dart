@@ -7,6 +7,7 @@ import '../../../pointage/presentation/pages/pdf/pages/signature_page.dart';
 import '../../../pointage/presentation/pages/time-sheet/bloc/time_sheet/time_sheet_bloc.dart';
 import '../../../pointage/domain/entities/timesheet_generation_config.dart';
 import '../../../pointage/presentation/pages/timesheet_generation_config_page.dart';
+import '../pages/weekend_settings_page.dart';
 import '../manager/preferences_bloc.dart';
 
 import '../../../../services/backup.dart';
@@ -64,7 +65,9 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
                   title: 'Notifications',
                   value: state.notificationsEnabled,
                   onChanged: (value) {
-                    context.read<PreferencesBloc>().add(ToggleNotifications(value));
+                    context
+                        .read<PreferencesBloc>()
+                        .add(ToggleNotifications(value));
                   },
                 ),
                 _buildSwitchListTile(
@@ -72,8 +75,16 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
                   title: 'Manager de livraison',
                   value: state.isDeliveryManager,
                   onChanged: (value) {
-                    context.read<PreferencesBloc>().add(ToggleDeliveryManager(value));
+                    context
+                        .read<PreferencesBloc>()
+                        .add(ToggleDeliveryManager(value));
                   },
+                ),
+                _buildListTile(
+                  icon: Icons.weekend,
+                  title: 'Paramètres Weekend',
+                  subtitle: 'Configuration des heures supplémentaires weekend',
+                  onTap: () => _navigateToWeekendSettings(context),
                 ),
                 _buildListTile(
                   icon: Icons.backup,
@@ -87,7 +98,8 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
                       ? 'Déjà généré ce mois-ci'
                       : 'Générer pour ce mois',
                   onTap: () async {
-                    final result = await Navigator.push<TimesheetGenerationConfig>(
+                    final result =
+                        await Navigator.push<TimesheetGenerationConfig>(
                       context,
                       MaterialPageRoute(
                         builder: (context) => TimesheetGenerationConfigPage(),
@@ -95,8 +107,12 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
                     );
 
                     if (result != null && mounted) {
-                      context.read<TimeSheetBloc>().add(GenerateMonthlyTimesheetEvent(config: result));
-                      context.read<PreferencesBloc>().add(SaveLastGenerationDate(DateTime.now()));
+                      context
+                          .read<TimeSheetBloc>()
+                          .add(GenerateMonthlyTimesheetEvent(config: result));
+                      context
+                          .read<PreferencesBloc>()
+                          .add(SaveLastGenerationDate(DateTime.now()));
                     }
                   },
                 ),
@@ -196,7 +212,9 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
       MaterialPageRoute(
         builder: (context) => SignatureScreen(
           onSigned: (Uint8List signature) {
-            context.read<PreferencesBloc>().add(SaveSignature(signature: signature));
+            context
+                .read<PreferencesBloc>()
+                .add(SaveSignature(signature: signature));
           },
         ),
       ),
@@ -247,7 +265,8 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur lors de la sauvegarde : ${e.toString()}')),
+          SnackBar(
+              content: Text('Erreur lors de la sauvegarde : ${e.toString()}')),
         );
       }
     }
@@ -282,7 +301,9 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur lors de la restauration : ${e.toString()}')),
+          SnackBar(
+              content:
+                  Text('Erreur lors de la restauration : ${e.toString()}')),
         );
       }
     }
@@ -291,11 +312,13 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
   bool _isGeneratedThisMonth(DateTime? lastGenerationDate) {
     if (lastGenerationDate == null) return false;
     final now = DateTime.now();
-    return lastGenerationDate.year == now.year && lastGenerationDate.month == now.month;
+    return lastGenerationDate.year == now.year &&
+        lastGenerationDate.month == now.month;
   }
 
   Widget _buildSignatureTile(PreferencesLoaded state) {
-    bool hasSignature = state.signatureBase64 != null || state.signature != null;
+    bool hasSignature =
+        state.signatureBase64 != null || state.signature != null;
     return ListTile(
       leading: Icon(Icons.gesture, color: Colors.teal),
       title: Text('Signature'),
@@ -345,6 +368,15 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
             },
           ),
         ],
+      ),
+    );
+  }
+
+  void _navigateToWeekendSettings(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const WeekendSettingsPage(),
       ),
     );
   }

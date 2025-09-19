@@ -1,0 +1,40 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "time_sheet_backend_client",
+            "cwd": "time_sheet_backend/time_sheet_backend_client",
+            "request": "launch",
+            "type": "dart"
+        },
+        {
+            "name": "time_sheet_backend_flutter",
+            "cwd": "time_sheet_backend/time_sheet_backend_flutter",
+            "request": "launch",
+            "type": "dart"
+        },
+        {
+            "name": "time_sheet_backend_flutter (profile mode)",
+            "cwd": "time_sheet_backend/time_sheet_backend_flutter",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile"
+        },
+        {
+            "name": "time_sheet_backend_flutter (release mode)",
+            "cwd": "time_sheet_backend/time_sheet_backend_flutter",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release"
+        },
+        {
+            "name": "time_sheet_backend_server",
+            "cwd": "time_sheet_backend/time_sheet_backend_server",
+            "request": "launch",
+            "type": "dart"
+        }
+    ]
+}

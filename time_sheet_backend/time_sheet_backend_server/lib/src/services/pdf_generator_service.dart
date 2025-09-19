@@ -4,8 +4,12 @@ import 'dart:typed_data';
 import 'dart:convert';
 import 'dart:io';
 import '../generated/protocol.dart';
+import 'weekend_overtime_calculator_service.dart';
 
 class PdfGeneratorService {
+  final WeekendOvertimeCalculatorService _overtimeCalculator =
+      WeekendOvertimeCalculatorService();
+
   Future<Uint8List> generateTimesheetPdf({
     required TimesheetData timesheetData,
     required ValidationRequest validation,
@@ -51,7 +55,8 @@ class PdfGeneratorService {
             pw.SizedBox(height: 40),
 
             // Signatures
-            _buildSignatures(validation, includeManagerSignature, managerSignature),
+            _buildSignatures(
+                validation, includeManagerSignature, managerSignature),
           ];
         },
       ),
@@ -60,7 +65,8 @@ class PdfGeneratorService {
     return pdf.save();
   }
 
-  pw.Widget _buildHeader(TimesheetData timesheetData, ValidationRequest validation) {
+  pw.Widget _buildHeader(
+      TimesheetData timesheetData, ValidationRequest validation) {
     return pw.Container(
       padding: const pw.EdgeInsets.all(10),
       decoration: pw.BoxDecoration(
@@ -79,7 +85,9 @@ class PdfGeneratorService {
           pw.SizedBox(height: 10),
           pw.Text('Période: ${timesheetData.month}/${timesheetData.year}'),
           pw.Text('Statut: ${_getStatusText(validation.status)}'),
-          if (validation.validatedAt != null) pw.Text('Date de validation: ${_formatDate(validation.validatedAt!)}'),
+          if (validation.validatedAt != null)
+            pw.Text(
+                'Date de validation: ${_formatDate(validation.validatedAt!)}'),
         ],
       ),
     );
@@ -100,19 +108,22 @@ class PdfGeneratorService {
           pw.SizedBox(height: 10),
           pw.Row(
             children: [
-              pw.Text('Nom: ', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+              pw.Text('Nom: ',
+                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
               pw.Text(timesheetData.employeeName),
             ],
           ),
           pw.Row(
             children: [
-              pw.Text('ID: ', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+              pw.Text('ID: ',
+                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
               pw.Text(timesheetData.employeeId),
             ],
           ),
           pw.Row(
             children: [
-              pw.Text('Entreprise: ', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+              pw.Text('Entreprise: ',
+                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
               pw.Text(timesheetData.employeeCompany),
             ],
           ),
@@ -145,7 +156,9 @@ class PdfGeneratorService {
 
           // Calculer le total d'heures pour cette journée
           String totalHours = '0:00';
-          if (!isAbsence && entry['startMorning'] != null && entry['endMorning'] != null) {
+          if (!isAbsence &&
+              entry['startMorning'] != null &&
+              entry['endMorning'] != null) {
             // Calculer les heures (simplification)
             totalHours = '8:00'; // À améliorer avec un vrai calcul
           }
@@ -153,7 +166,8 @@ class PdfGeneratorService {
           return pw.TableRow(
             children: [
               _buildTableCell(entry['dayDate'] ?? ''),
-              _buildTableCell(isAbsence ? 'Absence' : (entry['startMorning'] ?? '')),
+              _buildTableCell(
+                  isAbsence ? 'Absence' : (entry['startMorning'] ?? '')),
               _buildTableCell(isAbsence ? '' : (entry['endMorning'] ?? '')),
               _buildTableCell(isAbsence ? '' : (entry['startAfternoon'] ?? '')),
               _buildTableCell(isAbsence ? '' : (entry['endAfternoon'] ?? '')),
@@ -223,7 +237,8 @@ class PdfGeneratorService {
     );
   }
 
-  pw.Widget _buildSignatures(ValidationRequest validation, bool includeManagerSignature, String? managerSignature) {
+  pw.Widget _buildSignatures(ValidationRequest validation,
+      bool includeManagerSignature, String? managerSignature) {
     return pw.Container(
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -280,14 +295,17 @@ class PdfGeneratorService {
                         ),
                       ),
                       child: pw.Center(
-                        child: (includeManagerSignature && managerSignature != null && managerSignature.isNotEmpty)
+                        child: (includeManagerSignature &&
+                                managerSignature != null &&
+                                managerSignature.isNotEmpty)
                             ? _buildSignatureImage(managerSignature, validation)
                             : pw.Text(''),
                       ),
                     ),
                     pw.SizedBox(height: 5),
                     if (validation.managerName != null)
-                      pw.Text(validation.managerName!, style: const pw.TextStyle(fontSize: 10)),
+                      pw.Text(validation.managerName!,
+                          style: const pw.TextStyle(fontSize: 10)),
                     if (validation.validatedAt != null)
                       pw.Text(
                         'Date: ${_formatDate(validation.validatedAt!)}',
@@ -298,7 +316,8 @@ class PdfGeneratorService {
               ),
             ],
           ),
-          if (validation.managerComment != null && validation.managerComment!.isNotEmpty) ...[
+          if (validation.managerComment != null &&
+              validation.managerComment!.isNotEmpty) ...[
             pw.SizedBox(height: 20),
             pw.Text(
               'Commentaire du manager:',
@@ -311,7 +330,8 @@ class PdfGeneratorService {
     );
   }
 
-  pw.Widget _buildSignatureImage(String signatureBase64, ValidationRequest validation) {
+  pw.Widget _buildSignatureImage(
+      String signatureBase64, ValidationRequest validation) {
     try {
       print('\n========== BUILDING SIGNATURE IMAGE ==========');
       print('Input signature length: ${signatureBase64.length}');

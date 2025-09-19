@@ -48,18 +48,34 @@ const TimeSheetEntryModelSchema = CollectionSchema(
       name: r'hasOvertimeHours',
       type: IsarType.bool,
     ),
-    r'period': PropertySchema(
+    r'isWeekendDay': PropertySchema(
       id: 6,
+      name: r'isWeekendDay',
+      type: IsarType.bool,
+    ),
+    r'isWeekendOvertimeEnabled': PropertySchema(
+      id: 7,
+      name: r'isWeekendOvertimeEnabled',
+      type: IsarType.bool,
+    ),
+    r'overtimeType': PropertySchema(
+      id: 8,
+      name: r'overtimeType',
+      type: IsarType.string,
+      enumMap: _TimeSheetEntryModelovertimeTypeEnumValueMap,
+    ),
+    r'period': PropertySchema(
+      id: 9,
       name: r'period',
       type: IsarType.string,
     ),
     r'startAfternoon': PropertySchema(
-      id: 7,
+      id: 10,
       name: r'startAfternoon',
       type: IsarType.string,
     ),
     r'startMorning': PropertySchema(
-      id: 8,
+      id: 11,
       name: r'startMorning',
       type: IsarType.string,
     )
@@ -78,6 +94,32 @@ const TimeSheetEntryModelSchema = CollectionSchema(
       properties: [
         IndexPropertySchema(
           name: r'hasOvertimeHours',
+          type: IndexType.value,
+          caseSensitive: false,
+        )
+      ],
+    ),
+    r'isWeekendDay': IndexSchema(
+      id: 1412842850436869628,
+      name: r'isWeekendDay',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'isWeekendDay',
+          type: IndexType.value,
+          caseSensitive: false,
+        )
+      ],
+    ),
+    r'isWeekendOvertimeEnabled': IndexSchema(
+      id: 6990069947100456004,
+      name: r'isWeekendOvertimeEnabled',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'isWeekendOvertimeEnabled',
           type: IndexType.value,
           caseSensitive: false,
         )
@@ -117,6 +159,7 @@ int _timeSheetEntryModelEstimateSize(
   bytesCount += 3 + object.dayOfWeekDate.length * 3;
   bytesCount += 3 + object.endAfternoon.length * 3;
   bytesCount += 3 + object.endMorning.length * 3;
+  bytesCount += 3 + object.overtimeType.name.length * 3;
   bytesCount += 3 + object.period.length * 3;
   bytesCount += 3 + object.startAfternoon.length * 3;
   bytesCount += 3 + object.startMorning.length * 3;
@@ -135,9 +178,12 @@ void _timeSheetEntryModelSerialize(
   writer.writeString(offsets[3], object.endAfternoon);
   writer.writeString(offsets[4], object.endMorning);
   writer.writeBool(offsets[5], object.hasOvertimeHours);
-  writer.writeString(offsets[6], object.period);
-  writer.writeString(offsets[7], object.startAfternoon);
-  writer.writeString(offsets[8], object.startMorning);
+  writer.writeBool(offsets[6], object.isWeekendDay);
+  writer.writeBool(offsets[7], object.isWeekendOvertimeEnabled);
+  writer.writeString(offsets[8], object.overtimeType.name);
+  writer.writeString(offsets[9], object.period);
+  writer.writeString(offsets[10], object.startAfternoon);
+  writer.writeString(offsets[11], object.startMorning);
 }
 
 TimeSheetEntryModel _timeSheetEntryModelDeserialize(
@@ -154,9 +200,14 @@ TimeSheetEntryModel _timeSheetEntryModelDeserialize(
   object.endMorning = reader.readString(offsets[4]);
   object.hasOvertimeHours = reader.readBool(offsets[5]);
   object.id = id;
-  object.period = reader.readString(offsets[6]);
-  object.startAfternoon = reader.readString(offsets[7]);
-  object.startMorning = reader.readString(offsets[8]);
+  object.isWeekendDay = reader.readBool(offsets[6]);
+  object.isWeekendOvertimeEnabled = reader.readBool(offsets[7]);
+  object.overtimeType = _TimeSheetEntryModelovertimeTypeValueEnumMap[
+          reader.readStringOrNull(offsets[8])] ??
+      OvertimeType.NONE;
+  object.period = reader.readString(offsets[9]);
+  object.startAfternoon = reader.readString(offsets[10]);
+  object.startMorning = reader.readString(offsets[11]);
   return object;
 }
 
@@ -180,15 +231,36 @@ P _timeSheetEntryModelDeserializeProp<P>(
     case 5:
       return (reader.readBool(offset)) as P;
     case 6:
-      return (reader.readString(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 7:
-      return (reader.readString(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 8:
+      return (_TimeSheetEntryModelovertimeTypeValueEnumMap[
+              reader.readStringOrNull(offset)] ??
+          OvertimeType.NONE) as P;
+    case 9:
+      return (reader.readString(offset)) as P;
+    case 10:
+      return (reader.readString(offset)) as P;
+    case 11:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
 }
+
+const _TimeSheetEntryModelovertimeTypeEnumValueMap = {
+  r'NONE': r'NONE',
+  r'WEEKDAY_ONLY': r'WEEKDAY_ONLY',
+  r'WEEKEND_ONLY': r'WEEKEND_ONLY',
+  r'BOTH': r'BOTH',
+};
+const _TimeSheetEntryModelovertimeTypeValueEnumMap = {
+  r'NONE': OvertimeType.NONE,
+  r'WEEKDAY_ONLY': OvertimeType.WEEKDAY_ONLY,
+  r'WEEKEND_ONLY': OvertimeType.WEEKEND_ONLY,
+  r'BOTH': OvertimeType.BOTH,
+};
 
 Id _timeSheetEntryModelGetId(TimeSheetEntryModel object) {
   return object.id;
@@ -220,6 +292,24 @@ extension TimeSheetEntryModelQueryWhereSort
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         const IndexWhereClause.any(indexName: r'hasOvertimeHours'),
+      );
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterWhere>
+      anyIsWeekendDay() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        const IndexWhereClause.any(indexName: r'isWeekendDay'),
+      );
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterWhere>
+      anyIsWeekendOvertimeEnabled() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        const IndexWhereClause.any(indexName: r'isWeekendOvertimeEnabled'),
       );
     });
   }
@@ -334,6 +424,96 @@ extension TimeSheetEntryModelQueryWhere
               indexName: r'hasOvertimeHours',
               lower: [],
               upper: [hasOvertimeHours],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterWhereClause>
+      isWeekendDayEqualTo(bool isWeekendDay) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'isWeekendDay',
+        value: [isWeekendDay],
+      ));
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterWhereClause>
+      isWeekendDayNotEqualTo(bool isWeekendDay) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'isWeekendDay',
+              lower: [],
+              upper: [isWeekendDay],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'isWeekendDay',
+              lower: [isWeekendDay],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'isWeekendDay',
+              lower: [isWeekendDay],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'isWeekendDay',
+              lower: [],
+              upper: [isWeekendDay],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterWhereClause>
+      isWeekendOvertimeEnabledEqualTo(bool isWeekendOvertimeEnabled) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'isWeekendOvertimeEnabled',
+        value: [isWeekendOvertimeEnabled],
+      ));
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterWhereClause>
+      isWeekendOvertimeEnabledNotEqualTo(bool isWeekendOvertimeEnabled) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'isWeekendOvertimeEnabled',
+              lower: [],
+              upper: [isWeekendOvertimeEnabled],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'isWeekendOvertimeEnabled',
+              lower: [isWeekendOvertimeEnabled],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'isWeekendOvertimeEnabled',
+              lower: [isWeekendOvertimeEnabled],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'isWeekendOvertimeEnabled',
+              lower: [],
+              upper: [isWeekendOvertimeEnabled],
               includeUpper: false,
             ));
       }
@@ -1010,6 +1190,162 @@ extension TimeSheetEntryModelQueryFilter on QueryBuilder<TimeSheetEntryModel,
   }
 
   QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterFilterCondition>
+      isWeekendDayEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isWeekendDay',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterFilterCondition>
+      isWeekendOvertimeEnabledEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isWeekendOvertimeEnabled',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterFilterCondition>
+      overtimeTypeEqualTo(
+    OvertimeType value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'overtimeType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterFilterCondition>
+      overtimeTypeGreaterThan(
+    OvertimeType value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'overtimeType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterFilterCondition>
+      overtimeTypeLessThan(
+    OvertimeType value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'overtimeType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterFilterCondition>
+      overtimeTypeBetween(
+    OvertimeType lower,
+    OvertimeType upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'overtimeType',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterFilterCondition>
+      overtimeTypeStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'overtimeType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterFilterCondition>
+      overtimeTypeEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'overtimeType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterFilterCondition>
+      overtimeTypeContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'overtimeType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterFilterCondition>
+      overtimeTypeMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'overtimeType',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterFilterCondition>
+      overtimeTypeIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'overtimeType',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterFilterCondition>
+      overtimeTypeIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'overtimeType',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterFilterCondition>
       periodEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -1539,6 +1875,48 @@ extension TimeSheetEntryModelQuerySortBy
   }
 
   QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterSortBy>
+      sortByIsWeekendDay() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isWeekendDay', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterSortBy>
+      sortByIsWeekendDayDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isWeekendDay', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterSortBy>
+      sortByIsWeekendOvertimeEnabled() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isWeekendOvertimeEnabled', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterSortBy>
+      sortByIsWeekendOvertimeEnabledDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isWeekendOvertimeEnabled', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterSortBy>
+      sortByOvertimeType() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'overtimeType', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterSortBy>
+      sortByOvertimeTypeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'overtimeType', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterSortBy>
       sortByPeriod() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'period', Sort.asc);
@@ -1682,6 +2060,48 @@ extension TimeSheetEntryModelQuerySortThenBy
   }
 
   QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterSortBy>
+      thenByIsWeekendDay() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isWeekendDay', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterSortBy>
+      thenByIsWeekendDayDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isWeekendDay', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterSortBy>
+      thenByIsWeekendOvertimeEnabled() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isWeekendOvertimeEnabled', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterSortBy>
+      thenByIsWeekendOvertimeEnabledDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isWeekendOvertimeEnabled', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterSortBy>
+      thenByOvertimeType() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'overtimeType', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterSortBy>
+      thenByOvertimeTypeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'overtimeType', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterSortBy>
       thenByPeriod() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'period', Sort.asc);
@@ -1771,6 +2191,27 @@ extension TimeSheetEntryModelQueryWhereDistinct
   }
 
   QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QDistinct>
+      distinctByIsWeekendDay() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isWeekendDay');
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QDistinct>
+      distinctByIsWeekendOvertimeEnabled() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isWeekendOvertimeEnabled');
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QDistinct>
+      distinctByOvertimeType({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'overtimeType', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QDistinct>
       distinctByPeriod({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'period', caseSensitive: caseSensitive);
@@ -1840,6 +2281,27 @@ extension TimeSheetEntryModelQueryProperty
       hasOvertimeHoursProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'hasOvertimeHours');
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, bool, QQueryOperations>
+      isWeekendDayProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isWeekendDay');
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, bool, QQueryOperations>
+      isWeekendOvertimeEnabledProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isWeekendOvertimeEnabled');
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, OvertimeType, QQueryOperations>
+      overtimeTypeProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'overtimeType');
     });
   }
 

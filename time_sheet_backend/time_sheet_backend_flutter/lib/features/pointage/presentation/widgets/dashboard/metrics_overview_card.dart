@@ -4,6 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../pages/time-sheet/bloc/time_sheet_list/time_sheet_list_bloc.dart';
 import '../../pages/pdf/bloc/anomaly/anomaly_bloc.dart';
 import '../../pages/anomaly/anomaly.dart';
+import '../../../../../services/weekend_overtime_calculator.dart';
+import '../../../../../services/injection_container.dart';
 
 class MetricsOverviewCard extends StatelessWidget {
   const MetricsOverviewCard({super.key});
@@ -86,36 +88,59 @@ class MetricsOverviewCard extends StatelessWidget {
                     (total, entry) => total + entry.calculateDailyTotal(),
                   );
 
-                  return Row(
+                  // Calculer les heures supplémentaires sera fait dans le FutureBuilder
+
+                  return Column(
                     children: [
-                      // Aujourd'hui
-                      Expanded(
-                        child: _buildMetricTile(
-                          'Aujourd\'hui',
-                          _formatDuration(todayHours),
-                          Icons.today,
-                          Colors.blue,
-                        ),
-                      ),
+                      Row(
+                        children: [
+                          // Aujourd'hui
+                          Expanded(
+                            child: _buildMetricTile(
+                              'Aujourd\'hui',
+                              _formatDuration(todayHours),
+                              Icons.today,
+                              Colors.blue,
+                            ),
+                          ),
 
-                      // Cette semaine
-                      Expanded(
-                        child: _buildMetricTile(
-                          'Cette semaine',
-                          _formatDuration(weekHours),
-                          Icons.date_range,
-                          Colors.green,
-                        ),
-                      ),
+                          // Cette semaine
+                          Expanded(
+                            child: _buildMetricTile(
+                              'Cette semaine',
+                              _formatDuration(weekHours),
+                              Icons.date_range,
+                              Colors.green,
+                            ),
+                          ),
 
-                      // Ce mois
-                      Expanded(
-                        child: _buildMetricTile(
-                          'Ce mois',
-                          _formatDuration(monthHours),
-                          Icons.calendar_month,
-                          Colors.orange,
-                        ),
+                          // Ce mois
+                          Expanded(
+                            child: _buildMetricTile(
+                              'Ce mois',
+                              _formatDuration(monthHours),
+                              Icons.calendar_month,
+                              Colors.orange,
+                            ),
+                          ),
+                        ],
+                      ),
+                      // Overtime breakdown
+                      FutureBuilder<OvertimeSummary>(
+                        future: getIt<WeekendOvertimeCalculator>()
+                            .calculateMonthlyOvertime(entries),
+                        builder: (context, snapshot) {
+                          if (snapshot.hasData &&
+                              snapshot.data!.totalOvertime.inMinutes > 0) {
+                            return Column(
+                              children: [
+                                const SizedBox(height: 16),
+                                _buildOvertimeBreakdown(snapshot.data!),
+                              ],
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        },
                       ),
                     ],
                   );
@@ -244,6 +269,106 @@ class MetricsOverviewCard extends StatelessWidget {
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOvertimeBreakdown(OvertimeSummary summary) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.teal.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.teal.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.schedule, color: Colors.teal.shade700, size: 16),
+              const SizedBox(width: 6),
+              Text(
+                'Heures Supplémentaires du Mois',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.teal.shade700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _buildOvertimeMetric(
+                  'Semaine',
+                  summary.weekdayOvertime,
+                  Colors.orange,
+                  Icons.business_center,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildOvertimeMetric(
+                  'Weekend',
+                  summary.weekendOvertime,
+                  Colors.deepOrange,
+                  Icons.weekend,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildOvertimeMetric(
+                  'Total',
+                  summary.totalOvertime,
+                  Colors.teal,
+                  Icons.schedule,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOvertimeMetric(
+      String label, Duration duration, Color color, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 16),
+          const SizedBox(height: 4),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              _formatDuration(duration),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+          ),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                color: color,
+              ),
             ),
           ),
         ],

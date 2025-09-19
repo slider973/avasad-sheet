@@ -1,5 +1,7 @@
 import 'package:intl/intl.dart';
 import 'package:time_sheet/features/absence/domain/entities/absence_entity.dart';
+import 'package:time_sheet/enum/overtime_type.dart';
+import 'package:time_sheet/services/weekend_detection_service.dart';
 
 class TimesheetEntry {
   int? id;
@@ -13,8 +15,12 @@ class TimesheetEntry {
   final AbsenceEntity? absence;
   final String? period;
   final bool hasOvertimeHours;
+  final bool isWeekendDay;
+  final bool isWeekendOvertimeEnabled;
+  final OvertimeType overtimeType;
 
-  TimesheetEntry({this.id,
+  TimesheetEntry({
+    this.id,
     required this.dayDate,
     required this.dayOfWeekDate,
     required this.startMorning,
@@ -25,6 +31,9 @@ class TimesheetEntry {
     this.absenceReason,
     this.period,
     this.hasOvertimeHours = false,
+    this.isWeekendDay = false,
+    this.isWeekendOvertimeEnabled = true,
+    this.overtimeType = OvertimeType.NONE,
   });
 
   @override
@@ -67,6 +76,7 @@ class TimesheetEntry {
     if (startMorning.isNotEmpty) return format.parse('$dayDate $startMorning');
     return null;
   }
+
   Duration calculateDailyTotal() {
     final format = DateFormat('HH:mm');
     Duration total = Duration.zero;
@@ -91,7 +101,8 @@ class TimesheetEntry {
   }
 
   static Duration calculateMonthlyTotal(List<TimesheetEntry> entries) {
-    return entries.fold(Duration.zero, (total, entry) => total + entry.calculateDailyTotal());
+    return entries.fold(
+        Duration.zero, (total, entry) => total + entry.calculateDailyTotal());
   }
 
   List<Map<String, dynamic>> get pointagesList {
@@ -125,6 +136,45 @@ class TimesheetEntry {
     return DateFormat('dd-MMM-yy HH:mm').parse('$date $time');
   }
 
+  /// Returns true if this entry is for a weekend day
+  bool get isWeekend {
+    final entryDate = date;
+    if (entryDate == null) return false;
+    return WeekendDetectionService().isWeekend(entryDate);
+  }
+
+  /// Returns the total hours worked on weekend days
+  Duration get weekendHours {
+    if (!isWeekend) return Duration.zero;
+    return calculateDailyTotal();
+  }
+
+  /// Returns overtime hours worked on weekdays only
+  Duration get weekdayOvertimeHours {
+    if (isWeekend || !hasOvertimeHours) return Duration.zero;
+    return calculateOvertimeHours();
+  }
+
+  /// Returns overtime hours worked on weekend days
+  Duration get weekendOvertimeHours {
+    if (!isWeekend) return Duration.zero;
+    return calculateDailyTotal(); // All weekend hours are considered overtime
+  }
+
+  /// Calculates overtime hours for weekday entries
+  /// This method calculates overtime based on a standard 8-hour workday
+  Duration calculateOvertimeHours() {
+    if (absence != null) return Duration.zero;
+
+    final totalHours = calculateDailyTotal();
+    const standardWorkDay = Duration(hours: 8);
+
+    if (totalHours > standardWorkDay) {
+      return totalHours - standardWorkDay;
+    }
+
+    return Duration.zero;
+  }
 
   // Ajoutez cette méthode
   TimesheetEntry copyWith({
@@ -139,6 +189,9 @@ class TimesheetEntry {
     AbsenceEntity? absence,
     String? period,
     bool? hasOvertimeHours,
+    bool? isWeekendDay,
+    bool? isWeekendOvertimeEnabled,
+    OvertimeType? overtimeType,
   }) {
     return TimesheetEntry(
       id: id ?? this.id,
@@ -152,6 +205,10 @@ class TimesheetEntry {
       period: period ?? this.period,
       absence: absence ?? this.absence,
       hasOvertimeHours: hasOvertimeHours ?? this.hasOvertimeHours,
+      isWeekendDay: isWeekendDay ?? this.isWeekendDay,
+      isWeekendOvertimeEnabled:
+          isWeekendOvertimeEnabled ?? this.isWeekendOvertimeEnabled,
+      overtimeType: overtimeType ?? this.overtimeType,
     );
   }
 }
