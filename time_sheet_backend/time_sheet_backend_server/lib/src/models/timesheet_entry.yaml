@@ -7,3 +7,6 @@ fields:
   endAfternoon: String
   isAbsence: bool
   hasOvertimeHours: bool
+  isWeekendDay: bool?
+  isWeekendOvertimeEnabled: bool?
+  overtimeType: String?

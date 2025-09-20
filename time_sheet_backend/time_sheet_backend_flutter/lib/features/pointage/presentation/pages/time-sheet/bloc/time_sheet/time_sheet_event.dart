@@ -91,7 +91,8 @@ class GenerateMonthlyTimesheetEvent extends TimeSheetEvent {
   const GenerateMonthlyTimesheetEvent({this.config, this.month});
 
   @override
-  List<Object> get props => [if (config != null) config!, if (month != null) month!];
+  List<Object> get props =>
+      [if (config != null) config!, if (month != null) month!];
 }
 
 class CheckGenerationStatusEvent extends TimeSheetEvent {
@@ -124,7 +125,8 @@ class TimeSheetSignalerAbsencePeriodeEvent extends TimeSheetEvent {
       this.absence);
 
   @override
-  List<Object> get props => [dateDebut, dateFin, type, raison, selectedDay, absence];
+  List<Object> get props =>
+      [dateDebut, dateFin, type, raison, selectedDay, absence];
 }
 
 class TimeSheetDeleteEntryEvent extends TimeSheetEvent {
@@ -166,6 +168,22 @@ class UpdateVacationInfoEvent extends TimeSheetEvent {
 
   @override
   List<Object> get props => [vacationInfo];
+}
+
+class GetExtendedTimerStateEvent extends TimeSheetEvent {
+  const GetExtendedTimerStateEvent();
+
+  @override
+  List<Object> get props => [];
+}
+
+class UpdateWorkTimeInfoEvent extends TimeSheetEvent {
+  final WorkTimeInfo workTimeInfo;
+
+  const UpdateWorkTimeInfoEvent(this.workTimeInfo);
+
+  @override
+  List<Object> get props => [workTimeInfo];
 }
 
 class TimeSheetMonthlyStatsState extends TimeSheetState {

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:time_sheet/features/absence/domain/entities/absence_entity.dart';
+import 'package:time_sheet/features/pointage/domain/entities/extended_timer_state.dart';
+import 'package:time_sheet/features/pointage/domain/entities/work_time_info.dart';
 import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_absence.dart';
 import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_absence_bouton.dart';
 import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_boutton.dart';
@@ -7,6 +9,7 @@ import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widge
 import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_remove_timesheet_day.dart';
 import 'package:time_sheet/features/pointage/domain/entities/timesheet_entry.dart';
 import 'package:time_sheet/features/pointage/presentation/widgets/overtime_indicator.dart';
+import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/estimated_end_time_card.dart';
 
 // import '../monthly_stats_widget/monthly_stats_widget.dart';
 import '../../../../absence/domain/value_objects/absence_type.dart';
@@ -23,8 +26,8 @@ class PointageLayout extends StatelessWidget {
   final List<Map<String, dynamic>> pointages;
   final VoidCallback onActionPointage;
   final Function(Map<String, dynamic>) onModifierPointage;
-  final Function(DateTime, DateTime, String, AbsenceType, String, String, TimeOfDay?, TimeOfDay?)
-      onSignalerAbsencePeriode;
+  final Function(DateTime, DateTime, String, AbsenceType, String, String,
+      TimeOfDay?, TimeOfDay?) onSignalerAbsencePeriode;
   final VoidCallback onDeleteEntry;
   final Duration totalDayHours;
   final String monthlyHoursStatus;
@@ -37,6 +40,8 @@ class PointageLayout extends StatelessWidget {
   final Duration overtimeHours;
   final TimesheetEntry? currentEntry;
   final VoidCallback onToggleOvertime;
+  final ExtendedTimerState? extendedTimerState;
+  final WorkTimeInfo? workTimeInfo;
 
   const PointageLayout({
     super.key,
@@ -60,6 +65,8 @@ class PointageLayout extends StatelessWidget {
     required this.overtimeHours,
     this.currentEntry,
     required this.onToggleOvertime,
+    this.extendedTimerState,
+    this.workTimeInfo,
   });
 
   @override
@@ -90,12 +97,14 @@ class PointageLayout extends StatelessWidget {
                     children: [
                       Text(
                         'Total du jour : ${_formatDuration(totalDayHours)}',
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 10),
                       Text(
                         'Temps de pause : ${_formatDuration(totalBreakTime)}',
-                        style: const TextStyle(fontSize: 14, fontStyle: FontStyle.italic),
+                        style: const TextStyle(
+                            fontSize: 14, fontStyle: FontStyle.italic),
                       ),
                     ],
                   ),
@@ -105,10 +114,17 @@ class PointageLayout extends StatelessWidget {
                   dernierPointage: dernierPointage,
                   progression: progression,
                   pointages: pointages,
+                  extendedTimerState: extendedTimerState,
+                  workTimeInfo: workTimeInfo,
                 ),
               ],
             ),
             const SizedBox(height: 20),
+            // Card pour l'heure de fin estimée
+            EstimatedEndTimeCard(
+              pointages: pointages,
+              currentState: etatActuel,
+            ),
             // Toggle pour les heures supplémentaires
             if (currentEntry != null && etatActuel != 'Non commencé')
               Card(
@@ -172,17 +188,20 @@ class PointageLayout extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Résumé hebdomadaire', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const Text('Résumé hebdomadaire',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             LinearProgressIndicator(
               value: weeklyTarget.inMinutes > 0
-                  ? (weeklyWorkTime.inMinutes / weeklyTarget.inMinutes).clamp(0.0, 1.0)
+                  ? (weeklyWorkTime.inMinutes / weeklyTarget.inMinutes)
+                      .clamp(0.0, 1.0)
                   : 0.0,
               backgroundColor: Colors.grey[200],
               valueColor: const AlwaysStoppedAnimation<Color>(Colors.teal),
             ),
             const SizedBox(height: 8),
-            Text('${_formatDuration(weeklyWorkTime)} / ${_formatDuration(weeklyTarget)}'),
+            Text(
+                '${_formatDuration(weeklyWorkTime)} / ${_formatDuration(weeklyTarget)}'),
           ],
         ),
       ),

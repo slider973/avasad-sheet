@@ -81,13 +81,23 @@ class WeekendOvertimeCalculator {
 
       final dailyTotal = entry.calculateDailyTotal();
 
-      if (await _weekendDetectionService
-          .shouldApplyWeekendOvertime(entry.date!)) {
-        // Weekend day - all hours are overtime
+      // Utiliser les informations de weekend stockées dans l'entrée si disponibles
+      bool isWeekendWithOvertime = false;
+
+      if (entry.isWeekendDay && entry.isWeekendOvertimeEnabled) {
+        isWeekendWithOvertime = true;
+      } else if (entry.date != null) {
+        // Fallback: utiliser le service de détection si les informations ne sont pas stockées
+        isWeekendWithOvertime = await _weekendDetectionService
+            .shouldApplyWeekendOvertime(entry.date!);
+      }
+
+      if (isWeekendWithOvertime) {
+        // Weekend day with overtime enabled - all hours are overtime
         totalWeekendOvertime += dailyTotal;
       } else {
-        // Weekday - separate regular and overtime hours
-        if (dailyTotal > standardWorkDay) {
+        // Weekday OR weekend without overtime - separate regular and overtime hours
+        if (entry.hasOvertimeHours && dailyTotal > standardWorkDay) {
           totalRegularHours += standardWorkDay;
           totalWeekdayOvertime += (dailyTotal - standardWorkDay);
         } else {

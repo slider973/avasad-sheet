@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:time_sheet/features/absence/domain/entities/absence_entity.dart';
+import 'package:time_sheet/features/pointage/domain/entities/extended_timer_state.dart';
+import 'package:time_sheet/features/pointage/domain/entities/work_time_info.dart';
+import 'package:time_sheet/features/pointage/domain/entities/timer_feature_flags.dart';
 import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_absence.dart';
 import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_layout.dart';
 import 'package:time_sheet/services/injection_container.dart';
@@ -37,6 +40,8 @@ class _PointageWidgetState extends State<PointageWidget>
   int _remainingVacationDays = 0;
   final Duration _weeklyTarget = const Duration(hours: 41, minutes: 30);
   final Duration _overtimeHours = Duration.zero;
+  ExtendedTimerState? _extendedTimerState;
+  WorkTimeInfo? _workTimeInfo;
 
   late AnimationController _controller;
   late Animation<double> _progressionAnimation;
@@ -73,11 +78,11 @@ class _PointageWidgetState extends State<PointageWidget>
     }
     _loadWeeklyData();
   }
-  
+
   @override
   void didUpdateWidget(PointageWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    
+
     // Si la date sélectionnée a changé, recharger les données pour la nouvelle date
     if (oldWidget.selectedDate != widget.selectedDate) {
       print('Date sélectionnée modifiée: ${widget.selectedDate}');
@@ -116,7 +121,6 @@ class _PointageWidgetState extends State<PointageWidget>
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<TimeSheetBloc, TimeSheetState>(
@@ -129,7 +133,7 @@ class _PointageWidgetState extends State<PointageWidget>
               absence: state.entry.absence,
               onDeleteEntry: () {
                 _deleteEntry(state.entry);
-                            },
+              },
               etatActuel: _etatActuel,
             );
           }
@@ -160,6 +164,8 @@ class _PointageWidgetState extends State<PointageWidget>
             overtimeHours: _overtimeHours,
             currentEntry: _currentEntry,
             onToggleOvertime: _toggleOvertime,
+            extendedTimerState: _extendedTimerState,
+            workTimeInfo: _workTimeInfo,
           );
         }
         return const Center(child: CircularProgressIndicator());
@@ -189,6 +195,10 @@ class _PointageWidgetState extends State<PointageWidget>
         _currentEntry = state.entry;
         _loadWeeklyData();
         _remainingVacationDays = state.vacationInfo.remainingTotal;
+
+        // Update extended timer state and work time info
+        _extendedTimerState = state.extendedTimerState;
+        _workTimeInfo = state.extendedTimerState?.workTimeInfo;
       });
     }
   }
@@ -220,7 +230,8 @@ class _PointageWidgetState extends State<PointageWidget>
         break;
       case 'Sortie':
         // Retour à l'état initial
-        final formattedDate = DateFormat('dd-MMM-yy').format(widget.selectedDate);
+        final formattedDate =
+            DateFormat('dd-MMM-yy').format(widget.selectedDate);
         bloc.add(LoadTimeSheetDataEvent(formattedDate));
         break;
     }
@@ -287,9 +298,18 @@ class _PointageWidgetState extends State<PointageWidget>
       TimeOfDay? startTime,
       TimeOfDay? endTime) {
     final bloc = context.read<TimeSheetBloc>();
-    final absenceEntity = AbsenceEntity(startDate: dateDebut, endDate: dateFin, type: absence, motif: raison);
-    bloc.add(TimeSheetSignalerAbsencePeriodeEvent(dateDebut, dateFin, type,
-        raison, periode, startTime, endTime,  widget.selectedDate, absenceEntity));
+    final absenceEntity = AbsenceEntity(
+        startDate: dateDebut, endDate: dateFin, type: absence, motif: raison);
+    bloc.add(TimeSheetSignalerAbsencePeriodeEvent(
+        dateDebut,
+        dateFin,
+        type,
+        raison,
+        periode,
+        startTime,
+        endTime,
+        widget.selectedDate,
+        absenceEntity));
     // Convertir TimeOfDay en String si non null
     String? startTimeStr = startTime?.format(context);
     String? endTimeStr = endTime?.format(context);
@@ -317,11 +337,10 @@ class _PointageWidgetState extends State<PointageWidget>
   }
 
   Duration _calculateTotalDayHours(List<Map<String, dynamic>> pointages) {
-    if (pointages.length < 2) return Duration.zero;
+    if (pointages.isEmpty) return Duration.zero;
 
     Duration totalDuration = Duration.zero;
     DateTime? workStart;
-    DateTime? pauseStart;
 
     for (int i = 0; i < pointages.length; i++) {
       String type = pointages[i]['type'];
@@ -335,7 +354,7 @@ class _PointageWidgetState extends State<PointageWidget>
           if (workStart != null) {
             totalDuration += time.difference(workStart);
           }
-          pauseStart = time;
+          workStart = null; // Reset pour éviter de compter la pause
           break;
         case 'Fin pause':
           workStart = time;
@@ -344,8 +363,15 @@ class _PointageWidgetState extends State<PointageWidget>
           if (workStart != null) {
             totalDuration += time.difference(workStart);
           }
+          workStart = null;
           break;
       }
+    }
+
+    // Si on est actuellement en train de travailler, ajouter le temps depuis le dernier pointage
+    if (workStart != null &&
+        (_etatActuel == 'Entrée' || _etatActuel == 'Reprise')) {
+      totalDuration += DateTime.now().difference(workStart);
     }
 
     return totalDuration;
@@ -366,9 +392,15 @@ class _PointageWidgetState extends State<PointageWidget>
         case 'Fin pause':
           if (pauseStart != null) {
             totalBreakDuration += time.difference(pauseStart);
+            pauseStart = null; // Reset après calcul
           }
           break;
       }
+    }
+
+    // Si on est actuellement en pause, ajouter le temps de pause actuel
+    if (pauseStart != null && _etatActuel == 'Pause') {
+      totalBreakDuration += DateTime.now().difference(pauseStart);
     }
 
     return totalBreakDuration;

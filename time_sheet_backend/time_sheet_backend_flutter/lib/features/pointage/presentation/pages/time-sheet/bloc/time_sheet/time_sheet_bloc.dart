@@ -6,7 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:intl/intl.dart';
 import 'package:time_sheet/features/pointage/domain/entities/timesheet_generation_config.dart';
+import 'package:time_sheet/features/pointage/domain/entities/extended_timer_state.dart';
+import 'package:time_sheet/features/pointage/domain/entities/work_time_info.dart';
 import 'package:time_sheet/services/timer_service.dart';
+import 'package:time_sheet/services/work_time_calculator_service.dart';
 import 'package:time_sheet/services/watch_service.dart';
 import 'package:time_sheet/services/clock_reminder_service.dart';
 
@@ -41,6 +44,8 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
   final SignalerAbsencePeriodeUsecase signalerAbsencePeriodeUsecase;
   final GetMonthlyTimesheetEntriesUseCase getMonthlyTimesheetEntriesUseCase;
   final TimerService _timerService = GetIt.I<TimerService>();
+  final WorkTimeCalculatorService _workTimeCalculatorService =
+      WorkTimeCalculatorService();
   final WatchService _watchService = GetIt.I<WatchService>();
   final ClockReminderService _clockReminderService =
       GetIt.I<ClockReminderService>();
@@ -73,6 +78,8 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
     on<LoadVacationDaysEvent>(_loadVacationDays);
     on<LoadMonthlyEntriesEvent>(_onLoadMonthlyEntries);
     on<UpdateVacationInfoEvent>(_onUpdateVacationInfo);
+    on<GetExtendedTimerStateEvent>(_onGetExtendedTimerState);
+    on<UpdateWorkTimeInfoEvent>(_onUpdateWorkTimeInfo);
   }
 
   void _checkGenerationStatus(
@@ -97,10 +104,14 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
   }) async {
     final vacationInfo = await getRemainingVacationDaysUseCase.execute();
 
+    // Generate ExtendedTimerState with current timer data
+    final extendedTimerState = _generateExtendedTimerState(entry);
+
     return TimeSheetDataState(
       entry,
       monthlyEntries: monthlyEntries,
       vacationInfo: vacationInfo,
+      extendedTimerState: extendedTimerState,
     );
   }
 
@@ -152,6 +163,9 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
 
       // Synchroniser le TimerService avec le nouvel état
       _timerService.updateState('Entrée', event.startTime);
+
+      // Réinitialiser les périodes de pause pour une nouvelle journée
+      _workTimeCalculatorService.reset();
 
       // Synchroniser avec l'Apple Watch
       await _watchService.sendState('Entrée');
@@ -216,6 +230,9 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
       // Synchroniser le TimerService avec le nouvel état
       _timerService.updateState('Pause', event.startBreakTime);
 
+      // Commencer le suivi de la pause
+      _workTimeCalculatorService.startBreak();
+
       // Synchroniser avec l'Apple Watch
       await _watchService.sendState('Pause');
 
@@ -246,6 +263,9 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
 
       // Synchroniser le TimerService avec le nouvel état
       _timerService.updateState('Reprise', event.endBreakTime);
+
+      // Terminer le suivi de la pause
+      _workTimeCalculatorService.endBreak();
 
       // Synchroniser avec l'Apple Watch
       await _watchService.sendState('Reprise');
@@ -492,6 +512,7 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
         currentState.entry,
         monthlyEntries: currentState.monthlyEntries,
         vacationInfo: event.vacationInfo,
+        extendedTimerState: currentState.extendedTimerState,
       ));
     }
   }
@@ -507,11 +528,79 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
           currentState.entry,
           monthlyEntries: currentState.monthlyEntries,
           vacationInfo: vacationInfo,
+          extendedTimerState: currentState.extendedTimerState,
         ));
       }
     } catch (e) {
       print("error $e");
       emit(TimeSheetErrorState(e.toString()));
+    }
+  }
+
+  /// Generates ExtendedTimerState from TimesheetEntry data
+  ExtendedTimerState? _generateExtendedTimerState(TimesheetEntry entry) {
+    try {
+      // Get current timer state from TimerService
+      final currentState = _timerService.currentState;
+      final elapsedTime = _timerService.elapsedTime;
+      final startTime = _timerService.startTime;
+
+      // Determine if it's a weekend day
+      final entryDate = DateFormat("dd-MMM-yy").parse(entry.dayDate);
+      final isWeekendDay = entryDate.weekday == DateTime.saturday ||
+          entryDate.weekday == DateTime.sunday;
+
+      // Check if weekend overtime is enabled for this entry
+      final weekendOvertimeEnabled = entry.hasOvertimeHours;
+
+      // Generate ExtendedTimerState using WorkTimeCalculatorService
+      return _workTimeCalculatorService.generateExtendedTimerState(
+        currentState: currentState,
+        elapsedTime: elapsedTime,
+        startTime: startTime,
+        isWeekendDay: isWeekendDay,
+        weekendOvertimeEnabled: weekendOvertimeEnabled,
+      );
+    } catch (e) {
+      print("Error generating ExtendedTimerState: $e");
+      return null;
+    }
+  }
+
+  /// Handles GetExtendedTimerStateEvent
+  void _onGetExtendedTimerState(
+      GetExtendedTimerStateEvent event, Emitter<TimeSheetState> emit) {
+    if (state is TimeSheetDataState) {
+      final currentState = state as TimeSheetDataState;
+      final extendedTimerState =
+          _generateExtendedTimerState(currentState.entry);
+
+      emit(TimeSheetDataState(
+        currentState.entry,
+        monthlyEntries: currentState.monthlyEntries,
+        vacationInfo: currentState.vacationInfo,
+        extendedTimerState: extendedTimerState,
+      ));
+    }
+  }
+
+  /// Handles UpdateWorkTimeInfoEvent
+  void _onUpdateWorkTimeInfo(
+      UpdateWorkTimeInfoEvent event, Emitter<TimeSheetState> emit) {
+    if (state is TimeSheetDataState) {
+      final currentState = state as TimeSheetDataState;
+
+      // Update the ExtendedTimerState with new WorkTimeInfo
+      final updatedExtendedState = currentState.extendedTimerState?.copyWith(
+        workTimeInfo: event.workTimeInfo,
+      );
+
+      emit(TimeSheetDataState(
+        currentState.entry,
+        monthlyEntries: currentState.monthlyEntries,
+        vacationInfo: currentState.vacationInfo,
+        extendedTimerState: updatedExtendedState,
+      ));
     }
   }
 }

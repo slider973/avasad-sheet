@@ -3,24 +3,28 @@
 // Do not manually edit this file.
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
-import 'dart:async' as _i8;
+import 'dart:async' as _i10;
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart'
-    as _i3;
+    as _i5;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i7;
-import 'package:time_sheet/enum/reminder_type.dart' as _i11;
-import 'package:time_sheet/features/pointage/presentation/pages/time-sheet/bloc/time_sheet/time_sheet_bloc.dart'
+import 'package:mockito/src/dummies.dart' as _i9;
+import 'package:time_sheet/enum/reminder_type.dart' as _i13;
+import 'package:time_sheet/features/pointage/domain/entities/extended_timer_state.dart'
+    as _i3;
+import 'package:time_sheet/features/pointage/domain/entities/work_time_info.dart'
     as _i4;
+import 'package:time_sheet/features/pointage/presentation/pages/time-sheet/bloc/time_sheet/time_sheet_bloc.dart'
+    as _i6;
 import 'package:time_sheet/features/preference/data/models/reminder_notification.dart'
     as _i2;
 import 'package:time_sheet/features/preference/data/models/reminder_settings.dart'
-    as _i10;
+    as _i12;
 import 'package:time_sheet/features/preference/presentation/manager/preferences_bloc.dart'
-    as _i5;
-import 'package:time_sheet/services/clock_reminder_service.dart' as _i6;
-import 'package:time_sheet/services/ios_notification_service.dart' as _i12;
-import 'package:time_sheet/services/timer_service.dart' as _i9;
+    as _i7;
+import 'package:time_sheet/services/clock_reminder_service.dart' as _i8;
+import 'package:time_sheet/services/ios_notification_service.dart' as _i14;
+import 'package:time_sheet/services/timer_service.dart' as _i11;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -56,9 +60,9 @@ class _FakeDuration_1 extends _i1.SmartFake implements Duration {
         );
 }
 
-class _FakeFlutterLocalNotificationsPlugin_2 extends _i1.SmartFake
-    implements _i3.FlutterLocalNotificationsPlugin {
-  _FakeFlutterLocalNotificationsPlugin_2(
+class _FakeExtendedTimerState_2 extends _i1.SmartFake
+    implements _i3.ExtendedTimerState {
+  _FakeExtendedTimerState_2(
     Object parent,
     Invocation parentInvocation,
   ) : super(
@@ -67,8 +71,8 @@ class _FakeFlutterLocalNotificationsPlugin_2 extends _i1.SmartFake
         );
 }
 
-class _FakeTimeSheetBloc_3 extends _i1.SmartFake implements _i4.TimeSheetBloc {
-  _FakeTimeSheetBloc_3(
+class _FakeWorkTimeInfo_3 extends _i1.SmartFake implements _i4.WorkTimeInfo {
+  _FakeWorkTimeInfo_3(
     Object parent,
     Invocation parentInvocation,
   ) : super(
@@ -77,9 +81,30 @@ class _FakeTimeSheetBloc_3 extends _i1.SmartFake implements _i4.TimeSheetBloc {
         );
 }
 
-class _FakePreferencesBloc_4 extends _i1.SmartFake
-    implements _i5.PreferencesBloc {
-  _FakePreferencesBloc_4(
+class _FakeFlutterLocalNotificationsPlugin_4 extends _i1.SmartFake
+    implements _i5.FlutterLocalNotificationsPlugin {
+  _FakeFlutterLocalNotificationsPlugin_4(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+}
+
+class _FakeTimeSheetBloc_5 extends _i1.SmartFake implements _i6.TimeSheetBloc {
+  _FakeTimeSheetBloc_5(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+}
+
+class _FakePreferencesBloc_6 extends _i1.SmartFake
+    implements _i7.PreferencesBloc {
+  _FakePreferencesBloc_6(
     Object parent,
     Invocation parentInvocation,
   ) : super(
@@ -92,7 +117,7 @@ class _FakePreferencesBloc_4 extends _i1.SmartFake
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockClockReminderService extends _i1.Mock
-    implements _i6.ClockReminderService {
+    implements _i8.ClockReminderService {
   MockClockReminderService() {
     _i1.throwOnMissingStub(this);
   }
@@ -106,7 +131,7 @@ class MockClockReminderService extends _i1.Mock
   @override
   String get lastKnownClockStatus => (super.noSuchMethod(
         Invocation.getter(#lastKnownClockStatus),
-        returnValue: _i7.dummyValue<String>(
+        returnValue: _i9.dummyValue<String>(
           this,
           Invocation.getter(#lastKnownClockStatus),
         ),
@@ -126,63 +151,63 @@ class MockClockReminderService extends _i1.Mock
       ) as bool);
 
   @override
-  _i8.Future<void> initialize({_i9.TimerService? timerService}) =>
+  _i10.Future<void> initialize({_i11.TimerService? timerService}) =>
       (super.noSuchMethod(
         Invocation.method(
           #initialize,
           [],
           {#timerService: timerService},
         ),
-        returnValue: _i8.Future<void>.value(),
-        returnValueForMissingStub: _i8.Future<void>.value(),
-      ) as _i8.Future<void>);
+        returnValue: _i10.Future<void>.value(),
+        returnValueForMissingStub: _i10.Future<void>.value(),
+      ) as _i10.Future<void>);
 
   @override
-  _i8.Future<void> scheduleReminders(_i10.ReminderSettings? settings) =>
+  _i10.Future<void> scheduleReminders(_i12.ReminderSettings? settings) =>
       (super.noSuchMethod(
         Invocation.method(
           #scheduleReminders,
           [settings],
         ),
-        returnValue: _i8.Future<void>.value(),
-        returnValueForMissingStub: _i8.Future<void>.value(),
-      ) as _i8.Future<void>);
+        returnValue: _i10.Future<void>.value(),
+        returnValueForMissingStub: _i10.Future<void>.value(),
+      ) as _i10.Future<void>);
 
   @override
-  _i8.Future<void> cancelAllReminders() => (super.noSuchMethod(
+  _i10.Future<void> cancelAllReminders() => (super.noSuchMethod(
         Invocation.method(
           #cancelAllReminders,
           [],
         ),
-        returnValue: _i8.Future<void>.value(),
-        returnValueForMissingStub: _i8.Future<void>.value(),
-      ) as _i8.Future<void>);
+        returnValue: _i10.Future<void>.value(),
+        returnValueForMissingStub: _i10.Future<void>.value(),
+      ) as _i10.Future<void>);
 
   @override
-  _i8.Future<void> onClockStatusChanged(String? status) => (super.noSuchMethod(
+  _i10.Future<void> onClockStatusChanged(String? status) => (super.noSuchMethod(
         Invocation.method(
           #onClockStatusChanged,
           [status],
         ),
-        returnValue: _i8.Future<void>.value(),
-        returnValueForMissingStub: _i8.Future<void>.value(),
-      ) as _i8.Future<void>);
+        returnValue: _i10.Future<void>.value(),
+        returnValueForMissingStub: _i10.Future<void>.value(),
+      ) as _i10.Future<void>);
 
   @override
-  _i8.Future<void> onTimeSheetStateChanged(String? clockStatus) =>
+  _i10.Future<void> onTimeSheetStateChanged(String? clockStatus) =>
       (super.noSuchMethod(
         Invocation.method(
           #onTimeSheetStateChanged,
           [clockStatus],
         ),
-        returnValue: _i8.Future<void>.value(),
-        returnValueForMissingStub: _i8.Future<void>.value(),
-      ) as _i8.Future<void>);
+        returnValue: _i10.Future<void>.value(),
+        returnValueForMissingStub: _i10.Future<void>.value(),
+      ) as _i10.Future<void>);
 
   @override
-  _i8.Future<void> snoozeReminder(
+  _i10.Future<void> snoozeReminder(
     int? notificationId,
-    _i11.ReminderType? type,
+    _i13.ReminderType? type,
   ) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -192,39 +217,39 @@ class MockClockReminderService extends _i1.Mock
             type,
           ],
         ),
-        returnValue: _i8.Future<void>.value(),
-        returnValueForMissingStub: _i8.Future<void>.value(),
-      ) as _i8.Future<void>);
+        returnValue: _i10.Future<void>.value(),
+        returnValueForMissingStub: _i10.Future<void>.value(),
+      ) as _i10.Future<void>);
 
   @override
-  _i8.Future<bool> shouldSendReminder(_i11.ReminderType? type) =>
+  _i10.Future<bool> shouldSendReminder(_i13.ReminderType? type) =>
       (super.noSuchMethod(
         Invocation.method(
           #shouldSendReminder,
           [type],
         ),
-        returnValue: _i8.Future<bool>.value(false),
-      ) as _i8.Future<bool>);
+        returnValue: _i10.Future<bool>.value(false),
+      ) as _i10.Future<bool>);
 
   @override
-  _i8.Future<void> onAppBackground() => (super.noSuchMethod(
+  _i10.Future<void> onAppBackground() => (super.noSuchMethod(
         Invocation.method(
           #onAppBackground,
           [],
         ),
-        returnValue: _i8.Future<void>.value(),
-        returnValueForMissingStub: _i8.Future<void>.value(),
-      ) as _i8.Future<void>);
+        returnValue: _i10.Future<void>.value(),
+        returnValueForMissingStub: _i10.Future<void>.value(),
+      ) as _i10.Future<void>);
 
   @override
-  _i8.Future<void> onAppForeground() => (super.noSuchMethod(
+  _i10.Future<void> onAppForeground() => (super.noSuchMethod(
         Invocation.method(
           #onAppForeground,
           [],
         ),
-        returnValue: _i8.Future<void>.value(),
-        returnValueForMissingStub: _i8.Future<void>.value(),
-      ) as _i8.Future<void>);
+        returnValue: _i10.Future<void>.value(),
+        returnValueForMissingStub: _i10.Future<void>.value(),
+      ) as _i10.Future<void>);
 
   @override
   void dispose() => super.noSuchMethod(
@@ -236,40 +261,40 @@ class MockClockReminderService extends _i1.Mock
       );
 
   @override
-  _i8.Future<void> handleNotificationInteraction(String? payload) =>
+  _i10.Future<void> handleNotificationInteraction(String? payload) =>
       (super.noSuchMethod(
         Invocation.method(
           #handleNotificationInteraction,
           [payload],
         ),
-        returnValue: _i8.Future<void>.value(),
-        returnValueForMissingStub: _i8.Future<void>.value(),
-      ) as _i8.Future<void>);
+        returnValue: _i10.Future<void>.value(),
+        returnValueForMissingStub: _i10.Future<void>.value(),
+      ) as _i10.Future<void>);
 
   @override
-  _i8.Future<void> handleNotificationTap(String? payload) =>
+  _i10.Future<void> handleNotificationTap(String? payload) =>
       (super.noSuchMethod(
         Invocation.method(
           #handleNotificationTap,
           [payload],
         ),
-        returnValue: _i8.Future<void>.value(),
-        returnValueForMissingStub: _i8.Future<void>.value(),
-      ) as _i8.Future<void>);
+        returnValue: _i10.Future<void>.value(),
+        returnValueForMissingStub: _i10.Future<void>.value(),
+      ) as _i10.Future<void>);
 
   @override
-  _i8.Future<void> dismissNotification(int? notificationId) =>
+  _i10.Future<void> dismissNotification(int? notificationId) =>
       (super.noSuchMethod(
         Invocation.method(
           #dismissNotification,
           [notificationId],
         ),
-        returnValue: _i8.Future<void>.value(),
-        returnValueForMissingStub: _i8.Future<void>.value(),
-      ) as _i8.Future<void>);
+        returnValue: _i10.Future<void>.value(),
+        returnValueForMissingStub: _i10.Future<void>.value(),
+      ) as _i10.Future<void>);
 
   @override
-  _i8.Future<bool> snoozeNotification(
+  _i10.Future<bool> snoozeNotification(
     _i2.ReminderNotification? notification,
     int? minutes,
   ) =>
@@ -281,13 +306,13 @@ class MockClockReminderService extends _i1.Mock
             minutes,
           ],
         ),
-        returnValue: _i8.Future<bool>.value(false),
-      ) as _i8.Future<bool>);
+        returnValue: _i10.Future<bool>.value(false),
+      ) as _i10.Future<bool>);
 
   @override
-  _i8.Future<bool> shouldSendReminderOnDay(
+  _i10.Future<bool> shouldSendReminderOnDay(
     DateTime? date,
-    _i10.ReminderSettings? settings,
+    _i12.ReminderSettings? settings,
   ) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -297,12 +322,12 @@ class MockClockReminderService extends _i1.Mock
             settings,
           ],
         ),
-        returnValue: _i8.Future<bool>.value(false),
-      ) as _i8.Future<bool>);
+        returnValue: _i10.Future<bool>.value(false),
+      ) as _i10.Future<bool>);
 
   @override
   _i2.ReminderNotification createReminderNotification(
-    _i11.ReminderType? type,
+    _i13.ReminderType? type,
     DateTime? scheduledTime,
   ) =>
       (super.noSuchMethod(
@@ -326,55 +351,56 @@ class MockClockReminderService extends _i1.Mock
       ) as _i2.ReminderNotification);
 
   @override
-  _i8.Future<void> updateSettings(_i10.ReminderSettings? newSettings) =>
+  _i10.Future<void> updateSettings(_i12.ReminderSettings? newSettings) =>
       (super.noSuchMethod(
         Invocation.method(
           #updateSettings,
           [newSettings],
         ),
-        returnValue: _i8.Future<void>.value(),
-        returnValueForMissingStub: _i8.Future<void>.value(),
-      ) as _i8.Future<void>);
+        returnValue: _i10.Future<void>.value(),
+        returnValueForMissingStub: _i10.Future<void>.value(),
+      ) as _i10.Future<void>);
 
   @override
-  _i8.Future<bool> checkNotificationPermissions() => (super.noSuchMethod(
+  _i10.Future<bool> checkNotificationPermissions() => (super.noSuchMethod(
         Invocation.method(
           #checkNotificationPermissions,
           [],
         ),
-        returnValue: _i8.Future<bool>.value(false),
-      ) as _i8.Future<bool>);
+        returnValue: _i10.Future<bool>.value(false),
+      ) as _i10.Future<bool>);
 
   @override
-  _i8.Future<void> onAppBackgroundWithTracking() => (super.noSuchMethod(
+  _i10.Future<void> onAppBackgroundWithTracking() => (super.noSuchMethod(
         Invocation.method(
           #onAppBackgroundWithTracking,
           [],
         ),
-        returnValue: _i8.Future<void>.value(),
-        returnValueForMissingStub: _i8.Future<void>.value(),
-      ) as _i8.Future<void>);
+        returnValue: _i10.Future<void>.value(),
+        returnValueForMissingStub: _i10.Future<void>.value(),
+      ) as _i10.Future<void>);
 
   @override
-  _i8.Future<void> onAppForegroundWithTracking() => (super.noSuchMethod(
+  _i10.Future<void> onAppForegroundWithTracking() => (super.noSuchMethod(
         Invocation.method(
           #onAppForegroundWithTracking,
           [],
         ),
-        returnValue: _i8.Future<void>.value(),
-        returnValueForMissingStub: _i8.Future<void>.value(),
-      ) as _i8.Future<void>);
+        returnValue: _i10.Future<void>.value(),
+        returnValueForMissingStub: _i10.Future<void>.value(),
+      ) as _i10.Future<void>);
 
   @override
-  _i8.Future<void> handleNotificationInteractionWithTracking(String? payload) =>
+  _i10.Future<void> handleNotificationInteractionWithTracking(
+          String? payload) =>
       (super.noSuchMethod(
         Invocation.method(
           #handleNotificationInteractionWithTracking,
           [payload],
         ),
-        returnValue: _i8.Future<void>.value(),
-        returnValueForMissingStub: _i8.Future<void>.value(),
-      ) as _i8.Future<void>);
+        returnValue: _i10.Future<void>.value(),
+        returnValueForMissingStub: _i10.Future<void>.value(),
+      ) as _i10.Future<void>);
 
   @override
   Map<String, dynamic> getReminderStats() => (super.noSuchMethod(
@@ -389,7 +415,7 @@ class MockClockReminderService extends _i1.Mock
 /// A class which mocks [TimerService].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockTimerService extends _i1.Mock implements _i9.TimerService {
+class MockTimerService extends _i1.Mock implements _i11.TimerService {
   MockTimerService() {
     _i1.throwOnMissingStub(this);
   }
@@ -415,7 +441,7 @@ class MockTimerService extends _i1.Mock implements _i9.TimerService {
   @override
   String get currentState => (super.noSuchMethod(
         Invocation.getter(#currentState),
-        returnValue: _i7.dummyValue<String>(
+        returnValue: _i9.dummyValue<String>(
           this,
           Invocation.getter(#currentState),
         ),
@@ -440,7 +466,13 @@ class MockTimerService extends _i1.Mock implements _i9.TimerService {
       ) as bool);
 
   @override
-  _i8.Future<void> initialize(
+  bool get isOvertimeStartedCalculated => (super.noSuchMethod(
+        Invocation.getter(#isOvertimeStartedCalculated),
+        returnValue: false,
+      ) as bool);
+
+  @override
+  _i10.Future<void> initialize(
     String? etatActuel,
     DateTime? dernierPointage,
   ) =>
@@ -452,9 +484,9 @@ class MockTimerService extends _i1.Mock implements _i9.TimerService {
             dernierPointage,
           ],
         ),
-        returnValue: _i8.Future<void>.value(),
-        returnValueForMissingStub: _i8.Future<void>.value(),
-      ) as _i8.Future<void>);
+        returnValue: _i10.Future<void>.value(),
+        returnValueForMissingStub: _i10.Future<void>.value(),
+      ) as _i10.Future<void>);
 
   @override
   void updateState(
@@ -491,14 +523,14 @@ class MockTimerService extends _i1.Mock implements _i9.TimerService {
       );
 
   @override
-  _i8.Future<void> refreshWeekendConfiguration() => (super.noSuchMethod(
+  _i10.Future<void> refreshWeekendConfiguration() => (super.noSuchMethod(
         Invocation.method(
           #refreshWeekendConfiguration,
           [],
         ),
-        returnValue: _i8.Future<void>.value(),
-        returnValueForMissingStub: _i8.Future<void>.value(),
-      ) as _i8.Future<void>);
+        returnValue: _i10.Future<void>.value(),
+        returnValueForMissingStub: _i10.Future<void>.value(),
+      ) as _i10.Future<void>);
 
   @override
   Map<String, dynamic> getOvertimeInfo() => (super.noSuchMethod(
@@ -508,6 +540,81 @@ class MockTimerService extends _i1.Mock implements _i9.TimerService {
         ),
         returnValue: <String, dynamic>{},
       ) as Map<String, dynamic>);
+
+  @override
+  _i3.ExtendedTimerState getExtendedTimerState() => (super.noSuchMethod(
+        Invocation.method(
+          #getExtendedTimerState,
+          [],
+        ),
+        returnValue: _FakeExtendedTimerState_2(
+          this,
+          Invocation.method(
+            #getExtendedTimerState,
+            [],
+          ),
+        ),
+      ) as _i3.ExtendedTimerState);
+
+  @override
+  _i4.WorkTimeInfo getWorkTimeInfo() => (super.noSuchMethod(
+        Invocation.method(
+          #getWorkTimeInfo,
+          [],
+        ),
+        returnValue: _FakeWorkTimeInfo_3(
+          this,
+          Invocation.method(
+            #getWorkTimeInfo,
+            [],
+          ),
+        ),
+      ) as _i4.WorkTimeInfo);
+
+  @override
+  Duration getRemainingWorkTime() => (super.noSuchMethod(
+        Invocation.method(
+          #getRemainingWorkTime,
+          [],
+        ),
+        returnValue: _FakeDuration_1(
+          this,
+          Invocation.method(
+            #getRemainingWorkTime,
+            [],
+          ),
+        ),
+      ) as Duration);
+
+  @override
+  Duration getCalculatedOvertimeHours() => (super.noSuchMethod(
+        Invocation.method(
+          #getCalculatedOvertimeHours,
+          [],
+        ),
+        returnValue: _FakeDuration_1(
+          this,
+          Invocation.method(
+            #getCalculatedOvertimeHours,
+            [],
+          ),
+        ),
+      ) as Duration);
+
+  @override
+  Duration getTotalBreakTime() => (super.noSuchMethod(
+        Invocation.method(
+          #getTotalBreakTime,
+          [],
+        ),
+        returnValue: _FakeDuration_1(
+          this,
+          Invocation.method(
+            #getTotalBreakTime,
+            [],
+          ),
+        ),
+      ) as Duration);
 
   @override
   void dispose() => super.noSuchMethod(
@@ -523,83 +630,83 @@ class MockTimerService extends _i1.Mock implements _i9.TimerService {
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockDynamicMultiplatformNotificationService extends _i1.Mock
-    implements _i12.DynamicMultiplatformNotificationService {
+    implements _i14.DynamicMultiplatformNotificationService {
   MockDynamicMultiplatformNotificationService() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  _i3.FlutterLocalNotificationsPlugin get flutterLocalNotificationsPlugin =>
+  _i5.FlutterLocalNotificationsPlugin get flutterLocalNotificationsPlugin =>
       (super.noSuchMethod(
         Invocation.getter(#flutterLocalNotificationsPlugin),
-        returnValue: _FakeFlutterLocalNotificationsPlugin_2(
+        returnValue: _FakeFlutterLocalNotificationsPlugin_4(
           this,
           Invocation.getter(#flutterLocalNotificationsPlugin),
         ),
-      ) as _i3.FlutterLocalNotificationsPlugin);
+      ) as _i5.FlutterLocalNotificationsPlugin);
 
   @override
-  _i4.TimeSheetBloc get timeSheetBloc => (super.noSuchMethod(
+  _i6.TimeSheetBloc get timeSheetBloc => (super.noSuchMethod(
         Invocation.getter(#timeSheetBloc),
-        returnValue: _FakeTimeSheetBloc_3(
+        returnValue: _FakeTimeSheetBloc_5(
           this,
           Invocation.getter(#timeSheetBloc),
         ),
-      ) as _i4.TimeSheetBloc);
+      ) as _i6.TimeSheetBloc);
 
   @override
-  _i5.PreferencesBloc get preferencesBloc => (super.noSuchMethod(
+  _i7.PreferencesBloc get preferencesBloc => (super.noSuchMethod(
         Invocation.getter(#preferencesBloc),
-        returnValue: _FakePreferencesBloc_4(
+        returnValue: _FakePreferencesBloc_6(
           this,
           Invocation.getter(#preferencesBloc),
         ),
-      ) as _i5.PreferencesBloc);
+      ) as _i7.PreferencesBloc);
 
   @override
-  _i8.Future<void> initNotifications() => (super.noSuchMethod(
+  _i10.Future<void> initNotifications() => (super.noSuchMethod(
         Invocation.method(
           #initNotifications,
           [],
         ),
-        returnValue: _i8.Future<void>.value(),
-        returnValueForMissingStub: _i8.Future<void>.value(),
-      ) as _i8.Future<void>);
+        returnValue: _i10.Future<void>.value(),
+        returnValueForMissingStub: _i10.Future<void>.value(),
+      ) as _i10.Future<void>);
 
   @override
-  _i8.Future<void> testNotification() => (super.noSuchMethod(
+  _i10.Future<void> testNotification() => (super.noSuchMethod(
         Invocation.method(
           #testNotification,
           [],
         ),
-        returnValue: _i8.Future<void>.value(),
-        returnValueForMissingStub: _i8.Future<void>.value(),
-      ) as _i8.Future<void>);
+        returnValue: _i10.Future<void>.value(),
+        returnValueForMissingStub: _i10.Future<void>.value(),
+      ) as _i10.Future<void>);
 
   @override
-  _i8.Future<void> onAppClosed() => (super.noSuchMethod(
+  _i10.Future<void> onAppClosed() => (super.noSuchMethod(
         Invocation.method(
           #onAppClosed,
           [],
         ),
-        returnValue: _i8.Future<void>.value(),
-        returnValueForMissingStub: _i8.Future<void>.value(),
-      ) as _i8.Future<void>);
+        returnValue: _i10.Future<void>.value(),
+        returnValueForMissingStub: _i10.Future<void>.value(),
+      ) as _i10.Future<void>);
 
   @override
-  _i8.Future<void> onAppOpened() => (super.noSuchMethod(
+  _i10.Future<void> onAppOpened() => (super.noSuchMethod(
         Invocation.method(
           #onAppOpened,
           [],
         ),
-        returnValue: _i8.Future<void>.value(),
-        returnValueForMissingStub: _i8.Future<void>.value(),
-      ) as _i8.Future<void>);
+        returnValue: _i10.Future<void>.value(),
+        returnValueForMissingStub: _i10.Future<void>.value(),
+      ) as _i10.Future<void>);
 
   @override
-  _i8.Future<bool> scheduleReminderNotification(
+  _i10.Future<bool> scheduleReminderNotification(
     _i2.ReminderNotification? reminder,
-    _i10.ReminderSettings? settings,
+    _i12.ReminderSettings? settings,
   ) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -609,34 +716,34 @@ class MockDynamicMultiplatformNotificationService extends _i1.Mock
             settings,
           ],
         ),
-        returnValue: _i8.Future<bool>.value(false),
-      ) as _i8.Future<bool>);
+        returnValue: _i10.Future<bool>.value(false),
+      ) as _i10.Future<bool>);
 
   @override
-  _i8.Future<void> cancelReminderNotification(dynamic notificationId) =>
+  _i10.Future<void> cancelReminderNotification(dynamic notificationId) =>
       (super.noSuchMethod(
         Invocation.method(
           #cancelReminderNotification,
           [notificationId],
         ),
-        returnValue: _i8.Future<void>.value(),
-        returnValueForMissingStub: _i8.Future<void>.value(),
-      ) as _i8.Future<void>);
+        returnValue: _i10.Future<void>.value(),
+        returnValueForMissingStub: _i10.Future<void>.value(),
+      ) as _i10.Future<void>);
 
   @override
-  _i8.Future<void> cancelAllReminderNotifications() => (super.noSuchMethod(
+  _i10.Future<void> cancelAllReminderNotifications() => (super.noSuchMethod(
         Invocation.method(
           #cancelAllReminderNotifications,
           [],
         ),
-        returnValue: _i8.Future<void>.value(),
-        returnValueForMissingStub: _i8.Future<void>.value(),
-      ) as _i8.Future<void>);
+        returnValue: _i10.Future<void>.value(),
+        returnValueForMissingStub: _i10.Future<void>.value(),
+      ) as _i10.Future<void>);
 
   @override
-  _i8.Future<bool> snoozeReminderNotification(
+  _i10.Future<bool> snoozeReminderNotification(
     _i2.ReminderNotification? reminder,
-    _i10.ReminderSettings? settings,
+    _i12.ReminderSettings? settings,
   ) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -646,45 +753,46 @@ class MockDynamicMultiplatformNotificationService extends _i1.Mock
             settings,
           ],
         ),
-        returnValue: _i8.Future<bool>.value(false),
-      ) as _i8.Future<bool>);
+        returnValue: _i10.Future<bool>.value(false),
+      ) as _i10.Future<bool>);
 
   @override
-  _i8.Future<bool> requestNotificationPermissions() => (super.noSuchMethod(
+  _i10.Future<bool> requestNotificationPermissions() => (super.noSuchMethod(
         Invocation.method(
           #requestNotificationPermissions,
           [],
         ),
-        returnValue: _i8.Future<bool>.value(false),
-      ) as _i8.Future<bool>);
+        returnValue: _i10.Future<bool>.value(false),
+      ) as _i10.Future<bool>);
 
   @override
-  _i8.Future<List<_i3.PendingNotificationRequest>>
+  _i10.Future<List<_i5.PendingNotificationRequest>>
       getPendingReminderNotifications() => (super.noSuchMethod(
             Invocation.method(
               #getPendingReminderNotifications,
               [],
             ),
-            returnValue: _i8.Future<List<_i3.PendingNotificationRequest>>.value(
-                <_i3.PendingNotificationRequest>[]),
-          ) as _i8.Future<List<_i3.PendingNotificationRequest>>);
+            returnValue:
+                _i10.Future<List<_i5.PendingNotificationRequest>>.value(
+                    <_i5.PendingNotificationRequest>[]),
+          ) as _i10.Future<List<_i5.PendingNotificationRequest>>);
 
   @override
-  _i8.Future<bool> testBackgroundNotificationDelivery() => (super.noSuchMethod(
+  _i10.Future<bool> testBackgroundNotificationDelivery() => (super.noSuchMethod(
         Invocation.method(
           #testBackgroundNotificationDelivery,
           [],
         ),
-        returnValue: _i8.Future<bool>.value(false),
-      ) as _i8.Future<bool>);
+        returnValue: _i10.Future<bool>.value(false),
+      ) as _i10.Future<bool>);
 
   @override
-  _i8.Future<void> optimizeNotificationDelivery() => (super.noSuchMethod(
+  _i10.Future<void> optimizeNotificationDelivery() => (super.noSuchMethod(
         Invocation.method(
           #optimizeNotificationDelivery,
           [],
         ),
-        returnValue: _i8.Future<void>.value(),
-        returnValueForMissingStub: _i8.Future<void>.value(),
-      ) as _i8.Future<void>);
+        returnValue: _i10.Future<void>.value(),
+        returnValueForMissingStub: _i10.Future<void>.value(),
+      ) as _i10.Future<void>);
 }

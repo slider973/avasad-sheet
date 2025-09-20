@@ -24,7 +24,7 @@
   - Écrire des tests d'intégration TimerService + WorkTimeCalculatorService
   - _Exigences: 1.1, 1.2, 1.3, 1.4, 2.1, 2.2, 6.1, 6.2_
 
-- [ ] 4. Créer le service d'affichage pour l'interface utilisateur
+- [x] 4. Créer le service d'affichage pour l'interface utilisateur
   - Créer TimerDisplayService pour formater les données d'affichage
   - Implémenter formatDuration(), formatEndTime(), formatOvertimeStatus()
   - Ajouter calculateProgressPercentages() pour l'affichage circulaire
@@ -32,29 +32,29 @@
   - Écrire les tests pour tous les formats d'affichage
   - _Exigences: 5.1, 5.2, 5.3, 5.4, 5.5_
 
-- [ ] 5. Modifier l'interface utilisateur PointageTimer
-- [ ] 5.1 Ajouter l'affichage de l'heure de fin prévue
+- [x] 5. Modifier l'interface utilisateur PointageTimer
+- [x] 5.1 Ajouter l'affichage de l'heure de fin prévue
   - Modifier PointageTimer pour inclure l'heure de fin dans l'affichage central
   - Créer EndTimeDisplay widget pour l'heure de fin
   - Implémenter la mise à jour temps réel de l'heure de fin
   - Préserver le design existant du chronomètre circulaire
   - _Exigences: 5.1, 4.2_
 
-- [ ] 5.2 Implémenter l'indicateur visuel des heures supplémentaires
+- [-] 5.2 Implémenter l'indicateur visuel des heures supplémentaires
   - Créer OvertimeIndicator widget pour signaler les heures supplémentaires
   - Modifier TimerPainter pour changer les couleurs en mode heures supplémentaires
   - Ajouter des animations pour les transitions d'état
   - Tester l'affichage avec différents scénarios d'heures supplémentaires
   - _Exigences: 3.2, 5.2, 5.5_
 
-- [ ] 5.3 Améliorer l'affichage des détails des segments
+- [x] 5.3 Améliorer l'affichage des détails des segments
   - Modifier _showSegmentDetails() pour inclure les nouvelles informations
   - Ajouter l'affichage du temps restant et de l'heure de fin
   - Inclure l'état des heures supplémentaires dans les détails
   - Améliorer le formatage des informations affichées
   - _Exigences: 5.3, 5.4_
 
-- [ ] 6. Intégrer avec TimeSheetBloc et PointageWidget
+- [x] 6. Intégrer avec TimeSheetBloc et PointageWidget
   - Étendre TimeSheetBloc pour utiliser ExtendedTimerState
   - Modifier les événements et états pour inclure WorkTimeInfo
   - Intégrer TimerService amélioré dans les handlers d'événements
