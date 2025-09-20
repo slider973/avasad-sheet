@@ -349,6 +349,9 @@ class TimesheetEndpoint extends Endpoint {
                 'endAfternoon': e.endAfternoon,
                 'isAbsence': e.isAbsence,
                 'hasOvertimeHours': e.hasOvertimeHours,
+                'isWeekendDay': e.isWeekendDay,
+                'isWeekendOvertimeEnabled': e.isWeekendOvertimeEnabled,
+                'overtimeType': e.overtimeType.name,
               })
           .toList();
       final result = await processTimesheet(session, 'save', {

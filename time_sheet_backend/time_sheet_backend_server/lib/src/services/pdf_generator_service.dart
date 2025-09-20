@@ -162,7 +162,11 @@ class PdfGeneratorService {
           final isAbsence = entry['isAbsence'] ?? false;
           final hasOvertime = entry['hasOvertimeHours'] ?? false;
           final dayDate = entry['dayDate'] as String? ?? '';
-          final isWeekend = _isWeekendDay(dayDate);
+
+          // Utiliser les informations de weekend stockées si disponibles, sinon calculer
+          final isWeekend = entry['isWeekendDay'] ?? _isWeekendDay(dayDate);
+          final isWeekendOvertimeEnabled =
+              entry['isWeekendOvertimeEnabled'] ?? true;
 
           // Calculer le total d'heures pour cette journée
           final totalMinutes = _calculateDailyMinutes(entry);
@@ -178,6 +182,14 @@ class PdfGeneratorService {
             dayType = 'Semaine';
           }
 
+          // Déterminer si cette entrée a des heures supplémentaires
+          // Pour les weekends avec overtime activé, toutes les heures sont des heures supplémentaires
+          final hasOvertimeForPdf = hasOvertime ||
+              (isWeekend &&
+                  isWeekendOvertimeEnabled &&
+                  !isAbsence &&
+                  totalMinutes > 0);
+
           return pw.TableRow(
             decoration: isWeekend && !isAbsence
                 ? const pw.BoxDecoration(color: PdfColors.blue50)
@@ -191,10 +203,7 @@ class PdfGeneratorService {
               _buildTableCell(isAbsence ? '' : (entry['startAfternoon'] ?? '')),
               _buildTableCell(isAbsence ? '' : (entry['endAfternoon'] ?? '')),
               _buildTableCell(totalHours),
-              _buildTableCell(
-                  hasOvertime || (isWeekend && !isAbsence && totalMinutes > 0)
-                      ? 'Oui'
-                      : ''),
+              _buildTableCell(hasOvertimeForPdf ? 'Oui' : ''),
             ],
           );
         }),

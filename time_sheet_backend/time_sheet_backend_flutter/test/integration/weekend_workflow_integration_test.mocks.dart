@@ -3,15 +3,19 @@
 // Do not manually edit this file.
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
-import 'dart:async' as _i4;
+import 'dart:async' as _i6;
 
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i7;
+import 'package:mockito/src/dummies.dart' as _i9;
+import 'package:time_sheet/features/pointage/domain/entities/extended_timer_state.dart'
+    as _i3;
+import 'package:time_sheet/features/pointage/domain/entities/work_time_info.dart'
+    as _i4;
 import 'package:time_sheet/features/preference/data/models/overtime_configuration.dart'
     as _i2;
-import 'package:time_sheet/services/overtime_configuration_service.dart' as _i5;
-import 'package:time_sheet/services/timer_service.dart' as _i6;
-import 'package:time_sheet/services/weekend_detection_service.dart' as _i3;
+import 'package:time_sheet/services/overtime_configuration_service.dart' as _i7;
+import 'package:time_sheet/services/timer_service.dart' as _i8;
+import 'package:time_sheet/services/weekend_detection_service.dart' as _i5;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -47,11 +51,32 @@ class _FakeOvertimeConfiguration_1 extends _i1.SmartFake
         );
 }
 
+class _FakeExtendedTimerState_2 extends _i1.SmartFake
+    implements _i3.ExtendedTimerState {
+  _FakeExtendedTimerState_2(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+}
+
+class _FakeWorkTimeInfo_3 extends _i1.SmartFake implements _i4.WorkTimeInfo {
+  _FakeWorkTimeInfo_3(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+}
+
 /// A class which mocks [WeekendDetectionService].
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockWeekendDetectionService extends _i1.Mock
-    implements _i3.WeekendDetectionService {
+    implements _i5.WeekendDetectionService {
   MockWeekendDetectionService() {
     _i1.throwOnMissingStub(this);
   }
@@ -71,64 +96,64 @@ class MockWeekendDetectionService extends _i1.Mock
       ) as bool);
 
   @override
-  _i4.Future<List<int>> getConfiguredWeekendDays() => (super.noSuchMethod(
+  _i6.Future<List<int>> getConfiguredWeekendDays() => (super.noSuchMethod(
         Invocation.method(
           #getConfiguredWeekendDays,
           [],
         ),
-        returnValue: _i4.Future<List<int>>.value(<int>[]),
-      ) as _i4.Future<List<int>>);
+        returnValue: _i6.Future<List<int>>.value(<int>[]),
+      ) as _i6.Future<List<int>>);
 
   @override
-  _i4.Future<void> updateWeekendConfiguration(List<int>? weekendDays) =>
+  _i6.Future<void> updateWeekendConfiguration(List<int>? weekendDays) =>
       (super.noSuchMethod(
         Invocation.method(
           #updateWeekendConfiguration,
           [weekendDays],
         ),
-        returnValue: _i4.Future<void>.value(),
-        returnValueForMissingStub: _i4.Future<void>.value(),
-      ) as _i4.Future<void>);
+        returnValue: _i6.Future<void>.value(),
+        returnValueForMissingStub: _i6.Future<void>.value(),
+      ) as _i6.Future<void>);
 
   @override
-  _i4.Future<bool> shouldApplyWeekendOvertime(DateTime? date) =>
+  _i6.Future<bool> shouldApplyWeekendOvertime(DateTime? date) =>
       (super.noSuchMethod(
         Invocation.method(
           #shouldApplyWeekendOvertime,
           [date],
         ),
-        returnValue: _i4.Future<bool>.value(false),
-      ) as _i4.Future<bool>);
+        returnValue: _i6.Future<bool>.value(false),
+      ) as _i6.Future<bool>);
 
   @override
-  _i4.Future<bool> isWeekendOvertimeEnabled() => (super.noSuchMethod(
+  _i6.Future<bool> isWeekendOvertimeEnabled() => (super.noSuchMethod(
         Invocation.method(
           #isWeekendOvertimeEnabled,
           [],
         ),
-        returnValue: _i4.Future<bool>.value(false),
-      ) as _i4.Future<bool>);
+        returnValue: _i6.Future<bool>.value(false),
+      ) as _i6.Future<bool>);
 
   @override
-  _i4.Future<void> setWeekendOvertimeEnabled(bool? enabled) =>
+  _i6.Future<void> setWeekendOvertimeEnabled(bool? enabled) =>
       (super.noSuchMethod(
         Invocation.method(
           #setWeekendOvertimeEnabled,
           [enabled],
         ),
-        returnValue: _i4.Future<void>.value(),
-        returnValueForMissingStub: _i4.Future<void>.value(),
-      ) as _i4.Future<void>);
+        returnValue: _i6.Future<void>.value(),
+        returnValueForMissingStub: _i6.Future<void>.value(),
+      ) as _i6.Future<void>);
 
   @override
-  _i4.Future<void> resetToDefaults() => (super.noSuchMethod(
+  _i6.Future<void> resetToDefaults() => (super.noSuchMethod(
         Invocation.method(
           #resetToDefaults,
           [],
         ),
-        returnValue: _i4.Future<void>.value(),
-        returnValueForMissingStub: _i4.Future<void>.value(),
-      ) as _i4.Future<void>);
+        returnValue: _i6.Future<void>.value(),
+        returnValueForMissingStub: _i6.Future<void>.value(),
+      ) as _i6.Future<void>);
 
   @override
   void clearCache() => super.noSuchMethod(
@@ -144,123 +169,123 @@ class MockWeekendDetectionService extends _i1.Mock
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockOvertimeConfigurationService extends _i1.Mock
-    implements _i5.OvertimeConfigurationService {
+    implements _i7.OvertimeConfigurationService {
   MockOvertimeConfigurationService() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  _i4.Future<bool> isWeekendOvertimeEnabled() => (super.noSuchMethod(
+  _i6.Future<bool> isWeekendOvertimeEnabled() => (super.noSuchMethod(
         Invocation.method(
           #isWeekendOvertimeEnabled,
           [],
         ),
-        returnValue: _i4.Future<bool>.value(false),
-      ) as _i4.Future<bool>);
+        returnValue: _i6.Future<bool>.value(false),
+      ) as _i6.Future<bool>);
 
   @override
-  _i4.Future<void> setWeekendOvertimeEnabled(bool? enabled) =>
+  _i6.Future<void> setWeekendOvertimeEnabled(bool? enabled) =>
       (super.noSuchMethod(
         Invocation.method(
           #setWeekendOvertimeEnabled,
           [enabled],
         ),
-        returnValue: _i4.Future<void>.value(),
-        returnValueForMissingStub: _i4.Future<void>.value(),
-      ) as _i4.Future<void>);
+        returnValue: _i6.Future<void>.value(),
+        returnValueForMissingStub: _i6.Future<void>.value(),
+      ) as _i6.Future<void>);
 
   @override
-  _i4.Future<List<int>> getWeekendDays() => (super.noSuchMethod(
+  _i6.Future<List<int>> getWeekendDays() => (super.noSuchMethod(
         Invocation.method(
           #getWeekendDays,
           [],
         ),
-        returnValue: _i4.Future<List<int>>.value(<int>[]),
-      ) as _i4.Future<List<int>>);
+        returnValue: _i6.Future<List<int>>.value(<int>[]),
+      ) as _i6.Future<List<int>>);
 
   @override
-  _i4.Future<void> setWeekendDays(List<int>? days) => (super.noSuchMethod(
+  _i6.Future<void> setWeekendDays(List<int>? days) => (super.noSuchMethod(
         Invocation.method(
           #setWeekendDays,
           [days],
         ),
-        returnValue: _i4.Future<void>.value(),
-        returnValueForMissingStub: _i4.Future<void>.value(),
-      ) as _i4.Future<void>);
+        returnValue: _i6.Future<void>.value(),
+        returnValueForMissingStub: _i6.Future<void>.value(),
+      ) as _i6.Future<void>);
 
   @override
-  _i4.Future<double> getWeekendOvertimeRate() => (super.noSuchMethod(
+  _i6.Future<double> getWeekendOvertimeRate() => (super.noSuchMethod(
         Invocation.method(
           #getWeekendOvertimeRate,
           [],
         ),
-        returnValue: _i4.Future<double>.value(0.0),
-      ) as _i4.Future<double>);
+        returnValue: _i6.Future<double>.value(0.0),
+      ) as _i6.Future<double>);
 
   @override
-  _i4.Future<void> setWeekendOvertimeRate(double? rate) => (super.noSuchMethod(
+  _i6.Future<void> setWeekendOvertimeRate(double? rate) => (super.noSuchMethod(
         Invocation.method(
           #setWeekendOvertimeRate,
           [rate],
         ),
-        returnValue: _i4.Future<void>.value(),
-        returnValueForMissingStub: _i4.Future<void>.value(),
-      ) as _i4.Future<void>);
+        returnValue: _i6.Future<void>.value(),
+        returnValueForMissingStub: _i6.Future<void>.value(),
+      ) as _i6.Future<void>);
 
   @override
-  _i4.Future<double> getWeekdayOvertimeRate() => (super.noSuchMethod(
+  _i6.Future<double> getWeekdayOvertimeRate() => (super.noSuchMethod(
         Invocation.method(
           #getWeekdayOvertimeRate,
           [],
         ),
-        returnValue: _i4.Future<double>.value(0.0),
-      ) as _i4.Future<double>);
+        returnValue: _i6.Future<double>.value(0.0),
+      ) as _i6.Future<double>);
 
   @override
-  _i4.Future<void> setWeekdayOvertimeRate(double? rate) => (super.noSuchMethod(
+  _i6.Future<void> setWeekdayOvertimeRate(double? rate) => (super.noSuchMethod(
         Invocation.method(
           #setWeekdayOvertimeRate,
           [rate],
         ),
-        returnValue: _i4.Future<void>.value(),
-        returnValueForMissingStub: _i4.Future<void>.value(),
-      ) as _i4.Future<void>);
+        returnValue: _i6.Future<void>.value(),
+        returnValueForMissingStub: _i6.Future<void>.value(),
+      ) as _i6.Future<void>);
 
   @override
-  _i4.Future<Duration> getDailyWorkThreshold() => (super.noSuchMethod(
+  _i6.Future<Duration> getDailyWorkThreshold() => (super.noSuchMethod(
         Invocation.method(
           #getDailyWorkThreshold,
           [],
         ),
-        returnValue: _i4.Future<Duration>.value(_FakeDuration_0(
+        returnValue: _i6.Future<Duration>.value(_FakeDuration_0(
           this,
           Invocation.method(
             #getDailyWorkThreshold,
             [],
           ),
         )),
-      ) as _i4.Future<Duration>);
+      ) as _i6.Future<Duration>);
 
   @override
-  _i4.Future<void> setDailyWorkThreshold(Duration? threshold) =>
+  _i6.Future<void> setDailyWorkThreshold(Duration? threshold) =>
       (super.noSuchMethod(
         Invocation.method(
           #setDailyWorkThreshold,
           [threshold],
         ),
-        returnValue: _i4.Future<void>.value(),
-        returnValueForMissingStub: _i4.Future<void>.value(),
-      ) as _i4.Future<void>);
+        returnValue: _i6.Future<void>.value(),
+        returnValueForMissingStub: _i6.Future<void>.value(),
+      ) as _i6.Future<void>);
 
   @override
-  _i4.Future<void> resetToDefaults() => (super.noSuchMethod(
+  _i6.Future<void> resetToDefaults() => (super.noSuchMethod(
         Invocation.method(
           #resetToDefaults,
           [],
         ),
-        returnValue: _i4.Future<void>.value(),
-        returnValueForMissingStub: _i4.Future<void>.value(),
-      ) as _i4.Future<void>);
+        returnValue: _i6.Future<void>.value(),
+        returnValueForMissingStub: _i6.Future<void>.value(),
+      ) as _i6.Future<void>);
 
   @override
   void clearCache() => super.noSuchMethod(
@@ -272,23 +297,23 @@ class MockOvertimeConfigurationService extends _i1.Mock
       );
 
   @override
-  _i4.Future<Map<String, dynamic>> getAllConfiguration() => (super.noSuchMethod(
+  _i6.Future<Map<String, dynamic>> getAllConfiguration() => (super.noSuchMethod(
         Invocation.method(
           #getAllConfiguration,
           [],
         ),
         returnValue:
-            _i4.Future<Map<String, dynamic>>.value(<String, dynamic>{}),
-      ) as _i4.Future<Map<String, dynamic>>);
+            _i6.Future<Map<String, dynamic>>.value(<String, dynamic>{}),
+      ) as _i6.Future<Map<String, dynamic>>);
 
   @override
-  _i4.Future<_i2.OvertimeConfiguration> getConfigurationObject() =>
+  _i6.Future<_i2.OvertimeConfiguration> getConfigurationObject() =>
       (super.noSuchMethod(
         Invocation.method(
           #getConfigurationObject,
           [],
         ),
-        returnValue: _i4.Future<_i2.OvertimeConfiguration>.value(
+        returnValue: _i6.Future<_i2.OvertimeConfiguration>.value(
             _FakeOvertimeConfiguration_1(
           this,
           Invocation.method(
@@ -296,46 +321,46 @@ class MockOvertimeConfigurationService extends _i1.Mock
             [],
           ),
         )),
-      ) as _i4.Future<_i2.OvertimeConfiguration>);
+      ) as _i6.Future<_i2.OvertimeConfiguration>);
 
   @override
-  _i4.Future<void> saveConfiguration(
+  _i6.Future<void> saveConfiguration(
           _i2.OvertimeConfiguration? configuration) =>
       (super.noSuchMethod(
         Invocation.method(
           #saveConfiguration,
           [configuration],
         ),
-        returnValue: _i4.Future<void>.value(),
-        returnValueForMissingStub: _i4.Future<void>.value(),
-      ) as _i4.Future<void>);
+        returnValue: _i6.Future<void>.value(),
+        returnValueForMissingStub: _i6.Future<void>.value(),
+      ) as _i6.Future<void>);
 
   @override
-  _i4.Future<Map<String, dynamic>?> exportConfiguration() =>
+  _i6.Future<Map<String, dynamic>?> exportConfiguration() =>
       (super.noSuchMethod(
         Invocation.method(
           #exportConfiguration,
           [],
         ),
-        returnValue: _i4.Future<Map<String, dynamic>?>.value(),
-      ) as _i4.Future<Map<String, dynamic>?>);
+        returnValue: _i6.Future<Map<String, dynamic>?>.value(),
+      ) as _i6.Future<Map<String, dynamic>?>);
 
   @override
-  _i4.Future<void> importConfiguration(Map<String, dynamic>? configMap) =>
+  _i6.Future<void> importConfiguration(Map<String, dynamic>? configMap) =>
       (super.noSuchMethod(
         Invocation.method(
           #importConfiguration,
           [configMap],
         ),
-        returnValue: _i4.Future<void>.value(),
-        returnValueForMissingStub: _i4.Future<void>.value(),
-      ) as _i4.Future<void>);
+        returnValue: _i6.Future<void>.value(),
+        returnValueForMissingStub: _i6.Future<void>.value(),
+      ) as _i6.Future<void>);
 }
 
 /// A class which mocks [TimerService].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockTimerService extends _i1.Mock implements _i6.TimerService {
+class MockTimerService extends _i1.Mock implements _i8.TimerService {
   MockTimerService() {
     _i1.throwOnMissingStub(this);
   }
@@ -361,7 +386,7 @@ class MockTimerService extends _i1.Mock implements _i6.TimerService {
   @override
   String get currentState => (super.noSuchMethod(
         Invocation.getter(#currentState),
-        returnValue: _i7.dummyValue<String>(
+        returnValue: _i9.dummyValue<String>(
           this,
           Invocation.getter(#currentState),
         ),
@@ -386,7 +411,13 @@ class MockTimerService extends _i1.Mock implements _i6.TimerService {
       ) as bool);
 
   @override
-  _i4.Future<void> initialize(
+  bool get isOvertimeStartedCalculated => (super.noSuchMethod(
+        Invocation.getter(#isOvertimeStartedCalculated),
+        returnValue: false,
+      ) as bool);
+
+  @override
+  _i6.Future<void> initialize(
     String? etatActuel,
     DateTime? dernierPointage,
   ) =>
@@ -398,9 +429,9 @@ class MockTimerService extends _i1.Mock implements _i6.TimerService {
             dernierPointage,
           ],
         ),
-        returnValue: _i4.Future<void>.value(),
-        returnValueForMissingStub: _i4.Future<void>.value(),
-      ) as _i4.Future<void>);
+        returnValue: _i6.Future<void>.value(),
+        returnValueForMissingStub: _i6.Future<void>.value(),
+      ) as _i6.Future<void>);
 
   @override
   void updateState(
@@ -437,14 +468,14 @@ class MockTimerService extends _i1.Mock implements _i6.TimerService {
       );
 
   @override
-  _i4.Future<void> refreshWeekendConfiguration() => (super.noSuchMethod(
+  _i6.Future<void> refreshWeekendConfiguration() => (super.noSuchMethod(
         Invocation.method(
           #refreshWeekendConfiguration,
           [],
         ),
-        returnValue: _i4.Future<void>.value(),
-        returnValueForMissingStub: _i4.Future<void>.value(),
-      ) as _i4.Future<void>);
+        returnValue: _i6.Future<void>.value(),
+        returnValueForMissingStub: _i6.Future<void>.value(),
+      ) as _i6.Future<void>);
 
   @override
   Map<String, dynamic> getOvertimeInfo() => (super.noSuchMethod(
@@ -454,6 +485,81 @@ class MockTimerService extends _i1.Mock implements _i6.TimerService {
         ),
         returnValue: <String, dynamic>{},
       ) as Map<String, dynamic>);
+
+  @override
+  _i3.ExtendedTimerState getExtendedTimerState() => (super.noSuchMethod(
+        Invocation.method(
+          #getExtendedTimerState,
+          [],
+        ),
+        returnValue: _FakeExtendedTimerState_2(
+          this,
+          Invocation.method(
+            #getExtendedTimerState,
+            [],
+          ),
+        ),
+      ) as _i3.ExtendedTimerState);
+
+  @override
+  _i4.WorkTimeInfo getWorkTimeInfo() => (super.noSuchMethod(
+        Invocation.method(
+          #getWorkTimeInfo,
+          [],
+        ),
+        returnValue: _FakeWorkTimeInfo_3(
+          this,
+          Invocation.method(
+            #getWorkTimeInfo,
+            [],
+          ),
+        ),
+      ) as _i4.WorkTimeInfo);
+
+  @override
+  Duration getRemainingWorkTime() => (super.noSuchMethod(
+        Invocation.method(
+          #getRemainingWorkTime,
+          [],
+        ),
+        returnValue: _FakeDuration_0(
+          this,
+          Invocation.method(
+            #getRemainingWorkTime,
+            [],
+          ),
+        ),
+      ) as Duration);
+
+  @override
+  Duration getCalculatedOvertimeHours() => (super.noSuchMethod(
+        Invocation.method(
+          #getCalculatedOvertimeHours,
+          [],
+        ),
+        returnValue: _FakeDuration_0(
+          this,
+          Invocation.method(
+            #getCalculatedOvertimeHours,
+            [],
+          ),
+        ),
+      ) as Duration);
+
+  @override
+  Duration getTotalBreakTime() => (super.noSuchMethod(
+        Invocation.method(
+          #getTotalBreakTime,
+          [],
+        ),
+        returnValue: _FakeDuration_0(
+          this,
+          Invocation.method(
+            #getTotalBreakTime,
+            [],
+          ),
+        ),
+      ) as Duration);
 
   @override
   void dispose() => super.noSuchMethod(

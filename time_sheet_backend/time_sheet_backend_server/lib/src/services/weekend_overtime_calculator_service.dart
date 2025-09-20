@@ -46,12 +46,18 @@ class WeekendOvertimeCalculatorService {
       final dayDate = entry['dayDate'] as String?;
       if (dayDate == null) continue;
 
-      final isWeekend = _isWeekendDay(dayDate);
+      // Utiliser les informations de weekend stockées si disponibles, sinon calculer
+      final isWeekend = entry['isWeekendDay'] ?? _isWeekendDay(dayDate);
+      final isWeekendOvertimeEnabled =
+          entry['isWeekendOvertimeEnabled'] ?? true;
       final dailyMinutes = _calculateDailyMinutes(entry);
 
-      if (isWeekend) {
-        // Weekend day - all hours are overtime
+      if (isWeekend && isWeekendOvertimeEnabled) {
+        // Weekend day with overtime enabled - all hours are overtime
         totalWeekendOvertimeMinutes += dailyMinutes;
+      } else if (isWeekend && !isWeekendOvertimeEnabled) {
+        // Weekend day without overtime - treat as regular hours
+        totalRegularMinutes += dailyMinutes;
       } else {
         // Weekday - separate regular and overtime hours
         if (dailyMinutes > standardWorkDayMinutes) {
