@@ -22,23 +22,43 @@
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>timesheet</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<key>NSDocumentsFolderUsageDescription</key>
-	<string>Cette application nécessite l&apos;accès aux documents pour lire et écrire des fichiers.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Cette application nécessite l&apos;accès à la galerie pour sélectionner des photos.</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Cette application utilise la localisation pour améliorer l'expérience utilisateur lors du pointage.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Cette application nécessite l'accès à la caméra pour prendre des photos et scanner des documents.</string>
+	<key>NSDocumentsFolderUsageDescription</key>
+	<string>Cette application nécessite l'accès aux documents pour lire et écrire des fichiers.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Cette application utilise la localisation pour améliorer l'expérience utilisateur lors du pointage.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Cette application nécessite l'accès à la galerie pour sélectionner des photos.</string>
+	<key>NSUserNotificationUsageDescription</key>
+	<string>Nous avons besoin d'envoyer des notifications pour vous rappeler de pointer vos heures de travail.</string>
+	<key>NSUserNotificationsUsageDescription</key>
+	<string>Cette application envoie des rappels pour vous aider à ne pas oublier de pointer vos heures de travail.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.heytalent.timesheet.refresh</string>
+		<string>com.heytalent.timesheet.processing</string>
+	</array>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
+		<string>processing</string>
+		<string>fetch</string>
 	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
@@ -52,87 +72,58 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
-	  
-    <key>NSUserNotificationUsageDescription</key>
-    <string>Nous avons besoin d'envoyer des notifications pour vous rappeler de pointer vos heures de travail.</string>
-    
-    <!-- Enhanced notification configuration for reminders -->
-    <key>NSUserNotificationsUsageDescription</key>
-    <string>Cette application envoie des rappels pour vous aider à ne pas oublier de pointer vos heures de travail.</string>
-    
-    <key>UIBackgroundModes</key>
-    <array>
-        <string>fetch</string>
-        <string>remote-notification</string>
-        <string>background-processing</string>
-    </array>
-    
-    <!-- Notification categories for enhanced iOS actions -->
-    <key>UNNotificationCategories</key>
-    <array>
-        <dict>
-            <key>identifier</key>
-            <string>clock_in_reminder</string>
-            <key>actions</key>
-            <array>
-                <dict>
-                    <key>identifier</key>
-                    <string>quick_clock_in</string>
-                    <key>title</key>
-                    <string>Clock In Now</string>
-                    <key>options</key>
-                    <integer>1</integer>
-                </dict>
-                <dict>
-                    <key>identifier</key>
-                    <string>snooze_action</string>
-                    <key>title</key>
-                    <string>Snooze 15min</string>
-                    <key>options</key>
-                    <integer>0</integer>
-                </dict>
-            </array>
-        </dict>
-        <dict>
-            <key>identifier</key>
-            <string>clock_out_reminder</string>
-            <key>actions</key>
-            <array>
-                <dict>
-                    <key>identifier</key>
-                    <string>quick_clock_out</string>
-                    <key>title</key>
-                    <string>Clock Out Now</string>
-                    <key>options</key>
-                    <integer>1</integer>
-                </dict>
-                <dict>
-                    <key>identifier</key>
-                    <string>snooze_action</string>
-                    <key>title</key>
-                    <string>Snooze 15min</string>
-                    <key>options</key>
-                    <integer>0</integer>
-                </dict>
-            </array>
-        </dict>
-    </array>
-    
-    <key>CFBundleURLTypes</key>
-    <array>
-        <dict>
-            <key>CFBundleURLSchemes</key>
-            <array>
-                <string>timesheet</string>
-            </array>
-        </dict>
-    </array>
-    
-    <!-- Configuration App Groups pour le widget -->
-    <key>com.apple.security.application-groups</key>
-    <array>
-        <string>group.com.heytalent.timesheet</string>
-    </array>
-    
+	<key>UNNotificationCategories</key>
+	<array>
+		<dict>
+			<key>actions</key>
+			<array>
+				<dict>
+					<key>identifier</key>
+					<string>quick_clock_in</string>
+					<key>options</key>
+					<integer>1</integer>
+					<key>title</key>
+					<string>Clock In Now</string>
+				</dict>
+				<dict>
+					<key>identifier</key>
+					<string>snooze_action</string>
+					<key>options</key>
+					<integer>0</integer>
+					<key>title</key>
+					<string>Snooze 15min</string>
+				</dict>
+			</array>
+			<key>identifier</key>
+			<string>clock_in_reminder</string>
+		</dict>
+		<dict>
+			<key>actions</key>
+			<array>
+				<dict>
+					<key>identifier</key>
+					<string>quick_clock_out</string>
+					<key>options</key>
+					<integer>1</integer>
+					<key>title</key>
+					<string>Clock Out Now</string>
+				</dict>
+				<dict>
+					<key>identifier</key>
+					<string>snooze_action</string>
+					<key>options</key>
+					<integer>0</integer>
+					<key>title</key>
+					<string>Snooze 15min</string>
+				</dict>
+			</array>
+			<key>identifier</key>
+			<string>clock_out_reminder</string>
+		</dict>
+	</array>
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.com.heytalent.timesheet</string>
+	</array>
 </dict>
 </plist>

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'modern_pointage_button.dart';
+import 'pointage_design_system.dart';
 
 class PointageButton extends StatelessWidget {
   final String etatActuel;
@@ -15,71 +17,79 @@ class PointageButton extends StatelessWidget {
     if (etatActuel == 'Sortie') {
       return _construireMessageFelicitations();
     }
-    return SizedBox(
-      width: 320,
-      height: 40,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          elevation: 0,
-          backgroundColor: _getButtonColor(etatActuel),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
-        ),
-        child: Text(
-          _getButtonText(),
-          style: const TextStyle(fontSize: 15),
-        ),
-      ),
-    );
+
+    return _buildModernButton();
   }
 
-  String _getButtonText() {
+  Widget _buildModernButton() {
     switch (etatActuel) {
       case 'Non commencé':
-        return 'Commencer';
+        return ModernPointageButton.entry(
+          onPressed: onPressed,
+        );
       case 'Entrée':
-        return 'Pause';
+        return ModernPointageButton.pause(
+          onPressed: onPressed,
+        );
       case 'Pause':
-        return 'Reprise';
-      case 'Sortie':
-        return 'Reset';
+        return ModernPointageButton.resume(
+          onPressed: onPressed,
+        );
       default:
-        return 'Stop';
-    }
-  }
-
-  Color _getButtonColor(String etatActuel) {
-    switch (etatActuel) {
-      case 'Non commencé':
-        return Colors.teal;
-      case 'Entrée':
-        return const Color(0xFF365E32);
-      case 'Pause':
-        return const Color(0xFF81A263);
-      case 'Sortie':
-        return const Color(0xFFE7D37F);
-      default:
-        return const Color(0xFFFD9B63);
+        return ModernPointageButton(
+          text: 'Stop',
+          onPressed: onPressed,
+          style: PointageButtonStyle.exit,
+          icon: Icons.stop,
+        );
     }
   }
 
   Widget _construireMessageFelicitations() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      width: 320,
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.green.shade100,
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: const Text(
-        'Félicitations ! Votre journée de travail est terminée.',
-        style: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: Colors.green,
+        color: PointageColors.success.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: PointageColors.success.withValues(alpha: 0.3),
+          width: 1,
         ),
-        textAlign: TextAlign.center,
+        boxShadow: [
+          BoxShadow(
+            color: PointageColors.success.withValues(alpha: 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.check_circle_outline,
+            color: PointageColors.success,
+            size: 32,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Félicitations !',
+            style: PointageTextStyles.cardValue.copyWith(
+              color: PointageColors.success,
+              fontSize: 18,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Votre journée de travail est terminée.',
+            style: PointageTextStyles.cardLabel.copyWith(
+              color: PointageColors.success.withValues(alpha: 0.8),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }

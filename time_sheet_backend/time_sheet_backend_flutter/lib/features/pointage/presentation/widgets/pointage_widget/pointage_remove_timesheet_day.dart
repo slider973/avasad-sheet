@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'modern_pointage_button.dart';
+import 'pointage_design_system.dart';
 
 class PointageRemoveTimesheetDay extends StatelessWidget {
   final String etatActuel;
@@ -8,29 +10,16 @@ class PointageRemoveTimesheetDay extends StatelessWidget {
   const PointageRemoveTimesheetDay({
     super.key,
     required this.etatActuel,
-    required this.onDeleteEntry, required this.isDisabled,
+    required this.onDeleteEntry,
+    required this.isDisabled,
   });
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 320,
-      height: 40,
-      child: ElevatedButton(
-        onPressed: isDisabled ? null : onDeleteEntry,
-        style: ElevatedButton.styleFrom(
-          elevation: 0,
-          backgroundColor: Colors.red,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
-          disabledIconColor: Colors.grey,
-        ),
-        child: const Text(
-          'Supprimer la journée',
-          style: TextStyle(fontSize: 15),
-        ),
-      ),
+    return ModernPointageButton.destructive(
+      text: 'Supprimer la journée',
+      onPressed: isDisabled ? null : onDeleteEntry,
+      icon: Icons.delete_outline,
     );
   }
 }

@@ -1,0 +1,95 @@
+# Configuration des seuils de performance pour les tests pointage
+# Tous les temps sont en millisecondes
+
+# Seuils de construction des widgets
+widget_build_thresholds:
+  pointage_main_section: 100
+  pointage_timer: 150  # CustomPaint plus coûteux
+  pointage_fab: 50     # Widget simple
+  pointage_screen_complete: 300
+  pointage_content_minimal: 80
+
+# Seuils d'animation et transitions
+animation_thresholds:
+  fab_state_transition: 100
+  timer_animation: 200
+  rapid_state_change: 50
+  continuous_update: 30  # Moyenne
+
+# Seuils responsive
+responsive_thresholds:
+  screen_size_adaptation: 150
+  layout_reflow: 100
+
+# Seuils de performance mémoire
+memory_thresholds:
+  large_list_render: 500    # 100 items
+  complex_layout: 800       # 50 pointages
+  memory_leak_cycles: 10    # Nombre de cycles sans fuite
+
+# Seuils de stress test
+stress_test_thresholds:
+  continuous_updates: 50    # Nombre d'updates
+  max_update_time: 30       # Temps max par update
+  complex_render_time: 800  # Layout complexe
+
+# Seuils de benchmark
+benchmark_thresholds:
+  min_improvement_percent: 10  # Amélioration minimale attendue
+  max_regression_percent: 5    # Régression maximale tolérée
+
+# Configuration des tests
+test_configuration:
+  # Nombre d'itérations pour les tests de moyenne
+  benchmark_iterations: 10
+  stress_test_cycles: 50
+  memory_test_cycles: 20
+  
+  # Tailles de datasets pour les tests de scalabilité
+  scalability_test_sizes: [10, 25, 50, 100]
+  
+  # États à tester pour les transitions
+  test_states: ["Non commencé", "Entrée", "Pause", "Reprise", "Sortie"]
+  
+  # Tailles d'écran pour les tests responsive
+  screen_sizes:
+    iphone_se: [320, 568]
+    iphone_x: [375, 812]
+    iphone_xs_max: [414, 896]
+    ipad: [768, 1024]
+
+# Alertes et notifications
+alerts:
+  # Seuil pour déclencher une alerte de performance
+  performance_degradation_threshold: 20  # Pourcentage
+  
+  # Seuil critique pour bloquer le build
+  critical_performance_threshold: 50     # Pourcentage
+  
+  # Nombre de tests échoués consécutifs avant alerte
+  consecutive_failures_threshold: 3
+
+# Rapports
+reporting:
+  # Conserver les rapports pendant X jours
+  retention_days: 30
+  
+  # Générer des graphiques de tendance
+  generate_trends: true
+  
+  # Envoyer des rapports par email (si configuré)
+  email_reports: false
+
+# Environnements de test
+environments:
+  development:
+    # Seuils plus permissifs en développement
+    tolerance_multiplier: 1.5
+    
+  staging:
+    # Seuils standards
+    tolerance_multiplier: 1.2
+    
+  production:
+    # Seuils stricts
+    tolerance_multiplier: 1.0

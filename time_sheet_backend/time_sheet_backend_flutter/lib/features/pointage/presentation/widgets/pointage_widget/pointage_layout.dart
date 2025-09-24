@@ -8,7 +8,6 @@ import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widge
 import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_list.dart';
 import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_remove_timesheet_day.dart';
 import 'package:time_sheet/features/pointage/domain/entities/timesheet_entry.dart';
-import 'package:time_sheet/features/pointage/presentation/widgets/overtime_indicator.dart';
 import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/estimated_end_time_card.dart';
 
 // import '../monthly_stats_widget/monthly_stats_widget.dart';
@@ -16,7 +15,12 @@ import '../../../../absence/domain/value_objects/absence_type.dart';
 import '../../../domain/value_objects/vacation_days_info.dart';
 import '../vacation_days_detail_card/vacation_days_detail_card.dart';
 import 'pointage_header.dart';
-import 'pointage_timer.dart';
+import 'pointage_main_section.dart';
+import 'pointage_design_system.dart';
+import 'daily_objective_card.dart';
+import 'overtime_toggle_card.dart';
+import 'weekly_summary_card.dart';
+import 'pointage_fab.dart';
 
 class PointageLayout extends StatelessWidget {
   final String etatActuel;
@@ -71,161 +75,261 @@ class PointageLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Gestion du cas d'absence (exigence 7.1 - préservation fonctionnalité)
     if (absenceReason != null && absenceReason!.isNotEmpty) {
-      return PointageAbsence(
-        absenceReason: absenceReason!,
-        absence: absence,
-        onDeleteEntry: onDeleteEntry,
-        etatActuel: etatActuel,
+      return PointageTheme(
+        child: PointageAbsence(
+          absenceReason: absenceReason!,
+          absence: absence,
+          onDeleteEntry: onDeleteEntry,
+          etatActuel: etatActuel,
+        ),
       );
     }
 
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            PointageHeader(selectedDate: selectedDate),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return PointageTheme(
+      child: Container(
+        color: PointageColors.background, // Fond harmonisé (exigence 8.1)
+        child: SingleChildScrollView(
+          physics:
+              const BouncingScrollPhysics(), // Amélioration UX (exigence 6.4)
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Header Section avec espacement optimisé (exigences 1.1, 1.2, 8.1, 8.2)
+              _buildHeaderSection(),
+
+              // Main Section - Timer + Time Info avec hiérarchie visuelle (exigences 3.1, 3.2, 3.3, 6.1, 6.3)
+              _buildMainSection(),
+
+              // Message de félicitations pour l'état 'Sortie'
+              if (etatActuel == 'Sortie') ...[
+                const SizedBox(height: PointageSpacing.lg),
+                const PointageCompletionMessage(),
+              ],
+
+              // Info Cards Section avec espacement cohérent (exigences 4.1, 4.2, 4.3, 4.4, 7.5)
+              _buildInfoCardsSection(),
+
+              // Action Buttons Section - boutons secondaires (exigences 5.2, 5.4, 7.6)
+              _buildActionButtonsSection(),
+
+              // History Section avec séparation visuelle (exigences 4.5, 7.5, 7.7)
+              _buildHistorySection(),
+
+              // Espacement final pour éviter le collage au bas de l'écran
+              const SizedBox(height: PointageSpacing.xl),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Section d'en-tête avec titre et date (exigences 1.1, 1.2, 8.1, 8.2)
+  Widget _buildHeaderSection() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(PointageSpacing.md, PointageSpacing.sm,
+          PointageSpacing.md, PointageSpacing.sm),
+      child: PointageHeader(selectedDate: selectedDate),
+    );
+  }
+
+  /// Section principale avec chronomètre et informations de temps (exigences 3.1, 3.2, 3.3, 6.1, 6.3)
+  Widget _buildMainSection() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: PointageSpacing.md),
+      padding: const EdgeInsets.all(PointageSpacing.lg),
+      decoration: BoxDecoration(
+        color: PointageColors.cardBackground,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: PointageMainSection(
+        etatActuel: etatActuel,
+        dernierPointage: dernierPointage,
+        progression: progression,
+        pointages: pointages,
+        totalDayHours: totalDayHours,
+        totalBreakTime: totalBreakTime,
+        extendedTimerState: extendedTimerState,
+        workTimeInfo: workTimeInfo,
+      ),
+    );
+  }
+
+  /// Section des cartes d'information (exigences 4.1, 4.2, 4.3, 4.4, 7.5)
+  Widget _buildInfoCardsSection() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: PointageSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SizedBox(height: PointageSpacing.lg),
+
+          // Heure de fin estimée (exigence 4.1, 7.5)
+          EstimatedEndTimeCard(
+            pointages: pointages,
+            currentState: etatActuel,
+          ),
+          const SizedBox(height: PointageSpacing.md),
+
+          // Objectif journalier (exigence 4.2)
+          DailyObjectiveCard(
+            pointages: pointages,
+            currentState: etatActuel,
+            currentWorkTime: totalDayHours,
+          ),
+          const SizedBox(height: PointageSpacing.md),
+
+          // Toggle heures supplémentaires (exigence 4.3, 7.4)
+          if (currentEntry != null && etatActuel != 'Non commencé') ...[
+            OvertimeToggleCard(
+              isActive: currentEntry!.hasOvertimeHours,
+              onToggle: onToggleOvertime,
+              description: 'Activer pour cette journée',
+              isEnabled: true,
+            ),
+            const SizedBox(height: PointageSpacing.md),
+          ],
+
+          // Résumé hebdomadaire (exigence 4.4, 7.5)
+          WeeklySummaryCard(
+            weeklyWorkTime: weeklyWorkTime,
+            weeklyTarget: weeklyTarget,
+            overtimeHours: overtimeHours,
+          ),
+          const SizedBox(height: PointageSpacing.md),
+
+          // Informations supplémentaires (congés, etc.)
+          _buildAdditionalInfo(),
+        ],
+      ),
+    );
+  }
+
+  /// Section des boutons d'action secondaires (exigences 5.2, 5.4, 7.6)
+  Widget _buildActionButtonsSection() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: PointageSpacing.md),
+      padding: const EdgeInsets.all(PointageSpacing.lg),
+      decoration: BoxDecoration(
+        color: PointageColors.cardBackground,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Titre de section pour améliorer la hiérarchie visuelle (exigence 6.2)
+          Text(
+            'Actions supplémentaires',
+            style: PointageTextStyles.cardLabel.copyWith(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: PointageColors.primary,
+            ),
+          ),
+          const SizedBox(height: PointageSpacing.md),
+
+          // Bouton d'absence (exigence 5.2, 7.6)
+          PointageAbsenceBouton(
+            etatActuel: etatActuel,
+            onSignalerAbsencePeriode: onSignalerAbsencePeriode,
+            selectedDate: selectedDate,
+          ),
+          const SizedBox(height: PointageSpacing.sm),
+
+          // Bouton de suppression (exigence 5.4, 7.6)
+          PointageRemoveTimesheetDay(
+            etatActuel: etatActuel,
+            onDeleteEntry: onDeleteEntry,
+            isDisabled: etatActuel == 'Non commencé',
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Section de l'historique des pointages (exigences 4.5, 7.5, 7.7)
+  Widget _buildHistorySection() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(
+          PointageSpacing.md, PointageSpacing.lg, PointageSpacing.md, 0),
+      decoration: BoxDecoration(
+        color: PointageColors.cardBackground,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // En-tête de section avec séparation visuelle (exigence 6.2)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(PointageSpacing.lg,
+                PointageSpacing.lg, PointageSpacing.lg, PointageSpacing.sm),
+            child: Row(
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Total du jour : ${_formatDuration(totalDayHours)}',
-                        style: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        'Temps de pause : ${_formatDuration(totalBreakTime)}',
-                        style: const TextStyle(
-                            fontSize: 14, fontStyle: FontStyle.italic),
-                      ),
-                    ],
-                  ),
+                Icon(
+                  Icons.history,
+                  color: PointageColors.primary,
+                  size: 20,
                 ),
-                PointageTimer(
-                  etatActuel: etatActuel,
-                  dernierPointage: dernierPointage,
-                  progression: progression,
-                  pointages: pointages,
-                  extendedTimerState: extendedTimerState,
-                  workTimeInfo: workTimeInfo,
+                const SizedBox(width: PointageSpacing.sm),
+                Text(
+                  'Historique des pointages',
+                  style: PointageTextStyles.cardLabel.copyWith(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: PointageColors.primary,
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 20),
-            // Card pour l'heure de fin estimée
-            EstimatedEndTimeCard(
-              pointages: pointages,
-              currentState: etatActuel,
-            ),
-            // Toggle pour les heures supplémentaires
-            if (currentEntry != null && etatActuel != 'Non commencé')
-              Card(
-                elevation: 2,
-                child: Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Heures supplémentaires',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      OvertimeIndicator(
-                        isActive: currentEntry!.hasOvertimeHours,
-                        onToggle: onToggleOvertime,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            const SizedBox(height: 20),
-            _buildWeeklySummary(),
-            const SizedBox(height: 20),
-            _buildAdditionalInfo(),
-            const SizedBox(height: 20),
-            PointageButton(
-              etatActuel: etatActuel,
-              onPressed: onActionPointage,
-            ),
-            const SizedBox(height: 20),
-            PointageAbsenceBouton(
-              etatActuel: etatActuel,
-              onSignalerAbsencePeriode: onSignalerAbsencePeriode,
-              selectedDate: selectedDate,
-            ),
-            const SizedBox(height: 10),
-            PointageRemoveTimesheetDay(
-              etatActuel: etatActuel,
-              onDeleteEntry: onDeleteEntry,
-              isDisabled: etatActuel == 'Non commencé',
-            ),
-            const SizedBox(height: 20),
-            PointageList(
-              pointages: pointages,
-              onModifier: onModifierPointage,
-            ),
-          ],
-        ),
+          ),
+
+          // Ligne de séparation subtile
+          Container(
+            height: 1,
+            margin: const EdgeInsets.symmetric(horizontal: PointageSpacing.lg),
+            color: PointageColors.divider,
+          ),
+
+          // Liste des pointages avec préservation complète des fonctionnalités (exigence 7.7)
+          PointageList(
+            pointages: pointages,
+            onModifier: onModifierPointage,
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildWeeklySummary() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Résumé hebdomadaire',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            LinearProgressIndicator(
-              value: weeklyTarget.inMinutes > 0
-                  ? (weeklyWorkTime.inMinutes / weeklyTarget.inMinutes)
-                      .clamp(0.0, 1.0)
-                  : 0.0,
-              backgroundColor: Colors.grey[200],
-              valueColor: const AlwaysStoppedAnimation<Color>(Colors.teal),
-            ),
-            const SizedBox(height: 8),
-            Text(
-                '${_formatDuration(weeklyWorkTime)} / ${_formatDuration(weeklyTarget)}'),
-          ],
-        ),
-      ),
-    );
-  }
-
-// Dans pointage_layout.dart, modifions la méthode _buildAdditionalInfo
-
+  /// Informations supplémentaires (congés, etc.)
   Widget _buildAdditionalInfo() {
-    return Column(
-      children: [
-        VacationDaysDetailCard(
-          currentYearTotal: 25,
-          lastYearRemaining: vacationInfo.lastYearRemaining,
-          usedDays: vacationInfo.usedDays,
-          remainingTotal: vacationInfo.remainingTotal,
-        ),
-      ],
+    return VacationDaysDetailCard(
+      currentYearTotal: 25,
+      lastYearRemaining: vacationInfo.lastYearRemaining,
+      usedDays: vacationInfo.usedDays,
+      remainingTotal: vacationInfo.remainingTotal,
     );
-  }
-
-  String _formatDuration(Duration duration) {
-    String twoDigits(int n) => n.toString().padLeft(2, "0");
-    String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
-    return "${twoDigits(duration.inHours)}:$twoDigitMinutes";
   }
 }

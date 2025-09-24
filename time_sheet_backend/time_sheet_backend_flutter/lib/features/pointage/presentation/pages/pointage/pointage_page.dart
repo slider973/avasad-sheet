@@ -34,22 +34,24 @@ class _PointagePageState extends State<PointagePage> {
 
   @override
   Widget build(BuildContext context) {
+    final today = DateTime.now();
+
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).primaryColor,
         title: const Text('Pointage'),
+        backgroundColor: Colors.teal,
+        foregroundColor: Colors.white,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadTodayData,
+            tooltip: 'Actualiser',
+          ),
+        ],
       ),
       backgroundColor: Colors.teal[50],
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              PointageWidget(selectedDate: DateTime.now()),
-            ],
-          ),
-        ),
-      ),
+      body: PointageWidget(selectedDate: today),
     );
   }
 }

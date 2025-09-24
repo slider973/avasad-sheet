@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../../../services/timer_service.dart';
 import '../../../../../features/pointage/domain/entities/work_time_info.dart';
 import '../../../../../features/pointage/domain/entities/extended_timer_state.dart';
+import 'pointage_design_system.dart';
 
 // Classe personnalisée pour dessiner le timer
 class TimerPainter extends CustomPainter {
@@ -193,7 +194,7 @@ class TimerPainter extends CustomPainter {
       Color color,
       bool isTouched) {
     final paint = Paint()
-      ..color = isTouched ? color.withOpacity(0.8) : color
+      ..color = isTouched ? color.withValues(alpha: 0.8) : color
       ..style = PaintingStyle.stroke
       ..strokeWidth = isTouched ? 30 : 25;
 
@@ -220,6 +221,55 @@ class TimerPainter extends CustomPainter {
   }
 }
 
+/// Widget pour le contenu central du chronomètre avec nouvelle typographie
+class PointageTimerContent extends StatelessWidget {
+  final String etatActuel;
+  final DateTime? dernierPointage;
+  final Duration elapsedTime;
+
+  const PointageTimerContent({
+    super.key,
+    required this.etatActuel,
+    required this.dernierPointage,
+    required this.elapsedTime,
+  });
+
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    String hours = twoDigits(duration.inHours);
+    String minutes = twoDigits(duration.inMinutes.remainder(60));
+    String seconds = twoDigits(duration.inSeconds.remainder(60));
+    return '$hours:$minutes:$seconds';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          etatActuel,
+          style: PointageTextStyles.timerState,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          dernierPointage != null
+              ? DateFormat('HH:mm').format(dernierPointage!)
+              : '00:00',
+          style: PointageTextStyles.timerTime,
+        ),
+        if (dernierPointage != null &&
+            etatActuel != 'Non commencé' &&
+            etatActuel != 'Sortie')
+          Text(
+            'Durée: ${_formatDuration(elapsedTime)}',
+            style: PointageTextStyles.timerDuration,
+          ),
+      ],
+    );
+  }
+}
+
 class PointageTimer extends StatefulWidget {
   final String etatActuel;
   final DateTime? dernierPointage;
@@ -239,7 +289,7 @@ class PointageTimer extends StatefulWidget {
   });
 
   @override
-  _PointageTimerState createState() => _PointageTimerState();
+  State<PointageTimer> createState() => _PointageTimerState();
 }
 
 class _PointageTimerState extends State<PointageTimer>
@@ -438,186 +488,184 @@ class _PointageTimerState extends State<PointageTimer>
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 250,
-      height: 250,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Utiliser CustomPaint au lieu de PieChart pour plus de stabilité
-          SizedBox(
-            width: 250,
-            height: 250,
-            child: AnimatedBuilder(
-              animation: _animationController,
-              builder: (context, _) {
-                return CustomPaint(
-                  painter: TimerPainter(
-                    etatActuel: widget.etatActuel,
-                    pointages: widget.pointages,
-                    touchedIndex: _touchedIndex,
-                  ),
-                  child: GestureDetector(
-                    onTapDown: (details) {
-                      // Calculer l'angle du toucher par rapport au centre
-                      final center = Offset(125, 125);
-                      final touchPosition = details.localPosition;
-                      final dx = touchPosition.dx - center.dx;
-                      final dy = touchPosition.dy - center.dy;
-
-                      // Vérifier d'abord si le clic est dans le cercle (distance du centre)
-                      final distance = math.sqrt(dx * dx + dy * dy);
-                      final radius = 125 -
-                          25; // Rayon du cercle moins la moitié de l'épaisseur du trait
-
-                      if (distance > radius + 15 || distance < radius - 15) {
-                        // Clic en dehors de l'anneau du timer
-                        setState(() {
-                          _touchedIndex = -1;
-                        });
-                        return;
-                      }
-
-                      // Calculer l'angle en degrés (0 = haut, sens horaire)
-                      final angle =
-                          (math.atan2(dy, dx) * 180 / math.pi + 90) % 360;
-
-                      // Extraire les horaires réels depuis les pointages pour calculer les angles réels
-                      DateTime? entryTime;
-                      DateTime? pauseStartTime;
-                      DateTime? pauseEndTime;
-                      DateTime? exitTime;
-
-                      for (var pointage in widget.pointages) {
-                        final type = pointage['type'] as String;
-                        final time = pointage['heure'] as DateTime;
-                        if (type == 'Entrée') entryTime = time;
-                        if (type == 'Début pause') pauseStartTime = time;
-                        if (type == 'Fin pause') pauseEndTime = time;
-                        if (type == 'Fin de journée') exitTime = time;
-                      }
-
-                      // Déterminer quel segment a été touché en fonction de l'angle et de l'état
-                      setState(() {
-                        if (widget.etatActuel == 'Sortie' &&
-                            entryTime != null &&
-                            pauseStartTime != null &&
-                            pauseEndTime != null &&
-                            exitTime != null) {
-                          // Calculer les angles pour chaque segment
-                          final totalWorkedSeconds = exitTime
-                              .difference(entryTime)
-                              .inSeconds
-                              .toDouble();
-                          if (totalWorkedSeconds <= 0) return;
-
-                          final entryPercent = pauseStartTime
-                                  .difference(entryTime)
-                                  .inSeconds
-                                  .toDouble() /
-                              totalWorkedSeconds;
-                          final pausePercent = pauseEndTime
-                                  .difference(pauseStartTime)
-                                  .inSeconds
-                                  .toDouble() /
-                              totalWorkedSeconds;
-
-                          final entryEndAngle = entryPercent * 360;
-                          final pauseEndAngle =
-                              entryEndAngle + (pausePercent * 360);
-
-                          if (angle < entryEndAngle) {
-                            _touchedIndex = 0; // Entrée
-                          } else if (angle < pauseEndAngle) {
-                            _touchedIndex = 1; // Pause
-                          } else {
-                            _touchedIndex = 2; // Reprise
-                          }
-                        } else {
-                          // Utiliser une division simple pour les autres états
-                          if (angle < 120) {
-                            _touchedIndex = 0; // Entrée
-                          } else if (angle < 240) {
-                            _touchedIndex = 1; // Pause
-                          } else {
-                            _touchedIndex = 2; // Reprise
-                          }
-                        }
-                      });
-                    },
-                    onLongPress: () {
-                      // Afficher immédiatement les détails lors d'un appui long
-                      if (_touchedIndex != -1) {
-                        if (_touchedIndex == 0) {
-                          _showSegmentDetails(
-                              'Entrée', _getDurationForSegment('Entrée'));
-                        } else if (_touchedIndex == 1) {
-                          _showSegmentDetails(
-                              'Pause', _getDurationForSegment('Pause'));
-                        } else if (_touchedIndex == 2) {
-                          _showSegmentDetails(
-                              'Reprise', _getDurationForSegment('Reprise'));
-                        }
-                      }
-                    },
-                    onTapUp: (details) {
-                      if (_touchedIndex != -1) {
-                        // Déterminer quel segment a été touché
-                        if (_touchedIndex == 0) {
-                          _showSegmentDetails(
-                              'Entrée', _getDurationForSegment('Entrée'));
-                        } else if (_touchedIndex == 1) {
-                          _showSegmentDetails(
-                              'Pause', _getDurationForSegment('Pause'));
-                        } else if (_touchedIndex == 2) {
-                          _showSegmentDetails(
-                              'Reprise', _getDurationForSegment('Reprise'));
-                        }
-                        setState(() {
-                          _touchedIndex = -1;
-                        });
-                      }
-                    },
-                  ),
-                );
-              },
-            ),
+    return Container(
+      width: 280,
+      height: 280,
+      decoration: BoxDecoration(
+        color: PointageColors.cardBackground,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+            spreadRadius: 0,
           ),
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                widget.etatActuel,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF2D3E50),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                widget.dernierPointage != null
-                    ? DateFormat('HH:mm').format(widget.dernierPointage!)
-                    : '00:00',
-                style: const TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF2D3E50),
-                ),
-              ),
-              if (widget.dernierPointage != null &&
-                  widget.etatActuel != 'Non commencé' &&
-                  widget.etatActuel != 'Sortie')
-                Text(
-                  'Durée: ${_formatDuration(_timerService.elapsedTime)}',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    color: Color(0xFF2D3E50),
-                  ),
-                ),
-            ],
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+            spreadRadius: 0,
           ),
         ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(15),
+        child: SizedBox(
+          width: 250,
+          height: 250,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Utiliser CustomPaint au lieu de PieChart pour plus de stabilité
+              SizedBox(
+                width: 250,
+                height: 250,
+                child: AnimatedBuilder(
+                  animation: _animationController,
+                  builder: (context, _) {
+                    return CustomPaint(
+                      painter: TimerPainter(
+                        etatActuel: widget.etatActuel,
+                        pointages: widget.pointages,
+                        touchedIndex: _touchedIndex,
+                      ),
+                      child: GestureDetector(
+                        onTapDown: (details) {
+                          // Calculer l'angle du toucher par rapport au centre
+                          final center = Offset(125, 125);
+                          final touchPosition = details.localPosition;
+                          final dx = touchPosition.dx - center.dx;
+                          final dy = touchPosition.dy - center.dy;
+
+                          // Vérifier d'abord si le clic est dans le cercle (distance du centre)
+                          final distance = math.sqrt(dx * dx + dy * dy);
+                          final radius = 125 -
+                              25; // Rayon du cercle moins la moitié de l'épaisseur du trait
+
+                          if (distance > radius + 15 ||
+                              distance < radius - 15) {
+                            // Clic en dehors de l'anneau du timer
+                            setState(() {
+                              _touchedIndex = -1;
+                            });
+                            return;
+                          }
+
+                          // Calculer l'angle en degrés (0 = haut, sens horaire)
+                          final angle =
+                              (math.atan2(dy, dx) * 180 / math.pi + 90) % 360;
+
+                          // Extraire les horaires réels depuis les pointages pour calculer les angles réels
+                          DateTime? entryTime;
+                          DateTime? pauseStartTime;
+                          DateTime? pauseEndTime;
+                          DateTime? exitTime;
+
+                          for (var pointage in widget.pointages) {
+                            final type = pointage['type'] as String;
+                            final time = pointage['heure'] as DateTime;
+                            if (type == 'Entrée') entryTime = time;
+                            if (type == 'Début pause') pauseStartTime = time;
+                            if (type == 'Fin pause') pauseEndTime = time;
+                            if (type == 'Fin de journée') exitTime = time;
+                          }
+
+                          // Déterminer quel segment a été touché en fonction de l'angle et de l'état
+                          setState(() {
+                            if (widget.etatActuel == 'Sortie' &&
+                                entryTime != null &&
+                                pauseStartTime != null &&
+                                pauseEndTime != null &&
+                                exitTime != null) {
+                              // Calculer les angles pour chaque segment
+                              final totalWorkedSeconds = exitTime
+                                  .difference(entryTime)
+                                  .inSeconds
+                                  .toDouble();
+                              if (totalWorkedSeconds <= 0) return;
+
+                              final entryPercent = pauseStartTime
+                                      .difference(entryTime)
+                                      .inSeconds
+                                      .toDouble() /
+                                  totalWorkedSeconds;
+                              final pausePercent = pauseEndTime
+                                      .difference(pauseStartTime)
+                                      .inSeconds
+                                      .toDouble() /
+                                  totalWorkedSeconds;
+
+                              final entryEndAngle = entryPercent * 360;
+                              final pauseEndAngle =
+                                  entryEndAngle + (pausePercent * 360);
+
+                              if (angle < entryEndAngle) {
+                                _touchedIndex = 0; // Entrée
+                              } else if (angle < pauseEndAngle) {
+                                _touchedIndex = 1; // Pause
+                              } else {
+                                _touchedIndex = 2; // Reprise
+                              }
+                            } else {
+                              // Utiliser une division simple pour les autres états
+                              if (angle < 120) {
+                                _touchedIndex = 0; // Entrée
+                              } else if (angle < 240) {
+                                _touchedIndex = 1; // Pause
+                              } else {
+                                _touchedIndex = 2; // Reprise
+                              }
+                            }
+                          });
+                        },
+                        onLongPress: () {
+                          // Afficher immédiatement les détails lors d'un appui long
+                          if (_touchedIndex != -1) {
+                            if (_touchedIndex == 0) {
+                              _showSegmentDetails(
+                                  'Entrée', _getDurationForSegment('Entrée'));
+                            } else if (_touchedIndex == 1) {
+                              _showSegmentDetails(
+                                  'Pause', _getDurationForSegment('Pause'));
+                            } else if (_touchedIndex == 2) {
+                              _showSegmentDetails(
+                                  'Reprise', _getDurationForSegment('Reprise'));
+                            }
+                          }
+                        },
+                        onTapUp: (details) {
+                          if (_touchedIndex != -1) {
+                            // Déterminer quel segment a été touché
+                            if (_touchedIndex == 0) {
+                              _showSegmentDetails(
+                                  'Entrée', _getDurationForSegment('Entrée'));
+                            } else if (_touchedIndex == 1) {
+                              _showSegmentDetails(
+                                  'Pause', _getDurationForSegment('Pause'));
+                            } else if (_touchedIndex == 2) {
+                              _showSegmentDetails(
+                                  'Reprise', _getDurationForSegment('Reprise'));
+                            }
+                            setState(() {
+                              _touchedIndex = -1;
+                            });
+                          }
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+              // Utiliser le nouveau PointageTimerContent avec la nouvelle typographie
+              PointageTimerContent(
+                etatActuel: widget.etatActuel,
+                dernierPointage: widget.dernierPointage,
+                elapsedTime: _timerService.elapsedTime,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

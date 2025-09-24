@@ -6,7 +6,6 @@ list(APPEND FLUTTER_PLUGIN_LIST
   flutter_secure_storage_linux
   flutter_timezone
   gtk
-  isar_flutter_libs
   open_file_linux
   printing
   screen_retriever_linux

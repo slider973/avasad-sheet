@@ -6,7 +6,7 @@ import 'package:time_sheet/features/pointage/domain/entities/extended_timer_stat
 import 'package:time_sheet/features/pointage/domain/entities/work_time_info.dart';
 import 'package:time_sheet/features/pointage/domain/entities/timer_feature_flags.dart';
 import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_absence.dart';
-import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_layout.dart';
+import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_screen.dart';
 import 'package:time_sheet/services/injection_container.dart';
 import 'package:time_sheet/features/pointage/domain/use_cases/toggle_overtime_hours_use_case.dart';
 
@@ -139,7 +139,8 @@ class _PointageWidgetState extends State<PointageWidget>
           }
         }
         if (state is TimeSheetDataState) {
-          return PointageLayout(
+          return PointageScreen(
+            showAppBar: false, // Pas d'AppBar car déjà dans un Scaffold
             etatActuel: _etatActuel,
             dernierPointage: _dernierPointage,
             progression: _progressionAnimation.value,
@@ -168,7 +169,59 @@ class _PointageWidgetState extends State<PointageWidget>
             workTimeInfo: _workTimeInfo,
           );
         }
-        return const Center(child: CircularProgressIndicator());
+        if (state is TimeSheetLoading) {
+          return const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Chargement des données...'),
+              ],
+            ),
+          );
+        }
+        if (state is TimeSheetErrorState) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error, size: 64, color: Colors.red),
+                const SizedBox(height: 16),
+                Text('Erreur: ${state.message}'),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () =>
+                      _chargerDonneesPersistees(widget.selectedDate),
+                  child: const Text('Réessayer'),
+                ),
+              ],
+            ),
+          );
+        }
+        if (state is TimeSheetInitial) {
+          return const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Initialisation...'),
+              ],
+            ),
+          );
+        }
+        // État par défaut avec indicateur de chargement
+        return const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Chargement en cours...'),
+            ],
+          ),
+        );
       },
     );
   }

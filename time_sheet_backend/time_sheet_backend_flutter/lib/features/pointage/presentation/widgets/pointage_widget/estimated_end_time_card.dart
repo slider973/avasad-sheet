@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'modern_info_card.dart';
+import 'pointage_design_system.dart';
 
 /// Card qui affiche l'heure de fin estimée en se réajustant automatiquement
 /// en fonction du temps de pause et du temps de travail effectué
@@ -52,44 +54,37 @@ class _EstimatedEndTimeCardState extends State<EstimatedEndTimeCard> {
       return const SizedBox.shrink();
     }
 
-    return Card(
-      elevation: 2,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.schedule,
-                  color: _getIconColor(),
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Fin de journée estimée',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey[800],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
+    return ModernInfoCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.access_time,
+                color: _getIconColor(),
+                size: 24,
+              ),
+              const SizedBox(width: PointageSpacing.sm),
+              Text(
+                'Fin de journée estimée',
+                style: PointageTextStyles.cardLabel,
+              ),
+            ],
+          ),
+          const SizedBox(height: PointageSpacing.sm),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       estimatedEndTime != null
                           ? DateFormat('HH:mm').format(estimatedEndTime)
                           : '--:--',
-                      style: TextStyle(
+                      style: PointageTextStyles.cardValue.copyWith(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                         color: _getTimeColor(),
@@ -98,73 +93,77 @@ class _EstimatedEndTimeCardState extends State<EstimatedEndTimeCard> {
                     if (remainingWorkTime > Duration.zero)
                       Text(
                         'Il reste ${_formatDuration(remainingWorkTime)}',
-                        style: TextStyle(
+                        style: PointageTextStyles.cardLabel.copyWith(
                           fontSize: 12,
-                          color: Colors.grey[600],
                         ),
                       ),
-                  ],
-                ),
-                if (widget.currentState == 'Pause')
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.shade100,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.pause_circle_outline,
-                          size: 16,
-                          color: Colors.orange.shade700,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'En pause',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.orange.shade700,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
-            if (_isInOvertime())
-              Container(
-                margin: const EdgeInsets.only(top: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.green.shade100,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.check_circle_outline,
-                      size: 16,
-                      color: Colors.green.shade700,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Objectif journalier atteint',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.green.shade700,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
                   ],
                 ),
               ),
-          ],
-        ),
+              if (widget.currentState == 'Pause')
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: PointageSpacing.sm,
+                    vertical: PointageSpacing.xs,
+                  ),
+                  decoration: BoxDecoration(
+                    color: PointageColors.warning.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.pause_circle_outline,
+                        size: 16,
+                        color: PointageColors.warning,
+                      ),
+                      const SizedBox(width: PointageSpacing.xs),
+                      Text(
+                        'En pause',
+                        style: PointageTextStyles.cardLabel.copyWith(
+                          fontSize: 12,
+                          color: PointageColors.warning,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+          if (_isInOvertime())
+            Container(
+              margin: const EdgeInsets.only(top: PointageSpacing.sm),
+              padding: const EdgeInsets.symmetric(
+                horizontal: PointageSpacing.sm,
+                vertical: PointageSpacing.xs,
+              ),
+              decoration: BoxDecoration(
+                color: PointageColors.success.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.check_circle_outline,
+                    size: 16,
+                    color: PointageColors.success,
+                  ),
+                  const SizedBox(width: PointageSpacing.xs),
+                  Text(
+                    'Objectif journalier atteint',
+                    style: PointageTextStyles.cardLabel.copyWith(
+                      fontSize: 12,
+                      color: PointageColors.success,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -292,16 +291,16 @@ class _EstimatedEndTimeCardState extends State<EstimatedEndTimeCard> {
 
   /// Couleur de l'icône selon l'état
   Color _getIconColor() {
-    if (_isInOvertime()) return Colors.green.shade600;
-    if (widget.currentState == 'Pause') return Colors.orange.shade600;
-    return Colors.blue.shade600;
+    if (_isInOvertime()) return PointageColors.success;
+    if (widget.currentState == 'Pause') return PointageColors.warning;
+    return PointageColors.primary;
   }
 
   /// Couleur du temps selon l'état
   Color _getTimeColor() {
-    if (_isInOvertime()) return Colors.green.shade700;
-    if (widget.currentState == 'Pause') return Colors.orange.shade700;
-    return Colors.grey.shade800;
+    if (_isInOvertime()) return PointageColors.success;
+    if (widget.currentState == 'Pause') return PointageColors.warning;
+    return PointageColors.primary;
   }
 
   /// Formate une durée en heures:minutes

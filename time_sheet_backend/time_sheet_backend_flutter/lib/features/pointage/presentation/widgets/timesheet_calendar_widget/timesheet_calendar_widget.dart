@@ -24,7 +24,7 @@ class TimesheetCalendarWidget extends StatefulWidget {
       _TimesheetCalendarWidgetState();
 }
 
-class _TimesheetCalendarWidgetState extends State<TimesheetCalendarWidget> 
+class _TimesheetCalendarWidgetState extends State<TimesheetCalendarWidget>
     with AutomaticKeepAliveClientMixin {
   CalendarFormat _calendarFormat = CalendarFormat.month;
   DateTime _focusedDay = DateTime.now();
@@ -96,7 +96,7 @@ class _TimesheetCalendarWidgetState extends State<TimesheetCalendarWidget>
             listener: (context, state) {
               // Quand une entrée est créée, modifiée ou supprimée,
               // recharger les données du calendrier
-              if (state is TimeSheetDataState || 
+              if (state is TimeSheetDataState ||
                   state is TimeSheetGenerationCompleted) {
                 _loadEvents();
               }
@@ -128,11 +128,11 @@ class _TimesheetCalendarWidgetState extends State<TimesheetCalendarWidget>
         _focusedDay = focusedDay;
         _selectedEvents.value = _getEventsForDay(selectedDay);
       });
-      
+
       // Charger explicitement les données pour le jour sélectionné
       final dateFormat = DateFormat('dd-MMM-yy', 'en_US');
       final formattedDate = dateFormat.format(selectedDay);
-      
+
       // Charger les données pour le jour sélectionné avec la date formatée
       try {
         final timeSheetBloc = context.read<TimeSheetBloc>();
@@ -140,7 +140,7 @@ class _TimesheetCalendarWidgetState extends State<TimesheetCalendarWidget>
       } catch (e) {
         print('Erreur lors du chargement des données: $e');
       }
-      
+
       // Charger également les données pour la liste complète
       context.read<TimeSheetListBloc>().add(const FindTimesheetEntriesEvent());
     }
@@ -165,11 +165,10 @@ class _TimesheetCalendarWidgetState extends State<TimesheetCalendarWidget>
       MaterialPageRoute(
         builder: (context) => Scaffold(
           appBar: AppBar(title: const Text('Détails du pointage')),
-          body: SingleChildScrollView(
-            child: PointageWidget(
-              entry: entry,
-              selectedDate: dateFormat.parse(entry.dayDate),
-            ),
+          backgroundColor: Colors.teal[50],
+          body: PointageWidget(
+            entry: entry,
+            selectedDate: dateFormat.parse(entry.dayDate),
           ),
         ),
       ),
@@ -231,9 +230,7 @@ class _TimesheetCalendarWidgetState extends State<TimesheetCalendarWidget>
           } else {
             map[date]!.add(Event(entry, isAbsence: false));
 
-            map[date]!.add(Event(
-                entry,
-                isAbsence: true));
+            map[date]!.add(Event(entry, isAbsence: true));
           }
         }
       } else {
