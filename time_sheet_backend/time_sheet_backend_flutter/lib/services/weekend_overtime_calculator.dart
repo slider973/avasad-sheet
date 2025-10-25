@@ -12,8 +12,8 @@ import 'weekend_detection_service.dart';
 class WeekendOvertimeCalculator {
   final WeekendDetectionService _weekendDetectionService;
 
-  /// Standard work day duration (8 hours)
-  static const Duration standardWorkDay = Duration(hours: 8);
+  /// Standard work day duration (8 hours 18 minutes)
+  static const Duration standardWorkDay = Duration(hours: 8, minutes: 18);
 
   /// Default overtime rates
   static const double defaultWeekdayOvertimeRate = 1.25; // 125%

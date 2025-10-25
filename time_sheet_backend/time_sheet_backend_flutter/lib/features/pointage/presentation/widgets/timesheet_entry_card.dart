@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:time_sheet/features/pointage/domain/entities/timesheet_entry.dart';
-import 'package:time_sheet/features/pointage/domain/use_cases/toggle_overtime_hours_use_case.dart';
-import 'package:time_sheet/features/pointage/presentation/widgets/overtime_indicator.dart';
 import 'package:time_sheet/features/pointage/presentation/widgets/weekend_badge.dart';
-import 'package:time_sheet/services/injection_container.dart';
 
 class TimesheetEntryCard extends StatelessWidget {
   final TimesheetEntry entry;
@@ -65,18 +62,9 @@ class TimesheetEntryCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                OvertimeIndicator(
-                  isActive: entry.hasOvertimeHours ||
-                      (entry.isWeekend && entry.isWeekendOvertimeEnabled),
-                  onToggle: () async {
-                    final toggleUseCase = getIt<ToggleOvertimeHoursUseCase>();
-                    await toggleUseCase.execute(
-                      entryId: entry.id!,
-                      hasOvertimeHours: !entry.hasOvertimeHours,
-                    );
-                    onRefresh();
-                  },
-                ),
+                // L'indicateur HS n'est plus affiché car le calcul est mensuel
+                // Seul le badge weekend reste visible
+                const SizedBox.shrink(),
               ],
             ),
             const SizedBox(height: 12),
@@ -109,11 +97,8 @@ class TimesheetEntryCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (entry.hasOvertimeHours ||
-                    (entry.isWeekend && entry.isWeekendOvertimeEnabled)) ...[
-                  const SizedBox(width: 8),
-                  _buildOvertimeTypeIndicator(entry),
-                ],
+                // Plus d'indicateur de type d'heures sup car calcul mensuel
+                // Le badge weekend suffit
               ],
             ),
           ],
@@ -150,73 +135,21 @@ class TimesheetEntryCard extends StatelessWidget {
   }
 
   Color _getTotalBackgroundColor(TimesheetEntry entry) {
+    // Seul le weekend a une couleur spéciale (orange)
+    // Les jours de semaine sont en bleu (pas d'indication journalière)
     if (entry.isWeekend && entry.isWeekendOvertimeEnabled) {
       return Colors.deepOrange.withValues(alpha: 0.1);
-    } else if (entry.hasOvertimeHours) {
-      return Colors.orange.withValues(alpha: 0.1);
     } else {
       return Colors.blue.withValues(alpha: 0.1);
     }
   }
 
   Color? _getTotalTextColor(TimesheetEntry entry) {
+    // Seul le weekend a une couleur spéciale (orange)
     if (entry.isWeekend && entry.isWeekendOvertimeEnabled) {
       return Colors.deepOrange[700];
-    } else if (entry.hasOvertimeHours) {
-      return Colors.orange[700];
     } else {
       return Colors.blue[700];
     }
-  }
-
-  Widget _buildOvertimeTypeIndicator(TimesheetEntry entry) {
-    String label;
-    Color color;
-    IconData icon;
-
-    if (entry.isWeekend &&
-        entry.isWeekendOvertimeEnabled &&
-        entry.hasOvertimeHours) {
-      // Both weekend and weekday overtime
-      label = 'Mixte';
-      color = Colors.purple;
-      icon = Icons.all_inclusive;
-    } else if (entry.isWeekend && entry.isWeekendOvertimeEnabled) {
-      // Weekend overtime only
-      label = 'Weekend';
-      color = Colors.deepOrange;
-      icon = Icons.weekend;
-    } else if (entry.hasOvertimeHours) {
-      // Weekday overtime only
-      label = 'Semaine';
-      color = Colors.orange;
-      icon = Icons.business_center;
-    } else {
-      return const SizedBox.shrink();
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: color),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }

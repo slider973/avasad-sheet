@@ -83,8 +83,9 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
                 ),
                 _buildListTile(
                   icon: Icons.weekend,
-                  title: 'Paramètres Weekend',
-                  subtitle: 'Configuration des heures supplémentaires weekend',
+                  title: 'Heures supplémentaires',
+                  subtitle:
+                      'Configuration des heures supplémentaires et weekends',
                   onTap: () => _navigateToWeekendSettings(context),
                 ),
                 _buildReminderSettingsTile(state),

@@ -12,7 +12,6 @@ class TimesheetCalendarBody extends StatelessWidget {
   final CalendarFormat calendarFormat;
   final LinkedHashMap<DateTime, List<Event>> events;
   final Function(DateTime, DateTime) onDaySelected;
-  final Function(CalendarFormat) onFormatChanged;
   final Function(DateTime) onPageChanged;
 
   const TimesheetCalendarBody({
@@ -24,7 +23,6 @@ class TimesheetCalendarBody extends StatelessWidget {
     required this.calendarFormat,
     required this.events,
     required this.onDaySelected,
-    required this.onFormatChanged,
     required this.onPageChanged,
   });
 
@@ -39,6 +37,10 @@ class TimesheetCalendarBody extends StatelessWidget {
       calendarFormat: calendarFormat,
       eventLoader: (day) => events[day] ?? [],
       startingDayOfWeek: StartingDayOfWeek.monday,
+      // Empêcher le changement automatique de format en limitant à un seul format
+      availableCalendarFormats: const {
+        CalendarFormat.month: 'Mois',
+      },
       calendarBuilders: CalendarBuilders(
         markerBuilder: (context, date, events) {
           if (events.isEmpty) return const SizedBox();
@@ -76,7 +78,6 @@ class TimesheetCalendarBody extends StatelessWidget {
         ),
       ),
       onDaySelected: onDaySelected,
-      onFormatChanged: onFormatChanged,
       onPageChanged: onPageChanged,
     );
   }

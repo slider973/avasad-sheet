@@ -117,8 +117,10 @@ class PointageLayout extends StatelessWidget {
               // History Section avec séparation visuelle (exigences 4.5, 7.5, 7.7)
               _buildHistorySection(),
 
-              // Espacement final pour éviter le collage au bas de l'écran
-              const SizedBox(height: PointageSpacing.xl),
+              // Espacement final pour éviter le collage au bas de l'écran et laisser place au FAB
+              const SizedBox(
+                  height:
+                      80), // Espace pour FAB avec gestion manuelle du SafeArea
             ],
           ),
         ),
@@ -129,8 +131,8 @@ class PointageLayout extends StatelessWidget {
   /// Section d'en-tête avec titre et date (exigences 1.1, 1.2, 8.1, 8.2)
   Widget _buildHeaderSection() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(PointageSpacing.md, PointageSpacing.sm,
-          PointageSpacing.md, PointageSpacing.sm),
+      padding: const EdgeInsets.fromLTRB(PointageSpacing.sm, PointageSpacing.sm,
+          PointageSpacing.sm, PointageSpacing.sm),
       child: PointageHeader(selectedDate: selectedDate),
     );
   }
@@ -138,7 +140,7 @@ class PointageLayout extends StatelessWidget {
   /// Section principale avec chronomètre et informations de temps (exigences 3.1, 3.2, 3.3, 6.1, 6.3)
   Widget _buildMainSection() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: PointageSpacing.md),
+      margin: const EdgeInsets.symmetric(horizontal: PointageSpacing.sm),
       padding: const EdgeInsets.all(PointageSpacing.lg),
       decoration: BoxDecoration(
         color: PointageColors.cardBackground,
@@ -167,7 +169,7 @@ class PointageLayout extends StatelessWidget {
   /// Section des cartes d'information (exigences 4.1, 4.2, 4.3, 4.4, 7.5)
   Widget _buildInfoCardsSection() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: PointageSpacing.md),
+      padding: const EdgeInsets.symmetric(horizontal: PointageSpacing.sm),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -217,7 +219,7 @@ class PointageLayout extends StatelessWidget {
   /// Section des boutons d'action secondaires (exigences 5.2, 5.4, 7.6)
   Widget _buildActionButtonsSection() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: PointageSpacing.md),
+      margin: const EdgeInsets.symmetric(horizontal: PointageSpacing.sm),
       padding: const EdgeInsets.all(PointageSpacing.lg),
       decoration: BoxDecoration(
         color: PointageColors.cardBackground,
@@ -267,7 +269,7 @@ class PointageLayout extends StatelessWidget {
   Widget _buildHistorySection() {
     return Container(
       margin: const EdgeInsets.fromLTRB(
-          PointageSpacing.md, PointageSpacing.lg, PointageSpacing.md, 0),
+          PointageSpacing.sm, PointageSpacing.lg, PointageSpacing.sm, 0),
       decoration: BoxDecoration(
         color: PointageColors.cardBackground,
         borderRadius: BorderRadius.circular(16),

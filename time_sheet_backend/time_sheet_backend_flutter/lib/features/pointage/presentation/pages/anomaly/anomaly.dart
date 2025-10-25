@@ -25,7 +25,9 @@ class _AnomalyViewState extends State<AnomalyView> {
     super.initState();
     // Forcer le chargement avec le nouveau système de compensation
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<AnomalyBloc>().add(const DetectAnomalies(forceRegenerate: true));
+      context
+          .read<AnomalyBloc>()
+          .add(const DetectAnomalies(forceRegenerate: true));
     });
   }
 
@@ -73,7 +75,8 @@ class _AnomalyViewState extends State<AnomalyView> {
                       hintText: 'Rechercher une anomalie...',
                       prefixIcon: Icon(Icons.search, color: Colors.grey),
                       border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 20, vertical: 15),
                     ),
                   ),
                 ),
@@ -83,26 +86,38 @@ class _AnomalyViewState extends State<AnomalyView> {
                   children: [
                     Expanded(
                       child: InkWell(
-                        onTap: () => setState(() => _showOnlyActive = !_showOnlyActive),
+                        onTap: () =>
+                            setState(() => _showOnlyActive = !_showOnlyActive),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 8, horizontal: 16),
                           decoration: BoxDecoration(
-                            color: _showOnlyActive ? Colors.white : Colors.teal.shade600,
+                            color: _showOnlyActive
+                                ? Colors.white
+                                : Colors.teal.shade600,
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
-                                _showOnlyActive ? Icons.warning : Icons.all_inclusive,
+                                _showOnlyActive
+                                    ? Icons.warning
+                                    : Icons.all_inclusive,
                                 size: 18,
-                                color: _showOnlyActive ? Colors.orange : Colors.white,
+                                color: _showOnlyActive
+                                    ? Colors.orange
+                                    : Colors.white,
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                _showOnlyActive ? 'Actives uniquement' : 'Toutes les anomalies',
+                                _showOnlyActive
+                                    ? 'Actives uniquement'
+                                    : 'Toutes les anomalies',
                                 style: TextStyle(
-                                  color: _showOnlyActive ? Colors.black87 : Colors.white,
+                                  color: _showOnlyActive
+                                      ? Colors.black87
+                                      : Colors.white,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -133,7 +148,8 @@ class _AnomalyViewState extends State<AnomalyView> {
 
                   // Ancien système (fallback)
                   if (state is AnomalyLoaded) {
-                    final unresolvedAnomalies = state.anomalies.where((a) => !a.isResolved).toList();
+                    final unresolvedAnomalies =
+                        state.anomalies.where((a) => !a.isResolved).toList();
 
                     if (unresolvedAnomalies.isEmpty) {
                       return _buildEmptyState(false);
@@ -146,7 +162,8 @@ class _AnomalyViewState extends State<AnomalyView> {
                     return Center(child: Text(state.message));
                   }
 
-                  return const Center(child: Text('Aucune donnée à afficher pour le moment.'));
+                  return const Center(
+                      child: Text('Aucune donnée à afficher pour le moment.'));
                 },
               ),
             ),
@@ -181,7 +198,8 @@ class _AnomalyViewState extends State<AnomalyView> {
     );
   }
 
-  Widget _buildAnomaliesList(BuildContext context, List<AnomalyModel> anomalies) {
+  Widget _buildAnomaliesList(
+      BuildContext context, List<AnomalyModel> anomalies) {
     return ListView.builder(
       padding: const EdgeInsets.all(8),
       itemCount: anomalies.length,
@@ -220,7 +238,9 @@ class _AnomalyViewState extends State<AnomalyView> {
   }
 
   Future<void> _refreshAnomalies() async {
-    context.read<AnomalyBloc>().add(const DetectAnomalies(forceRegenerate: true));
+    context
+        .read<AnomalyBloc>()
+        .add(const DetectAnomalies(forceRegenerate: true));
     await Future.delayed(const Duration(milliseconds: 500));
   }
 
@@ -257,7 +277,8 @@ class _AnomalyViewState extends State<AnomalyView> {
           ),
           body: SingleChildScrollView(
             child: PointageWidget(
-              entry: null, // Vous voudrez peut-être passer l'entrée si disponible
+              entry:
+                  null, // Vous voudrez peut-être passer l'entrée si disponible
               selectedDate: anomaly.detectedDate,
             ),
           ),
@@ -299,7 +320,8 @@ class _AnomalyViewState extends State<AnomalyView> {
     }
 
     // Grouper les anomalies par semaine
-    final groupedAnomalies = _groupAnomaliesByWeek(activeAnomalies, compensatedAnomalies);
+    final groupedAnomalies =
+        _groupAnomaliesByWeek(activeAnomalies, compensatedAnomalies);
 
     if (groupedAnomalies.isEmpty && _searchQuery.isEmpty) {
       return _buildEmptyState(false);
@@ -309,12 +331,15 @@ class _AnomalyViewState extends State<AnomalyView> {
       padding: const EdgeInsets.symmetric(vertical: 16),
       children: [
         // Carte de résumé avec un design moderne
-        if (weeklyStats.isNotEmpty && _searchQuery.isEmpty) _buildModernSummaryCard(weeklyStats),
+        if (weeklyStats.isNotEmpty && _searchQuery.isEmpty)
+          _buildModernSummaryCard(weeklyStats),
 
         // Afficher les anomalies groupées par semaine
-        ...groupedAnomalies.entries.map((entry) => _buildWeekSection(entry.key, entry.value)),
+        ...groupedAnomalies.entries
+            .map((entry) => _buildWeekSection(entry.key, entry.value)),
 
-        if (groupedAnomalies.isEmpty && _searchQuery.isNotEmpty) _buildNoResultsFound(),
+        if (groupedAnomalies.isEmpty && _searchQuery.isNotEmpty)
+          _buildNoResultsFound(),
       ],
     );
   }
@@ -363,7 +388,8 @@ class _AnomalyViewState extends State<AnomalyView> {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(20),
@@ -486,11 +512,15 @@ class _AnomalyViewState extends State<AnomalyView> {
                   width: 50,
                   height: 50,
                   decoration: BoxDecoration(
-                    color: isCompensated ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
+                    color: isCompensated
+                        ? Colors.green.withOpacity(0.1)
+                        : Colors.orange.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
-                    isCompensated ? Icons.check_circle : Icons.warning_amber_rounded,
+                    isCompensated
+                        ? Icons.check_circle
+                        : Icons.warning_amber_rounded,
                     color: isCompensated ? Colors.green : Colors.orange,
                     size: 24,
                   ),
@@ -504,7 +534,8 @@ class _AnomalyViewState extends State<AnomalyView> {
                       Row(
                         children: [
                           Text(
-                            dayName.substring(0, 1).toUpperCase() + dayName.substring(1),
+                            dayName.substring(0, 1).toUpperCase() +
+                                dayName.substring(1),
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
@@ -526,10 +557,12 @@ class _AnomalyViewState extends State<AnomalyView> {
                         style: TextStyle(
                           color: isCompensated ? Colors.grey : Colors.black87,
                           fontSize: 14,
-                          decoration: isCompensated ? TextDecoration.lineThrough : null,
+                          decoration:
+                              isCompensated ? TextDecoration.lineThrough : null,
                         ),
                       ),
-                      if (isCompensated && anomaly.compensationReason != null) ...[
+                      if (isCompensated &&
+                          anomaly.compensationReason != null) ...[
                         const SizedBox(height: 4),
                         Row(
                           children: [
@@ -611,7 +644,8 @@ class _AnomalyViewState extends State<AnomalyView> {
     }
 
     // Trier les semaines par date décroissante
-    final sortedEntries = grouped.entries.toList()..sort((a, b) => b.key.compareTo(a.key));
+    final sortedEntries = grouped.entries.toList()
+      ..sort((a, b) => b.key.compareTo(a.key));
 
     return Map.fromEntries(sortedEntries);
   }
@@ -685,14 +719,16 @@ class _AnomalyViewState extends State<AnomalyView> {
                 children: [
                   if (activeCount > 0) ...[
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: Colors.orange.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.warning, size: 16, color: Colors.orange),
+                          const Icon(Icons.warning,
+                              size: 16, color: Colors.orange),
                           const SizedBox(width: 4),
                           Text(
                             '$activeCount',
@@ -708,14 +744,16 @@ class _AnomalyViewState extends State<AnomalyView> {
                   ],
                   if (compensatedCount > 0)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: Colors.green.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.check, size: 16, color: Colors.green),
+                          const Icon(Icons.check,
+                              size: 16, color: Colors.green),
                           const SizedBox(width: 4),
                           Text(
                             '$compensatedCount',
@@ -733,7 +771,8 @@ class _AnomalyViewState extends State<AnomalyView> {
           ),
         ),
         // Liste des anomalies de la semaine
-        ...anomalies.map((anomaly) => _buildModernAnomalyCard(anomaly, anomaly.isCompensated)),
+        ...anomalies.map((anomaly) =>
+            _buildModernAnomalyCard(anomaly, anomaly.isCompensated)),
       ],
     );
   }

@@ -2,6 +2,7 @@ import 'package:get_it/get_it.dart';
 
 import '../features/preference/domain/repositories/overtime_configuration_repository.dart';
 import '../features/preference/data/models/overtime_configuration.dart';
+import '../features/preference/domain/use_cases/set_user_preference_use_case.dart';
 
 /// Service responsible for managing overtime configuration settings
 ///
@@ -20,7 +21,7 @@ class OvertimeConfigurationService {
   ];
   static const double defaultWeekendOvertimeRate = 1.5; // 150%
   static const double defaultWeekdayOvertimeRate = 1.25; // 125%
-  static const int defaultDailyWorkThresholdMinutes = 480; // 8 hours
+  static const int defaultDailyWorkThresholdMinutes = 498; // 8 hours 18 minutes
 
   /// Singleton instance
   static final OvertimeConfigurationService _instance =
@@ -31,6 +32,10 @@ class OvertimeConfigurationService {
   /// Repository for managing overtime configuration
   OvertimeConfigurationRepository get _repository =>
       GetIt.instance<OvertimeConfigurationRepository>();
+
+  /// Use case for setting user preferences
+  SetUserPreferenceUseCase get _setUserPreferenceUseCase =>
+      GetIt.instance<SetUserPreferenceUseCase>();
 
   /// Cache for configuration
   OvertimeConfiguration? _cachedConfiguration;
@@ -112,6 +117,11 @@ class OvertimeConfigurationService {
   /// Throws [ArgumentError] if threshold is invalid
   Future<void> setDailyWorkThreshold(Duration threshold) async {
     await _updateConfiguration(dailyWorkThresholdMinutes: threshold.inMinutes);
+
+    // Aussi sauvegarder dans les préférences utilisateur pour le PDF use case
+    final thresholdInHours = threshold.inMinutes / 60.0;
+    await _setUserPreferenceUseCase.execute(
+        'normalHoursThreshold', thresholdInHours.toString());
   }
 
   /// Resets all overtime configuration to default values

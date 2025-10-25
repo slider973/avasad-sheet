@@ -17,7 +17,6 @@ class TimesheetCalendarLayout extends StatelessWidget {
   final ValueNotifier<List<Event>> selectedEvents;
   final LinkedHashMap<DateTime, List<Event>> events;
   final Function(DateTime, DateTime) onDaySelected;
-  final Function(CalendarFormat) onFormatChanged;
   final Function(DateTime) onPageChanged;
   final Function(TimesheetEntry) onEventTap;
   final Function() onLoadEvents;
@@ -32,7 +31,6 @@ class TimesheetCalendarLayout extends StatelessWidget {
     required this.selectedEvents,
     required this.events,
     required this.onDaySelected,
-    required this.onFormatChanged,
     required this.onPageChanged,
     required this.onEventTap,
     required this.onLoadEvents,
@@ -50,7 +48,6 @@ class TimesheetCalendarLayout extends StatelessWidget {
           calendarFormat: calendarFormat,
           events: events,
           onDaySelected: onDaySelected,
-          onFormatChanged: onFormatChanged,
           onPageChanged: onPageChanged,
         ),
         const SizedBox(height: 8.0),

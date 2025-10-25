@@ -1,4 +1,4 @@
-# Implementation Plan
+# Plan d'implémentation
 
 - [x] 1. Créer les services de base pour la détection du weekend
   - Implémenter WeekendDetectionService avec méthodes de détection des jours de weekend

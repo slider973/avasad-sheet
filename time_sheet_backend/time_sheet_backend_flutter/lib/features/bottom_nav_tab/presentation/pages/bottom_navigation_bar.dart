@@ -9,7 +9,7 @@ import '../../../pointage/presentation/pages/pointage/pointage_page.dart';
 import '../../../pointage/presentation/pages/dashboard/dashboard_page.dart';
 import '../../../pointage/presentation/pages/time-sheet/bloc/time_sheet/time_sheet_bloc.dart';
 import '../../../pointage/presentation/pages/time-sheet/bloc/time_sheet_list/time_sheet_list_bloc.dart';
-import '../../../pointage/presentation/widgets/timesheet_calendar_widget/timesheet_calendar_widget.dart';
+import '../../../pointage/presentation/pages/calendar/calendar_page.dart';
 import '../widgets/bottom_navigation_bar_widget.dart';
 import 'app_drawer.dart';
 import 'bloc/bottom_navigation_bar_bloc.dart';
@@ -24,31 +24,37 @@ class BottomNavigationBarPage extends StatefulWidget {
 }
 
 class _BottomNavigationBarPageState extends State<BottomNavigationBarPage> {
-  // Liste des écrans pré-initialisés pour conserver leur état
-  late List<Widget> _screens;
-  
   // Cache temporel pour éviter les rafraîchissements excessifs
   DateTime? _lastAnomalyUpdate;
   static const Duration _anomalyCacheWindow = Duration(minutes: 2);
-  
+
   @override
   void initState() {
     super.initState();
     _checkPermissions();
-    
-    // Initialiser tous les écrans une seule fois
-    _screens = [
-      const DashboardPage(),
-      const PointagePage(),
-      PdfDocumentPage(),
-      const TimesheetCalendarWidget(),
-      AnomalyView(),
-    ];
-    
+
     // Charger les anomalies dès le démarrage pour le badge
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<AnomalyBloc>().add(const DetectAnomalies());
     });
+  }
+
+  /// Crée le widget correspondant à l'index actuel
+  Widget _buildScreen(int index) {
+    switch (index) {
+      case 0:
+        return const DashboardPage(key: ValueKey('dashboard_page'));
+      case 1:
+        return const PointagePage(key: ValueKey('pointage_page'));
+      case 2:
+        return PdfDocumentPage(key: const ValueKey('pdf_document_page'));
+      case 3:
+        return const CalendarPage(key: ValueKey('calendar_page'));
+      case 4:
+        return AnomalyView(key: const ValueKey('anomaly_view'));
+      default:
+        return const DashboardPage(key: ValueKey('dashboard_page'));
+    }
   }
 
   Future<void> _checkPermissions() async {
@@ -67,11 +73,11 @@ class _BottomNavigationBarPageState extends State<BottomNavigationBarPage> {
               // Formater la date d'aujourd'hui dans le format attendu par le BLoC
               final today = DateTime.now();
               final formattedDate = DateFormat("dd-MMM-yy").format(today);
-              
+
               // Déclencher le chargement des données pour aujourd'hui
               final bloc = context.read<TimeSheetBloc>();
               bloc.add(LoadTimeSheetDataEvent(formattedDate));
-              
+
               // Mettre à jour les anomalies en arrière-plan pour le badge
               _updateAnomaliesBadge(context);
             }
@@ -80,7 +86,7 @@ class _BottomNavigationBarPageState extends State<BottomNavigationBarPage> {
             else if (currentIndex == 3) {
               final timeSheetListBloc = context.read<TimeSheetListBloc>();
               timeSheetListBloc.add(const FindTimesheetEntriesEvent());
-              
+
               // Mettre à jour les anomalies en arrière-plan pour le badge
               _updateAnomaliesBadge(context);
             }
@@ -104,10 +110,7 @@ class _BottomNavigationBarPageState extends State<BottomNavigationBarPage> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 Expanded(
-                  child: IndexedStack(
-                    index: currentIndex,
-                    children: _screens,
-                  ),
+                  child: _buildScreen(currentIndex),
                 ),
                 const BottomNavigationBarWidget(),
               ],
@@ -119,30 +122,30 @@ class _BottomNavigationBarPageState extends State<BottomNavigationBarPage> {
   /// Met à jour les anomalies en arrière-plan pour le badge (sans interferer avec l'UI)
   void _updateAnomaliesBadge(BuildContext context) {
     final now = DateTime.now();
-    
+
     // Vérifier si le cache est encore valide
-    if (_lastAnomalyUpdate != null && 
+    if (_lastAnomalyUpdate != null &&
         now.difference(_lastAnomalyUpdate!) < _anomalyCacheWindow) {
       return; // Cache encore valide, ne pas recharger
     }
-    
+
     // Ne pas recharger les anomalies si elles sont déjà en cours de chargement
     final currentState = context.read<AnomalyBloc>().state;
     if (currentState is AnomalyLoading) {
       return; // Déjà en cours de chargement
     }
-    
+
     // Charger les anomalies uniquement si nécessaire
     if (currentState is AnomalyInitial || currentState is AnomalyError) {
       context.read<AnomalyBloc>().add(const DetectAnomalies());
       _lastAnomalyUpdate = now;
     }
   }
-  
+
   /// Vérifie si une mise à jour forcée des anomalies est nécessaire
   bool _shouldForceAnomalyUpdate() {
     final now = DateTime.now();
-    return _lastAnomalyUpdate == null || 
-           now.difference(_lastAnomalyUpdate!) > _anomalyCacheWindow;
+    return _lastAnomalyUpdate == null ||
+        now.difference(_lastAnomalyUpdate!) > _anomalyCacheWindow;
   }
 }

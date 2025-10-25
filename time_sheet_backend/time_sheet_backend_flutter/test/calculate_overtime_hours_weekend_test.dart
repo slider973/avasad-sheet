@@ -86,11 +86,12 @@ void main() {
         // Act
         final result = await useCase.execute(
           entry: weekdayEntry,
-          normalHoursThreshold: 8.0,
+          normalHoursThreshold: 8.3,
         );
 
         // Assert
-        expect(result, Duration(hours: 1)); // 9h - 8h threshold = 1h overtime
+        expect(result,
+            Duration(minutes: 42)); // 9h - 8h18 threshold = 42min overtime
       });
 
       test('should return zero for weekday without overtime flag', () async {
@@ -111,7 +112,7 @@ void main() {
         // Act
         final result = await useCase.execute(
           entry: weekdayEntry,
-          normalHoursThreshold: 8.0,
+          normalHoursThreshold: 8.3,
         );
 
         // Assert

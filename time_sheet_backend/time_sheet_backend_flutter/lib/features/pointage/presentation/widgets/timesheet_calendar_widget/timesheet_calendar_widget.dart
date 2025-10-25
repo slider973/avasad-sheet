@@ -26,7 +26,7 @@ class TimesheetCalendarWidget extends StatefulWidget {
 
 class _TimesheetCalendarWidgetState extends State<TimesheetCalendarWidget>
     with AutomaticKeepAliveClientMixin {
-  CalendarFormat _calendarFormat = CalendarFormat.month;
+  final CalendarFormat _calendarFormat = CalendarFormat.month; // Format fixe, ne peut pas changer
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
   late final ValueNotifier<List<Event>> _selectedEvents;
@@ -112,7 +112,6 @@ class _TimesheetCalendarWidgetState extends State<TimesheetCalendarWidget>
           selectedEvents: _selectedEvents,
           events: _events,
           onDaySelected: _onDaySelected,
-          onFormatChanged: _onFormatChanged,
           onPageChanged: _onPageChanged,
           onEventTap: _onEventTap,
           onLoadEvents: _loadEvents,
@@ -143,14 +142,6 @@ class _TimesheetCalendarWidgetState extends State<TimesheetCalendarWidget>
 
       // Charger également les données pour la liste complète
       context.read<TimeSheetListBloc>().add(const FindTimesheetEntriesEvent());
-    }
-  }
-
-  void _onFormatChanged(CalendarFormat format) {
-    if (_calendarFormat != format) {
-      setState(() {
-        _calendarFormat = format;
-      });
     }
   }
 

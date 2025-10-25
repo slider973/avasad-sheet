@@ -46,7 +46,8 @@ dependencies:
   isar: ^3.1.0+1
   sentry_flutter: ^9.5.0
   syncfusion_flutter_calendar: ^30.1.42
-  
+  syncfusion_localizations: ^30.1.42
+
   # Serverpod client
   time_sheet_backend_client:
     path: ../time_sheet_backend_client

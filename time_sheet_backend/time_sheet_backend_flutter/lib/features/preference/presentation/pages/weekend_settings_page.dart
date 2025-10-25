@@ -10,7 +10,7 @@ class WeekendSettingsPage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.teal,
         elevation: 0,
-        title: const Text('Paramètres Weekend'),
+        title: const Text('Heures supplémentaires'),
       ),
       body: const WeekendConfigurationWidget(),
     );

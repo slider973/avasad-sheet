@@ -1,5 +1,3 @@
-
-
 import 'dart:typed_data';
 
 class User {
@@ -16,7 +14,7 @@ class User {
     required this.company,
     this.signature,
     required this.isDeliveryManager,
-    this.normalHoursThreshold = 8.0,
+    this.normalHoursThreshold = 8.3,
   });
 
   String get fullName => '$firstName $lastName';

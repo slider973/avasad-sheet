@@ -14,12 +14,124 @@ class ReminderSettingsPage extends StatefulWidget {
   State<ReminderSettingsPage> createState() => _ReminderSettingsPageState();
 }
 
-class _ReminderSettingsPageState extends State<ReminderSettingsPage> {
+class _ReminderSettingsPageState extends State<ReminderSettingsPage>
+    with WidgetsBindingObserver {
+  bool _permissionCheckInProgress = false;
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     // Load current reminder settings when page opens
     context.read<PreferencesBloc>().add(LoadReminderSettings());
+    // Check permissions when page loads
+    _checkPermissionsOnLoad();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // Check permissions when app comes back to foreground
+    if (state == AppLifecycleState.resumed && !_permissionCheckInProgress) {
+      _checkPermissionsOnResume();
+    }
+  }
+
+  /// Check permissions when page loads
+  Future<void> _checkPermissionsOnLoad() async {
+    if (_permissionCheckInProgress) return;
+    _permissionCheckInProgress = true;
+
+    try {
+      final currentState = context.read<PreferencesBloc>().state;
+      if (currentState is PreferencesLoaded) {
+        final reminderSettings = currentState.reminderSettings;
+        if (reminderSettings != null && reminderSettings.enabled) {
+          // If reminders are enabled, check if permissions are still granted
+          final hasPermission = await _checkNotificationPermissionSilently();
+          if (!hasPermission) {
+            // Permissions were revoked, disable reminders
+            context.read<PreferencesBloc>().add(ToggleReminders(false));
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                      'Les rappels ont été désactivés car les permissions de notification ont été révoquées.'),
+                  backgroundColor: Colors.orange,
+                ),
+              );
+            }
+          }
+        }
+      }
+    } finally {
+      _permissionCheckInProgress = false;
+    }
+  }
+
+  /// Check permissions when app resumes from background
+  Future<void> _checkPermissionsOnResume() async {
+    if (_permissionCheckInProgress) return;
+    _permissionCheckInProgress = true;
+
+    try {
+      final currentState = context.read<PreferencesBloc>().state;
+      if (currentState is PreferencesLoaded) {
+        final reminderSettings = currentState.reminderSettings;
+        if (reminderSettings != null) {
+          final hasPermission = await _checkNotificationPermissionSilently();
+
+          if (reminderSettings.enabled && !hasPermission) {
+            // Reminders are enabled but permissions were revoked
+            context.read<PreferencesBloc>().add(ToggleReminders(false));
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                      'Les rappels ont été désactivés car les permissions de notification ont été révoquées.'),
+                  backgroundColor: Colors.orange,
+                ),
+              );
+            }
+          } else if (!reminderSettings.enabled && hasPermission) {
+            // Reminders are disabled but permissions are now granted
+            // Show a helpful message to the user
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text(
+                      'Les permissions de notification sont maintenant accordées. Vous pouvez activer les rappels.'),
+                  backgroundColor: Colors.green,
+                  action: SnackBarAction(
+                    label: 'Activer',
+                    textColor: Colors.white,
+                    onPressed: () {
+                      context
+                          .read<PreferencesBloc>()
+                          .add(ToggleReminders(true));
+                    },
+                  ),
+                ),
+              );
+            }
+          }
+        }
+      }
+    } finally {
+      _permissionCheckInProgress = false;
+    }
+  }
+
+  /// Check notification permission without requesting it
+  Future<bool> _checkNotificationPermissionSilently() async {
+    final status = await Permission.notification.status;
+    return status.isGranted;
   }
 
   @override
@@ -146,7 +258,8 @@ class _ReminderSettingsPageState extends State<ReminderSettingsPage> {
             if (hasPermission) {
               _toggleReminders(value);
             } else {
-              _showPermissionDeniedDialog();
+              // Don't show dialog immediately, let the user try again
+              // The permission check will show appropriate guidance
             }
           } else {
             _toggleReminders(value);
@@ -206,7 +319,15 @@ class _ReminderSettingsPageState extends State<ReminderSettingsPage> {
 
     if (status.isDenied) {
       final result = await Permission.notification.request();
-      return result.isGranted;
+      if (result.isGranted) {
+        return true;
+      } else if (result.isPermanentlyDenied) {
+        _showPermissionSettingsDialog();
+        return false;
+      } else {
+        _showPermissionDeniedDialog();
+        return false;
+      }
     }
 
     // If permanently denied, show settings dialog
@@ -225,12 +346,12 @@ class _ReminderSettingsPageState extends State<ReminderSettingsPage> {
         title: const Text('Autorisation requise'),
         content: const Text(
           'Les notifications doivent être autorisées pour recevoir des rappels de pointage. '
-          'Veuillez autoriser les notifications dans les paramètres de l\'application.',
+          'Vous pouvez réessayer d\'activer les rappels ou aller dans les paramètres pour autoriser les notifications.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Annuler'),
+            child: const Text('Réessayer plus tard'),
           ),
           TextButton(
             onPressed: () {
@@ -248,16 +369,17 @@ class _ReminderSettingsPageState extends State<ReminderSettingsPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Notifications désactivées'),
+        title: const Text('Paramètres requis'),
         content: const Text(
-          'Les notifications ont été définitivement désactivées. '
-          'Pour activer les rappels, veuillez autoriser les notifications '
-          'dans les paramètres de votre appareil.',
+          'Les notifications ont été désactivées dans les paramètres. '
+          'Pour activer les rappels, vous devez autoriser les notifications '
+          'dans les paramètres de votre appareil. Après avoir activé les notifications, '
+          'revenez dans l\'application et réessayez.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Annuler'),
+            child: const Text('Plus tard'),
           ),
           TextButton(
             onPressed: () {

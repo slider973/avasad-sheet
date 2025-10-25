@@ -215,7 +215,8 @@ class PdfDocumentLayout extends StatelessWidget {
               itemBuilder: (context, index) {
                 final pdf = pdfs[index];
                 return Card(
-                  margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+                  margin: const EdgeInsets.symmetric(
+                      vertical: 8.0, horizontal: 16.0),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(15.0),
                   ),
@@ -229,8 +230,12 @@ class PdfDocumentLayout extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
-                        pdf.fileName.endsWith('.xlsx') ? Icons.table_chart : Icons.picture_as_pdf,
-                        color: pdf.fileName.endsWith('.xlsx') ? Colors.green : Colors.red,
+                        pdf.fileName.endsWith('.xlsx')
+                            ? Icons.table_chart
+                            : Icons.picture_as_pdf,
+                        color: pdf.fileName.endsWith('.xlsx')
+                            ? Colors.green
+                            : Colors.red,
                         size: 24,
                       ),
                     ),
@@ -238,12 +243,15 @@ class PdfDocumentLayout extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            pdf.fileName.replaceAll('.pdf', '').replaceAll('.xlsx', ''),
+                            pdf.fileName
+                                .replaceAll('.pdf', '')
+                                .replaceAll('.xlsx', ''),
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
                             color: pdf.fileName.endsWith('.xlsx')
                                 ? Colors.green.withOpacity(0.2)
@@ -254,7 +262,9 @@ class PdfDocumentLayout extends StatelessWidget {
                             pdf.fileName.endsWith('.xlsx') ? 'Excel' : 'PDF',
                             style: TextStyle(
                               fontSize: 12,
-                              color: pdf.fileName.endsWith('.xlsx') ? Colors.green[700] : Colors.red[700],
+                              color: pdf.fileName.endsWith('.xlsx')
+                                  ? Colors.green[700]
+                                  : Colors.red[700],
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -262,7 +272,8 @@ class PdfDocumentLayout extends StatelessWidget {
                       ],
                     ),
                     subtitle: Text(
-                      DateFormat('dd/MM/yyyy à HH:mm', 'fr_FR').format(pdf.generatedDate),
+                      DateFormat('dd/MM/yyyy à HH:mm', 'fr_FR')
+                          .format(pdf.generatedDate),
                       style: TextStyle(color: Colors.grey[600]),
                     ),
                     trailing: SizedBox(
@@ -272,8 +283,9 @@ class PdfDocumentLayout extends StatelessWidget {
                           IconButton(
                             icon: const Icon(Icons.share, color: Colors.blue),
                             tooltip: 'Partager',
-                            onPressed: () =>
-                                pdf.fileName.endsWith('.xlsx') ? shareExcel(pdf.filePath) : sharePdf(pdf.filePath),
+                            onPressed: () => pdf.fileName.endsWith('.xlsx')
+                                ? shareExcel(pdf.filePath)
+                                : sharePdf(pdf.filePath),
                           ),
                           IconButton(
                             icon: const Icon(Icons.delete, color: Colors.red),

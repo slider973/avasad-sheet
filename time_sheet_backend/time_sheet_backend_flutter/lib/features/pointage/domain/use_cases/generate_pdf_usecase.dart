@@ -188,7 +188,14 @@ class GeneratePdfUseCase {
         final lastName =
             await getUserPreferenceUseCase.execute('lastName') ?? '';
         finalManagerName = '$firstName $lastName'.trim();
-        logger.i('   - Nom manager depuis préférences: $finalManagerName');
+
+        // Si les préférences sont vides aussi, utiliser le nom par défaut
+        if (finalManagerName.isEmpty) {
+          finalManagerName = 'Sovattha Sok';
+          logger.i('   - Nom manager par défaut: $finalManagerName');
+        } else {
+          logger.i('   - Nom manager depuis préférences: $finalManagerName');
+        }
       } else {
         logger.i('   - Nom manager fourni: $finalManagerName');
       }
@@ -344,6 +351,12 @@ class GeneratePdfUseCase {
     final company =
         await getUserPreferenceUseCase.execute('company') ?? 'Avasad';
 
+    // Récupérer le seuil d'heures normales depuis les préférences (défaut: 8.3 = 8h18)
+    final normalHoursThresholdString =
+        await getUserPreferenceUseCase.execute('normalHoursThreshold') ?? '8.3';
+    final normalHoursThreshold =
+        double.tryParse(normalHoursThresholdString) ?? 8.3;
+
     return Right(
       User(
         firstName: firstName,
@@ -351,6 +364,7 @@ class GeneratePdfUseCase {
         company: company,
         signature: await getSignatureUseCase.execute(),
         isDeliveryManager: isDeliveryManager,
+        normalHoursThreshold: normalHoursThreshold,
       ),
     );
   }
@@ -384,6 +398,15 @@ class GeneratePdfUseCase {
     logger.i(
         '🔍 Dans generatePdf - managerSignature: ${managerSignature != null ? '${managerSignature.length} octets' : 'NULL'}');
     logger.i('🔍 Dans generatePdf - managerName: $managerName');
+
+    // Utiliser le nom par défaut si aucun nom de manager n'est fourni
+    String finalManagerName = managerName ?? '';
+    if (finalManagerName.isEmpty) {
+      finalManagerName = 'Sovattha Sok';
+      logger
+          .i('🔧 Utilisation du nom de manager par défaut: $finalManagerName');
+    }
+
     if (managerSignature != null) {
       managerSignatureImage = pw.Image(pw.MemoryImage(managerSignature));
       logger.i('✅ Image signature manager créée');
@@ -406,25 +429,19 @@ class GeneratePdfUseCase {
     final totalHours = weeks.fold(
         Duration.zero, (sum, week) => sum + week.calculateTotalWeekHours());
 
-    // Calcul des heures supplémentaires totales et par jour
+    // Calcul des heures supplémentaires avec compensation mensuelle
     Duration totalOvertimeHours = Duration.zero;
     Map<String, Duration> overtimeByDay = {};
 
-    for (final entry in entries) {
-      // Calculer les heures supplémentaires pour tous les types d'entrées
-      // (weekends avec overtime activé OU weekdays avec hasOvertimeHours)
-      if (entry.hasOvertimeHours ||
-          (entry.isWeekendDay && entry.isWeekendOvertimeEnabled)) {
-        final overtime = await calculateOvertimeHoursUseCase.execute(
-          entry: entry,
-          normalHoursThreshold: user.normalHoursThreshold,
-        );
-        if (overtime > Duration.zero) {
-          totalOvertimeHours += overtime;
-          overtimeByDay[entry.dayDate] = overtime;
-        }
-      }
-    }
+    // Utiliser le calcul mensuel avec compensation des déficits
+    final monthlyOvertimeResult =
+        await calculateOvertimeHoursUseCase.executeMonthly(
+      entries: entries,
+      normalHoursThreshold: user.normalHoursThreshold,
+    );
+
+    totalOvertimeHours = monthlyOvertimeResult.totalOvertime;
+    overtimeByDay = monthlyOvertimeResult.overtimeByDay;
 
     pdf.addPage(
       pw.MultiPage(
@@ -441,7 +458,7 @@ class GeneratePdfUseCase {
               (week) => _buildWeekTable(week, user, entries, overtimeByDay)),
           _buildMonthTotal(totalHours, totalDays, totalOvertimeHours),
           _buildFooter(
-              signatureImage, user, managerSignatureImage, managerName),
+              signatureImage, user, managerSignatureImage, finalManagerName),
         ],
         theme: pw.ThemeData.withFont(
           base: ttf,
@@ -552,9 +569,14 @@ class GeneratePdfUseCase {
         },
         children: [
           _buildTableHeader(),
-          ...week.workday.map((day) => _buildDayRow(day,
-              _isWeekday(day.entry.dayDate), user, entries, overtimeByDay)),
-          _buildWeekTotal(week),
+          ...week.workday.map((day) => _buildDayRow(
+              day,
+              _isWeekday(day.entry.dayDate),
+              user,
+              entries,
+              overtimeByDay,
+              week)),
+          _buildWeekTotal(week, overtimeByDay, user),
         ],
       ),
     );
@@ -576,8 +598,13 @@ class GeneratePdfUseCase {
         ]);
   }
 
-  pw.TableRow _buildDayRow(Workday day, bool isWeekday, User user,
-      List<TimesheetEntry> entries, Map<String, Duration> overtimeByDay) {
+  pw.TableRow _buildDayRow(
+      Workday day,
+      bool isWeekday,
+      User user,
+      List<TimesheetEntry> entries,
+      Map<String, Duration> overtimeByDay,
+      WorkWeek week) {
     bool isHalfDayAbsence = day.entry.period == AbsencePeriod.halfDay.value;
     bool isFullDayAbsence = day.isAbsence() && !isHalfDayAbsence;
     Duration workDuration = day.calculateTotalHours();
@@ -587,11 +614,32 @@ class GeneratePdfUseCase {
     String daysWorked =
         isFullDayAbsence ? '0' : (isHalfDayAbsence ? '0.5' : '1');
 
-    // Calcul des heures supplémentaires pour ce jour
+    // Vérifier si cette semaine a des heures supplémentaires
+    bool weekHasOvertime =
+        week.workday.any((d) => overtimeByDay.containsKey(d.entry.dayDate));
+
+    // Calcul des heures supplémentaires OU déficit pour ce jour
     String overtimeHours = '';
-    if (overtimeByDay.containsKey(day.entry.dayDate) && !isFullDayAbsence) {
+    if (!isFullDayAbsence && isWeekday && weekHasOvertime) {
+      // Calculer le seuil journalier en Duration
+      final thresholdMinutes = (user.normalHoursThreshold * 60).round();
+      final thresholdDuration = Duration(minutes: thresholdMinutes);
+
+      if (overtimeByDay.containsKey(day.entry.dayDate)) {
+        // Il y a des heures supplémentaires
+        overtimeHours = _formatDuration(overtimeByDay[day.entry.dayDate]!);
+      } else if (workDuration < thresholdDuration &&
+          workDuration > Duration.zero) {
+        // Il y a un déficit (travaillé moins que le seuil) - seulement si la semaine a des heures sup
+        final deficit = thresholdDuration - workDuration;
+        overtimeHours = '-${_formatDuration(deficit)}';
+      }
+    } else if (overtimeByDay.containsKey(day.entry.dayDate) &&
+        !isFullDayAbsence) {
+      // Weekend avec heures supplémentaires
       overtimeHours = _formatDuration(overtimeByDay[day.entry.dayDate]!);
     }
+
     return pw.TableRow(
       children: [
         pw.Center(
@@ -623,8 +671,12 @@ class GeneratePdfUseCase {
             child: pw.Text(formattedDuration,
                 style: const pw.TextStyle(fontSize: 6))),
         pw.Center(
-            child:
-                pw.Text(overtimeHours, style: const pw.TextStyle(fontSize: 6))),
+            child: pw.Text(overtimeHours,
+                style: pw.TextStyle(
+                    fontSize: 6,
+                    color: overtimeHours.startsWith('-')
+                        ? PdfColors.red
+                        : PdfColors.orange))),
         pw.Center(
             child: pw.Text(_getCommentaire(day),
                 style: const pw.TextStyle(fontSize: 6))),
@@ -659,7 +711,8 @@ class GeneratePdfUseCase {
     }
   }
 
-  pw.TableRow _buildWeekTotal(WorkWeek week) {
+  pw.TableRow _buildWeekTotal(
+      WorkWeek week, Map<String, Duration> overtimeByDay, User user) {
     double daysWorked = week.workday.fold(0.0, (sum, day) {
       if (day.entry.period == AbsencePeriod.halfDay.value) {
         return sum + 0.5;
@@ -668,9 +721,47 @@ class GeneratePdfUseCase {
       }
       return sum;
     });
+
+    // Calculer le total des heures supplémentaires pour cette semaine
+    Duration weekOvertimeTotal = Duration.zero;
+    Duration weekDeficitTotal = Duration.zero;
+    bool hasOvertimeInWeek = false;
+
+    final thresholdMinutes = (user.normalHoursThreshold * 60).round();
+    final thresholdDuration = Duration(minutes: thresholdMinutes);
+
+    for (final day in week.workday) {
+      if (overtimeByDay.containsKey(day.entry.dayDate)) {
+        weekOvertimeTotal += overtimeByDay[day.entry.dayDate]!;
+        hasOvertimeInWeek = true;
+      } else if (!day.isAbsence() && _isWeekday(day.entry.dayDate)) {
+        // Calculer le déficit pour les jours de semaine
+        final workDuration = day.calculateTotalHours();
+        if (workDuration < thresholdDuration && workDuration > Duration.zero) {
+          weekDeficitTotal += (thresholdDuration - workDuration);
+        }
+      }
+    }
+
+    // Calculer le net (heures sup - déficits)
+    Duration netWeekOvertime = weekOvertimeTotal - weekDeficitTotal;
+
     String formattedDaysWorked = daysWorked.truncateToDouble() == daysWorked
         ? daysWorked.toStringAsFixed(0)
         : daysWorked.toStringAsFixed(1);
+
+    // Afficher le total seulement s'il y a des heures supplémentaires dans la semaine
+    String weekOvertimeDisplay = '';
+    if (hasOvertimeInWeek) {
+      if (netWeekOvertime.isNegative) {
+        weekOvertimeDisplay = '-${_formatDuration(netWeekOvertime.abs())}';
+      } else if (netWeekOvertime > Duration.zero) {
+        weekOvertimeDisplay = _formatDuration(netWeekOvertime);
+      } else {
+        weekOvertimeDisplay = '0h00';
+      }
+    }
+
     return pw.TableRow(
       decoration: const pw.BoxDecoration(color: PdfColors.grey200),
       children: [
@@ -684,7 +775,14 @@ class GeneratePdfUseCase {
             child: pw.Text(week.formatDuration(week.calculateTotalWeekHours()),
                 style:
                     pw.TextStyle(fontSize: 6, fontWeight: pw.FontWeight.bold))),
-        pw.Text(''),
+        pw.Center(
+            child: pw.Text(weekOvertimeDisplay,
+                style: pw.TextStyle(
+                    fontSize: 6,
+                    fontWeight: pw.FontWeight.bold,
+                    color: weekOvertimeDisplay.startsWith('-')
+                        ? PdfColors.red
+                        : PdfColors.orange))),
         pw.Text(''),
         pw.Center(
             child: pw.Text(
@@ -757,8 +855,7 @@ class GeneratePdfUseCase {
                 children: [
                   _buildSignatureColumn(
                       'Travailleur', user.fullName, signatureImage),
-                  _buildSignatureColumn(
-                      'Entreprise de mission', 'François Longchamp'),
+                  _buildSignatureColumn('Entreprise de mission', 'Nadia Aepli'),
                   _buildSignatureColumn('Delivery manager', managerName ?? '',
                       managerSignatureImage),
                 ],

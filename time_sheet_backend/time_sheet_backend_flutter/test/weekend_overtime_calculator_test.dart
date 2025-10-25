@@ -142,8 +142,10 @@ void main() {
         final result = calculator.calculateWeekdayOvertime(entry);
 
         // Assert
-        expect(result,
-            equals(const Duration(hours: 1))); // 9 - 8 = 1 hour overtime
+        expect(
+            result,
+            equals(const Duration(
+                minutes: 42))); // 9h - 8h18 = 42 minutes overtime
       });
 
       test('should return zero for weekday entries with 8 hours or less', () {
@@ -218,15 +220,17 @@ void main() {
 
         // Assert
         expect(result.weekdayOvertime,
-            equals(const Duration(hours: 1))); // 9 - 8 = 1
+            equals(const Duration(minutes: 42))); // 9h - 8h18 = 42min
         expect(result.weekendOvertime,
             equals(const Duration(hours: 6))); // All weekend hours
-        expect(result.regularHours,
-            equals(const Duration(hours: 15))); // 8 + 7 = 15
+        expect(
+            result.regularHours,
+            equals(
+                const Duration(hours: 15, minutes: 18))); // 8h18 + 7h = 15h18
         expect(result.totalOvertime,
-            equals(const Duration(hours: 7))); // 1 + 6 = 7
+            equals(const Duration(hours: 6, minutes: 42))); // 42min + 6h = 6h42
         expect(result.totalHours,
-            equals(const Duration(hours: 22))); // 15 + 7 = 22
+            equals(const Duration(hours: 22))); // 15h18 + 6h42 = 22h
         expect(result.weekdayOvertimeRate, equals(1.25));
         expect(result.weekendOvertimeRate, equals(1.5));
       });

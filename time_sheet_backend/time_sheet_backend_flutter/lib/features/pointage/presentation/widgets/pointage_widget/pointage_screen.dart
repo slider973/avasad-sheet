@@ -108,11 +108,13 @@ class PointageScreen extends StatelessWidget {
       return Scaffold(
         backgroundColor: Colors.teal[50],
         body: SafeArea(
+          bottom: false, // Exclut le padding bottom du SafeArea
           child: Stack(
             children: [
               bodyContent,
               Positioned(
-                bottom: 16,
+                bottom: MediaQuery.of(context).padding.bottom +
+                    16, // Gère manuellement le padding bottom
                 right: 16,
                 child: fab,
               ),
@@ -131,12 +133,14 @@ class PointageScreen extends StatelessWidget {
       ),
       backgroundColor: Colors.teal[50],
       body: SafeArea(
+        bottom: false, // Exclut le padding bottom du SafeArea
         child: Stack(
           children: [
             bodyContent,
             Positioned(
-              bottom: 16,
-              right: 16,
+              bottom: MediaQuery.of(context).padding.bottom +
+                  16, // Gère manuellement le padding bottom
+              right: 12,
               child: fab,
             ),
           ],
@@ -333,8 +337,8 @@ class PointageContent extends StatelessWidget {
         ),
         if (showFAB)
           Positioned(
-            bottom: 16,
-            right: 16,
+            bottom: 20,
+            right: 12,
             child: PointageFAB(
               etatActuel: etatActuel,
               onPressed: onActionPointage,
