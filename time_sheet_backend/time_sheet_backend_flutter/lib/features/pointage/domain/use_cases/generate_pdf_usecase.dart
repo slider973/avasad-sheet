@@ -17,6 +17,7 @@ import '../../../../services/logger_service.dart';
 import '../../../preference/domain/entities/user.dart';
 import '../../../preference/domain/use_cases/get_signature_usecase.dart';
 import '../../../preference/domain/use_cases/get_user_preference_use_case.dart';
+import '../../../preference/domain/repositories/overtime_configuration_repository.dart';
 import '../entities/generated_pdf.dart';
 import '../repositories/timesheet_repository.dart';
 import '../entities/work_week.dart';
@@ -27,12 +28,23 @@ import '../services/anomaly_detection_service.dart';
 import 'calculate_overtime_hours_use_case.dart';
 import 'generate_pdf_params.dart';
 
+/// Use case for generating PDF timesheets with overtime calculations
+///
+/// This use case handles PDF generation by:
+/// - Loading overtime configuration (daily threshold, rates) from OvertimeConfiguration
+/// - Organizing timesheet entries into weeks
+/// - Calculating overtime hours with deficit compensation
+/// - Generating a formatted PDF with signatures
+///
+/// The daily work threshold is loaded from OvertimeConfiguration with a fallback
+/// to the default value (8h18) if configuration loading fails.
 class GeneratePdfUseCase {
   final TimesheetRepository repository;
   final GetSignatureUseCase getSignatureUseCase;
   final GetUserPreferenceUseCase getUserPreferenceUseCase;
   final AnomalyDetectionService anomalyDetectionService;
   final CalculateOvertimeHoursUseCase calculateOvertimeHoursUseCase;
+  final OvertimeConfigurationRepository configRepository;
 
   GeneratePdfUseCase({
     required this.repository,
@@ -40,6 +52,7 @@ class GeneratePdfUseCase {
     required this.getUserPreferenceUseCase,
     required this.anomalyDetectionService,
     required this.calculateOvertimeHoursUseCase,
+    required this.configRepository,
   });
 
   final headerColor = PdfColor.fromHex('#D9D9D9'); // Gris clair pour l'en-tête
@@ -54,6 +67,16 @@ class GeneratePdfUseCase {
     logger.i(
         '   - managerSignature: ${params.managerSignature != null ? "PROVIDED (${params.managerSignature!.length} chars)" : "NULL"}');
     logger.i('   - managerName: ${params.managerName ?? "NULL"}');
+
+    // Load configuration at the beginning with error handling
+    try {
+      final config = await configRepository.getOrCreateDefaultConfiguration();
+      logger.i(
+          '✅ Configuration loaded: dailyThreshold=${config.dailyWorkThreshold}, weekdayRate=${config.weekdayOvertimeRate}, weekendRate=${config.weekendOvertimeRate}');
+    } catch (e) {
+      logger.w(
+          '⚠️ Failed to load configuration, will use defaults (8h18, rates 1.25/1.5): $e');
+    }
 
     final result = await executeWithParams(params);
 
@@ -174,6 +197,20 @@ class GeneratePdfUseCase {
       );
       debugPrint(
           '✅ Données utilisateur (depuis BDD): ${user.firstName} ${user.lastName} - ${user.company}');
+
+      // Load overtime configuration with error handling
+      debugPrint(
+          '⚙️ Chargement de la configuration des heures supplémentaires...');
+      try {
+        final config = await configRepository.getOrCreateDefaultConfiguration();
+        debugPrint(
+            '✅ Configuration chargée: dailyThreshold=${config.dailyWorkThreshold}, weekdayRate=${config.weekdayOvertimeRate}, weekendRate=${config.weekendOvertimeRate}');
+      } catch (e) {
+        logger.w(
+            'Échec du chargement de la configuration pour generateFromEntries, utilisation des valeurs par défaut (8h18, rates 1.25/1.5): $e');
+        debugPrint(
+            '⚠️ Erreur lors du chargement de la configuration, utilisation des valeurs par défaut (8h18, rates 1.25/1.5): $e');
+      }
 
       // Récupérer la signature et le nom du manager depuis les préférences locales
       Uint8List? managerSignatureBytes;
@@ -306,6 +343,20 @@ class GeneratePdfUseCase {
       });
       debugPrint(
           '✅ Préférences utilisateur récupérées pour: ${user.firstName} ${user.lastName}');
+
+      // Load overtime configuration with error handling
+      debugPrint(
+          '⚙️ Chargement de la configuration des heures supplémentaires...');
+      try {
+        final config = await configRepository.getOrCreateDefaultConfiguration();
+        debugPrint(
+            '✅ Configuration chargée: dailyThreshold=${config.dailyWorkThreshold}, weekdayRate=${config.weekdayOvertimeRate}, weekendRate=${config.weekendOvertimeRate}');
+      } catch (e) {
+        logger.w(
+            'Échec du chargement de la configuration pour _generatePdf, utilisation des valeurs par défaut (8h18, rates 1.25/1.5): $e');
+        debugPrint(
+            '⚠️ Erreur lors du chargement de la configuration, utilisation des valeurs par défaut (8h18, rates 1.25/1.5): $e');
+      }
 
       // Génération du PDF
       debugPrint('📄 Génération du fichier PDF...');
@@ -614,30 +665,24 @@ class GeneratePdfUseCase {
     String daysWorked =
         isFullDayAbsence ? '0' : (isHalfDayAbsence ? '0.5' : '1');
 
-    // Vérifier si cette semaine a des heures supplémentaires
-    bool weekHasOvertime =
-        week.workday.any((d) => overtimeByDay.containsKey(d.entry.dayDate));
-
     // Calcul des heures supplémentaires OU déficit pour ce jour
     String overtimeHours = '';
-    if (!isFullDayAbsence && isWeekday && weekHasOvertime) {
+
+    if (!isFullDayAbsence) {
       // Calculer le seuil journalier en Duration
       final thresholdMinutes = (user.normalHoursThreshold * 60).round();
       final thresholdDuration = Duration(minutes: thresholdMinutes);
 
       if (overtimeByDay.containsKey(day.entry.dayDate)) {
-        // Il y a des heures supplémentaires
+        // Il y a des heures supplémentaires (surplus brut ou heures weekend)
         overtimeHours = _formatDuration(overtimeByDay[day.entry.dayDate]!);
-      } else if (workDuration < thresholdDuration &&
+      } else if (isWeekday && workDuration < thresholdDuration &&
           workDuration > Duration.zero) {
-        // Il y a un déficit (travaillé moins que le seuil) - seulement si la semaine a des heures sup
+        // Il y a un déficit (travaillé moins que le seuil)
+        // Afficher le déficit brut pour information (même s'il est compensé mensuellement)
         final deficit = thresholdDuration - workDuration;
         overtimeHours = '-${_formatDuration(deficit)}';
       }
-    } else if (overtimeByDay.containsKey(day.entry.dayDate) &&
-        !isFullDayAbsence) {
-      // Weekend avec heures supplémentaires
-      overtimeHours = _formatDuration(overtimeByDay[day.entry.dayDate]!);
     }
 
     return pw.TableRow(
@@ -722,45 +767,47 @@ class GeneratePdfUseCase {
       return sum;
     });
 
-    // Calculer le total des heures supplémentaires pour cette semaine
-    Duration weekOvertimeTotal = Duration.zero;
+    // Calculer le total des surplus et déficits pour cette semaine
+    Duration weekSurplusTotal = Duration.zero;
     Duration weekDeficitTotal = Duration.zero;
-    bool hasOvertimeInWeek = false;
 
     final thresholdMinutes = (user.normalHoursThreshold * 60).round();
     final thresholdDuration = Duration(minutes: thresholdMinutes);
 
     for (final day in week.workday) {
+      if (day.isAbsence()) continue;
+
+      final workDuration = day.calculateTotalHours();
+      final isWeekday = _isWeekday(day.entry.dayDate);
+
       if (overtimeByDay.containsKey(day.entry.dayDate)) {
-        weekOvertimeTotal += overtimeByDay[day.entry.dayDate]!;
-        hasOvertimeInWeek = true;
-      } else if (!day.isAbsence() && _isWeekday(day.entry.dayDate)) {
-        // Calculer le déficit pour les jours de semaine
-        final workDuration = day.calculateTotalHours();
-        if (workDuration < thresholdDuration && workDuration > Duration.zero) {
-          weekDeficitTotal += (thresholdDuration - workDuration);
-        }
+        // Ce jour a un surplus (weekday ou weekend)
+        weekSurplusTotal += overtimeByDay[day.entry.dayDate]!;
+      } else if (isWeekday && workDuration < thresholdDuration &&
+                 workDuration > Duration.zero) {
+        // Jour de semaine avec déficit
+        weekDeficitTotal += (thresholdDuration - workDuration);
       }
     }
 
-    // Calculer le net (heures sup - déficits)
-    Duration netWeekOvertime = weekOvertimeTotal - weekDeficitTotal;
+    // Calculer le net de la semaine (surplus - déficits)
+    Duration netWeekOvertime = weekSurplusTotal - weekDeficitTotal;
 
     String formattedDaysWorked = daysWorked.truncateToDouble() == daysWorked
         ? daysWorked.toStringAsFixed(0)
         : daysWorked.toStringAsFixed(1);
 
-    // Afficher le total seulement s'il y a des heures supplémentaires dans la semaine
+    // Afficher le net de la semaine (peut être positif, négatif ou zéro)
     String weekOvertimeDisplay = '';
-    if (hasOvertimeInWeek) {
-      if (netWeekOvertime.isNegative) {
-        weekOvertimeDisplay = '-${_formatDuration(netWeekOvertime.abs())}';
-      } else if (netWeekOvertime > Duration.zero) {
-        weekOvertimeDisplay = _formatDuration(netWeekOvertime);
-      } else {
-        weekOvertimeDisplay = '0h00';
-      }
+    if (netWeekOvertime.isNegative) {
+      weekOvertimeDisplay = '-${_formatDuration(netWeekOvertime.abs())}';
+    } else if (netWeekOvertime > Duration.zero) {
+      weekOvertimeDisplay = _formatDuration(netWeekOvertime);
+    } else if (weekSurplusTotal > Duration.zero || weekDeficitTotal > Duration.zero) {
+      // Afficher 0h00 seulement si la semaine a des surplus ou déficits qui se compensent
+      weekOvertimeDisplay = '0h00';
     }
+    // Sinon, laisser vide (pas de surplus ni déficit cette semaine)
 
     return pw.TableRow(
       decoration: const pw.BoxDecoration(color: PdfColors.grey200),

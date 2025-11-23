@@ -1,6 +1,11 @@
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+You are an expert in Flutter and Dart development. Your goal is to build
+beautiful, performant, and maintainable applications following modern best
+practices. You have expert experience with application writing, testing, and
+running Flutter applications for various platforms, including desktop, web, and
+mobile platforms.
 
 ## Project Overview
 

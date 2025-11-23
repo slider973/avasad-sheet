@@ -6,6 +6,7 @@ import '../pages/time-sheet/bloc/time_sheet_list/time_sheet_list_bloc.dart';
 import 'timesheet_entry_card.dart';
 import '../../../../services/weekend_overtime_calculator.dart';
 import '../../../../services/injection_container.dart';
+import '../../../preference/domain/use_cases/get_user_preference_use_case.dart';
 
 enum OvertimeFilter { all, weekdayOnly, weekendOnly }
 
@@ -18,6 +19,26 @@ class TimesheetEntriesWidget extends StatefulWidget {
 
 class _TimesheetEntriesWidgetState extends State<TimesheetEntriesWidget> {
   OvertimeFilter _currentFilter = OvertimeFilter.all;
+  double _normalHoursThreshold = 8.3; // Valeur par défaut
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNormalHoursThreshold();
+  }
+
+  Future<void> _loadNormalHoursThreshold() async {
+    final getUserPreferenceUseCase = getIt<GetUserPreferenceUseCase>();
+    final thresholdString =
+        await getUserPreferenceUseCase.execute('normalHoursThreshold') ?? '8.3';
+    final threshold = double.tryParse(thresholdString) ?? 8.3;
+
+    if (mounted) {
+      setState(() {
+        _normalHoursThreshold = threshold;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -101,6 +122,7 @@ class _TimesheetEntriesWidgetState extends State<TimesheetEntriesWidget> {
                               .read<TimeSheetListBloc>()
                               .add(const FindTimesheetEntriesEvent());
                         },
+                        normalHoursThreshold: _normalHoursThreshold,
                       );
                     },
                   ),

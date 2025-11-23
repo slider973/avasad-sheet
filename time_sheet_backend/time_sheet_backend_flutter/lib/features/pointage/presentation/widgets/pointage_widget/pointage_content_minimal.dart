@@ -31,7 +31,6 @@ class PointageContentMinimal extends StatelessWidget {
   final VacationDaysInfo vacationInfo;
   final Duration overtimeHours;
   final TimesheetEntry? currentEntry;
-  final VoidCallback onToggleOvertime;
   final ExtendedTimerState? extendedTimerState;
   final WorkTimeInfo? workTimeInfo;
   final bool isLoading;
@@ -58,7 +57,6 @@ class PointageContentMinimal extends StatelessWidget {
     required this.vacationInfo,
     required this.overtimeHours,
     this.currentEntry,
-    required this.onToggleOvertime,
     this.extendedTimerState,
     this.workTimeInfo,
     this.isLoading = false,
@@ -90,7 +88,6 @@ class PointageContentMinimal extends StatelessWidget {
           vacationInfo: vacationInfo,
           overtimeHours: overtimeHours,
           currentEntry: currentEntry,
-          onToggleOvertime: onToggleOvertime,
           extendedTimerState: extendedTimerState,
           workTimeInfo: workTimeInfo,
         ),

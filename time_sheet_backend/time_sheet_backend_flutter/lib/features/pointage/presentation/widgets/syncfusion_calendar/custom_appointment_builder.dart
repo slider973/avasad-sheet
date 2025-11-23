@@ -9,13 +9,36 @@ class CustomAppointmentBuilder {
   const CustomAppointmentBuilder._();
 
   /// Builds a custom appointment widget with enhanced styling
+  ///
+  /// [context] The build context
+  /// [details] Calendar appointment details from Syncfusion
+  /// [dailyThreshold] Optional daily work threshold for determining excess hours.
+  ///                  If not provided, defaults to 8h18. In production, this should
+  ///                  be loaded from OvertimeConfiguration.
+  ///
+  /// Example usage:
+  /// ```dart
+  /// final config = await configRepository.getOrCreateDefaultConfiguration();
+  /// appointmentBuilder: (context, details) {
+  ///   return CustomAppointmentBuilder.buildAppointment(
+  ///     context,
+  ///     details,
+  ///     dailyThreshold: config.dailyWorkThreshold,
+  ///   );
+  /// }
+  /// ```
   static Widget buildAppointment(
     BuildContext context,
-    CalendarAppointmentDetails details,
-  ) {
+    CalendarAppointmentDetails details, {
+    Duration? dailyThreshold,
+  }) {
     final appointment = details.appointments.first as TimesheetAppointment;
     final isSelected = details.isMoreAppointmentRegion;
     final bounds = details.bounds;
+
+    // Use default threshold if not provided (fallback value)
+    // In production, dailyThreshold should be loaded from OvertimeConfiguration
+    final threshold = dailyThreshold ?? const Duration(hours: 8, minutes: 18);
 
     // Determine if this is a small appointment (limited space)
     final isSmall = bounds.height < 30 || bounds.width < 80;
@@ -33,6 +56,7 @@ class CustomAppointmentBuilder {
         appointment,
         isSelected: isSelected,
         isSmall: isSmall,
+        dailyThreshold: threshold,
       ),
     );
   }
@@ -43,11 +67,14 @@ class CustomAppointmentBuilder {
     TimesheetAppointment appointment, {
     required bool isSelected,
     required bool isSmall,
+    required Duration dailyThreshold,
   }) {
     if (isSmall) {
-      return _buildCompactAppointment(context, appointment, isSelected);
+      return _buildCompactAppointment(
+          context, appointment, isSelected, dailyThreshold);
     } else {
-      return _buildDetailedAppointment(context, appointment, isSelected);
+      return _buildDetailedAppointment(
+          context, appointment, isSelected, dailyThreshold);
     }
   }
 
@@ -56,6 +83,7 @@ class CustomAppointmentBuilder {
     BuildContext context,
     TimesheetAppointment appointment,
     bool isSelected,
+    Duration dailyThreshold,
   ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
@@ -63,7 +91,7 @@ class CustomAppointmentBuilder {
         mainAxisSize: MainAxisSize.min,
         children: [
           // Type indicator icon
-          _buildTypeIcon(appointment, size: 12),
+          _buildTypeIcon(appointment, dailyThreshold, size: 12),
           const SizedBox(width: 2),
           // Abbreviated text
           Expanded(
@@ -87,6 +115,7 @@ class CustomAppointmentBuilder {
     BuildContext context,
     TimesheetAppointment appointment,
     bool isSelected,
+    Duration dailyThreshold,
   ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
@@ -98,7 +127,7 @@ class CustomAppointmentBuilder {
           Row(
             children: [
               // Type indicator icon
-              _buildTypeIcon(appointment, size: 14),
+              _buildTypeIcon(appointment, dailyThreshold, size: 14),
               const SizedBox(width: 4),
               // Subject text
               Expanded(
@@ -139,8 +168,11 @@ class CustomAppointmentBuilder {
   }
 
   /// Builds the type indicator icon based on appointment type
-  static Widget _buildTypeIcon(TimesheetAppointment appointment,
-      {required double size}) {
+  static Widget _buildTypeIcon(
+    TimesheetAppointment appointment,
+    Duration dailyThreshold, {
+    required double size,
+  }) {
     IconData iconData;
     Color iconColor = Colors.white;
 
@@ -159,7 +191,8 @@ class CustomAppointmentBuilder {
       iconData = Icons.weekend;
     } else if (appointment.isPartialWorkDay) {
       iconData = Icons.access_time;
-    } else if (appointment.timesheetEntry.hasOvertimeHours) {
+    } else if (_hasExcessHours(appointment, dailyThreshold)) {
+      // Basé sur les heures réelles par rapport au seuil configuré
       iconData = Icons.trending_up;
     } else {
       iconData = Icons.work;
@@ -170,6 +203,19 @@ class CustomAppointmentBuilder {
       size: size,
       color: iconColor,
     );
+  }
+
+  /// Checks if the entry has excess hours compared to the configured threshold
+  ///
+  /// [appointment] The timesheet appointment to check
+  /// [threshold] The daily work threshold to compare against
+  /// Returns true if the total daily hours exceed the threshold
+  static bool _hasExcessHours(
+    TimesheetAppointment appointment,
+    Duration threshold,
+  ) {
+    final duration = appointment.timesheetEntry.calculateDailyTotal();
+    return duration > threshold;
   }
 
   /// Builds status indicators for the appointment

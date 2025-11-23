@@ -1,0 +1,20 @@
+class: Expense
+table: expenses
+fields:
+  date: DateTime
+  category: String
+  description: String
+  currency: String
+  amount: double
+  mileageRate: double?, optional
+  distanceKm: int?, optional
+  departureLocation: String?, optional
+  arrivalLocation: String?, optional
+  attachmentPath: String?, optional
+  createdAt: DateTime
+  updatedAt: DateTime
+  isSynced: bool
+  isApproved: bool
+  managerComment: String?, optional
+  approvedAt: DateTime?, optional
+  userId: String

@@ -12,10 +12,28 @@ import 'weekend_detection_service.dart';
 class WeekendOvertimeCalculator {
   final WeekendDetectionService _weekendDetectionService;
 
-  /// Standard work day duration (8 hours 18 minutes)
-  static const Duration standardWorkDay = Duration(hours: 8, minutes: 18);
+  /// Default standard work day duration (8 hours 18 minutes)
+  ///
+  /// This constant serves as a fallback value when the daily threshold
+  /// is not provided as a parameter. In production, the daily threshold
+  /// should be loaded from OvertimeConfiguration and passed to calculation methods.
+  ///
+  /// Example usage:
+  /// ```dart
+  /// final config = await configRepository.getOrCreateDefaultConfiguration();
+  /// final overtime = calculator.calculateWeekdayOvertime(
+  ///   entry,
+  ///   dailyThreshold: config.dailyWorkThreshold,
+  /// );
+  /// ```
+  static const Duration defaultStandardWorkDay =
+      Duration(hours: 8, minutes: 18);
 
   /// Default overtime rates
+  ///
+  /// These constants serve as fallback values when overtime rates
+  /// are not provided as parameters. In production, the rates should
+  /// be loaded from OvertimeConfiguration and passed to calculation methods.
   static const double defaultWeekdayOvertimeRate = 1.25; // 125%
   static const double defaultWeekendOvertimeRate = 1.5; // 150%
 
@@ -42,15 +60,20 @@ class WeekendOvertimeCalculator {
   ///
   /// For weekdays, only hours exceeding the standard work day are overtime
   /// [entry] The timesheet entry to calculate weekday overtime for
+  /// [dailyThreshold] Optional daily work threshold (defaults to defaultStandardWorkDay)
   /// Returns the duration of weekday overtime hours
-  Duration calculateWeekdayOvertime(TimesheetEntry entry) {
+  Duration calculateWeekdayOvertime(
+    TimesheetEntry entry, {
+    Duration? dailyThreshold,
+  }) {
     if (entry.isWeekend || !entry.hasOvertimeHours) {
       return Duration.zero;
     }
 
+    final threshold = dailyThreshold ?? defaultStandardWorkDay;
     final totalHours = entry.calculateDailyTotal();
-    if (totalHours > standardWorkDay) {
-      return totalHours - standardWorkDay;
+    if (totalHours > threshold) {
+      return totalHours - threshold;
     }
 
     return Duration.zero;
@@ -61,11 +84,13 @@ class WeekendOvertimeCalculator {
   /// [entries] List of timesheet entries for the month
   /// [weekdayRate] Optional custom weekday overtime rate (default: 1.25)
   /// [weekendRate] Optional custom weekend overtime rate (default: 1.5)
+  /// [dailyThreshold] Optional daily work threshold (defaults to defaultStandardWorkDay)
   /// Returns an [OvertimeSummary] with detailed breakdown
   Future<OvertimeSummary> calculateMonthlyOvertime(
     List<TimesheetEntry> entries, {
     double? weekdayRate,
     double? weekendRate,
+    Duration? dailyThreshold,
   }) async {
     Duration totalWeekdayOvertime = Duration.zero;
     Duration totalWeekendOvertime = Duration.zero;
@@ -73,6 +98,7 @@ class WeekendOvertimeCalculator {
 
     final effectiveWeekdayRate = weekdayRate ?? defaultWeekdayOvertimeRate;
     final effectiveWeekendRate = weekendRate ?? defaultWeekendOvertimeRate;
+    final effectiveDailyThreshold = dailyThreshold ?? defaultStandardWorkDay;
 
     for (final entry in entries) {
       if (entry.absence != null) {
@@ -97,9 +123,9 @@ class WeekendOvertimeCalculator {
         totalWeekendOvertime += dailyTotal;
       } else {
         // Weekday OR weekend without overtime - separate regular and overtime hours
-        if (entry.hasOvertimeHours && dailyTotal > standardWorkDay) {
-          totalRegularHours += standardWorkDay;
-          totalWeekdayOvertime += (dailyTotal - standardWorkDay);
+        if (entry.hasOvertimeHours && dailyTotal > effectiveDailyThreshold) {
+          totalRegularHours += effectiveDailyThreshold;
+          totalWeekdayOvertime += (dailyTotal - effectiveDailyThreshold);
         } else {
           totalRegularHours += dailyTotal;
         }
@@ -148,18 +174,24 @@ class WeekendOvertimeCalculator {
   /// Determines the overtime type for a given entry
   ///
   /// [entry] The timesheet entry to analyze
+  /// [dailyThreshold] Optional daily work threshold (defaults to defaultStandardWorkDay)
   /// Returns the appropriate [OvertimeType]
-  Future<OvertimeType> determineOvertimeType(TimesheetEntry entry) async {
+  Future<OvertimeType> determineOvertimeType(
+    TimesheetEntry entry, {
+    Duration? dailyThreshold,
+  }) async {
     if (entry.absence != null) {
       return OvertimeType.NONE;
     }
+
+    final threshold = dailyThreshold ?? defaultStandardWorkDay;
 
     final hasWeekendOvertime = await _weekendDetectionService
             .shouldApplyWeekendOvertime(entry.date!) &&
         entry.calculateDailyTotal() > Duration.zero;
 
     final hasWeekdayOvertime =
-        !entry.isWeekend && entry.calculateDailyTotal() > standardWorkDay;
+        !entry.isWeekend && entry.calculateDailyTotal() > threshold;
 
     if (hasWeekendOvertime && hasWeekdayOvertime) {
       return OvertimeType.BOTH;

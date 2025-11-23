@@ -57,7 +57,7 @@ class ValidationOvertimeAnalyzer {
       if (await _weekendDetectionService
           .shouldApplyWeekendOvertime(entry.date!)) {
         weekendDaysWorked++;
-      } else if (dailyTotal > WeekendOvertimeCalculator.standardWorkDay) {
+      } else if (dailyTotal > WeekendOvertimeCalculator.defaultStandardWorkDay) {
         weekdayOvertimeDays++;
       }
     }

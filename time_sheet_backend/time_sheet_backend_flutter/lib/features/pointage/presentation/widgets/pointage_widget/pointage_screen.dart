@@ -33,11 +33,11 @@ class PointageScreen extends StatelessWidget {
   final VacationDaysInfo vacationInfo;
   final Duration overtimeHours;
   final TimesheetEntry? currentEntry;
-  final VoidCallback onToggleOvertime;
   final ExtendedTimerState? extendedTimerState;
   final WorkTimeInfo? workTimeInfo;
   final bool isLoading;
   final bool showAppBar; // Nouveau paramètre pour contrôler l'AppBar
+  final Duration? dailyWorkThreshold; // Objectif journalier configurable
 
   const PointageScreen({
     super.key,
@@ -60,11 +60,11 @@ class PointageScreen extends StatelessWidget {
     required this.vacationInfo,
     required this.overtimeHours,
     this.currentEntry,
-    required this.onToggleOvertime,
     this.extendedTimerState,
     this.workTimeInfo,
     this.isLoading = false,
     this.showAppBar = true, // Par défaut, affiche l'AppBar
+    this.dailyWorkThreshold,
   });
 
   @override
@@ -89,9 +89,9 @@ class PointageScreen extends StatelessWidget {
       vacationInfo: vacationInfo,
       overtimeHours: overtimeHours,
       currentEntry: currentEntry,
-      onToggleOvertime: onToggleOvertime,
       extendedTimerState: extendedTimerState,
       workTimeInfo: workTimeInfo,
+      dailyWorkThreshold: dailyWorkThreshold,
     );
 
     final fab = PointageFAB(
@@ -172,7 +172,6 @@ class PointageScreenCompact extends StatelessWidget {
   final VacationDaysInfo vacationInfo;
   final Duration overtimeHours;
   final TimesheetEntry? currentEntry;
-  final VoidCallback onToggleOvertime;
   final ExtendedTimerState? extendedTimerState;
   final WorkTimeInfo? workTimeInfo;
   final bool isLoading;
@@ -198,7 +197,6 @@ class PointageScreenCompact extends StatelessWidget {
     required this.vacationInfo,
     required this.overtimeHours,
     this.currentEntry,
-    required this.onToggleOvertime,
     this.extendedTimerState,
     this.workTimeInfo,
     this.isLoading = false,
@@ -227,7 +225,6 @@ class PointageScreenCompact extends StatelessWidget {
         vacationInfo: vacationInfo,
         overtimeHours: overtimeHours,
         currentEntry: currentEntry,
-        onToggleOvertime: onToggleOvertime,
         extendedTimerState: extendedTimerState,
         workTimeInfo: workTimeInfo,
       ),
@@ -264,7 +261,6 @@ class PointageContent extends StatelessWidget {
   final VacationDaysInfo vacationInfo;
   final Duration overtimeHours;
   final TimesheetEntry? currentEntry;
-  final VoidCallback onToggleOvertime;
   final ExtendedTimerState? extendedTimerState;
   final WorkTimeInfo? workTimeInfo;
   final bool isLoading;
@@ -292,7 +288,6 @@ class PointageContent extends StatelessWidget {
     required this.vacationInfo,
     required this.overtimeHours,
     this.currentEntry,
-    required this.onToggleOvertime,
     this.extendedTimerState,
     this.workTimeInfo,
     this.isLoading = false,
@@ -330,7 +325,6 @@ class PointageContent extends StatelessWidget {
             vacationInfo: vacationInfo,
             overtimeHours: overtimeHours,
             currentEntry: currentEntry,
-            onToggleOvertime: onToggleOvertime,
             extendedTimerState: extendedTimerState,
             workTimeInfo: workTimeInfo,
           ),
@@ -376,7 +370,6 @@ extension PointageScreenBuilder on Widget {
     required VacationDaysInfo vacationInfo,
     required Duration overtimeHours,
     TimesheetEntry? currentEntry,
-    required VoidCallback onToggleOvertime,
     ExtendedTimerState? extendedTimerState,
     WorkTimeInfo? workTimeInfo,
     bool isLoading = false,
@@ -405,7 +398,6 @@ extension PointageScreenBuilder on Widget {
         vacationInfo: vacationInfo,
         overtimeHours: overtimeHours,
         currentEntry: currentEntry,
-        onToggleOvertime: onToggleOvertime,
         extendedTimerState: extendedTimerState,
         workTimeInfo: workTimeInfo,
         isLoading: isLoading,
@@ -432,7 +424,6 @@ extension PointageScreenBuilder on Widget {
       vacationInfo: vacationInfo,
       overtimeHours: overtimeHours,
       currentEntry: currentEntry,
-      onToggleOvertime: onToggleOvertime,
       extendedTimerState: extendedTimerState,
       workTimeInfo: workTimeInfo,
       isLoading: isLoading,

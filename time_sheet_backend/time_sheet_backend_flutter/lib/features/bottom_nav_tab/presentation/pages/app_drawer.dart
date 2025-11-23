@@ -4,6 +4,7 @@ import '../../../pointage/presentation/pages/pointage/pointage_page.dart';
 import '../../../pointage/presentation/pages/dashboard/dashboard_page.dart';
 import '../../../preference/presentation/pages/preference.dart';
 import '../../../validation/presentation/pages/validation_menu_page.dart';
+import '../../../expense/presentation/pages/expense_list_page.dart';
 import 'bottom_navigation_bar.dart';
 
 class AppDrawer extends StatelessWidget {
@@ -109,6 +110,19 @@ class AppDrawer extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (context) => const PointagePage()),
+                    );
+                  },
+                ),
+                _buildMenuItem(
+                  context,
+                  icon: Icons.receipt_long,
+                  title: 'Notes de frais',
+                  subtitle: 'Gérer vos dépenses professionnelles',
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const ExpenseListPage()),
                     );
                   },
                 ),

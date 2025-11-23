@@ -20,6 +20,9 @@ abstract class TimesheetEntry implements _i1.SerializableModel {
     required this.endAfternoon,
     required this.isAbsence,
     required this.hasOvertimeHours,
+    this.isWeekendDay,
+    this.isWeekendOvertimeEnabled,
+    this.overtimeType,
   });
 
   factory TimesheetEntry({
@@ -30,6 +33,9 @@ abstract class TimesheetEntry implements _i1.SerializableModel {
     required String endAfternoon,
     required bool isAbsence,
     required bool hasOvertimeHours,
+    bool? isWeekendDay,
+    bool? isWeekendOvertimeEnabled,
+    String? overtimeType,
   }) = _TimesheetEntryImpl;
 
   factory TimesheetEntry.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -41,6 +47,10 @@ abstract class TimesheetEntry implements _i1.SerializableModel {
       endAfternoon: jsonSerialization['endAfternoon'] as String,
       isAbsence: jsonSerialization['isAbsence'] as bool,
       hasOvertimeHours: jsonSerialization['hasOvertimeHours'] as bool,
+      isWeekendDay: jsonSerialization['isWeekendDay'] as bool?,
+      isWeekendOvertimeEnabled:
+          jsonSerialization['isWeekendOvertimeEnabled'] as bool?,
+      overtimeType: jsonSerialization['overtimeType'] as String?,
     );
   }
 
@@ -58,6 +68,12 @@ abstract class TimesheetEntry implements _i1.SerializableModel {
 
   bool hasOvertimeHours;
 
+  bool? isWeekendDay;
+
+  bool? isWeekendOvertimeEnabled;
+
+  String? overtimeType;
+
   /// Returns a shallow copy of this [TimesheetEntry]
   /// with some or all fields replaced by the given arguments.
   @_i1.useResult
@@ -69,6 +85,9 @@ abstract class TimesheetEntry implements _i1.SerializableModel {
     String? endAfternoon,
     bool? isAbsence,
     bool? hasOvertimeHours,
+    bool? isWeekendDay,
+    bool? isWeekendOvertimeEnabled,
+    String? overtimeType,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -80,6 +99,10 @@ abstract class TimesheetEntry implements _i1.SerializableModel {
       'endAfternoon': endAfternoon,
       'isAbsence': isAbsence,
       'hasOvertimeHours': hasOvertimeHours,
+      if (isWeekendDay != null) 'isWeekendDay': isWeekendDay,
+      if (isWeekendOvertimeEnabled != null)
+        'isWeekendOvertimeEnabled': isWeekendOvertimeEnabled,
+      if (overtimeType != null) 'overtimeType': overtimeType,
     };
   }
 
@@ -88,6 +111,8 @@ abstract class TimesheetEntry implements _i1.SerializableModel {
     return _i1.SerializationManager.encode(this);
   }
 }
+
+class _Undefined {}
 
 class _TimesheetEntryImpl extends TimesheetEntry {
   _TimesheetEntryImpl({
@@ -98,6 +123,9 @@ class _TimesheetEntryImpl extends TimesheetEntry {
     required String endAfternoon,
     required bool isAbsence,
     required bool hasOvertimeHours,
+    bool? isWeekendDay,
+    bool? isWeekendOvertimeEnabled,
+    String? overtimeType,
   }) : super._(
           dayDate: dayDate,
           startMorning: startMorning,
@@ -106,6 +134,9 @@ class _TimesheetEntryImpl extends TimesheetEntry {
           endAfternoon: endAfternoon,
           isAbsence: isAbsence,
           hasOvertimeHours: hasOvertimeHours,
+          isWeekendDay: isWeekendDay,
+          isWeekendOvertimeEnabled: isWeekendOvertimeEnabled,
+          overtimeType: overtimeType,
         );
 
   /// Returns a shallow copy of this [TimesheetEntry]
@@ -120,6 +151,9 @@ class _TimesheetEntryImpl extends TimesheetEntry {
     String? endAfternoon,
     bool? isAbsence,
     bool? hasOvertimeHours,
+    Object? isWeekendDay = _Undefined,
+    Object? isWeekendOvertimeEnabled = _Undefined,
+    Object? overtimeType = _Undefined,
   }) {
     return TimesheetEntry(
       dayDate: dayDate ?? this.dayDate,
@@ -129,6 +163,11 @@ class _TimesheetEntryImpl extends TimesheetEntry {
       endAfternoon: endAfternoon ?? this.endAfternoon,
       isAbsence: isAbsence ?? this.isAbsence,
       hasOvertimeHours: hasOvertimeHours ?? this.hasOvertimeHours,
+      isWeekendDay: isWeekendDay is bool? ? isWeekendDay : this.isWeekendDay,
+      isWeekendOvertimeEnabled: isWeekendOvertimeEnabled is bool?
+          ? isWeekendOvertimeEnabled
+          : this.isWeekendOvertimeEnabled,
+      overtimeType: overtimeType is String? ? overtimeType : this.overtimeType,
     );
   }
 }

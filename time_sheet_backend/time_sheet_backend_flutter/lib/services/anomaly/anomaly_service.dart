@@ -4,6 +4,9 @@ import 'package:time_sheet/features/pointage/data/models/timesheet_entry/timeshe
 
 import 'anomaly_generator.dart';
 import 'insufficient_hours_rule.dart';
+import 'excessive_hours_rule.dart';
+import 'insufficient_break_rule.dart';
+import 'unusual_hours_rule.dart';
 
 class AnomalyService {
   final Isar isar;
@@ -13,6 +16,9 @@ class AnomalyService {
   Future<void> createAnomaliesForCurrentMonth() async {
     final validators = [
       InsufficientHoursRule(),
+      ExcessiveHoursRule(),
+      InsufficientBreakRule(),
+      UnusualHoursRule(),
     ];
 
     final anomalyGenerator = AnomalyGenerator(isar, validators);

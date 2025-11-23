@@ -7,8 +7,8 @@ import 'package:time_sheet/features/pointage/domain/entities/work_time_info.dart
 import 'package:time_sheet/features/pointage/domain/entities/timer_feature_flags.dart';
 import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_absence.dart';
 import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_screen.dart';
+import 'package:time_sheet/features/preference/domain/repositories/overtime_configuration_repository.dart';
 import 'package:time_sheet/services/injection_container.dart';
-import 'package:time_sheet/features/pointage/domain/use_cases/toggle_overtime_hours_use_case.dart';
 
 import '../../../../absence/domain/value_objects/absence_type.dart';
 import '../../../domain/entities/timesheet_entry.dart';
@@ -42,6 +42,7 @@ class _PointageWidgetState extends State<PointageWidget>
   final Duration _overtimeHours = Duration.zero;
   ExtendedTimerState? _extendedTimerState;
   WorkTimeInfo? _workTimeInfo;
+  Duration _dailyWorkThreshold = const Duration(hours: 8, minutes: 18);
 
   late AnimationController _controller;
   late Animation<double> _progressionAnimation;
@@ -49,6 +50,7 @@ class _PointageWidgetState extends State<PointageWidget>
   @override
   void initState() {
     super.initState();
+    _loadDailyWorkThreshold();
     _controller = AnimationController(
       duration: const Duration(milliseconds: 1000),
       vsync: this,
@@ -164,9 +166,9 @@ class _PointageWidgetState extends State<PointageWidget>
             weeklyTarget: _weeklyTarget,
             overtimeHours: _overtimeHours,
             currentEntry: _currentEntry,
-            onToggleOvertime: _toggleOvertime,
             extendedTimerState: _extendedTimerState,
             workTimeInfo: _workTimeInfo,
+            dailyWorkThreshold: _dailyWorkThreshold,
           );
         }
         if (state is TimeSheetLoading) {
@@ -377,15 +379,20 @@ class _PointageWidgetState extends State<PointageWidget>
     bloc.add(TimeSheetDeleteEntryEvent(entry.id!));
   }
 
-  void _toggleOvertime() async {
-    if (_currentEntry != null && _currentEntry!.id != null) {
-      final toggleUseCase = getIt<ToggleOvertimeHoursUseCase>();
-      await toggleUseCase.execute(
-        entryId: _currentEntry!.id!,
-        hasOvertimeHours: !_currentEntry!.hasOvertimeHours,
-      );
-      // Recharger les données pour refléter le changement
-      _chargerDonneesPersistees(widget.selectedDate);
+  // Méthode _toggleOvertime supprimée - calcul mensuel automatique des heures supplémentaires
+
+  Future<void> _loadDailyWorkThreshold() async {
+    try {
+      final configRepo = getIt<OvertimeConfigurationRepository>();
+      final config = await configRepo.getConfiguration();
+      if (config != null && mounted) {
+        setState(() {
+          _dailyWorkThreshold = config.dailyWorkThreshold;
+        });
+      }
+    } catch (e) {
+      // Utiliser la valeur par défaut en cas d'erreur
+      print('Erreur lors du chargement de la configuration: $e');
     }
   }
 

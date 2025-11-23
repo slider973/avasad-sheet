@@ -15,6 +15,8 @@ import 'custom_appointment_builder.dart';
 import 'calendar_loading_manager.dart';
 import 'calendar_error_handler.dart';
 import '../../../../../services/logger_service.dart';
+import '../../../../../services/injection_container.dart';
+import '../../../../preference/domain/repositories/overtime_configuration_repository.dart';
 
 /// Main Syncfusion calendar widget for displaying timesheet entries
 class SyncfusionTimesheetCalendarWidget extends StatefulWidget {
@@ -49,10 +51,16 @@ class _SyncfusionTimesheetCalendarWidgetState
   bool _isLoading = false;
   String? _errorMessage;
 
+  // Configuration
+  Duration? _dailyThreshold;
+  late OvertimeConfigurationRepository _configRepository;
+
   @override
   void initState() {
     super.initState();
+    _configRepository = getIt<OvertimeConfigurationRepository>();
     _initializeCalendar();
+    _loadConfiguration();
     _loadTimesheetData();
   }
 
@@ -84,6 +92,30 @@ class _SyncfusionTimesheetCalendarWidgetState
     final now = DateTime.now();
     _minDate = DateTime(now.year - 1, now.month, now.day);
     _maxDate = DateTime(now.year, now.month + 3, now.day);
+  }
+
+  /// Load overtime configuration for daily threshold
+  Future<void> _loadConfiguration() async {
+    try {
+      logger.i('Loading overtime configuration for calendar');
+      final config = await _configRepository.getOrCreateDefaultConfiguration();
+      if (mounted) {
+        setState(() {
+          _dailyThreshold = config.dailyWorkThreshold;
+        });
+        logger
+            .i('Loaded daily threshold: ${_dailyThreshold?.inMinutes} minutes');
+      }
+    } catch (e, stackTrace) {
+      logger.e('Error loading overtime configuration for calendar',
+          error: e, stackTrace: stackTrace);
+      // Use default threshold if loading fails
+      if (mounted) {
+        setState(() {
+          _dailyThreshold = const Duration(hours: 8, minutes: 18);
+        });
+      }
+    }
   }
 
   /// Load timesheet data from BLoC
@@ -320,7 +352,13 @@ class _SyncfusionTimesheetCalendarWidgetState
         onViewChanged: _onViewChanged,
 
         // Custom appointment builder for enhanced styling
-        appointmentBuilder: CustomAppointmentBuilder.buildAppointment,
+        appointmentBuilder: (context, details) {
+          return CustomAppointmentBuilder.buildAppointment(
+            context,
+            details,
+            dailyThreshold: _dailyThreshold,
+          );
+        },
 
         // Custom month cell builder for weekend/holiday styling
         monthCellBuilder: CustomAppointmentBuilder.buildMonthCell,

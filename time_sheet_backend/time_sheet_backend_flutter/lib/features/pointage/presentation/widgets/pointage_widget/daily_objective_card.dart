@@ -13,7 +13,7 @@ class DailyObjectiveCard extends StatelessWidget {
     super.key,
     required this.pointages,
     required this.currentState,
-    this.targetWorkDuration = const Duration(hours: 8),
+    this.targetWorkDuration = const Duration(hours: 8, minutes: 18),
     this.currentWorkTime,
   });
 

@@ -69,6 +69,17 @@ import '../features/validation/presentation/bloc/validation_list/validation_list
 import '../features/validation/presentation/bloc/create_validation/create_validation_bloc.dart';
 import '../features/validation/presentation/bloc/validation_detail/validation_detail_bloc.dart';
 import '../features/validation/domain/repositories/validation_repository.dart';
+import '../features/expense/data/models/expense_model.dart';
+import '../features/expense/data/data_sources/expense_local_data_source.dart';
+import '../features/expense/data/repositories/expense_repository_impl.dart';
+import '../features/expense/domain/repositories/expense_repository.dart';
+import '../features/expense/domain/use_cases/create_expense_usecase.dart';
+import '../features/expense/domain/use_cases/get_expenses_usecase.dart';
+import '../features/expense/domain/use_cases/delete_expense_usecase.dart';
+import '../features/expense/domain/use_cases/calculate_mileage_usecase.dart';
+import '../features/expense/domain/use_cases/get_monthly_report_usecase.dart';
+import '../features/expense/domain/use_cases/generate_expense_pdf_usecase.dart';
+import '../features/expense/presentation/bloc/expense_list/expense_list_bloc.dart';
 
 final getIt = GetIt.instance;
 Future<String> getInstallationPath() async {
@@ -120,7 +131,8 @@ Future<void> setup() async {
           ValidationRequestCacheSchema,
           NotificationCacheSchema,
           SyncQueueItemSchema,
-          ManagerSignatureSchema
+          ManagerSignatureSchema,
+          ExpenseModelSchema,
         ],
         directory: dir,
       );
@@ -213,7 +225,9 @@ Future<void> setup() async {
   );
 
   getIt.registerLazySingleton<CalculateOvertimeHoursUseCase>(
-    () => CalculateOvertimeHoursUseCase(),
+    () => CalculateOvertimeHoursUseCase(
+      configRepository: getIt<OvertimeConfigurationRepository>(),
+    ),
   );
 
   getIt.registerLazySingleton<GetDaysWithOvertimeUseCase>(
@@ -226,6 +240,7 @@ Future<void> setup() async {
         getUserPreferenceUseCase: getIt<GetUserPreferenceUseCase>(),
         anomalyDetectionService: getIt<AnomalyDetectionService>(),
         calculateOvertimeHoursUseCase: getIt<CalculateOvertimeHoursUseCase>(),
+        configRepository: getIt<OvertimeConfigurationRepository>(),
       ));
   getIt.registerLazySingleton<GenerateExcelUseCase>(
       () => GenerateExcelUseCase(getIt<TimesheetRepositoryImpl>()));
@@ -381,6 +396,57 @@ Future<void> setup() async {
       rejectValidation: getIt<RejectValidationUseCase>(),
       downloadPdf: getIt<DownloadValidationPdfUseCase>(),
       getTimesheetData: getIt<GetValidationTimesheetDataUseCase>(),
+    ),
+  );
+
+  // ============ EXPENSE MANAGEMENT ============
+
+  // Data sources
+  getIt.registerLazySingleton<ExpenseLocalDataSource>(
+    () => ExpenseLocalDataSource(isar: getIt<Isar>()),
+  );
+
+  // Repositories
+  getIt.registerLazySingleton<ExpenseRepository>(
+    () => ExpenseRepositoryImpl(
+      localDataSource: getIt<ExpenseLocalDataSource>(),
+    ),
+  );
+
+  // Use cases
+  getIt.registerLazySingleton<CreateExpenseUseCase>(
+    () => CreateExpenseUseCase(repository: getIt<ExpenseRepository>()),
+  );
+
+  getIt.registerLazySingleton<GetExpensesUseCase>(
+    () => GetExpensesUseCase(repository: getIt<ExpenseRepository>()),
+  );
+
+  getIt.registerLazySingleton<DeleteExpenseUseCase>(
+    () => DeleteExpenseUseCase(repository: getIt<ExpenseRepository>()),
+  );
+
+  getIt.registerLazySingleton<CalculateMileageUseCase>(
+    () => CalculateMileageUseCase(),
+  );
+
+  getIt.registerLazySingleton<GetMonthlyReportUseCase>(
+    () => GetMonthlyReportUseCase(repository: getIt<ExpenseRepository>()),
+  );
+
+  getIt.registerLazySingleton<GenerateExpensePdfUseCase>(
+    () => GenerateExpensePdfUseCase(
+      repository: getIt<ExpenseRepository>(),
+      getSignatureUseCase: getIt<GetSignatureUseCase>(),
+      getUserPreferenceUseCase: getIt<GetUserPreferenceUseCase>(),
+    ),
+  );
+
+  // BLoCs
+  getIt.registerFactory<ExpenseListBloc>(
+    () => ExpenseListBloc(
+      getMonthlyReport: getIt<GetMonthlyReportUseCase>(),
+      deleteExpense: getIt<DeleteExpenseUseCase>(),
     ),
   );
 }

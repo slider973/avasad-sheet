@@ -7,10 +7,29 @@ class MonthlyOvertimeCalculator {
   final WeekendDetectionService _weekendDetectionService;
 
   /// Durée standard de travail par jour par défaut (8h18)
+  ///
+  /// Cette constante sert de valeur de secours lorsque le seuil journalier
+  /// n'est pas fourni en paramètre. En production, le seuil journalier
+  /// devrait être chargé depuis OvertimeConfiguration et passé aux méthodes de calcul.
+  ///
+  /// Exemple d'utilisation:
+  /// ```dart
+  /// final config = await configRepository.getOrCreateDefaultConfiguration();
+  /// final summary = await calculator.calculateMonthlyOvertime(
+  ///   entries,
+  ///   dailyThreshold: config.dailyWorkThreshold,
+  ///   weekdayRate: config.weekdayOvertimeRate,
+  ///   weekendRate: config.weekendOvertimeRate,
+  /// );
+  /// ```
   static const Duration defaultStandardWorkDay =
       Duration(hours: 8, minutes: 18);
 
   /// Taux d'heures supplémentaires par défaut
+  ///
+  /// Ces constantes servent de valeurs de secours lorsque les taux
+  /// ne sont pas fournis en paramètres. En production, les taux devraient
+  /// être chargés depuis OvertimeConfiguration et passés aux méthodes de calcul.
   static const double defaultWeekdayOvertimeRate = 1.25; // 125%
   static const double defaultWeekendOvertimeRate = 1.5; // 150%
 
@@ -109,19 +128,18 @@ class MonthlyOvertimeCalculator {
         totalWorkedHours < expectedHours ? totalWorkedHours : expectedHours;
 
     // Calculer les heures supplémentaires réelles après compensation des déficits
+    // LOGIQUE: Solde net = excès - déficits (peut être négatif)
     Duration realOvertimeHours = Duration.zero;
     Duration compensatedDeficitHours = Duration.zero;
 
-    if (totalWorkedHours > expectedHours) {
-      // Il y a plus d'heures travaillées que prévu = heures supplémentaires
-      realOvertimeHours = totalWorkedHours - expectedHours;
-    } else if (totalExcessHours > totalDeficitHours) {
-      // Les excès compensent partiellement ou totalement les déficits
+    // Toujours utiliser la logique excès - déficits (solde net)
+    if (totalExcessHours > totalDeficitHours) {
+      // Les excès compensent totalement les déficits, il reste des heures sup
       compensatedDeficitHours = totalDeficitHours;
       final remainingExcess = totalExcessHours - totalDeficitHours;
       realOvertimeHours = remainingExcess;
     } else {
-      // Les déficits sont supérieurs aux excès = pas d'heures supplémentaires
+      // Les déficits sont supérieurs ou égaux aux excès = pas d'heures supplémentaires
       compensatedDeficitHours = totalExcessHours;
       realOvertimeHours = Duration.zero;
     }

@@ -5,11 +5,13 @@ import 'package:time_sheet/features/pointage/presentation/widgets/weekend_badge.
 class TimesheetEntryCard extends StatelessWidget {
   final TimesheetEntry entry;
   final VoidCallback onRefresh;
+  final double normalHoursThreshold;
 
   const TimesheetEntryCard({
     super.key,
     required this.entry,
     required this.onRefresh,
+    this.normalHoursThreshold = 8.3, // 8h18 par défaut
   });
 
   @override
@@ -135,19 +137,40 @@ class TimesheetEntryCard extends StatelessWidget {
   }
 
   Color _getTotalBackgroundColor(TimesheetEntry entry) {
-    // Seul le weekend a une couleur spéciale (orange)
-    // Les jours de semaine sont en bleu (pas d'indication journalière)
+    // Weekend avec overtime activé = orange foncé
     if (entry.isWeekend && entry.isWeekendOvertimeEnabled) {
       return Colors.deepOrange.withValues(alpha: 0.1);
+    }
+
+    // Jours de semaine : orange si > seuil configuré, sinon bleu
+    final duration = entry.calculateDailyTotal();
+    final threshold = Duration(
+      hours: normalHoursThreshold.floor(),
+      minutes: ((normalHoursThreshold % 1) * 60).round(),
+    );
+
+    if (duration > threshold) {
+      return Colors.orange.withValues(alpha: 0.1);
     } else {
       return Colors.blue.withValues(alpha: 0.1);
     }
   }
 
   Color? _getTotalTextColor(TimesheetEntry entry) {
-    // Seul le weekend a une couleur spéciale (orange)
+    // Weekend avec overtime activé = orange foncé
     if (entry.isWeekend && entry.isWeekendOvertimeEnabled) {
       return Colors.deepOrange[700];
+    }
+
+    // Jours de semaine : orange si > seuil configuré, sinon bleu
+    final duration = entry.calculateDailyTotal();
+    final threshold = Duration(
+      hours: normalHoursThreshold.floor(),
+      minutes: ((normalHoursThreshold % 1) * 60).round(),
+    );
+
+    if (duration > threshold) {
+      return Colors.orange[700];
     } else {
       return Colors.blue[700];
     }

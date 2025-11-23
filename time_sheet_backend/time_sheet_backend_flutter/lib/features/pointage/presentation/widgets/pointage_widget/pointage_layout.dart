@@ -18,7 +18,6 @@ import 'pointage_header.dart';
 import 'pointage_main_section.dart';
 import 'pointage_design_system.dart';
 import 'daily_objective_card.dart';
-import 'overtime_toggle_card.dart';
 import 'weekly_summary_card.dart';
 import 'pointage_fab.dart';
 
@@ -43,9 +42,9 @@ class PointageLayout extends StatelessWidget {
   final VacationDaysInfo vacationInfo;
   final Duration overtimeHours;
   final TimesheetEntry? currentEntry;
-  final VoidCallback onToggleOvertime;
   final ExtendedTimerState? extendedTimerState;
   final WorkTimeInfo? workTimeInfo;
+  final Duration? dailyWorkThreshold;
 
   const PointageLayout({
     super.key,
@@ -68,9 +67,9 @@ class PointageLayout extends StatelessWidget {
     required this.vacationInfo,
     required this.overtimeHours,
     this.currentEntry,
-    required this.onToggleOvertime,
     this.extendedTimerState,
     this.workTimeInfo,
+    this.dailyWorkThreshold,
   });
 
   @override
@@ -187,19 +186,13 @@ class PointageLayout extends StatelessWidget {
             pointages: pointages,
             currentState: etatActuel,
             currentWorkTime: totalDayHours,
+            targetWorkDuration: dailyWorkThreshold ?? const Duration(hours: 8, minutes: 18),
           ),
           const SizedBox(height: PointageSpacing.md),
 
-          // Toggle heures supplémentaires (exigence 4.3, 7.4)
-          if (currentEntry != null && etatActuel != 'Non commencé') ...[
-            OvertimeToggleCard(
-              isActive: currentEntry!.hasOvertimeHours,
-              onToggle: onToggleOvertime,
-              description: 'Activer pour cette journée',
-              isEnabled: true,
-            ),
-            const SizedBox(height: PointageSpacing.md),
-          ],
+          // Toggle heures supplémentaires supprimé - calcul mensuel automatique
+          // Les heures supplémentaires sont maintenant calculées automatiquement
+          // au niveau mensuel lors de la génération du PDF
 
           // Résumé hebdomadaire (exigence 4.4, 7.5)
           WeeklySummaryCard(

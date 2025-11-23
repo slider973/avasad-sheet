@@ -10,6 +10,9 @@ dependencies:
   serverpod: 2.9.1
   pdf: ^3.11.0
   crypto: ^3.0.3
+  http: ^1.2.2
+  dart_openai: ^5.1.0  # Pour l'intégration OpenAI
+  intl: ^0.20.2
 
 dev_dependencies:
   lints: '>=3.0.0 <7.0.0'
