@@ -6,12 +6,14 @@ import '../../domain/entities/expense_category.dart';
 class ExpenseCard extends StatelessWidget {
   final Expense expense;
   final VoidCallback? onDelete;
+  final VoidCallback? onEdit;
   final VoidCallback? onTap;
 
   const ExpenseCard({
     Key? key,
     required this.expense,
     this.onDelete,
+    this.onEdit,
     this.onTap,
   }) : super(key: key);
 
@@ -87,12 +89,23 @@ class ExpenseCard extends StatelessWidget {
                       ),
                     ],
                     const SizedBox(height: 4),
-                    Text(
-                      DateFormat('dd MMM yyyy', 'fr_FR').format(expense.date),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[500],
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          DateFormat('dd MMM yyyy', 'fr_FR').format(expense.date),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[500],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        _buildApprovalChip(),
+                        if (expense.attachmentPath != null &&
+                            expense.attachmentPath!.isNotEmpty) ...[
+                          const SizedBox(width: 4),
+                          Icon(Icons.attach_file, size: 14, color: Colors.grey[500]),
+                        ],
+                      ],
                     ),
                   ],
                 ),
@@ -116,14 +129,30 @@ class ExpenseCard extends StatelessWidget {
                       color: Colors.grey[600],
                     ),
                   ),
-                  if (onDelete != null) ...[
+                  if (onEdit != null || onDelete != null) ...[
                     const SizedBox(height: 8),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline, size: 20),
-                      color: Colors.red,
-                      onPressed: onDelete,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (onEdit != null)
+                          IconButton(
+                            icon: const Icon(Icons.edit_outlined, size: 20),
+                            color: Colors.blue,
+                            onPressed: onEdit,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                        if (onEdit != null && onDelete != null)
+                          const SizedBox(width: 8),
+                        if (onDelete != null)
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline, size: 20),
+                            color: Colors.red,
+                            onPressed: onDelete,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                      ],
                     ),
                   ],
                 ],
@@ -131,6 +160,50 @@ class ExpenseCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildApprovalChip() {
+    if (expense.isApproved) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+        decoration: BoxDecoration(
+          color: Colors.green.shade50,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.green.shade200),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.check_circle, size: 12, color: Colors.green.shade600),
+            const SizedBox(width: 2),
+            Text(
+              'Approuvé',
+              style: TextStyle(fontSize: 10, color: Colors.green.shade700),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.orange.shade200),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.hourglass_empty, size: 12, color: Colors.orange.shade600),
+          const SizedBox(width: 2),
+          Text(
+            'En attente',
+            style: TextStyle(fontSize: 10, color: Colors.orange.shade700),
+          ),
+        ],
       ),
     );
   }

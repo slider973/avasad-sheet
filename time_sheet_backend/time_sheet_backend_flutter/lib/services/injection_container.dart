@@ -5,8 +5,17 @@ import 'package:get_it/get_it.dart';
 import 'package:isar/isar.dart';
 import 'package:logger/logger.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:time_sheet/features/pointage/data/models/anomalies/anomalies.dart';
 
+import '../core/auth/auth_repository.dart';
+import '../core/auth/auth_repository_impl.dart';
+import '../core/services/supabase/supabase_service.dart';
+import '../features/auth/domain/use_cases/sign_in_usecase.dart';
+import '../features/auth/domain/use_cases/sign_up_usecase.dart';
+import '../features/auth/domain/use_cases/sign_out_usecase.dart';
+import '../features/auth/domain/use_cases/get_current_user_usecase.dart';
+import '../features/auth/presentation/bloc/auth_bloc.dart';
 import '../features/absence/data/models/absence.dart';
 import '../features/pointage/data/repositories/anomaly_repository_impl.dart';
 import '../features/pointage/domain/factories/anomaly_detector_factory.dart';
@@ -75,11 +84,13 @@ import '../features/expense/data/repositories/expense_repository_impl.dart';
 import '../features/expense/domain/repositories/expense_repository.dart';
 import '../features/expense/domain/use_cases/create_expense_usecase.dart';
 import '../features/expense/domain/use_cases/get_expenses_usecase.dart';
+import '../features/expense/domain/use_cases/update_expense_usecase.dart';
 import '../features/expense/domain/use_cases/delete_expense_usecase.dart';
 import '../features/expense/domain/use_cases/calculate_mileage_usecase.dart';
 import '../features/expense/domain/use_cases/get_monthly_report_usecase.dart';
 import '../features/expense/domain/use_cases/generate_expense_pdf_usecase.dart';
 import '../features/expense/presentation/bloc/expense_list/expense_list_bloc.dart';
+import '../features/manager/presentation/bloc/manager_dashboard_bloc.dart';
 
 final getIt = GetIt.instance;
 Future<String> getInstallationPath() async {
@@ -168,6 +179,33 @@ Future<void> setup() async {
 
   // Enregistrer le Logger
   getIt.registerLazySingleton<Logger>(() => Logger());
+
+  // ============ AUTHENTICATION ============
+  final supabaseClient = SupabaseService.instance.client;
+
+  getIt.registerLazySingleton<AuthRepository>(
+    () => AuthRepositoryImpl(supabaseClient: supabaseClient),
+  );
+
+  getIt.registerLazySingleton<SignInUseCase>(
+    () => SignInUseCase(getIt<AuthRepository>()),
+  );
+
+  getIt.registerLazySingleton<SignUpUseCase>(
+    () => SignUpUseCase(getIt<AuthRepository>()),
+  );
+
+  getIt.registerLazySingleton<SignOutUseCase>(
+    () => SignOutUseCase(getIt<AuthRepository>()),
+  );
+
+  getIt.registerLazySingleton<GetCurrentUserUseCase>(
+    () => GetCurrentUserUseCase(getIt<AuthRepository>()),
+  );
+
+  getIt.registerFactory<AuthBloc>(
+    () => AuthBloc(authRepository: getIt<AuthRepository>()),
+  );
 
   getIt.registerLazySingleton<LocalDatasourceImpl>(
       () => LocalDatasourceImpl(getIt<Isar>()));
@@ -422,6 +460,10 @@ Future<void> setup() async {
     () => GetExpensesUseCase(repository: getIt<ExpenseRepository>()),
   );
 
+  getIt.registerLazySingleton<UpdateExpenseUseCase>(
+    () => UpdateExpenseUseCase(repository: getIt<ExpenseRepository>()),
+  );
+
   getIt.registerLazySingleton<DeleteExpenseUseCase>(
     () => DeleteExpenseUseCase(repository: getIt<ExpenseRepository>()),
   );
@@ -448,5 +490,10 @@ Future<void> setup() async {
       getMonthlyReport: getIt<GetMonthlyReportUseCase>(),
       deleteExpense: getIt<DeleteExpenseUseCase>(),
     ),
+  );
+
+  // ============ MANAGER DASHBOARD ============
+  getIt.registerFactory<ManagerDashboardBloc>(
+    () => ManagerDashboardBloc(),
   );
 }

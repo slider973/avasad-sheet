@@ -8,6 +8,10 @@ part 'expense_model.g.dart';
 class ExpenseModel {
   Id? id;
 
+  /// UUID from PowerSync/Supabase (ignored by Isar)
+  @ignore
+  String? uuid;
+
   @Index()
   late DateTime date;
 

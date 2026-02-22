@@ -11,6 +11,10 @@ part 'timesheet_entry.g.dart';
 class TimeSheetEntryModel {
   Id id = Isar.autoIncrement;
 
+  /// UUID from PowerSync/Supabase (used during migration, ignored by Isar)
+  @ignore
+  String? uuid;
+
   late DateTime dayDate;
   late String dayOfWeekDate;
   late String startMorning;

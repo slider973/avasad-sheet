@@ -3,7 +3,7 @@ import 'package:equatable/equatable.dart';
 
 
 part 'bottom_navigation_bar_state.dart';
-enum BottomNavigationBarEvent { tab1, tab2, tab3, tab4, tab5 }
+enum BottomNavigationBarEvent { tab1, tab2, tab3, tab4, tab5, tab6 }
 class BottomNavigationBarBloc extends Bloc<BottomNavigationBarEvent, int> {
   BottomNavigationBarBloc() : super(0) {
     on<BottomNavigationBarEvent>((event, emit) {
@@ -22,6 +22,9 @@ class BottomNavigationBarBloc extends Bloc<BottomNavigationBarEvent, int> {
           break;
         case BottomNavigationBarEvent.tab5:
           emit(4);
+          break;
+        case BottomNavigationBarEvent.tab6:
+          emit(5);
           break;
       }
     });

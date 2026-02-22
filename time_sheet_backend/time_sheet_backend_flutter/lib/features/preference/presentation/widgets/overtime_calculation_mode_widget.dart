@@ -162,6 +162,9 @@ class OvertimeCalculationModeWidget extends StatelessWidget {
 
 /// Énumération pour les modes de calcul des heures supplémentaires
 enum OvertimeCalculationMode {
+  /// Calcul journalier (ancien comportement)
+  daily,
+
   /// Calcul mensuel avec compensation des déficits (système par défaut)
   monthlyWithCompensation,
 }
@@ -169,6 +172,8 @@ enum OvertimeCalculationMode {
 extension OvertimeCalculationModeExtension on OvertimeCalculationMode {
   String get displayName {
     switch (this) {
+      case OvertimeCalculationMode.daily:
+        return 'Calcul journalier';
       case OvertimeCalculationMode.monthlyWithCompensation:
         return 'Calcul mensuel avec compensation';
     }
@@ -176,6 +181,8 @@ extension OvertimeCalculationModeExtension on OvertimeCalculationMode {
 
   String get description {
     switch (this) {
+      case OvertimeCalculationMode.daily:
+        return 'Heures supplémentaires calculées chaque jour individuellement';
       case OvertimeCalculationMode.monthlyWithCompensation:
         return 'Déficits d\'heures compensés par les excès du mois (8h18/jour)';
     }
@@ -183,6 +190,8 @@ extension OvertimeCalculationModeExtension on OvertimeCalculationMode {
 
   IconData get icon {
     switch (this) {
+      case OvertimeCalculationMode.daily:
+        return Icons.today;
       case OvertimeCalculationMode.monthlyWithCompensation:
         return Icons.calendar_month;
     }

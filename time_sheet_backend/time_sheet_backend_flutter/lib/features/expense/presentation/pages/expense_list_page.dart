@@ -169,6 +169,7 @@ class _ExpenseListView extends StatelessWidget {
           final expense = state.expenses[index];
           return ExpenseCard(
             expense: expense,
+            onEdit: () => _navigateToEditExpense(context, expense),
             onDelete: () => _deleteExpense(context, expense.id!),
           );
         },
@@ -219,6 +220,19 @@ class _ExpenseListView extends StatelessWidget {
     final result = await Navigator.push<bool>(
       context,
       MaterialPageRoute(builder: (_) => const AddExpensePage()),
+    );
+
+    if (result == true && context.mounted) {
+      context.read<ExpenseListBloc>().add(const RefreshExpenses());
+    }
+  }
+
+  void _navigateToEditExpense(BuildContext context, expense) async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AddExpensePage(expense: expense),
+      ),
     );
 
     if (result == true && context.mounted) {

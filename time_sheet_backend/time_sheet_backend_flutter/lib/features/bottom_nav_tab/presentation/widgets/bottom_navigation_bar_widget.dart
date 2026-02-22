@@ -7,66 +7,63 @@ import '../pages/bloc/bottom_navigation_bar_bloc.dart';
 import '../../../pointage/presentation/pages/pdf/bloc/anomaly/anomaly_bloc.dart';
 
 class BottomNavigationBarWidget extends StatelessWidget {
-  const BottomNavigationBarWidget({super.key});
+  final bool isManager;
+
+  const BottomNavigationBarWidget({super.key, this.isManager = false});
 
   @override
   Widget build(BuildContext context) {
+    final events = [
+      BottomNavigationBarEvent.tab1,
+      BottomNavigationBarEvent.tab2,
+      BottomNavigationBarEvent.tab3,
+      BottomNavigationBarEvent.tab4,
+      BottomNavigationBarEvent.tab5,
+      if (isManager) BottomNavigationBarEvent.tab6,
+    ];
+
+    final items = <BottomNavigationBarItem>[
+      const BottomNavigationBarItem(
+        icon: Icon(Icons.dashboard),
+        label: 'Dashboard',
+      ),
+      const BottomNavigationBarItem(
+        icon: Icon(Icons.fingerprint),
+        label: 'Pointage',
+      ),
+      const BottomNavigationBarItem(
+        icon: Icon(Icons.description),
+        label: 'Time Sheet',
+      ),
+      const BottomNavigationBarItem(
+        icon: Icon(Icons.calendar_today),
+        label: 'Calendrier',
+      ),
+      const BottomNavigationBarItem(
+        icon: AnomalyIconWithBadge(),
+        label: 'Anomalies',
+      ),
+      if (isManager)
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.supervisor_account),
+          label: 'Manager',
+        ),
+    ];
+
     return BlocBuilder<BottomNavigationBarBloc, int>(
       builder: (context, currentIndex) {
+        // Clamp index to valid range
+        final safeIndex = currentIndex.clamp(0, items.length - 1);
+
         return BottomNavigationBar(
-          currentIndex: currentIndex,
+          currentIndex: safeIndex,
           onTap: (index) {
-            switch (index) {
-              case 0:
-                context
-                    .read<BottomNavigationBarBloc>()
-                    .add(BottomNavigationBarEvent.tab1);
-                break;
-              case 1:
-                context
-                    .read<BottomNavigationBarBloc>()
-                    .add(BottomNavigationBarEvent.tab2);
-                break;
-              case 2:
-                context
-                    .read<BottomNavigationBarBloc>()
-                    .add(BottomNavigationBarEvent.tab3);
-                break;
-              case 3:
-                context
-                    .read<BottomNavigationBarBloc>()
-                    .add(BottomNavigationBarEvent.tab4);
-                break;
-              case 4:
-                context
-                    .read<BottomNavigationBarBloc>()
-                    .add(BottomNavigationBarEvent.tab5);
-                break;
+            if (index < events.length) {
+              context.read<BottomNavigationBarBloc>().add(events[index]);
             }
           },
           type: BottomNavigationBarType.fixed,
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.dashboard),
-              label: 'Dashboard',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.fingerprint),
-              label: 'Pointage',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.description),
-              label: 'Time Sheet',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.calendar_today),
-              label: 'Calendrier',
-            ),
-            BottomNavigationBarItem(
-              icon: AnomalyIconWithBadge(),
-              label: 'Anomalies',
-            ),
-          ],
+          items: items,
         );
       },
     );

@@ -5,6 +5,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get_it/get_it.dart';
 import 'package:time_sheet/features/pointage/domain/use_cases/get_monthly_timesheet_entries_usecase.dart';
 
+import '../features/auth/presentation/bloc/auth_bloc.dart';
 import '../features/bottom_nav_tab/presentation/pages/bloc/bottom_navigation_bar_bloc.dart';
 
 import '../features/pointage/data/repositories/anomaly_repository_impl.dart';
@@ -50,6 +51,9 @@ class ServiceFactory extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
         providers: [
+          BlocProvider<AuthBloc>(
+            create: (context) => getIt<AuthBloc>(),
+          ),
           BlocProvider(
             create: (context) => PreferencesBloc(
               getUserPreferenceUseCase: getIt<GetUserPreferenceUseCase>(),

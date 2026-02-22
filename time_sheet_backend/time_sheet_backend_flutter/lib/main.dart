@@ -7,7 +7,7 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:syncfusion_localizations/syncfusion_localizations.dart';
 import 'package:time_sheet/services/logger_service.dart';
 import 'package:time_sheet/services/service_factory.dart';
-import 'package:time_sheet/core/services/serverpod/serverpod_service.dart';
+import 'package:time_sheet/core/services/supabase/supabase_service.dart';
 import 'dart:io';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
@@ -15,6 +15,7 @@ import 'package:timezone/timezone.dart' as tz;
 import 'features/bottom_nav_tab/presentation/pages/bottom_navigation_bar.dart';
 import 'features/preference/presentation/pages/initial_check_page.dart';
 import 'features/preference/presentation/pages/onboarding_page.dart';
+import 'features/auth/presentation/pages/login_page.dart';
 import './services/injection_container.dart' as di;
 import 'package:window_manager/window_manager.dart';
 
@@ -31,24 +32,15 @@ void main() async {
   await SentryFlutter.init(
     (options) {
       options.dsn = 'https://881fc425e6497d1454c99fe537d80968@o4507600245817344.ingest.de.sentry.io/4507600249159760';
-      // Set tracesSampleRate to 1.0 to capture 100% of transactions for performance monitoring.
-      // We recommend adjusting this value in production.
       options.tracesSampleRate = 1.0;
-      // The sampling rate for profiling is relative to tracesSampleRate
-      // Setting to 1.0 will profile 100% of sampled transactions:
       options.profilesSampleRate = 1.0;
     },
   );
 
+  // Initialize Supabase first (auth needs to be ready before DI)
+  await SupabaseService.instance.initialize();
+
   await di.setup();
-
-  // Initialiser les services
-  await ServerpodService.initialize(); // Nouveau service Serverpod
-
-  // Temporairement garder Supabase et Firebase pendant la migration
-  // TODO: Supprimer après migration complète
-  // await SupabaseService.instance.initialize();
-  // await FirebaseService.instance.initialize();
 
   initializeDateFormatting().then((_) => runApp(const MyApp()));
 }
@@ -74,7 +66,6 @@ Future<void> configWindows() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return ServiceFactory(
@@ -90,6 +81,7 @@ class MyApp extends StatelessWidget {
         routes: {
           '/main': (context) => const BottomNavigationBarPage(),
           '/onboarding': (context) => const OnboardingPage(),
+          '/login': (context) => const LoginPage(),
         },
         localizationsDelegates: const [
           GlobalMaterialLocalizations.delegate,

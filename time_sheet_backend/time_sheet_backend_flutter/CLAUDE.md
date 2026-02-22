@@ -9,157 +9,212 @@ mobile platforms.
 
 ## Project Overview
 
-**Time Sheet Application for HeyTalent** - A comprehensive Flutter timesheet management application with multi-platform support (iOS, Android, Web, Windows, macOS, Linux). Features include time tracking, absence management, PDF report generation, anomaly detection, user preferences, and onboarding flow.
+**Time Sheet Application for HeyTalent** - A comprehensive Flutter timesheet management application with multi-platform support (iOS, Android, Web, Windows, macOS, Linux). Features include time tracking, absence management, expense management, PDF report generation, anomaly detection, manager dashboard, and authentication with Supabase.
 
 ## Architecture
 
 ### Clean Architecture Implementation
 The project follows **Clean Architecture** with clear separation:
 
-- **Domain Layer**: Business logic in `lib/features/*/domain/` with entities, use cases, and repository interfaces
-- **Data Layer**: External interfaces in `lib/features/*/data/` with models (Isar annotations), data sources, and repository implementations  
+- **Domain Layer**: Business logic in `lib/features/*/domain/` with entities, use cases, and repository interfaces. Never imports data layer or infrastructure (PowerSync, Supabase).
+- **Data Layer**: External interfaces in `lib/features/*/data/` with PowerSync data sources, models, and repository implementations
 - **Presentation Layer**: UI in `lib/features/*/presentation/` using BLoC pattern for state management
+
+### Data Stack
+- **PowerSync** : Offline-first local SQLite database that auto-syncs with PostgreSQL (Supabase)
+- **Supabase Auth** : Authentication (email/password, Google Sign-In)
+- **Supabase Storage** : File storage for PDFs, signatures, receipt photos
 
 ### Feature Organization
 ```
-lib/features/
-├── pointage/          # Core time tracking functionality
-├── absence/           # Absence management (vacation, sick leave, holidays)
-├── preference/        # User preferences and settings
-└── bottom_nav_tab/    # Navigation components
+lib/
+├── core/
+│   ├── auth/                        # AuthRepository (interface + Supabase impl)
+│   ├── database/                    # PowerSync config
+│   │   ├── schema.dart              # Local SQLite table definitions
+│   │   ├── supabase_connector.dart  # PowerSync <-> Supabase connector
+│   │   └── powersync_database.dart  # PowerSyncDatabase singleton
+│   ├── error/                       # Failure classes (GeneralFailure, ServerFailure, etc.)
+│   ├── migration/                   # Isar -> PowerSync one-time migration
+│   ├── responsive/                  # Responsive layout (breakpoints, AdaptiveScaffold)
+│   └── services/
+│       ├── supabase/                # SupabaseService singleton
+│       └── storage/                 # StorageService (PDFs, signatures, receipts)
+├── features/
+│   ├── auth/                        # Login, Register, Forgot Password (BLoC)
+│   ├── pointage/                    # Core: time tracking, dashboard, calendar, anomalies, PDF
+│   ├── absence/                     # Absence management (vacation, sick, holidays)
+│   ├── expense/                     # Expense claims with receipt upload + manager approval
+│   ├── validation/                  # Manager validation workflow (Supabase + Edge Functions)
+│   ├── preference/                  # User preferences, onboarding, settings
+│   ├── manager/                     # Manager dashboard (team view, approvals, anomalies)
+│   └── bottom_nav_tab/              # Navigation (BottomNav + Drawer, role-conditional)
+└── services/
+    ├── injection_container.dart     # GetIt DI (all registrations)
+    └── service_factory.dart         # MultiBlocProvider (global BLoCs)
 ```
 
 ## Essential Development Commands
 
 ### Setup & Dependencies
 ```bash
-# Install dependencies
 flutter pub get
 
-# Generate Isar models and code generation
-flutter packages pub run build_runner build
-
-# Clean and regenerate (when models change)
+# Generate Isar models (still needed during migration period)
 flutter packages pub run build_runner build --delete-conflicting-outputs
+```
+
+### Running
+```bash
+flutter run                    # Mobile (default device)
+flutter run -d chrome          # Web
+flutter run -d macos           # Desktop
 ```
 
 ### Testing & Quality
 ```bash
-# Run all tests
-flutter test
-
-# Run specific test file
-flutter test test/[test_file]_test.dart
-
-# Run tests with coverage
-flutter test --coverage
+flutter test                          # All tests
+flutter test test/[test_file].dart    # Specific test
+flutter test --coverage               # With coverage
 ```
 
 ### Build Commands
 ```bash
-# Development builds
-flutter run                    # Hot reload development
-flutter build apk --debug      # Android debug
-flutter build ios --debug      # iOS debug
-
-# Release builds  
-flutter build apk --release    # Android release
-flutter build ios --release    # iOS release
-flutter build web --release    # Web release
-flutter build windows          # Windows
-flutter build macos            # macOS
+flutter build apk --release    # Android
+flutter build ios --release    # iOS
+flutter build web --release    # Web
+flutter build macos --release  # macOS
 ```
 
 ## Key Technologies
 
-### Database & State Management
-- **Isar Database**: NoSQL database with auto-generated models (`*.g.dart` files)
-- **BLoC Pattern**: `flutter_bloc` for state management with events/states/blocs
-- **GetIt**: Dependency injection container (`services/injection_container.dart`)
+### Database & Sync
+- **PowerSync** (`powersync`): Offline-first SQLite with auto-sync to PostgreSQL
+- **Supabase Flutter** (`supabase_flutter`): Auth, Storage, Edge Function calls
+- Schema defined in `lib/core/database/schema.dart` (must match PostgreSQL schema)
 
-### Core Features
-- **PDF Generation**: Custom PDF layouts with `pdf ^3.11.0`
-- **Calendar Integration**: `table_calendar` and `syncfusion_flutter_calendar`
-- **Charts & Analytics**: `fl_chart` and `syncfusion_flutter_charts`
-- **Notifications**: `flutter_local_notifications` with timezone support
-- **Digital Signature**: `signature` package for capturing user signatures
-- **Onboarding**: First-run experience to collect user info (name, company, signature)
+### State Management
+- **BLoC Pattern** (`flutter_bloc`): Events/states/blocs for all features
+- **GetIt**: Dependency injection (`services/injection_container.dart`)
+- **fpdart**: Functional error handling with `Either<Failure, T>`
+
+### UI & Features
+- **Syncfusion**: Calendar (`syncfusion_flutter_calendar`) and charts (`syncfusion_flutter_charts`)
+- **PDF Generation**: `pdf` package, use case `GeneratePdfUseCase`
+- **Digital Signature**: `signature` package
+- **Image Picker**: `image_picker` for receipt photos
+- **Responsive**: `lib/core/responsive/responsive_layout.dart` (mobile/tablet/desktop breakpoints)
 
 ## Development Patterns
 
-### Dependency Injection Setup
-All services and use cases are registered in `services/injection_container.dart` using lazy singletons. Database paths are platform-specific (Windows uses `%LOCALAPPDATA%/TimeSheet`).
+### Dependency Injection
+All services, repositories, use cases, and BLoCs registered in `services/injection_container.dart` using GetIt lazy singletons and factories. BLoCs are factories (new instance per widget), use cases are singletons.
 
-### Database Schema Changes
-When modifying Isar models:
-1. Update model class with `@collection` annotation
-2. Run `flutter packages pub run build_runner build --delete-conflicting-outputs`
-3. Update schema registration in `injection_container.dart`
+### Data Source Pattern (PowerSync)
+Data sources execute SQL queries on the local PowerSync SQLite database:
+
+```dart
+// Example: reading data
+final rows = await db.getAll('SELECT * FROM timesheet_entries WHERE user_id = ?', [userId]);
+
+// Example: writing data (auto-syncs to PostgreSQL)
+await db.execute('INSERT INTO expenses (id, user_id, ...) VALUES (?, ?, ...)', [uuid, userId, ...]);
+
+// Example: watching for changes (real-time)
+db.watch('SELECT * FROM notifications WHERE user_id = ?', parameters: [userId]);
+```
 
 ### Use Case Pattern
-Business logic is encapsulated in use cases (20+ in `features/pointage/use_cases/`). Each use case follows single responsibility and is injected via GetIt.
+Business logic in single-responsibility use cases. Returns `Either<Failure, T>` (fpdart):
+
+```dart
+class CreateExpenseUseCase {
+  final ExpenseRepository repository;
+  Future<Either<Failure, Expense>> execute({...}) async { ... }
+}
+```
+
+### Role-Based Navigation
+`BottomNavigationBarPage` checks `profiles.role` via PowerSync:
+- **employee**: 5 tabs (Dashboard, Pointage, Time Sheet, Calendrier, Anomalies)
+- **manager/admin**: 6 tabs (+ Manager tab with team dashboard)
 
 ### Anomaly Detection System
-Custom anomaly detection with multiple detectors (`AnomalyDetectorFactory`) for insufficient hours, scheduling conflicts, etc.
+Extensible rule-based system using Registry pattern. Rules in `lib/features/pointage/domain/rules/`. See `lib/features/pointage/domain/rules/README.md` for adding new rules.
+
+## Critical Workflows
+
+### Authentication Flow
+```
+App Start -> Supabase.initialize() + PowerSync.initialize()
+  -> AuthBloc checks session
+    -> Not logged in -> LoginPage
+    -> Logged in, no profile -> OnboardingPage
+    -> Logged in + profile -> BottomNavigationBarPage
+```
+Key files: `lib/features/auth/presentation/bloc/auth_bloc.dart`, `lib/features/preference/presentation/pages/initial_check_page.dart`
+
+### Expense Workflow
+1. Employee creates expense (with optional receipt photo via `image_picker`)
+2. Receipt uploaded to Supabase Storage (`receipts/{userId}/{expenseId}.jpg`)
+3. Expense saved via PowerSync (syncs to PostgreSQL)
+4. Manager sees pending expenses in Manager tab -> approves/rejects
+5. Approval status syncs back to employee
+
+### Validation Workflow
+1. Employee submits validation -> Edge Function `create-validation`
+2. Manager approves -> Edge Function `approve-validation`
+3. Cron: Edge Function `check-expired` expires pending > 30 days
+
+### Isar Migration (Legacy)
+One-time migration for users upgrading from old Isar version:
+`lib/core/migration/isar_to_powersync_migration.dart`
+
+## Storage (Supabase Storage)
+
+Via `lib/core/services/storage/storage_service.dart`:
+- `pdfs/{userId}/{year}-{month}.pdf` : Timesheet PDFs
+- `signatures/{userId}/signature.png` : Digital signatures
+- `receipts/{userId}/{expenseId}.jpg` : Expense receipts
+
+## Configuration
+
+- **Supabase URL + Key**: `lib/core/services/supabase/supabase_service.dart`
+- **PowerSync URL**: `lib/core/database/powersync_database.dart`
+- **Theme**: `lib/config/theme.dart`
+- **Linting**: `analysis_options.yaml` (80-char limit disabled)
 
 ## Platform-Specific Notes
 
-### Desktop Applications
-- Fixed window size: 500x1000 for consistent UX
-- Custom database paths with proper permissions
-- Window management via `window_manager`
+### Desktop (Windows/macOS/Linux)
+- Fixed window size: 500x1000 via `window_manager`
+- Custom database paths: Windows uses `%LOCALAPPDATA%/TimeSheet`
+- Path resolution in `injection_container.dart`
 
-### Mobile Applications  
+### Mobile (iOS/Android)
 - Native splash screens with company branding
-- Multiple app icon resolutions
+- Camera/gallery access for receipt photos
+- Google Sign-In integration
 - Platform-specific permissions (camera, files, notifications)
 
-### Testing Strategy
-- Unit tests for use cases and business logic
-- Mockito for mocking dependencies
-- Test utilities in `test/test_utils.dart`
+### Web
+- Responsive layout with `ResponsiveLayout` and `AdaptiveScaffold`
+- Breakpoints: mobile (<600), tablet (<900), desktop (>=1200)
+- NavigationRail on desktop/tablet, BottomNavigationBar on mobile
+- Build: `flutter build web --release`
 
-## Recent Updates & Bug Fixes
+## Adding New Features
 
-### Timer Synchronization Fix (2025-07-10)
-- Fixed timer bug where it wasn't synchronized with first pointage
-- Modified `TimerService.initialize()` to handle null `dernierPointage` 
-- Timer now uses actual pointage time instead of `DateTime.now()`
-- Added proper handling for first pointage of the day
-
-### Navigation Restructure (2025-07-10)
-- Moved Settings tab from bottom navigation to drawer menu
-- Added existing Dashboard as first tab in bottom navigation (reused from `pointage/presentation/pages/dashboard/`)
-- Bottom navigation now has 5 tabs: Dashboard, Pointage, Time Sheet, Calendrier, Anomalies
-- Settings accessible via "Paramètres" in drawer menu
-- Updated all navigation-related BLoCs and widgets
-- Dashboard features: metrics overview, weekly progress chart, monthly summary, recent activities, quick actions
-
-### Onboarding System (2025-07-10)
-- Added `OnboardingPage` with 2-step flow: user info + signature
-- Created `InitialCheckPage` that verifies if onboarding is complete
-- Added "company" field to user preferences (no longer hardcoded as "Avasad")
-- Updated `PreferencesBloc`, `PreferencesState`, and `PreferencesEvent` for company support
-- Fixed Scaffold context error in `PreferencesFormV2` using Builder pattern
-
-### Navigation Architecture Fix (2025-07-10)
-- Fixed setState after dispose error in PointageWidget by checking mounted in animation listener
-- Added mounted check for async operations (showTimePicker)
-- Navigation structure:
-  - Main Scaffold with drawer is in `BottomNavigationBarPage`
-  - Tab pages (PointagePage, etc.) have their own Scaffold for independence
-  - Drawer is accessible via swipe gesture on mobile
-  - Secondary pages (from drawer) show back arrow automatically
-- Removed menu burger from tab pages to avoid Scaffold context issues
-
-### User Preferences Enhancement
-- Extended `User` entity to include company field
-- Updated PDF generation to use company from preferences
-- Modified preference forms to include company field
-- Created reusable `SignaturePadWidget` component
+1. Create `lib/features/my_feature/domain/` (entity, repository interface, use cases)
+2. Create `lib/features/my_feature/data/` (PowerSync data source with SQL queries, repository impl)
+3. Create `lib/features/my_feature/presentation/` (BLoC, pages, widgets)
+4. Register in `services/injection_container.dart`
+5. Add global BLoC to `services/service_factory.dart` if needed
+6. If new table: update `lib/core/database/schema.dart` + PostgreSQL migration + PowerSync sync rules
 
 ## Code Quality
-- Flutter lints enabled with custom analysis options
-- 80-character line limit disabled for practical development
-- French locale support (fr_CH) with localization
-- Replace print statements with logger service
+- Flutter lints with custom analysis options
+- 80-character line limit disabled
+- French locale support (fr_CH)
+- Logger service instead of print statements
+- `fpdart` Either for error handling (no exceptions in business logic)

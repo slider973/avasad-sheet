@@ -10,10 +10,14 @@ import '../../../pointage/presentation/pages/dashboard/dashboard_page.dart';
 import '../../../pointage/presentation/pages/time-sheet/bloc/time_sheet/time_sheet_bloc.dart';
 import '../../../pointage/presentation/pages/time-sheet/bloc/time_sheet_list/time_sheet_list_bloc.dart';
 import '../../../pointage/presentation/pages/calendar/calendar_page.dart';
+import '../../../manager/presentation/pages/manager_dashboard_page.dart';
+import '../../../manager/presentation/bloc/manager_dashboard_bloc.dart';
 import '../widgets/bottom_navigation_bar_widget.dart';
 import 'app_drawer.dart';
 import 'bloc/bottom_navigation_bar_bloc.dart';
 import '../../../../services/request_permission_handler.dart' as permission;
+import '../../../../core/services/supabase/supabase_service.dart';
+import '../../../../core/database/powersync_database.dart';
 
 class BottomNavigationBarPage extends StatefulWidget {
   const BottomNavigationBarPage({super.key});
@@ -27,11 +31,13 @@ class _BottomNavigationBarPageState extends State<BottomNavigationBarPage> {
   // Cache temporel pour éviter les rafraîchissements excessifs
   DateTime? _lastAnomalyUpdate;
   static const Duration _anomalyCacheWindow = Duration(minutes: 2);
+  bool _isManager = false;
 
   @override
   void initState() {
     super.initState();
     _checkPermissions();
+    _checkManagerRole();
 
     // Charger les anomalies dès le démarrage pour le badge
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -39,8 +45,37 @@ class _BottomNavigationBarPageState extends State<BottomNavigationBarPage> {
     });
   }
 
+  Future<void> _checkManagerRole() async {
+    try {
+      final db = PowerSyncDatabaseManager.database;
+      final userId = SupabaseService.instance.currentUserId;
+      if (userId == null) return;
+
+      final profile = await db.getOptional(
+        'SELECT role FROM profiles WHERE id = ?',
+        [userId],
+      );
+
+      if (mounted && profile != null) {
+        final role = profile['role'] as String? ?? 'employee';
+        setState(() {
+          _isManager = role == 'manager' || role == 'admin';
+        });
+      }
+    } catch (_) {
+      // Not a manager or DB not ready yet
+    }
+  }
+
   /// Crée le widget correspondant à l'index actuel
   Widget _buildScreen(int index) {
+    if (_isManager && index == 5) {
+      return BlocProvider(
+        create: (_) => ManagerDashboardBloc(),
+        child: const ManagerDashboardPage(key: ValueKey('manager_dashboard_page')),
+      );
+    }
+
     switch (index) {
       case 0:
         return const DashboardPage(key: ValueKey('dashboard_page'));
@@ -100,6 +135,10 @@ class _BottomNavigationBarPageState extends State<BottomNavigationBarPage> {
                 _lastAnomalyUpdate = DateTime.now();
               }
             }
+            // Manager tab (index 5) - no special action needed
+            else if (currentIndex == 5) {
+              // Manager dashboard handles its own loading
+            }
             // Pour les autres onglets, mettre à jour les anomalies en arrière-plan
             else {
               _updateAnomaliesBadge(context);
@@ -112,7 +151,7 @@ class _BottomNavigationBarPageState extends State<BottomNavigationBarPage> {
                 Expanded(
                   child: _buildScreen(currentIndex),
                 ),
-                const BottomNavigationBarWidget(),
+                BottomNavigationBarWidget(isManager: _isManager),
               ],
             );
           },
