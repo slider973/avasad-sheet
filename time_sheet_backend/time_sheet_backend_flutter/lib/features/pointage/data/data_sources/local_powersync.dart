@@ -177,9 +177,17 @@ class LocalDatasourcePowerSyncImpl implements LocalDataSource {
 
   @override
   Future<void> deleteGeneratedPdf(int pdfId) async {
-    // pdfId is a hashCode, we need to handle this differently
-    // For now, delete by matching
-    await db.execute('DELETE FROM generated_pdfs WHERE user_id = ? LIMIT 1', [_userId]);
+    final rows = await db.getAll(
+      'SELECT id FROM generated_pdfs WHERE user_id = ?',
+      [_userId],
+    );
+    for (final row in rows) {
+      final id = row['id'] as String;
+      if (id.hashCode == pdfId) {
+        await db.execute('DELETE FROM generated_pdfs WHERE id = ?', [id]);
+        return;
+      }
+    }
   }
 
   @override
