@@ -146,6 +146,33 @@ services:
     networks:
       - dev-supabase-net
 
+  # ============================================
+  # EDGE FUNCTIONS (Deno runtime)
+  # ============================================
+
+  dev-functions:
+    image: supabase/edge-runtime:v1.65.3
+    container_name: timesheet-dev-functions
+    restart: unless-stopped
+    depends_on:
+      dev-db:
+        condition: service_healthy
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
+      SUPABASE_URL: http://dev-kong:8000
+      SUPABASE_ANON_KEY: ${ANON_KEY}
+      SUPABASE_SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
+      SUPABASE_DB_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@dev-db:5432/${POSTGRES_DB}
+      VERIFY_JWT: "true"
+    volumes:
+      - ./supabase/functions:/home/deno/functions:Z
+    command:
+      - start
+      - --main-service
+      - /home/deno/functions/main
+    networks:
+      - dev-supabase-net
+
   dev-kong:
     image: kong:2.8.1
     container_name: timesheet-dev-kong
@@ -155,6 +182,7 @@ services:
       - dev-rest
       - dev-realtime
       - dev-storage
+      - dev-functions
     environment:
       KONG_DATABASE: "off"
       KONG_DECLARATIVE_CONFIG: /var/lib/kong/kong.yml

@@ -98,9 +98,18 @@ serve(async (req) => {
     // Generate a temporary signed URL for the PDF (valid 1 hour)
     let pdfSignedUrl: string | null = null;
     if (validation.pdf_url) {
+      // Extract relative path from full URL if needed
+      // e.g. "https://.../storage/v1/object/public/pdfs/userId/file.pdf" -> "userId/file.pdf"
+      let storagePath = validation.pdf_url;
+      const pdfsBucketMarker = "/pdfs/";
+      const markerIndex = storagePath.indexOf(pdfsBucketMarker);
+      if (markerIndex !== -1) {
+        storagePath = storagePath.substring(markerIndex + pdfsBucketMarker.length);
+      }
+
       const { data: urlData } = await supabase.storage
         .from("pdfs")
-        .createSignedUrl(validation.pdf_url, 3600);
+        .createSignedUrl(storagePath, 3600);
       pdfSignedUrl = urlData?.signedUrl ?? null;
     }
 

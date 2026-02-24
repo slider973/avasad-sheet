@@ -6,10 +6,13 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:flutter/foundation.dart';
 import 'package:time_sheet/features/pointage/domain/entities/generated_pdf.dart';
 import 'package:time_sheet/features/pointage/domain/repositories/timesheet_repository.dart';
 import 'package:time_sheet/features/pointage/domain/use_cases/generate_pdf_usecase.dart';
 import 'package:time_sheet/features/pointage/domain/use_cases/generate_pdf_params.dart';
+
+import '../../../../../../../core/services/storage/storage_service.dart';
 
 part 'pdf_event_simple.dart';
 part 'pdf_state_simple.dart';
@@ -61,6 +64,18 @@ class PdfBlocSimple extends Bloc<PdfEventSimple, PdfStateSimple> {
                 filePath: file.path,
                 generatedDate: DateTime.now(),
               ));
+
+              // Upload vers Supabase Storage pour accès multi-appareils
+              try {
+                await StorageService().uploadPdf(
+                  pdfBytes: pdfBytes,
+                  year: event.params.year,
+                  month: event.params.monthNumber,
+                  customFileName: fileName,
+                );
+              } catch (e) {
+                debugPrint('Failed to upload PDF to Storage: $e');
+              }
             } catch (_) {
               // La sauvegarde a échoué mais le PDF est quand même généré
             }

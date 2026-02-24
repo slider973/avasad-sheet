@@ -5,9 +5,12 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:flutter/foundation.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:time_sheet/features/pointage/domain/repositories/timesheet_repository.dart';
 import 'package:intl/intl.dart';
+
+import '../../../../../../../core/services/storage/storage_service.dart';
 
 import '../../../../../../preference/domain/entities/user.dart';
 import '../../../../../../preference/domain/use_cases/get_signature_usecase.dart';
@@ -94,7 +97,19 @@ class PdfBloc extends Bloc<PdfEvent, PdfState> {
               generatedDate: DateTime.now(),
             );
             await repository.saveGeneratedPdf(generatedPdf);
-            
+
+            // Upload vers Supabase Storage pour accès multi-appareils
+            try {
+              await StorageService().uploadPdf(
+                pdfBytes: pdfBytes,
+                year: event.year,
+                month: event.monthNumber,
+                customFileName: fileName,
+              );
+            } catch (e) {
+              debugPrint('Failed to upload PDF to Storage: $e');
+            }
+
             if (!emit.isDone) {
               emit(PdfGenerated(file.path));
               add(LoadGeneratedPdfsEvent());
@@ -145,8 +160,35 @@ class PdfBloc extends Bloc<PdfEvent, PdfState> {
       OpenPdfEvent event, Emitter<PdfState> emit) async {
     emit(PdfOpening());
     try {
-      emit(PdfOpened(event.filePath));
+      String filePath = event.filePath;
+
+      // Vérifier si le fichier existe localement
+      final file = File(filePath);
+      if (!file.existsSync()) {
+        debugPrint('PDF local non trouvé: $filePath');
+        debugPrint('Téléchargement depuis Supabase Storage...');
+        // Télécharger depuis Supabase Storage
+        final fileName = filePath.split('/').last;
+        final bytes = await StorageService().downloadPdfByName(fileName);
+        if (bytes == null || bytes.isEmpty) {
+          debugPrint('Échec du téléchargement du PDF depuis Storage');
+          emit(const PdfOpenError('Impossible de récupérer le PDF depuis le serveur.'));
+          return;
+        }
+        debugPrint('PDF téléchargé depuis Storage: ${bytes.length} bytes');
+        // Sauvegarder localement
+        final output = await getApplicationDocumentsDirectory();
+        final localDir = '${output.path}/extract-time-sheet';
+        await Directory(localDir).create(recursive: true);
+        final localFile = File('$localDir/$fileName');
+        await localFile.writeAsBytes(bytes);
+        filePath = localFile.path;
+        debugPrint('PDF sauvegardé localement: $filePath');
+      }
+
+      emit(PdfOpened(filePath));
     } catch (e) {
+      debugPrint('Erreur ouverture PDF: $e');
       emit(PdfOpenError(e.toString()));
     }
   }

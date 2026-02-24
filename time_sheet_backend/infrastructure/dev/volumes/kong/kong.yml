@@ -127,3 +127,24 @@ services:
           allow:
             - admin
             - anon
+
+  # Edge Functions
+  - name: functions-v1
+    _comment: "Edge Functions: /functions/v1/* -> http://dev-functions:9000/*"
+    url: http://dev-functions:9000/
+    routes:
+      - name: functions-v1
+        strip_path: true
+        paths:
+          - /functions/v1/
+    plugins:
+      - name: cors
+      - name: key-auth
+        config:
+          hide_credentials: false
+      - name: acl
+        config:
+          hide_groups_header: true
+          allow:
+            - admin
+            - anon

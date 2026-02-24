@@ -6,6 +6,8 @@ import 'package:time_sheet/services/logger_service.dart';
 import '../../../../core/database/powersync_database.dart';
 import '../../../../core/services/supabase/supabase_service.dart';
 import '../../../../enum/overtime_type.dart';
+import '../../../absence/data/models/absence.dart';
+import '../../../absence/data/models/absence.mapper.dart';
 import '../../../absence/domain/entities/absence_entity.dart';
 import '../../../absence/domain/value_objects/absence_type.dart';
 import '../../data/utils/time_sheet_utils.dart';
@@ -114,10 +116,24 @@ class LocalDatasourcePowerSyncImpl implements LocalDataSource {
     return entryId.hashCode; // Return int hash since domain uses int IDs
   }
 
+  static const String _selectWithAbsence = '''
+    SELECT te.*,
+      a.id as absence_id, a.start_date as absence_start_date,
+      a.end_date as absence_end_date, a.type as absence_type,
+      a.motif as absence_motif
+    FROM timesheet_entries te
+    LEFT JOIN absences a ON a.id = (
+      SELECT a2.id FROM absences a2
+      WHERE a2.timesheet_entry_id = te.id
+         OR (a2.timesheet_entry_id IS NULL AND a2.user_id = te.user_id
+             AND te.day_date >= a2.start_date AND te.day_date <= a2.end_date)
+      LIMIT 1
+    )''';
+
   @override
   Future<List<TimeSheetEntryModel>> getTimesheetEntries() async {
     final rows = await db.getAll(
-      'SELECT * FROM timesheet_entries WHERE user_id = ? ORDER BY day_date DESC',
+      '$_selectWithAbsence WHERE te.user_id = ? ORDER BY te.day_date DESC',
       [_userId],
     );
     return rows.map((row) => _rowToModel(row)).toList();
@@ -145,7 +161,7 @@ class LocalDatasourcePowerSyncImpl implements LocalDataSource {
     final endStr = DateFormat('yyyy-MM-dd').format(endDate);
 
     final rows = await db.getAll(
-      'SELECT * FROM timesheet_entries WHERE user_id = ? AND day_date >= ? AND day_date <= ? ORDER BY day_date',
+      '$_selectWithAbsence WHERE te.user_id = ? AND te.day_date >= ? AND te.day_date <= ? ORDER BY te.day_date',
       [_userId, startStr, endStr],
     );
     return rows.map((row) => _rowToModel(row)).toList();
@@ -196,7 +212,7 @@ class LocalDatasourcePowerSyncImpl implements LocalDataSource {
     final dateStr = DateFormat('yyyy-MM-dd').format(parsedDate);
 
     final row = await db.getOptional(
-      'SELECT * FROM timesheet_entries WHERE user_id = ? AND day_date = ?',
+      '$_selectWithAbsence WHERE te.user_id = ? AND te.day_date = ?',
       [_userId, dateStr],
     );
 
@@ -208,17 +224,26 @@ class LocalDatasourcePowerSyncImpl implements LocalDataSource {
 
   @override
   Future<void> deleteTimeSheet(int id) async {
-    // Since we're using UUID IDs now, we need to find by other means
-    // The int id was a hashCode, but for deletion we need the real UUID
-    // This is a compatibility shim - in practice, delete by date or UUID
+    // Find the entry whose UUID hashCode matches the given int id
     final entries = await db.getAll(
-      'SELECT id FROM timesheet_entries WHERE user_id = ? LIMIT 1',
+      'SELECT id, day_date FROM timesheet_entries WHERE user_id = ?',
       [_userId],
     );
-    if (entries.isNotEmpty) {
-      final uuid = entries.first['id'] as String;
-      await db.execute('DELETE FROM absences WHERE timesheet_entry_id = ?', [uuid]);
-      await db.execute('DELETE FROM timesheet_entries WHERE id = ?', [uuid]);
+
+    for (final entry in entries) {
+      final uuid = entry['id'] as String;
+      if (uuid.hashCode == id) {
+        final dayDate = entry['day_date'] as String;
+        // Delete linked absences (by timesheet_entry_id or by date for migrated ones)
+        await db.execute('DELETE FROM absences WHERE timesheet_entry_id = ?', [uuid]);
+        await db.execute(
+          '''DELETE FROM absences WHERE timesheet_entry_id IS NULL
+             AND user_id = ? AND start_date <= ? AND end_date >= ?''',
+          [_userId, dayDate, dayDate],
+        );
+        await db.execute('DELETE FROM timesheet_entries WHERE id = ?', [uuid]);
+        return;
+      }
     }
   }
 
@@ -228,7 +253,7 @@ class LocalDatasourcePowerSyncImpl implements LocalDataSource {
     final dateStr = DateFormat('yyyy-MM-dd').format(parsedDate);
 
     final row = await db.getOptional(
-      'SELECT * FROM timesheet_entries WHERE user_id = ? AND day_date = ?',
+      '$_selectWithAbsence WHERE te.user_id = ? AND te.day_date = ?',
       [_userId, dateStr],
     );
 
@@ -242,7 +267,7 @@ class LocalDatasourcePowerSyncImpl implements LocalDataSource {
     final dateStr = DateFormat('yyyy-MM-dd').format(parsed);
 
     final row = await db.getOptional(
-      'SELECT * FROM timesheet_entries WHERE user_id = ? AND day_date = ?',
+      '$_selectWithAbsence WHERE te.user_id = ? AND te.day_date = ?',
       [_userId, dateStr],
     );
 
@@ -287,7 +312,7 @@ class LocalDatasourcePowerSyncImpl implements LocalDataSource {
     // In PowerSync, IDs are UUIDs. We need to handle int->UUID mapping.
     // For now, retrieve all and match by hashCode
     final rows = await db.getAll(
-      'SELECT * FROM timesheet_entries WHERE user_id = ?',
+      '$_selectWithAbsence WHERE te.user_id = ?',
       [_userId],
     );
 
@@ -314,7 +339,7 @@ class LocalDatasourcePowerSyncImpl implements LocalDataSource {
     final endStr = DateFormat('yyyy-MM-dd').format(endDate);
 
     final rows = await db.getAll(
-      'SELECT * FROM timesheet_entries WHERE user_id = ? AND day_date >= ? AND day_date <= ? ORDER BY day_date',
+      '$_selectWithAbsence WHERE te.user_id = ? AND te.day_date >= ? AND te.day_date <= ? ORDER BY te.day_date',
       [_userId, startStr, endStr],
     );
 
@@ -350,7 +375,7 @@ class LocalDatasourcePowerSyncImpl implements LocalDataSource {
     }
   }
 
-  // Helper: Convert a SQLite row to TimeSheetEntryModel
+  // Helper: Convert a SQLite row (with LEFT JOIN absences) to TimeSheetEntryModel
   TimeSheetEntryModel _rowToModel(Map<String, dynamic> row) {
     final model = TimeSheetEntryModel();
     model.id = (row['id'] as String).hashCode;
@@ -371,6 +396,22 @@ class LocalDatasourcePowerSyncImpl implements LocalDataSource {
       (e) => e.name == otStr,
       orElse: () => OvertimeType.NONE,
     );
+
+    // Populate absence from LEFT JOIN data
+    final absenceId = row['absence_id'] as String?;
+    if (absenceId != null) {
+      final absence = Absence()
+        ..id = absenceId.hashCode
+        ..startDate = DateTime.parse(row['absence_start_date'] as String)
+        ..endDate = DateTime.parse(row['absence_end_date'] as String)
+        ..type = AbsenceType.values.firstWhere(
+          (t) => t.name == (row['absence_type'] as String? ?? ''),
+          orElse: () => AbsenceType.other,
+        )
+        ..motif = row['absence_motif'] as String? ?? '';
+      model.absence.value = absence;
+    }
+
     return model;
   }
 
@@ -384,6 +425,7 @@ class LocalDatasourcePowerSyncImpl implements LocalDataSource {
       startAfternoon: model.startAfternoon,
       endAfternoon: model.endAfternoon,
       absenceReason: model.absenceReason,
+      absence: model.absence.value?.toEntity(),
       period: model.period,
       hasOvertimeHours: model.hasOvertimeHours,
       isWeekendDay: model.isWeekendDay,

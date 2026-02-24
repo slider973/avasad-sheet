@@ -4,6 +4,7 @@ import 'impl/excessive_hours_rule.dart';
 import 'impl/invalid_times_rule.dart';
 import 'impl/missing_break_rule.dart';
 import 'impl/schedule_consistency_rule.dart';
+import 'impl/duplicate_times_rule.dart';
 
 /// Registre centralisé pour toutes les règles d'anomalies.
 /// 
@@ -41,11 +42,10 @@ class AnomalyRuleRegistry {
       () => ScheduleConsistencyRule(),
     );
     
-    // AJOUTER NOUVELLES RÈGLES ICI:
-    // register<MaReglePersonnalisee>(
-    //   'ma_regle_id',
-    //   () => MaReglePersonnalisee(),
-    // );
+    register<DuplicateTimesRule>(
+      'duplicate_times',
+      () => DuplicateTimesRule(),
+    );
   }
 
   /// Enregistre une nouvelle règle dans le registre

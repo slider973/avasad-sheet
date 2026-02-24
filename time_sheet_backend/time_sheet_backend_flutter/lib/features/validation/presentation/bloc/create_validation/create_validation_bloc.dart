@@ -12,6 +12,7 @@ import 'package:time_sheet/features/pointage/domain/use_cases/get_generated_pdfs
 import 'dart:io';
 import 'package:time_sheet/services/logger_service.dart';
 import 'package:time_sheet/core/services/supabase/supabase_service.dart';
+import 'package:time_sheet/core/services/storage/storage_service.dart';
 import 'package:time_sheet/features/pointage/domain/use_cases/get_monthly_timesheet_entries_usecase.dart';
 
 part 'create_validation_event.dart';
@@ -124,12 +125,25 @@ class CreateValidationBloc extends Bloc<CreateValidationEvent, CreateValidationS
       final currentState = state as CreateValidationForm;
 
       try {
-        // Lire le fichier PDF
+        // Lire le fichier PDF (local ou depuis Storage)
         final file = File(event.pdf.filePath);
+        Uint8List bytes;
         if (await file.exists()) {
-          final bytes = await file.readAsBytes();
+          bytes = await file.readAsBytes();
+        } else {
+          // Fichier local absent → télécharger depuis Supabase Storage
+          final fileName = event.pdf.filePath.split('/').last;
+          final downloaded = await StorageService().downloadPdfByName(fileName);
+          if (downloaded == null || downloaded.isEmpty) {
+            emit(currentState.copyWith(
+              error: 'Impossible de récupérer le PDF depuis le serveur',
+            ));
+            return;
+          }
+          bytes = downloaded;
+        }
 
-          // Extraire la période du nom du fichier (format: MonthName_YYYY.pdf)
+        // Extraire la période du nom du fichier (format: MonthName_YYYY.pdf)
           final fileName = event.pdf.fileName;
           logger.i('Nom du fichier PDF sélectionné: $fileName');
 
@@ -223,11 +237,6 @@ class CreateValidationBloc extends Bloc<CreateValidationEvent, CreateValidationS
               error: null,
             ));
           }
-        } else {
-          emit(currentState.copyWith(
-            error: 'Le fichier PDF n\'existe plus',
-          ));
-        }
       } catch (e) {
         emit(currentState.copyWith(
           error: 'Erreur lors de la lecture du PDF: $e',

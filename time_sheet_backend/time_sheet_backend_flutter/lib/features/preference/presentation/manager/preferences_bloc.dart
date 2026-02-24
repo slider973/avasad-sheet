@@ -5,6 +5,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import '../../../../core/services/storage/storage_service.dart';
 import '../../../../core/services/supabase/supabase_service.dart';
 import '../../../../services/logger_service.dart';
 import '../../domain/repositories/user_preference_repository.dart';
@@ -53,11 +54,11 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
     logger.i('Chargement des préférences');
     emit(PreferencesLoading());
     try {
-      final firstName =
+      var firstName =
           await getUserPreferenceUseCase.execute('firstName') ?? '';
-      final lastName = await getUserPreferenceUseCase.execute('lastName') ?? '';
-      final company = await getUserPreferenceUseCase.execute('company') ?? '';
-      final signatureBase64 =
+      var lastName = await getUserPreferenceUseCase.execute('lastName') ?? '';
+      var company = await getUserPreferenceUseCase.execute('company') ?? '';
+      var signatureBase64 =
           await getUserPreferenceUseCase.execute('signature');
       final lastGenerationDateString =
           await getUserPreferenceUseCase.execute('lastGenerationDate');
@@ -74,6 +75,69 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
           await getUserPreferenceUseCase.execute('badgeCount');
       final reminderSettingsJson =
           await getUserPreferenceUseCase.execute('reminderSettings');
+
+      // Si les préférences locales sont vides (nouvelle installation),
+      // récupérer depuis Supabase (profil + Storage)
+      final needsRecovery = firstName.isEmpty || lastName.isEmpty || company.isEmpty || signatureBase64 == null;
+      if (needsRecovery) {
+        logger.i('Préférences locales incomplètes, récupération depuis Supabase...');
+        try {
+          final userId = SupabaseService.instance.currentUserId;
+          if (userId != null) {
+            // Récupérer profil + organisation depuis Supabase
+            final profile = await SupabaseService.instance.client
+                .from('profiles')
+                .select('first_name, last_name, organization_id, organizations(name)')
+                .eq('id', userId)
+                .maybeSingle();
+
+            if (profile != null) {
+              if (firstName.isEmpty) {
+                firstName = profile['first_name'] as String? ?? '';
+                if (firstName.isNotEmpty) {
+                  await setUserPreferenceUseCase.execute('firstName', firstName);
+                  logger.i('firstName récupéré depuis Supabase: $firstName');
+                }
+              }
+              if (lastName.isEmpty) {
+                lastName = profile['last_name'] as String? ?? '';
+                if (lastName.isNotEmpty) {
+                  await setUserPreferenceUseCase.execute('lastName', lastName);
+                  logger.i('lastName récupéré depuis Supabase: $lastName');
+                }
+              }
+              if (company.isEmpty) {
+                final org = profile['organizations'];
+                if (org != null && org is Map) {
+                  company = org['name'] as String? ?? '';
+                } else if (org != null && org is List && org.isNotEmpty) {
+                  company = org[0]['name'] as String? ?? '';
+                }
+                if (company.isNotEmpty) {
+                  await setUserPreferenceUseCase.execute('company', company);
+                  logger.i('company récupéré depuis Supabase: $company');
+                }
+              }
+            }
+
+            // Récupérer signature depuis Supabase Storage
+            if (signatureBase64 == null) {
+              try {
+                final signatureBytes = await StorageService().downloadSignature();
+                if (signatureBytes != null && signatureBytes.isNotEmpty) {
+                  signatureBase64 = base64Encode(signatureBytes);
+                  await setUserPreferenceUseCase.execute('signature', signatureBase64);
+                  logger.i('Signature récupérée depuis Supabase Storage (${signatureBytes.length} octets)');
+                }
+              } catch (e) {
+                logger.w('Impossible de récupérer la signature depuis Storage: $e');
+              }
+            }
+          }
+        } catch (e) {
+          logger.w('Erreur lors de la récupération depuis Supabase: $e');
+        }
+      }
 
       Uint8List? signature;
       if (signatureBase64 != null) {

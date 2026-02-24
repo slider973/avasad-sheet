@@ -76,7 +76,7 @@ class IsarToPowerSyncMigration {
         name: 'default',
       );
 
-      int totalSteps = 7;
+      int totalSteps = 8;
       int currentStep = 0;
 
       // 1. Migrate timesheet entries
@@ -109,7 +109,12 @@ class IsarToPowerSyncMigration {
       onProgress?.call(currentStep / totalSteps, 'Migration des PDFs...');
       await _migrateGeneratedPdfs(isar, db, userId);
 
-      // 7. Mark migration as complete
+      // 7. Migrate user preferences (signature, firstName, lastName, company, etc.)
+      currentStep++;
+      onProgress?.call(currentStep / totalSteps, 'Migration des préférences...');
+      await _migrateUserPreferences(isar, db);
+
+      // 8. Mark migration as complete
       currentStep++;
       onProgress?.call(currentStep / totalSteps, 'Finalisation...');
       await _markMigrationComplete(db);
@@ -215,6 +220,19 @@ class IsarToPowerSyncMigration {
         ],
       );
     }
+
+    // Link absences to timesheet entries by date matching
+    await db.execute('''
+      UPDATE absences SET timesheet_entry_id = (
+        SELECT te.id FROM timesheet_entries te
+        WHERE te.user_id = absences.user_id
+        AND te.day_date >= absences.start_date
+        AND te.day_date <= absences.end_date
+        LIMIT 1
+      )
+      WHERE absences.timesheet_entry_id IS NULL AND absences.user_id = ?
+    ''', [userId]);
+    debugPrint('Linked absences to timesheet entries by date.');
   }
 
   static Future<void> _migrateAnomalies(
@@ -328,6 +346,30 @@ class IsarToPowerSyncMigration {
           null,
         ],
       );
+    }
+  }
+
+  static Future<void> _migrateUserPreferences(
+    Isar isar,
+    PowerSyncDatabase db,
+  ) async {
+    final prefs = await isar.userPreferences.where().findAll();
+    debugPrint('Migrating ${prefs.length} user preferences...');
+
+    // S'assurer que la table existe
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS user_preferences (
+        key TEXT PRIMARY KEY,
+        value TEXT
+      )
+    ''');
+
+    for (final pref in prefs) {
+      await db.execute(
+        'INSERT OR REPLACE INTO user_preferences (key, value) VALUES (?, ?)',
+        [pref.key, pref.value],
+      );
+      debugPrint('Migrated preference: ${pref.key} (${pref.value.length > 50 ? '${pref.value.length} chars' : pref.value})');
     }
   }
 

@@ -597,6 +597,30 @@ class ValidationRepositorySupabaseImpl implements ValidationRepository {
         };
       }).toList();
 
+      // 5. Get client signature if client has signed
+      String? clientSignatureBase64;
+      final clientSignerName = rowData['client_signer_name'] as String? ?? '';
+      final currentSigningStep = rowData['signing_step'] as String? ?? '';
+      if (currentSigningStep == 'completed' && clientSignerName.isNotEmpty) {
+        try {
+          final clientToken = await _supabase
+              .from('signing_tokens')
+              .select('signature_url, signed_at')
+              .eq('validation_id', rowData['id'])
+              .eq('signer_role', 'client')
+              .maybeSingle();
+          if (clientToken != null && clientToken['signature_url'] != null && clientToken['signed_at'] != null) {
+            final storagePath = clientToken['signature_url'] as String;
+            logger.i('Downloading client signature from Storage: $storagePath');
+            final signatureBytes = await _supabase.storage.from('signatures').download(storagePath);
+            clientSignatureBase64 = base64Encode(signatureBytes);
+            logger.i('Client signature downloaded: ${signatureBytes.length} bytes');
+          }
+        } catch (e) {
+          logger.w('Failed to get client signature: $e');
+        }
+      }
+
       final data = <String, dynamic>{
         'validationId': rowData['id'],
         'employeeId': employeeId,
@@ -615,6 +639,8 @@ class ValidationRepositorySupabaseImpl implements ValidationRepository {
           : null,
         'managerName': managerName,
         'managerSignature': managerSignatureBase64,
+        'clientSignerName': clientSignerName,
+        'clientSignature': clientSignatureBase64,
         'entries': entriesList,
       };
 

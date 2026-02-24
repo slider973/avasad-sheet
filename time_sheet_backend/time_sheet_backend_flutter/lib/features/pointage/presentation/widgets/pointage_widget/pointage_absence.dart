@@ -177,7 +177,7 @@ class _PointageAbsenceState extends State<PointageAbsence> {
             ),
             Divider(),
             _buildInfoRow(
-                context, 'Raison', widget.absence!.motif.isNotEmpty ? widget.absence!.motif : getMotifFromType()),
+                context, 'Raison', widget.absence != null && widget.absence!.motif.isNotEmpty ? widget.absence!.motif : getMotifFromType()),
           ],
         ),
       ),
@@ -185,6 +185,9 @@ class _PointageAbsenceState extends State<PointageAbsence> {
   }
 
   String getMotifFromType() {
+    if (widget.absence == null) {
+      return widget.absenceReason ?? 'Absence';
+    }
     switch (widget.absence!.type) {
       case AbsenceType.vacation:
         return AbsenceMotif.leaveDay.value;
@@ -211,6 +214,11 @@ class _PointageAbsenceState extends State<PointageAbsence> {
   }
 
   AbsenceType _getAbsenceType(String? reason) {
+    // Utiliser le type de l'entité absence si disponible
+    if (widget.absence != null) {
+      return widget.absence!.type;
+    }
+    // Fallback sur le parsing du string absenceReason
     if (reason == null) return AbsenceType.vacation;
     if (reason.toLowerCase() == AbsenceMotif.leaveDay.value.toLowerCase()) {
       return AbsenceType.vacation;

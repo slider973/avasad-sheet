@@ -149,6 +149,14 @@ class DownloadValidationPdfUseCase implements UseCase<Uint8List, DownloadPdfPara
       managerSignatureBase64 = data['managerSignature'] as String?;
     }
 
+    // Préparer signature client si le client a signé
+    String? clientSignatureBase64;
+    String? clientSignerName;
+    if (signingStepStr == 'completed') {
+      clientSignatureBase64 = data['clientSignature'] as String?;
+      clientSignerName = data['clientSignerName'] as String?;
+    }
+
     // Générer le PDF
     final pdfResult = await generatePdfUseCase.generateFromEntries(
       entries: entries,
@@ -159,6 +167,8 @@ class DownloadValidationPdfUseCase implements UseCase<Uint8List, DownloadPdfPara
       employeeSignature: employeeSignatureBase64,
       managerSignature: managerSignatureBase64,
       managerName: managerName,
+      clientSignature: clientSignatureBase64,
+      clientSignerName: clientSignerName,
     );
 
     if (pdfResult.isLeft()) {

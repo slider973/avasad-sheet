@@ -27,7 +27,8 @@ class StorageService {
     required int month,
     String? customFileName,
   }) async {
-    final fileName = customFileName ?? '$year-${month.toString().padLeft(2, '0')}.pdf';
+    final rawFileName = customFileName ?? '$year-${month.toString().padLeft(2, '0')}.pdf';
+    final fileName = sanitizeFileName(rawFileName);
     final path = '$_userId/$fileName';
 
     await _client.storage.from('pdfs').uploadBinary(
@@ -52,6 +53,18 @@ class StorageService {
     final path = '$_userId/$fileName';
 
     return await _client.storage.from('pdfs').download(path);
+  }
+
+  /// Download a PDF by its file name (for cross-device sync).
+  Future<Uint8List?> downloadPdfByName(String fileName) async {
+    try {
+      final sanitized = sanitizeFileName(fileName);
+      final path = '$_userId/$sanitized';
+      return await _client.storage.from('pdfs').download(path);
+    } catch (e) {
+      debugPrint('Error downloading PDF by name: $e');
+      return null;
+    }
   }
 
   /// Get the signed URL for a PDF (time-limited access).
@@ -229,6 +242,29 @@ class StorageService {
       debugPrint('Error downloading employee PDF: $e');
       return null;
     }
+  }
+
+  /// Sanitize file name for Supabase Storage (no accented characters).
+  static String sanitizeFileName(String name) {
+    const replacements = {
+      'é': 'e', 'è': 'e', 'ê': 'e', 'ë': 'e',
+      'à': 'a', 'â': 'a', 'ä': 'a',
+      'î': 'i', 'ï': 'i',
+      'ô': 'o', 'ö': 'o',
+      'ù': 'u', 'û': 'u', 'ü': 'u',
+      'ç': 'c',
+      'É': 'E', 'È': 'E', 'Ê': 'E', 'Ë': 'E',
+      'À': 'A', 'Â': 'A', 'Ä': 'A',
+      'Î': 'I', 'Ï': 'I',
+      'Ô': 'O', 'Ö': 'O',
+      'Ù': 'U', 'Û': 'U', 'Ü': 'U',
+      'Ç': 'C',
+    };
+    var result = name;
+    for (final entry in replacements.entries) {
+      result = result.replaceAll(entry.key, entry.value);
+    }
+    return result;
   }
 
   String _mimeType(String extension) {

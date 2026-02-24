@@ -340,21 +340,32 @@ export default function SignPage() {
               </CardContent>
             </Card>
 
-            {/* PDF preview */}
+            {/* PDF viewer */}
             {state.info.pdf_url && (
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">Document</CardTitle>
+                  <CardTitle className="text-base">Releve d'heures a verifier</CardTitle>
+                  <CardDescription>
+                    Veuillez lire attentivement le document ci-dessous avant de signer
+                  </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-3">
+                  <div className="rounded-lg border overflow-hidden bg-muted/30">
+                    <iframe
+                      src={state.info.pdf_url}
+                      className="w-full"
+                      style={{ height: '70vh', minHeight: '500px' }}
+                      title="Releve d'heures"
+                    />
+                  </div>
                   <a
                     href={state.info.pdf_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+                    className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-primary hover:underline"
                   >
-                    <Download className="h-4 w-4" />
-                    Telecharger le PDF du releve
+                    <Download className="h-3 w-3" />
+                    Ouvrir dans un nouvel onglet
                   </a>
                 </CardContent>
               </Card>
@@ -365,7 +376,7 @@ export default function SignPage() {
               <CardHeader>
                 <CardTitle className="text-base">Votre signature</CardTitle>
                 <CardDescription>
-                  Dessinez votre signature ci-dessous avec la souris ou le doigt
+                  En signant ci-dessous, vous confirmez avoir lu et approuve le releve d'heures ci-dessus
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">

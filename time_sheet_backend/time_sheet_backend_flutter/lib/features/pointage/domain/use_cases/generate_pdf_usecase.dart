@@ -139,6 +139,8 @@ class GeneratePdfUseCase {
     String? employeeSignature, // Signature de l'employé en base64
     String? managerSignature,
     String? managerName,
+    String? clientSignature, // Signature du client en base64
+    String? clientSignerName, // Nom du client signataire
   }) async {
     try {
       debugPrint('🚀 Génération du PDF à partir d\'entries fournies');
@@ -257,6 +259,22 @@ class GeneratePdfUseCase {
             '   - Pas de signature manager fournie, génération sans signature manager');
       }
 
+      // Décoder la signature du client si elle est fournie
+      Uint8List? clientSignatureBytes;
+      if (clientSignature != null && clientSignature.isNotEmpty) {
+        try {
+          if (clientSignature.startsWith('data:image/')) {
+            final base64Part = clientSignature.split(',').last;
+            clientSignatureBytes = base64Decode(base64Part);
+          } else {
+            clientSignatureBytes = base64Decode(clientSignature);
+          }
+          logger.i('✅ Signature client décodée: ${clientSignatureBytes.length} octets');
+        } catch (e) {
+          logger.e('❌ Erreur décodage signature client: $e');
+        }
+      }
+
       // Génération du PDF
       debugPrint('📄 Génération du fichier PDF...');
       final pdfFile = await generatePdf(
@@ -266,6 +284,8 @@ class GeneratePdfUseCase {
         entries,
         managerSignature: managerSignatureBytes,
         managerName: finalManagerName,
+        clientSignature: clientSignatureBytes,
+        clientSignerName: clientSignerName,
       );
 
       // Lire le fichier et retourner les bytes
@@ -422,7 +442,8 @@ class GeneratePdfUseCase {
 
   Future<File> generatePdf(List<WorkWeek> weeks, int monthNumber, User user,
       List<TimesheetEntry> entries,
-      {Uint8List? managerSignature, String? managerName}) async {
+      {Uint8List? managerSignature, String? managerName,
+       Uint8List? clientSignature, String? clientSignerName}) async {
     logger.i('start generatedPdf');
     logger.i('DEBUG - managerSignature is null: ${managerSignature == null}');
     logger.i('DEBUG - managerName: $managerName');
@@ -463,6 +484,14 @@ class GeneratePdfUseCase {
       logger.i('✅ Image signature manager créée');
     } else {
       logger.w('⚠️ Pas de signature manager, image non créée');
+    }
+
+    // Signature du client si fournie
+    pw.Image? clientSignatureImage;
+    String finalClientSignerName = clientSignerName ?? '';
+    if (clientSignature != null) {
+      clientSignatureImage = pw.Image(pw.MemoryImage(clientSignature));
+      logger.i('✅ Image signature client créée');
     }
 
     double totalDays = weeks.fold(
@@ -509,7 +538,8 @@ class GeneratePdfUseCase {
               (week) => _buildWeekTable(week, user, entries, overtimeByDay)),
           _buildMonthTotal(totalHours, totalDays, totalOvertimeHours),
           _buildFooter(
-              signatureImage, user, managerSignatureImage, finalManagerName),
+              signatureImage, user, managerSignatureImage, finalManagerName,
+              clientSignatureImage, finalClientSignerName),
         ],
         theme: pw.ThemeData.withFont(
           base: ttf,
@@ -886,11 +916,20 @@ class GeneratePdfUseCase {
   }
 
   pw.Widget _buildFooter(pw.Image? signatureImage, User user,
-      pw.Image? managerSignatureImage, String? managerName) {
+      pw.Image? managerSignatureImage, String? managerName,
+      [pw.Image? clientSignatureImage, String? clientSignerName]) {
     logger.i('DEBUG _buildFooter - managerName: $managerName');
     logger.i(
         'DEBUG _buildFooter - managerSignatureImage is null: ${managerSignatureImage == null}');
+    logger.i('DEBUG _buildFooter - clientSignerName: $clientSignerName');
+    logger.i('DEBUG _buildFooter - clientSignatureImage is null: ${clientSignatureImage == null}');
     logger.i('DEBUG _buildFooter - user.fullName: ${user.fullName}');
+
+    // Nom du client : utiliser le nom dynamique ou un fallback
+    final clientName = (clientSignerName != null && clientSignerName.isNotEmpty)
+        ? clientSignerName
+        : 'Nadia Aepli';
+
     return pw.Container(
       margin: const pw.EdgeInsets.only(top: 15),
       child: pw.Column(
@@ -902,7 +941,8 @@ class GeneratePdfUseCase {
                 children: [
                   _buildSignatureColumn(
                       'Travailleur', user.fullName, signatureImage),
-                  _buildSignatureColumn('Entreprise de mission', 'Nadia Aepli'),
+                  _buildSignatureColumn('Entreprise de mission', clientName,
+                      clientSignatureImage),
                   _buildSignatureColumn('Delivery manager', managerName ?? '',
                       managerSignatureImage),
                 ],
