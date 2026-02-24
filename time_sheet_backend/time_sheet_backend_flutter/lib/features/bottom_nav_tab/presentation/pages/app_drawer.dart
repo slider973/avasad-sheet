@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/pages/login_page.dart';
+import '../../../preference/presentation/manager/preferences_bloc.dart';
 import '../../../pointage/presentation/pages/statistiques/statistique_page.dart';
 import '../../../pointage/presentation/pages/pointage/pointage_page.dart';
 import '../../../pointage/presentation/pages/dashboard/dashboard_page.dart';
@@ -183,6 +186,31 @@ class AppDrawer extends StatelessWidget {
               ],
             ),
           ),
+          // Déconnexion
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Divider(),
+          ),
+          ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            leading: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.red.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.logout, color: Colors.red, size: 20),
+            ),
+            title: const Text(
+              'Se déconnecter',
+              style: TextStyle(
+                fontWeight: FontWeight.w500,
+                fontSize: 14,
+                color: Colors.red,
+              ),
+            ),
+            onTap: () => _showSignOutDialog(context),
+          ),
           // Footer
           Padding(
             padding: const EdgeInsets.all(16),
@@ -193,6 +221,35 @@ class AppDrawer extends StatelessWidget {
                 fontSize: 12,
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSignOutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Se déconnecter'),
+        content: const Text('Êtes-vous sûr de vouloir vous déconnecter ?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              context.read<PreferencesBloc>().add(ClearPreferences());
+              context.read<AuthBloc>().add(AuthSignOutRequested());
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (_) => const LoginPage()),
+                (route) => false,
+              );
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Se déconnecter'),
           ),
         ],
       ),

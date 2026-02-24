@@ -1,0 +1,87 @@
+# PowerSync Service Configuration
+# Documentation: https://docs.powersync.com/self-hosting/configuration
+
+# Telemetry - disable if not needed
+telemetry:
+  disable_telemetry: true
+
+# Storage configuration for PowerSync
+storage:
+  type: mongodb
+  uri: mongodb://mongo:27017/powersync
+
+# Replication from PostgreSQL
+replication:
+  # Connection to the Supabase PostgreSQL instance
+  connections:
+    - type: postgresql
+      # Uses the same DB as Supabase
+      uri: postgresql://${POWERSYNC_DB_USER}:${POWERSYNC_DB_PASSWORD}@${POWERSYNC_DB_HOST}:${POWERSYNC_DB_PORT}/${POWERSYNC_DB_NAME}
+      # Use a dedicated publication for PowerSync
+      publication: powersync
+      # Slot name for logical replication
+      slot_name: powersync_slot
+
+# Client authentication via Supabase JWT
+client_auth:
+  # Use Supabase JWT for auth
+  supabase: true
+  jwks:
+    - url: http://auth:9999/.well-known/jwks.json
+
+# Token audience (optional, for validation)
+# audience: ["authenticated"]
+
+# API configuration
+api:
+  # Listen on all interfaces
+  port: 8080
+
+# Sync rules - define what data gets synced to which users
+sync_rules:
+  bucket_definitions:
+    # Personal data for the employee
+    user_data:
+      parameters: SELECT token_parameters.user_id as user_id
+      data:
+        - SELECT * FROM profiles WHERE id = bucket.user_id
+        - SELECT * FROM timesheet_entries WHERE user_id = bucket.user_id
+        - SELECT * FROM absences WHERE user_id = bucket.user_id
+        - SELECT * FROM anomalies WHERE user_id = bucket.user_id
+        - SELECT * FROM expenses WHERE user_id = bucket.user_id
+        - SELECT * FROM overtime_configurations WHERE user_id = bucket.user_id
+        - SELECT * FROM generated_pdfs WHERE user_id = bucket.user_id
+        - SELECT * FROM notifications WHERE user_id = bucket.user_id
+        - SELECT * FROM validation_requests WHERE employee_id = bucket.user_id
+        - SELECT * FROM validation_requests WHERE manager_id = bucket.user_id
+
+    # Manager data (team members' data)
+    manager_data:
+      parameters: >
+        SELECT me.employee_id as employee_id
+        FROM manager_employees me
+        WHERE me.manager_id = token_parameters.user_id
+      data:
+        - SELECT * FROM timesheet_entries WHERE user_id = bucket.employee_id
+        - SELECT * FROM absences WHERE user_id = bucket.employee_id
+        - SELECT * FROM anomalies WHERE user_id = bucket.employee_id
+        - SELECT * FROM expenses WHERE user_id = bucket.employee_id
+        - SELECT * FROM validation_requests WHERE manager_id = token_parameters.user_id AND employee_id = bucket.employee_id
+
+    # Shared organization data
+    org_data:
+      parameters: >
+        SELECT p.organization_id as org_id
+        FROM profiles p
+        WHERE p.id = token_parameters.user_id AND p.organization_id IS NOT NULL
+      data:
+        - >
+          SELECT p.* FROM profiles p
+          WHERE p.organization_id = bucket.org_id
+        - >
+          SELECT o.* FROM organizations o
+          WHERE o.id = bucket.org_id
+        - >
+          SELECT me.* FROM manager_employees me
+          WHERE me.manager_id = token_parameters.user_id
+          OR me.employee_id = token_parameters.user_id

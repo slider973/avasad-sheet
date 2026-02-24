@@ -49,15 +49,21 @@ class AuthRepositoryImpl implements AuthRepository {
     required String password,
     required String firstName,
     required String lastName,
+    String? organizationId,
   }) async {
     try {
+      final metadata = <String, dynamic>{
+        'first_name': firstName,
+        'last_name': lastName,
+      };
+      if (organizationId != null) {
+        metadata['organization_id'] = organizationId;
+      }
+
       final response = await _supabaseClient.auth.signUp(
         email: email,
         password: password,
-        data: {
-          'first_name': firstName,
-          'last_name': lastName,
-        },
+        data: metadata,
       );
 
       if (response.user == null) {

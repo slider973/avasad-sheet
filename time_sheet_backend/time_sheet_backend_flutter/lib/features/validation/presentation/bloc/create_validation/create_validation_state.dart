@@ -25,7 +25,9 @@ class CreateValidationForm extends CreateValidationState {
   final Uint8List? pdfBytes;
   final String? pdfFileName;
   final String? error;
-  
+  final String? clientSignerName;
+  final String? clientSignerEmail;
+
   const CreateValidationForm({
     required this.availableManagers,
     required this.availablePdfs,
@@ -36,13 +38,15 @@ class CreateValidationForm extends CreateValidationState {
     this.pdfBytes,
     this.pdfFileName,
     this.error,
+    this.clientSignerName,
+    this.clientSignerEmail,
   });
-  
-  bool get isValid => 
+
+  bool get isValid =>
       selectedManager != null &&
       selectedPdf != null &&
       pdfBytes != null;
-  
+
   CreateValidationForm copyWith({
     List<Manager>? availableManagers,
     List<GeneratedPdf>? availablePdfs,
@@ -54,6 +58,8 @@ class CreateValidationForm extends CreateValidationState {
     String? pdfFileName,
     String? error,
     bool clearPdf = false,
+    String? clientSignerName,
+    String? clientSignerEmail,
   }) {
     return CreateValidationForm(
       availableManagers: availableManagers ?? this.availableManagers,
@@ -65,9 +71,11 @@ class CreateValidationForm extends CreateValidationState {
       pdfBytes: clearPdf ? null : (pdfBytes ?? this.pdfBytes),
       pdfFileName: clearPdf ? null : (pdfFileName ?? this.pdfFileName),
       error: error,
+      clientSignerName: clientSignerName ?? this.clientSignerName,
+      clientSignerEmail: clientSignerEmail ?? this.clientSignerEmail,
     );
   }
-  
+
   @override
   List<Object?> get props => [
     availableManagers,
@@ -79,6 +87,8 @@ class CreateValidationForm extends CreateValidationState {
     pdfBytes,
     pdfFileName,
     error,
+    clientSignerName,
+    clientSignerEmail,
   ];
 }
 
@@ -98,9 +108,9 @@ class CreateValidationSuccess extends CreateValidationState {
 /// Erreur
 class CreateValidationError extends CreateValidationState {
   final String message;
-  
+
   const CreateValidationError(this.message);
-  
+
   @override
   List<Object> get props => [message];
 }

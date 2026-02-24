@@ -11,7 +11,7 @@ import '../../../../../domain/use_cases/detect_anomalies_with_compensation_useca
 import '../../../../../domain/entities/anomaly.dart';
 import '../../../../../domain/services/anomaly_detection_service.dart';
 import '../../../../../domain/repositories/timesheet_repository.dart';
-import '../../../../../../../services/anomaly/anomaly_service.dart';
+import '../../../../../../../services/anomaly/anomaly_service_powersync.dart';
 
 part 'anomaly_event.dart';
 part 'anomaly_state.dart';
@@ -24,7 +24,7 @@ class AnomalyBloc extends Bloc<AnomalyEvent, AnomalyState> {
   final AnomalyRepository anomalyRepository; // Ajout du repository
   final AnomalyDetectionService newAnomalyDetectionService;
   final TimesheetRepository timesheetRepository;
-  final AnomalyService anomalyService;
+  final AnomalyServicePowerSync anomalyService;
 
   AnomalyBloc({
     required this.detectAnomaliesUseCase,

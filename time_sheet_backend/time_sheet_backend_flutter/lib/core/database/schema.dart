@@ -92,6 +92,9 @@ const schema = Schema([
     Column.text('manager_comment'),
     Column.text('validated_at'),
     Column.text('expires_at'),
+    Column.text('signing_step'),
+    Column.text('client_signer_name'),
+    Column.text('client_signer_email'),
     Column.text('created_at'),
     Column.text('updated_at'),
   ]),
@@ -120,6 +123,10 @@ const schema = Schema([
   ]),
   Table('organizations', [
     Column.text('name'),
+    Column.text('slug'),
+    Column.text('parent_id'),
+    Column.integer('is_active'),
     Column.text('created_at'),
+    Column.text('updated_at'),
   ]),
 ]);

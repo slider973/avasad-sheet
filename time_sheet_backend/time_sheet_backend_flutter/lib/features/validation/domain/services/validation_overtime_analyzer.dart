@@ -74,9 +74,36 @@ class ValidationOvertimeAnalyzer {
   }
 
   /// Parse une entrée timesheet depuis les données JSON
+  /// Supporte deux formats:
+  /// - Format getValidationTimesheetData: {dayDate, startMorning, endMorning, startAfternoon, endAfternoon, ...}
+  /// - Format legacy: {date, startTime, endTime, breakDuration}
   TimesheetEntry? _parseTimesheetEntry(Map<String, dynamic> data) {
     try {
-      // Extraire la date
+      // Format from getValidationTimesheetData (dayDate, startMorning, etc.)
+      if (data['dayDate'] != null) {
+        final dayDate = data['dayDate'] as String;
+        return TimesheetEntry(
+          dayDate: dayDate,
+          dayOfWeekDate: '',
+          startMorning: (data['startMorning'] as String?) ?? '',
+          endMorning: (data['endMorning'] as String?) ?? '',
+          startAfternoon: (data['startAfternoon'] as String?) ?? '',
+          endAfternoon: (data['endAfternoon'] as String?) ?? '',
+          absenceReason: (data['absenceReason'] as String?),
+          period: (data['period'] as String?),
+          hasOvertimeHours: data['hasOvertimeHours'] == true || data['hasOvertimeHours'] == 1,
+          isWeekendDay: data['isWeekendDay'] == true || data['isWeekendDay'] == 1,
+          isWeekendOvertimeEnabled: data['isWeekendOvertimeEnabled'] == true || data['isWeekendOvertimeEnabled'] == 1,
+          overtimeType: data['overtimeType'] != null
+              ? OvertimeType.values.firstWhere(
+                  (e) => e.name == data['overtimeType'],
+                  orElse: () => OvertimeType.NONE,
+                )
+              : OvertimeType.NONE,
+        );
+      }
+
+      // Legacy format (date, startTime, endTime)
       DateTime? date;
       if (data['date'] != null) {
         if (data['date'] is String) {
@@ -88,7 +115,6 @@ class ValidationOvertimeAnalyzer {
 
       if (date == null) return null;
 
-      // Extraire les heures de début et fin
       DateTime? startTime;
       DateTime? endTime;
 
@@ -108,43 +134,15 @@ class ValidationOvertimeAnalyzer {
         }
       }
 
-      // Extraire les pauses
-      Duration? breakDuration;
-      if (data['breakDuration'] != null) {
-        if (data['breakDuration'] is int) {
-          breakDuration = Duration(minutes: data['breakDuration']);
-        } else if (data['breakDuration'] is String) {
-          final minutes = int.tryParse(data['breakDuration']);
-          if (minutes != null) {
-            breakDuration = Duration(minutes: minutes);
-          }
-        }
-      }
-
-      // Créer l'entrée timesheet
       final dayNames = {
-        1: 'Lundi',
-        2: 'Mardi',
-        3: 'Mercredi',
-        4: 'Jeudi',
-        5: 'Vendredi',
-        6: 'Samedi',
-        7: 'Dimanche',
+        1: 'Lundi', 2: 'Mardi', 3: 'Mercredi', 4: 'Jeudi',
+        5: 'Vendredi', 6: 'Samedi', 7: 'Dimanche',
       };
 
       final monthNames = {
-        1: 'Jan',
-        2: 'Feb',
-        3: 'Mar',
-        4: 'Apr',
-        5: 'May',
-        6: 'Jun',
-        7: 'Jul',
-        8: 'Aug',
-        9: 'Sep',
-        10: 'Oct',
-        11: 'Nov',
-        12: 'Dec'
+        1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr',
+        5: 'May', 6: 'Jun', 7: 'Jul', 8: 'Aug',
+        9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'
       };
 
       final formattedDate = '${date.day.toString().padLeft(2, '0')}-'
@@ -158,15 +156,15 @@ class ValidationOvertimeAnalyzer {
         startMorning: startTime != null
             ? '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}'
             : '',
-        endMorning: '12:00', // Default lunch break start
-        startAfternoon: '13:00', // Default lunch break end
+        endMorning: '12:00',
+        startAfternoon: '13:00',
         endAfternoon: endTime != null
             ? '${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}'
             : '',
         absenceReason: null,
         period: null,
         isWeekendDay: TimeUtils.isWeekend(date),
-        isWeekendOvertimeEnabled: true, // Par défaut activé
+        isWeekendOvertimeEnabled: true,
         overtimeType: TimeUtils.isWeekend(date)
             ? OvertimeType.WEEKEND_ONLY
             : OvertimeType.NONE,

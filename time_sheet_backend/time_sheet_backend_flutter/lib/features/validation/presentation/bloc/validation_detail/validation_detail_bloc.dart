@@ -1,13 +1,12 @@
 import 'dart:typed_data';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:time_sheet/core/error/failures.dart';
 import 'package:time_sheet/features/validation/domain/entities/validation_request.dart';
-import 'package:time_sheet/features/validation/domain/use_cases/get_employee_validations_usecase.dart';
 import 'package:time_sheet/features/validation/domain/use_cases/approve_validation_usecase.dart';
 import 'package:time_sheet/features/validation/domain/use_cases/reject_validation_usecase.dart';
 import 'package:time_sheet/features/validation/domain/use_cases/download_validation_pdf_usecase.dart';
 import 'package:time_sheet/features/validation/domain/use_cases/get_validation_timesheet_data_usecase.dart';
+import 'package:time_sheet/features/validation/domain/use_cases/get_signing_url_usecase.dart';
 import 'package:time_sheet/features/validation/domain/repositories/validation_repository.dart';
 
 part 'validation_detail_event.dart';
@@ -21,6 +20,7 @@ class ValidationDetailBloc
   final RejectValidationUseCase rejectValidation;
   final DownloadValidationPdfUseCase downloadPdf;
   final GetValidationTimesheetDataUseCase getTimesheetData;
+  final GetSigningUrlUseCase getSigningUrl;
 
   ValidationDetailBloc({
     required this.repository,
@@ -28,12 +28,14 @@ class ValidationDetailBloc
     required this.rejectValidation,
     required this.downloadPdf,
     required this.getTimesheetData,
+    required this.getSigningUrl,
   }) : super(ValidationDetailInitial()) {
     on<LoadValidationDetail>(_onLoadValidationDetail);
     on<LoadValidationTimesheetData>(_onLoadValidationTimesheetData);
     on<ApproveValidation>(_onApproveValidation);
     on<RejectValidation>(_onRejectValidation);
     on<DownloadValidationPdf>(_onDownloadValidationPdf);
+    on<GenerateSigningLink>(_onGenerateSigningLink);
   }
 
   Future<void> _onLoadValidationDetail(
@@ -110,7 +112,8 @@ class ValidationDetailBloc
     Emitter<ValidationDetailState> emit,
   ) async {
     final currentState = state;
-    if (currentState is! ValidationDetailLoaded) return;
+    if (currentState is! ValidationDetailLoaded &&
+        currentState is! ValidationDetailWithTimesheetLoaded) return;
 
     emit(ValidationDetailLoading());
 
@@ -144,7 +147,8 @@ class ValidationDetailBloc
     Emitter<ValidationDetailState> emit,
   ) async {
     final currentState = state;
-    if (currentState is! ValidationDetailLoaded) return;
+    if (currentState is! ValidationDetailLoaded &&
+        currentState is! ValidationDetailWithTimesheetLoaded) return;
 
     emit(ValidationDetailLoading());
 
@@ -195,14 +199,53 @@ class ValidationDetailBloc
       );
 
       // Restaurer l'état précédent après le téléchargement
-      if (currentState is ValidationDetailLoaded) {
+      if (currentState is ValidationDetailLoaded ||
+          currentState is ValidationDetailWithTimesheetLoaded) {
         emit(currentState);
       }
     } catch (e) {
       emit(ValidationDetailError('Erreur lors du téléchargement: $e'));
-      if (currentState is ValidationDetailLoaded) {
+      if (currentState is ValidationDetailLoaded ||
+          currentState is ValidationDetailWithTimesheetLoaded) {
         emit(currentState);
       }
     }
   }
+
+  Future<void> _onGenerateSigningLink(
+    GenerateSigningLink event,
+    Emitter<ValidationDetailState> emit,
+  ) async {
+    final currentState = state;
+
+    try {
+      final params = GetSigningUrlParams(
+        validationId: event.validationId,
+        signerRole: event.signerRole,
+      );
+
+      final result = await getSigningUrl(params);
+
+      result.fold(
+        (failure) => emit(ValidationDetailError(failure.message)),
+        (url) => emit(SigningLinkGenerated(
+          signingUrl: url,
+          signerRole: event.signerRole,
+        )),
+      );
+
+      // Restaurer l'état précédent après l'émission du lien
+      if (currentState is ValidationDetailLoaded ||
+          currentState is ValidationDetailWithTimesheetLoaded) {
+        emit(currentState);
+      }
+    } catch (e) {
+      emit(ValidationDetailError('Erreur lors de la génération du lien: $e'));
+      if (currentState is ValidationDetailLoaded ||
+          currentState is ValidationDetailWithTimesheetLoaded) {
+        emit(currentState);
+      }
+    }
+  }
+
 }

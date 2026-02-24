@@ -99,6 +99,17 @@ class StorageService {
     }
   }
 
+  /// Download a specific user's signature (for managers viewing employee signatures).
+  Future<Uint8List?> downloadSignatureForUser(String userId) async {
+    try {
+      final path = '$userId/signature.png';
+      return await _client.storage.from('signatures').download(path);
+    } catch (e) {
+      debugPrint('No signature found for user $userId: $e');
+      return null;
+    }
+  }
+
   /// Get signed URL for a signature.
   Future<String?> getSignatureUrl() async {
     try {

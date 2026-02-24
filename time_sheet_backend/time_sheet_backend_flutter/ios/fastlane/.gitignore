@@ -1,0 +1,27 @@
+# Fastlane specific
+*.ipa
+*.dSYM.zip
+*.mobileprovision
+*.app
+*.cert
+*.certSigningRequest
+*.cer
+*.p12
+
+# Fastlane reports and logs
+report.xml
+*.log
+
+# Screenshots
+screenshots
+fastlane/screenshots
+
+# Preview HTML
+preview.html
+
+# Temporary files
+fastlane/README.md
+fastlane/test_output
+
+# Fastlane session
+.fastlane_session

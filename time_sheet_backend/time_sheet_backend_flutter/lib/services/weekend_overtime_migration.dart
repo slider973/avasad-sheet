@@ -1,6 +1,6 @@
 import 'package:intl/intl.dart';
 import 'package:time_sheet/enum/overtime_type.dart';
-import 'package:time_sheet/features/pointage/data/data_sources/local.dart';
+import 'package:time_sheet/features/pointage/data/data_sources/timesheet_data_source.dart';
 import 'package:time_sheet/features/pointage/data/models/timesheet_entry/timesheet_entry.dart';
 import 'package:time_sheet/services/logger_service.dart';
 import 'package:time_sheet/services/weekend_detection_service.dart';
@@ -13,7 +13,7 @@ import 'package:time_sheet/services/weekend_detection_service.dart';
 /// - Update weekend status and overtime type for all existing entries
 /// - Provide validation and logging for the migration process
 class WeekendOvertimeMigration {
-  final LocalDatasourceImpl _dataSource;
+  final LocalDataSource _dataSource;
   final WeekendDetectionService _weekendDetectionService;
 
   /// Migration statistics

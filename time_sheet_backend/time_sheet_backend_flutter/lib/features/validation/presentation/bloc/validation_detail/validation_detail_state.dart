@@ -62,6 +62,20 @@ class ValidationDetailPdfDownloaded extends ValidationDetailState {
   List<Object> get props => [pdfBytes, fileName];
 }
 
+/// Lien de signature généré
+class SigningLinkGenerated extends ValidationDetailState {
+  final String signingUrl;
+  final String signerRole;
+
+  const SigningLinkGenerated({
+    required this.signingUrl,
+    required this.signerRole,
+  });
+
+  @override
+  List<Object> get props => [signingUrl, signerRole];
+}
+
 /// Erreur
 class ValidationDetailError extends ValidationDetailState {
   final String message;

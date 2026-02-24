@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:time_sheet/core/database/powersync_database.dart';
+import 'package:time_sheet/core/services/supabase/supabase_service.dart';
 import 'package:time_sheet/features/validation/presentation/pages/validation_list_page.dart';
 import 'package:time_sheet/features/validation/presentation/bloc/validation_list/validation_list_bloc.dart';
 import 'package:time_sheet/features/validation/presentation/pages/create_validation_page.dart';
-import 'package:time_sheet/features/preference/domain/use_cases/get_user_preference_use_case.dart';
-import 'package:time_sheet/features/preference/domain/use_cases/set_user_preference_use_case.dart';
 import 'package:time_sheet/services/injection_container.dart' as di;
 
 /// Page de menu pour les validations
 class ValidationMenuPage extends StatefulWidget {
   const ValidationMenuPage({super.key});
-  
+
   @override
   State<ValidationMenuPage> createState() => _ValidationMenuPageState();
 }
@@ -18,77 +18,51 @@ class ValidationMenuPage extends StatefulWidget {
 class _ValidationMenuPageState extends State<ValidationMenuPage> {
   bool _isManager = false;
   bool _isLoading = true;
-  
+
   @override
   void initState() {
     super.initState();
     _checkUserRole();
   }
-  
+
   Future<void> _checkUserRole() async {
     try {
-      // Utiliser Isar pour récupérer les préférences utilisateur
-      final getUserPref = di.getIt<GetUserPreferenceUseCase>();
-      
-      // Récupérer le statut isDeliveryManager
-      final isDeliveryManagerStr = await getUserPref.execute('isDeliveryManager') ?? 'false';
-      final isManager = isDeliveryManagerStr == 'true';
-      
-      setState(() {
-        _isManager = isManager;
-        _isLoading = false;
-      });
+      final userId = SupabaseService.instance.currentUserId;
+      if (userId == null) {
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      // Récupérer le rôle depuis le profil PowerSync (synced depuis Supabase)
+      final rows = await PowerSyncDatabaseManager.database.getAll(
+        'SELECT role FROM profiles WHERE id = ?',
+        [userId],
+      );
+
+      if (rows.isNotEmpty) {
+        final role = rows.first['role'] as String? ?? 'employee';
+        final isManager = ['manager', 'admin', 'org_admin', 'super_admin'].contains(role);
+
+        if (mounted) {
+          setState(() {
+            _isManager = isManager;
+            _isLoading = false;
+          });
+        }
+      } else {
+        if (mounted) setState(() => _isLoading = false);
+      }
     } catch (e) {
       debugPrint('Error checking user role: $e');
-      setState(() {
-        _isManager = false;
-        _isLoading = false;
-      });
-    }
-  }
-  
-  Future<void> _toggleManagerRole() async {
-    try {
-      final setUserPref = di.getIt<SetUserPreferenceUseCase>();
-      final getUserPref = di.getIt<GetUserPreferenceUseCase>();
-      
-      // Récupérer les préférences actuelles
-      final firstName = await getUserPref.execute('firstName') ?? '';
-      final lastName = await getUserPref.execute('lastName') ?? '';
-      final company = await getUserPref.execute('company') ?? '';
-      
-      // Inverser le statut
-      final newStatus = !_isManager;
-      await setUserPref.execute('isDeliveryManager', newStatus.toString());
-      
       if (mounted) {
         setState(() {
-          _isManager = newStatus;
+          _isManager = false;
+          _isLoading = false;
         });
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              newStatus
-                  ? 'Mode Manager activé - Utilisation de Serverpod' 
-                  : 'Mode Employé activé'),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (e) {
-      debugPrint('Error toggling manager role: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
       }
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -98,22 +72,10 @@ class _ValidationMenuPageState extends State<ValidationMenuPage> {
         ),
       );
     }
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Validation des Timesheets'),
-        actions: [
-          // Switch pour basculer entre employé et manager
-          Row(
-            children: [
-              const Text('Manager'),
-              Switch(
-                value: _isManager,
-                onChanged: (value) => _toggleManagerRole(),
-              ),
-            ],
-          ),
-        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -137,7 +99,7 @@ class _ValidationMenuPageState extends State<ValidationMenuPage> {
                         ),
                         const SizedBox(width: 12),
                         Text(
-                          _isManager ? 'Mode Manager' : 'Mode Employé',
+                          _isManager ? 'Manager' : 'Employé',
                           style: Theme.of(context).textTheme.headlineSmall,
                         ),
                       ],
@@ -145,7 +107,7 @@ class _ValidationMenuPageState extends State<ValidationMenuPage> {
                     const SizedBox(height: 8),
                     Text(
                       _isManager
-                          ? 'Vous pouvez valider les timesheets des employés'
+                          ? 'Vous pouvez valider les timesheets et gérer vos propres demandes'
                           : 'Vous pouvez créer et suivre vos demandes de validation',
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
@@ -153,49 +115,56 @@ class _ValidationMenuPageState extends State<ValidationMenuPage> {
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 20),
-            
-            // Options disponibles selon le rôle
-            if (!_isManager) ...[
-              // Options pour les employés
-              Card(
-                child: ListTile(
-                  leading: const Icon(Icons.add_circle_outline, color: Colors.green),
-                  title: const Text('Créer une demande de validation'),
-                  subtitle: const Text('Soumettre une timesheet pour validation'),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const CreateValidationPage(),
+
+            // Options employé (toujours visibles)
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.add_circle_outline, color: Colors.green),
+                title: const Text('Créer une demande de validation'),
+                subtitle: const Text('Soumettre une timesheet pour validation'),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const CreateValidationPage(),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 12),
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.history, color: Colors.orange),
+                title: const Text('Mes demandes de validation'),
+                subtitle: const Text('Voir l\'historique de mes demandes'),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => BlocProvider(
+                        create: (context) => di.getIt<ValidationListBloc>()
+                          ..add(LoadValidations(viewType: ValidationViewType.employee)),
+                        child: const ValidationListPage(viewType: ValidationViewType.employee),
                       ),
-                    );
-                  },
+                    ),
+                  );
+                },
+              ),
+            ),
+
+            // Options manager (visibles uniquement pour les managers)
+            if (_isManager) ...[
+              const SizedBox(height: 20),
+              Text(
+                'Gestion d\'équipe',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 12),
-              Card(
-                child: ListTile(
-                  leading: const Icon(Icons.history, color: Colors.orange),
-                  title: const Text('Mes demandes de validation'),
-                  subtitle: const Text('Voir l\'historique de mes demandes'),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => BlocProvider(
-                          create: (context) => di.getIt<ValidationListBloc>()
-                            ..add(LoadValidations(viewType: ValidationViewType.employee)),
-                          child: const ValidationListPage(viewType: ValidationViewType.employee),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ] else ...[
-              // Options pour les managers
               Card(
                 child: ListTile(
                   leading: const Icon(Icons.assignment, color: Colors.blue),
@@ -216,9 +185,9 @@ class _ValidationMenuPageState extends State<ValidationMenuPage> {
                 ),
               ),
             ],
-            
+
             const Spacer(),
-            
+
             // Informations sur le système
             Card(
               color: Colors.grey.shade50,
@@ -239,13 +208,13 @@ class _ValidationMenuPageState extends State<ValidationMenuPage> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Les validations sont gérées via Serverpod',
+                      'Les validations sont gérées via Supabase',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Colors.grey.shade600,
                       ),
                     ),
                     Text(
-                      'Les PDFs sont stockés côté serveur',
+                      'Les PDFs sont stockés sur Supabase Storage',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Colors.grey.shade600,
                       ),

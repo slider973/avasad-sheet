@@ -25,6 +25,9 @@ class AppUser extends Equatable {
 
   bool get isManager => role == 'manager' || role == 'admin';
   bool get isAdmin => role == 'admin';
+  bool get isOrgAdmin => role == 'org_admin';
+  bool get isSuperAdmin => role == 'super_admin';
+  bool get hasManagerAccess => isManager || isOrgAdmin || isSuperAdmin;
   bool get hasCompletedProfile => firstName.isNotEmpty && lastName.isNotEmpty;
 
   AppUser copyWith({

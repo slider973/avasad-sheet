@@ -5,12 +5,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:get_it/get_it.dart';
 import 'package:time_sheet/features/pointage/presentation/pages/pdf/pages/signature_page.dart';
-import '../../../../services/restart_service.dart';
 import '../../../pointage/presentation/pages/time-sheet/bloc/time_sheet/time_sheet_bloc.dart';
 
-import '../../../../services/backup.dart';
 import '../manager/preferences_bloc.dart';
 
 class PreferencesForm extends StatefulWidget {
@@ -327,69 +324,23 @@ class _PreferencesFormState extends State<PreferencesForm> {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
+      child: const Padding(
+        padding: EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Sauvegarde et Restauration',
+            Text(
+              'Synchronisation',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.teal),
             ),
-            const SizedBox(height: 16),
-            _buildButton('Sauvegarder', _performBackup),
-            const SizedBox(height: 8),
-            _buildButton('Restaurer', _performRestore, isPrimary: false),
+            SizedBox(height: 16),
+            Text(
+              'Vos données sont automatiquement synchronisées avec le serveur via PowerSync. '
+              'Aucune sauvegarde manuelle n\'est nécessaire.',
+            ),
           ],
         ),
       ),
     );
-  }
-
-  void _performBackup() async {
-    final backupService = GetIt.instance<BackupService>();
-    try {
-      final backupPath = await backupService.backupDatabase();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Sauvegarde réussie : $backupPath')),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur lors de la sauvegarde : ${e.toString()}')),
-      );
-    }
-  }
-
-  void _performRestore() async {
-    final backupService = GetIt.instance<BackupService>();
-    try {
-      final importSuccess = await backupService.importDatabase();
-      if (importSuccess) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: const Text('Restauration réussie'),
-              content: const Text(
-                  'La restauration a réussi. L\'application doit être redémarrée pour appliquer les changements.'),
-              actions: <Widget>[
-                TextButton(
-                  child: const Text('Redémarrer'),
-                  onPressed: () async {
-                    Navigator.of(context).pop();
-                    await RestartService.restartApp();
-                  },
-                ),
-              ],
-            );
-          },
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur lors de la restauration : ${e.toString()}')),
-      );
-    }
   }
 }

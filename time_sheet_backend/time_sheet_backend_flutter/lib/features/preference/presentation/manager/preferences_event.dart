@@ -9,38 +9,44 @@ sealed class PreferencesEvent extends Equatable {
 
 class LoadPreferences extends PreferencesEvent {}
 
+class ClearPreferences extends PreferencesEvent {}
+
 class SavePreferences extends PreferencesEvent {
   final String firstName;
   final String lastName;
   final String company;
+  final String? organizationId;
   Uint8List? signature;
 
   SavePreferences({
     required this.firstName,
     required this.lastName,
     required this.company,
+    this.organizationId,
     this.signature,
   });
 
   @override
-  List<Object?> get props => [firstName, lastName, company, signature];
+  List<Object?> get props => [firstName, lastName, company, organizationId, signature];
 }
 
 class SaveUserInfoEvent extends PreferencesEvent {
   final String firstName;
   final String lastName;
   final String company;
+  final String? organizationId;
   final Uint8List? signature;
 
   const SaveUserInfoEvent({
     required this.firstName,
     required this.lastName,
     required this.company,
+    this.organizationId,
     this.signature,
   });
 
   @override
-  List<Object?> get props => [firstName, lastName, company, signature];
+  List<Object?> get props => [firstName, lastName, company, organizationId, signature];
 }
 
 class SaveSignature extends PreferencesEvent {

@@ -1,0 +1,6 @@
+app_identifier("com.jonathanlemaine.timeSheet") # Bundle identifier de votre app
+apple_id("contact@jonathan-lemaine.fr") # Votre Apple ID - À MODIFIER si différent
+team_id("CSQ565C7YY") # Votre Team ID
+
+# Pour plus d'informations sur l'Appfile, voir :
+# https://docs.fastlane.tools/advanced/#appfile

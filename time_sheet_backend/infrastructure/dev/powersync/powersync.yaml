@@ -1,0 +1,47 @@
+telemetry:
+  disable_telemetry_sharing: true
+storage:
+  type: mongodb
+  uri: mongodb://dev-mongo:27017/powersync
+replication:
+  connections:
+    - type: postgresql
+      uri: postgresql://supabase_admin:dev-super-secret-postgres-password-2024@dev-db:5432/supabase
+      sslmode: disable
+      publication: powersync
+      slot_name: powersync_dev_slot
+client_auth:
+  supabase: true
+  supabase_jwt_secret: 258aaf499791cf8223ad9ac340beefa43787eb2dc8e0b7f66f3deb6948172555
+api:
+  port: 8080
+sync_rules:
+  content: |
+    bucket_definitions:
+      user_data:
+        parameters: SELECT token_parameters.user_id as user_id
+        data:
+          - SELECT * FROM profiles WHERE id = bucket.user_id
+          - SELECT * FROM timesheet_entries WHERE user_id = bucket.user_id
+          - SELECT * FROM absences WHERE user_id = bucket.user_id
+          - SELECT * FROM anomalies WHERE user_id = bucket.user_id
+          - SELECT * FROM expenses WHERE user_id = bucket.user_id
+          - SELECT * FROM overtime_configurations WHERE user_id = bucket.user_id
+          - SELECT * FROM generated_pdfs WHERE user_id = bucket.user_id
+          - SELECT * FROM notifications WHERE user_id = bucket.user_id
+          - SELECT * FROM validation_requests WHERE employee_id = bucket.user_id
+          - SELECT * FROM validation_requests WHERE manager_id = bucket.user_id
+          - SELECT * FROM manager_employees WHERE manager_id = bucket.user_id OR employee_id = bucket.user_id
+      manager_data:
+        parameters: SELECT employee_id FROM manager_employees WHERE manager_id = token_parameters.user_id
+        data:
+          - SELECT * FROM timesheet_entries WHERE user_id = bucket.employee_id
+          - SELECT * FROM absences WHERE user_id = bucket.employee_id
+          - SELECT * FROM anomalies WHERE user_id = bucket.employee_id
+          - SELECT * FROM expenses WHERE user_id = bucket.employee_id
+          - SELECT * FROM validation_requests WHERE employee_id = bucket.employee_id
+      org_data:
+        parameters: SELECT organization_id as org_id FROM profiles WHERE id = token_parameters.user_id AND organization_id IS NOT NULL
+        data:
+          - SELECT * FROM profiles WHERE organization_id = bucket.org_id
+          - SELECT * FROM organizations WHERE id = bucket.org_id

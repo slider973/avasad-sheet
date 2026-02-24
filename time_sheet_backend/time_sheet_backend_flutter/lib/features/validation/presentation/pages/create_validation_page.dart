@@ -202,8 +202,38 @@ class _CreateValidationPageState extends State<CreateValidationPage> {
                           ),
                           const SizedBox(height: 16),
                           OutlinedButton.icon(
-                            onPressed: () {
-                              Navigator.pushNamed(context, '/pdf');
+                            onPressed: () async {
+                              final now = DateTime.now();
+                              final picked = await showDatePicker(
+                                context: context,
+                                initialDate: now,
+                                firstDate: DateTime(now.year - 2),
+                                lastDate: now,
+                                initialDatePickerMode: DatePickerMode.year,
+                                locale: const Locale('fr', 'FR'),
+                              );
+                              if (picked != null && mounted) {
+                                final startDate = DateTime(picked.year, picked.month, 1);
+                                final endDate = DateTime(picked.year, picked.month + 1, 0);
+                                final result = await Navigator.push<Map<String, dynamic>>(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => PdfGenerationPage(
+                                      startDate: startDate,
+                                      endDate: endDate,
+                                      returnPdfData: true,
+                                    ),
+                                  ),
+                                );
+                                if (result != null && result['pdfBytes'] != null && mounted) {
+                                  // Sauvegarder le PDF et pré-sélectionner
+                                  final pdfBytes = result['pdfBytes'] as Uint8List;
+                                  final fileName = result['fileName'] as String? ?? 'timesheet.pdf';
+                                  _bloc.add(SetPdfData(pdfBytes: pdfBytes, fileName: fileName));
+                                }
+                                // Recharger les managers (et les PDFs)
+                                _bloc.add(const LoadManagers());
+                              }
                             },
                             icon: const Icon(Icons.add),
                             label: const Text('Générer un PDF'),
@@ -282,6 +312,74 @@ class _CreateValidationPageState extends State<CreateValidationPage> {
                       ),
                     ],
                   ],
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Section Signataire Client (optionnel)
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.business, color: Theme.of(context).primaryColor),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text(
+                          'Signataire client (optionnel)',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Si un responsable de l\'entreprise cliente doit également signer, renseignez ses coordonnées.',
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    initialValue: state.clientSignerName,
+                    decoration: const InputDecoration(
+                      labelText: 'Nom du signataire client',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.person_outline),
+                    ),
+                    onChanged: (value) {
+                      _bloc.add(UpdateClientSigner(
+                        name: value.isEmpty ? null : value,
+                        email: state.clientSignerEmail,
+                      ));
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    initialValue: state.clientSignerEmail,
+                    decoration: const InputDecoration(
+                      labelText: 'Email du signataire client',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.email_outlined),
+                    ),
+                    keyboardType: TextInputType.emailAddress,
+                    onChanged: (value) {
+                      _bloc.add(UpdateClientSigner(
+                        name: state.clientSignerName,
+                        email: value.isEmpty ? null : value,
+                      ));
+                    },
+                  ),
                 ],
               ),
             ),
@@ -486,4 +584,5 @@ class _CreateValidationPageState extends State<CreateValidationPage> {
       );
     }
   }
+
 }

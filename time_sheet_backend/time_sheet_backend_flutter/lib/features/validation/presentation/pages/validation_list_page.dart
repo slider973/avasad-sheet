@@ -401,6 +401,7 @@ class _ValidationListPageState extends State<ValidationListPage> {
   Color _getStatusColor(ValidationStatus status) {
     switch (status) {
       case ValidationStatus.pending:
+      case ValidationStatus.signing:
         return Colors.orange;
       case ValidationStatus.approved:
         return Colors.green;
@@ -412,6 +413,7 @@ class _ValidationListPageState extends State<ValidationListPage> {
   String _getStatusLabel(ValidationStatus status) {
     switch (status) {
       case ValidationStatus.pending:
+      case ValidationStatus.signing:
         return 'En attente';
       case ValidationStatus.approved:
         return 'Approuvée';

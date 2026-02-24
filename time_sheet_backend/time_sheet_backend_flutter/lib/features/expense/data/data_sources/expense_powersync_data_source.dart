@@ -4,9 +4,10 @@ import 'package:powersync/powersync.dart';
 import '../../../../core/services/supabase/supabase_service.dart';
 import '../../domain/entities/expense_category.dart';
 import '../models/expense_model.dart';
+import 'expense_data_source.dart';
 
 /// PowerSync-based data source for expenses. Replaces the Isar-based ExpenseLocalDataSource.
-class ExpensePowerSyncDataSource {
+class ExpensePowerSyncDataSource implements ExpenseDataSource {
   final PowerSyncDatabase db;
 
   ExpensePowerSyncDataSource({required this.db});

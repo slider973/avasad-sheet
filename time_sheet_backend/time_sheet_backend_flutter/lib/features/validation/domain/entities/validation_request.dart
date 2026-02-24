@@ -18,12 +18,17 @@ class ValidationRequest extends Equatable {
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? expiresAt;
-  
+
   // Métadonnées du PDF
   final String pdfPath;
   final String pdfHash;
   final int pdfSizeBytes;
-  
+
+  // Multi-actor signing
+  final String? signingStep;
+  final String? clientSignerName;
+  final String? clientSignerEmail;
+
   const ValidationRequest({
     required this.id,
     required this.organizationId,
@@ -44,23 +49,26 @@ class ValidationRequest extends Equatable {
     required this.pdfPath,
     required this.pdfHash,
     required this.pdfSizeBytes,
+    this.signingStep,
+    this.clientSignerName,
+    this.clientSignerEmail,
   });
-  
+
   /// Vérifie si la demande est expirée
   bool get isExpired {
     if (expiresAt == null) return false;
     return DateTime.now().isAfter(expiresAt!);
   }
-  
+
   /// Vérifie si la demande est en attente
   bool get isPending => status == ValidationStatus.pending;
-  
+
   /// Vérifie si la demande est approuvée
   bool get isApproved => status == ValidationStatus.approved;
-  
+
   /// Vérifie si la demande est rejetée
   bool get isRejected => status == ValidationStatus.rejected;
-  
+
   /// Copie avec modifications
   ValidationRequest copyWith({
     String? id,
@@ -82,6 +90,9 @@ class ValidationRequest extends Equatable {
     String? pdfPath,
     String? pdfHash,
     int? pdfSizeBytes,
+    String? signingStep,
+    String? clientSignerName,
+    String? clientSignerEmail,
   }) {
     return ValidationRequest(
       id: id ?? this.id,
@@ -103,9 +114,12 @@ class ValidationRequest extends Equatable {
       pdfPath: pdfPath ?? this.pdfPath,
       pdfHash: pdfHash ?? this.pdfHash,
       pdfSizeBytes: pdfSizeBytes ?? this.pdfSizeBytes,
+      signingStep: signingStep ?? this.signingStep,
+      clientSignerName: clientSignerName ?? this.clientSignerName,
+      clientSignerEmail: clientSignerEmail ?? this.clientSignerEmail,
     );
   }
-  
+
   @override
   List<Object?> get props => [
     id,
@@ -127,12 +141,16 @@ class ValidationRequest extends Equatable {
     pdfPath,
     pdfHash,
     pdfSizeBytes,
+    signingStep,
+    clientSignerName,
+    clientSignerEmail,
   ];
 }
 
 /// Statut de validation
 enum ValidationStatus {
   pending,
+  signing,
   approved,
   rejected,
 }
@@ -143,16 +161,19 @@ extension ValidationStatusExtension on ValidationStatus {
     switch (this) {
       case ValidationStatus.pending:
         return 'pending';
+      case ValidationStatus.signing:
+        return 'signing';
       case ValidationStatus.approved:
         return 'approved';
       case ValidationStatus.rejected:
         return 'rejected';
     }
   }
-  
+
   static ValidationStatus fromString(String value) {
     switch (value) {
       case 'pending':
+      case 'signing':
         return ValidationStatus.pending;
       case 'approved':
         return ValidationStatus.approved;

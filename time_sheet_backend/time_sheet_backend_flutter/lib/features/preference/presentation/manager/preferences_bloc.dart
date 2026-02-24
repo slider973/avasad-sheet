@@ -5,7 +5,9 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import '../../../../core/services/supabase/supabase_service.dart';
 import '../../../../services/logger_service.dart';
+import '../../domain/repositories/user_preference_repository.dart';
 import '../../domain/use_cases/get_user_preference_use_case.dart';
 import '../../domain/use_cases/set_user_preference_use_case.dart';
 import '../../domain/use_cases/register_manager_use_case.dart';
@@ -21,14 +23,17 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
   final SetUserPreferenceUseCase setUserPreferenceUseCase;
   final RegisterManagerUseCase registerManagerUseCase;
   final UnregisterManagerUseCase unregisterManagerUseCase;
+  final UserPreferencesRepository userPreferencesRepository;
 
   PreferencesBloc({
     required this.getUserPreferenceUseCase,
     required this.setUserPreferenceUseCase,
     required this.registerManagerUseCase,
     required this.unregisterManagerUseCase,
+    required this.userPreferencesRepository,
   }) : super(PreferencesInitial()) {
     on<LoadPreferences>(_onLoadPreferences);
+    on<ClearPreferences>(_onClearPreferences);
     on<SavePreferences>(_onSavePreferences);
     on<SaveSignature>(_onSaveSignature);
     on<SaveLastGenerationDate>(_onSaveLastGenerationDate);
@@ -116,6 +121,18 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
     }
   }
 
+  Future<void> _onClearPreferences(
+    ClearPreferences event,
+    Emitter<PreferencesState> emit,
+  ) async {
+    try {
+      await userPreferencesRepository.clearAll();
+      emit(PreferencesInitial());
+    } catch (e) {
+      logger.e('Erreur lors de la suppression des préférences: $e');
+    }
+  }
+
   Future<void> _onSavePreferences(
     SavePreferences event,
     Emitter<PreferencesState> emit,
@@ -125,6 +142,19 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
       await setUserPreferenceUseCase.execute('firstName', event.firstName);
       await setUserPreferenceUseCase.execute('lastName', event.lastName);
       await setUserPreferenceUseCase.execute('company', event.company);
+
+      // Sauvegarder organization_id directement via Supabase (pas PowerSync)
+      // pour éviter des CRUD operations bloquées par RLS
+      if (event.organizationId != null) {
+        final userId = SupabaseService.instance.currentUserId;
+        if (userId != null) {
+          await SupabaseService.instance.client
+              .from('profiles')
+              .update({'organization_id': event.organizationId})
+              .eq('id', userId);
+        }
+      }
+
       // Récupérer la signature existante
       final currentState = state;
       Uint8List? signature;
@@ -180,7 +210,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
       // Encodez la signature en base64 pour le stockage
       final signatureBase64 = base64Encode(event.signature);
 
-      // Sauvegardez la signature encodée
+      // Sauvegardez la signature encodée localement uniquement (sécurité)
       await setUserPreferenceUseCase.execute('signature', signatureBase64);
 
       // Récupérez les autres préférences actuelles
@@ -429,6 +459,18 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
       if (event.signature != null) {
         final signatureBase64 = base64Encode(event.signature!);
         await setUserPreferenceUseCase.execute('signature', signatureBase64);
+      }
+
+      // Sauvegarder organization_id directement via Supabase (pas PowerSync)
+      // pour éviter des CRUD operations bloquées par RLS
+      if (event.organizationId != null) {
+        final userId = SupabaseService.instance.currentUserId;
+        if (userId != null) {
+          await SupabaseService.instance.client
+              .from('profiles')
+              .update({'organization_id': event.organizationId})
+              .eq('id', userId);
+        }
       }
 
       // Charger les autres préférences existantes

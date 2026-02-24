@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart';
+import 'package:time_sheet/core/config/environment.dart';
 
 class SupabaseService {
   static SupabaseService? _instance;
@@ -12,14 +13,8 @@ class SupabaseService {
   /// Initialize Supabase with self-hosted or cloud configuration
   Future<void> initialize() async {
     await Supabase.initialize(
-      url: const String.fromEnvironment(
-        'SUPABASE_URL',
-        defaultValue: 'https://supabase.timesheet.staticflow.ch',
-      ),
-      anonKey: const String.fromEnvironment(
-        'SUPABASE_ANON_KEY',
-        defaultValue: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzAwMDAwMDAwLCJleHAiOjE5MDAwMDAwMDB9.KEoz8wTUGwgLtXFiZ_sBC-wy57qSd-lwH4J0h79R8lU',
-      ),
+      url: AppConfig.supabaseUrl,
+      anonKey: AppConfig.anonKey,
       authOptions: const FlutterAuthClientOptions(
         authFlowType: AuthFlowType.pkce,
         autoRefreshToken: true,

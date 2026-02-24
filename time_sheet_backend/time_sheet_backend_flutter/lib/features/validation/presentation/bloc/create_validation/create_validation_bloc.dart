@@ -11,6 +11,7 @@ import 'package:time_sheet/features/pointage/domain/entities/generated_pdf.dart'
 import 'package:time_sheet/features/pointage/domain/use_cases/get_generated_pdfs_usecase.dart';
 import 'dart:io';
 import 'package:time_sheet/services/logger_service.dart';
+import 'package:time_sheet/core/services/supabase/supabase_service.dart';
 import 'package:time_sheet/features/pointage/domain/use_cases/get_monthly_timesheet_entries_usecase.dart';
 
 part 'create_validation_event.dart';
@@ -36,6 +37,7 @@ class CreateValidationBloc extends Bloc<CreateValidationEvent, CreateValidationS
     on<SelectPeriod>(_onSelectPeriod);
     on<SelectGeneratedPdf>(_onSelectGeneratedPdf);
     on<SetPdfData>(_onSetPdfData);
+    on<UpdateClientSigner>(_onUpdateClientSigner);
     on<SubmitValidation>(_onSubmitValidation);
     on<ResetForm>(_onResetForm);
   }
@@ -47,17 +49,13 @@ class CreateValidationBloc extends Bloc<CreateValidationEvent, CreateValidationS
     emit(CreateValidationLoading());
 
     try {
-      // Récupérer l'ID utilisateur depuis les préférences
-      final firstName = await getUserPreference.execute('firstName') ?? '';
-      final lastName = await getUserPreference.execute('lastName') ?? '';
+      // Récupérer l'ID utilisateur réel depuis Supabase Auth
+      final userId = SupabaseService.instance.currentUserId;
 
-      if (firstName.isEmpty || lastName.isEmpty) {
-        emit(const CreateValidationError('Veuillez configurer votre nom dans les paramètres'));
+      if (userId == null || userId.isEmpty) {
+        emit(const CreateValidationError('Utilisateur non connecté'));
         return;
       }
-
-      // Utiliser email comme ID unique
-      final userId = '${firstName.toLowerCase()}_${lastName.toLowerCase()}';
 
       final result = await getAvailableManagers(userId);
 
@@ -251,6 +249,19 @@ class CreateValidationBloc extends Bloc<CreateValidationEvent, CreateValidationS
     }
   }
 
+  void _onUpdateClientSigner(
+    UpdateClientSigner event,
+    Emitter<CreateValidationState> emit,
+  ) {
+    if (state is CreateValidationForm) {
+      final currentState = state as CreateValidationForm;
+      emit(currentState.copyWith(
+        clientSignerName: event.name,
+        clientSignerEmail: event.email,
+      ));
+    }
+  }
+
   Future<void> _onSubmitValidation(
     SubmitValidation event,
     Emitter<CreateValidationState> emit,
@@ -277,7 +288,15 @@ class CreateValidationBloc extends Bloc<CreateValidationEvent, CreateValidationS
       emit(CreateValidationSubmitting());
 
       try {
-        // Récupérer l'ID utilisateur depuis les préférences
+        // Récupérer l'ID utilisateur réel depuis Supabase Auth
+        final userId = SupabaseService.instance.currentUserId;
+
+        if (userId == null || userId.isEmpty) {
+          emit(const CreateValidationError('Utilisateur non connecté'));
+          return;
+        }
+
+        // Récupérer le nom et l'entreprise pour l'affichage
         final firstName = await getUserPreference.execute('firstName') ?? '';
         final lastName = await getUserPreference.execute('lastName') ?? '';
         final company = await getUserPreference.execute('company') ?? '';
@@ -294,10 +313,8 @@ class CreateValidationBloc extends Bloc<CreateValidationEvent, CreateValidationS
               'Veuillez configurer votre signature dans les paramètres avant de créer une validation'));
           return;
         }
-        logger.i('✅ Signature utilisateur trouvée dans les préférences');
+        logger.i('Signature utilisateur trouvée dans les préférences');
 
-        // Utiliser email comme ID unique
-        final userId = '${firstName.toLowerCase()}_${lastName.toLowerCase()}';
         final employeeName = '$firstName $lastName';
 
         // Récupérer les données timesheet pour la période
@@ -404,6 +421,9 @@ class CreateValidationBloc extends Bloc<CreateValidationEvent, CreateValidationS
           totalDays: totalDays,
           totalHours: totalHours,
           totalOvertimeHours: totalOvertimeHours,
+          employeeSignature: userSignature,
+          clientSignerName: currentState.clientSignerName,
+          clientSignerEmail: currentState.clientSignerEmail,
         );
 
         final result = await createValidationRequest(params);

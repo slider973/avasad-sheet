@@ -61,6 +61,17 @@ class SetPdfData extends CreateValidationEvent {
   List<Object> get props => [pdfBytes, fileName];
 }
 
+/// Mettre à jour les infos du signataire client
+class UpdateClientSigner extends CreateValidationEvent {
+  final String? name;
+  final String? email;
+
+  const UpdateClientSigner({this.name, this.email});
+
+  @override
+  List<Object?> get props => [name, email];
+}
+
 /// Soumettre la validation
 class SubmitValidation extends CreateValidationEvent {
   const SubmitValidation();

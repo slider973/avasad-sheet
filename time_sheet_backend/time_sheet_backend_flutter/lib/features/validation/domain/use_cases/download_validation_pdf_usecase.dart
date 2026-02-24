@@ -1,7 +1,6 @@
 import 'dart:typed_data';
 import 'package:fpdart/fpdart.dart';
 import 'package:intl/intl.dart';
-import 'package:isar/isar.dart';
 import 'package:time_sheet/core/error/failures.dart';
 import 'package:time_sheet/core/use_cases/use_case.dart';
 import 'package:time_sheet/services/logger_service.dart';
@@ -14,20 +13,21 @@ import 'package:time_sheet/features/preference/domain/use_cases/get_user_prefere
 import '../repositories/validation_repository.dart';
 import '../entities/validation_request.dart';
 
-/// Use case pour générer le PDF d'une validation localement
+/// Use case pour télécharger le PDF d'une validation.
+/// Stratégie :
+/// - Pending : télécharger le PDF original depuis Storage (signature employé intégrée)
+/// - Approved : régénérer avec les deux signatures (employé + manager) depuis la BDD
 class DownloadValidationPdfUseCase implements UseCase<Uint8List, DownloadPdfParams> {
   final ValidationRepository repository;
   final GeneratePdfUseCase generatePdfUseCase;
   final GetSignatureUseCase getSignatureUseCase;
   final GetUserPreferenceUseCase getUserPreferenceUseCase;
-  final Isar isar;
 
   const DownloadValidationPdfUseCase(
     this.repository,
     this.generatePdfUseCase,
     this.getSignatureUseCase,
     this.getUserPreferenceUseCase,
-    this.isar,
   );
 
   @override
@@ -36,150 +36,142 @@ class DownloadValidationPdfUseCase implements UseCase<Uint8List, DownloadPdfPara
       return Left(ValidationFailure('L\'ID de la validation est requis'));
     }
 
+    // Vérifier le statut de la validation pour choisir la stratégie
+    final dataResult = await repository.getValidationTimesheetData(params.validationId);
+    final status = dataResult.fold(
+      (failure) => 'pending',
+      (data) => data['status'] as String? ?? 'pending',
+    );
+
+    // Si approuvée, régénérer avec les deux signatures (employé + manager)
+    if (status == 'approved') {
+      logger.i('Validation approuvée, régénération du PDF avec les deux signatures');
+      return _regeneratePdf(params.validationId);
+    }
+
+    // Sinon (pending/rejected), télécharger le PDF original depuis Storage
+    logger.i('Téléchargement du PDF depuis Storage pour validation ${params.validationId}');
     try {
-      // Récupérer les données timesheet depuis le serveur
-      final dataResult = await repository.getValidationTimesheetData(params.validationId);
+      final storageResult = await repository.downloadValidationPdf(params.validationId);
 
-      if (dataResult.isLeft()) {
-        return Left(dataResult.fold((l) => l, (r) => GeneralFailure('Unknown error')));
-      }
-
-      final data = dataResult.fold(
-        (failure) => throw Exception('Failed to get timesheet data: ${failure.message}'),
-        (data) => data,
-      );
-
-      logger.i('📄 Génération locale du PDF pour validation ${params.validationId}');
-      logger.i('   - Mois: ${data['month']}/${data['year']}');
-      logger.i('   - Statut: ${data['status']}');
-      logger.i('   - Manager Name dans data: ${data['managerName']}');
-
-      // Récupérer les informations de l'employé depuis les données timesheet (PAS des préférences)
-      final employeeName = data['employeeName'] as String? ?? '';
-      final employeeCompany = data['employeeCompany'] as String? ?? 'Avasad';
-
-      logger.i('📋 Données de la BDD:');
-      logger.i('   - Employé: $employeeName');
-      logger.i('   - Entreprise: $employeeCompany');
-
-      // Convertir les entries JSON en List<TimesheetEntry>
-      final entriesJson = data['entries'] as List<dynamic>;
-      final List<TimesheetEntry> entries = entriesJson.map((entry) {
-        // Calculer le jour de la semaine à partir de la date
-        String dayOfWeekDate = '';
-        DateTime? parsedDate;
-        try {
-          parsedDate = DateFormat('dd-MMM-yy', 'en_US').parse(entry['dayDate'] ?? '');
-          dayOfWeekDate = DateFormat('EEEE', 'fr_FR').format(parsedDate);
-        } catch (e) {
-          dayOfWeekDate = '';
-          parsedDate = DateTime.now();
-        }
-
-        return TimesheetEntry(
-          dayDate: entry['dayDate'] ?? '',
-          dayOfWeekDate: dayOfWeekDate,
-          startMorning: entry['startMorning'] ?? '',
-          endMorning: entry['endMorning'] ?? '',
-          startAfternoon: entry['startAfternoon'] ?? '',
-          endAfternoon: entry['endAfternoon'] ?? '',
-          absence: entry['isAbsence'] == true
-              ? AbsenceEntity(
-                  type: AbsenceType.other,
-                  motif: entry['absenceReason'] ?? '',
-                  startDate: parsedDate ?? DateTime.now(),
-                  endDate: parsedDate ?? DateTime.now(),
-                )
-              : null,
-          absenceReason: entry['absenceReason'],
-          hasOvertimeHours: entry['hasOvertimeHours'] ?? false,
-          period: entry['period'] ?? '',
-        );
-      }).toList();
-
-      // Récupérer la signature de l'employé depuis les données timesheet
-      String? employeeSignatureBase64 = data['employeeSignature'] as String?;
-      if (employeeSignatureBase64 != null) {
-        logger.i('   - Signature de l\'employé trouvée dans les données: ${employeeSignatureBase64.length} caractères');
-      } else {
-        logger.w('   - Pas de signature d\'employé dans les données');
-      }
-
-      // Préparer les paramètres pour la génération du PDF
-      String? managerSignatureBase64;
-      String? managerName;
-
-      logger.i('📝 Vérification du statut pour la signature du manager...');
-      logger.i('   - Statut brut reçu: ${data['status']}');
-
-      // Si la validation est approuvée, récupérer la signature du manager LOCALEMENT
-      final statusString = data['status'] as String? ?? 'pending';
-      final validationStatus = ValidationStatusExtension.fromString(statusString);
-      
-      logger.i('   - Statut parsé: $validationStatus');
-      logger.i('   - Est approuvé? ${validationStatus == ValidationStatus.approved}');
-      
-      if (validationStatus == ValidationStatus.approved) {
-        logger.i('   - Validation approuvée, récupération de la signature du manager LOCALEMENT');
-
-        managerName = data['managerName'] as String?;
-        logger.i('   - Manager qui a approuvé: $managerName');
-
-        // Récupérer la signature du manager depuis les préférences locales
-        final localSignature = await getUserPreferenceUseCase.execute('signature');
-        if (localSignature != null && localSignature.toString().isNotEmpty) {
-          managerSignatureBase64 = localSignature.toString();
-          logger.i('✅ Signature du manager récupérée localement: ${managerSignatureBase64.length} caractères');
-        } else {
-          logger.w('❌ Pas de signature dans les préférences locales du manager');
-        }
-      } else {
-        logger.i('   - Validation non approuvée, pas de signature manager à ajouter');
-      }
-
-      // Log final avant génération
-      logger.i('🎯 Génération du PDF avec:');
-      logger.i(
-          '   - Signature employé: ${employeeSignatureBase64 != null ? '${employeeSignatureBase64.length} caractères' : 'NON'}');
-      logger.i(
-          '   - Signature manager: ${managerSignatureBase64 != null ? '${managerSignatureBase64.length} caractères' : 'NON'}');
-      logger.i('   - Nom manager: $managerName');
-
-      // Générer le PDF avec les entries fournies ET les données de la BDD
-      final pdfResult = await generatePdfUseCase.generateFromEntries(
-        entries: entries,
-        monthNumber: data['month'] as int,
-        year: data['year'] as int,
-        employeeName: employeeName, // Nom de l'employé depuis BDD
-        employeeCompany: employeeCompany, // Entreprise depuis BDD
-        employeeSignature: employeeSignatureBase64, // Signature de l'employé depuis BDD
-        managerSignature: managerSignatureBase64,
-        managerName: managerName,
-      );
-
-      if (pdfResult.isLeft()) {
-        logger.e('Erreur lors de la génération du PDF');
-        return Left(pdfResult.fold((l) => l, (r) => GeneralFailure('Unknown error')));
-      }
-
-      final pdfBytes = pdfResult.fold(
-        (failure) => throw Exception('PDF generation failed: ${failure.message}'),
+      final storedPdf = storageResult.fold(
+        (failure) => null,
         (bytes) => bytes,
       );
 
-      logger.i('✅ PDF généré localement avec succès: ${pdfBytes.length} octets');
-
-      return Right(pdfBytes);
+      if (storedPdf != null && storedPdf.isNotEmpty) {
+        logger.i('PDF téléchargé depuis Storage: ${storedPdf.length} octets');
+        return Right(storedPdf);
+      }
     } catch (e) {
-      logger.e('Erreur lors de la génération locale du PDF', error: e);
-      return Left(GeneralFailure('Erreur lors de la génération du PDF: $e'));
+      logger.w('Erreur téléchargement Storage: $e');
     }
+
+    // Fallback : régénérer depuis les données timesheet
+    logger.w('PDF Storage indisponible, régénération en fallback...');
+    return _regeneratePdf(params.validationId);
+  }
+
+  /// Régénère le PDF à partir des données timesheet (fallback)
+  Future<Either<Failure, Uint8List>> _regeneratePdf(String validationId) async {
+    logger.i('Régénération du PDF pour validation $validationId');
+
+    final dataResult = await repository.getValidationTimesheetData(validationId);
+
+    if (dataResult.isLeft()) {
+      return Left(dataResult.fold((l) => l, (r) => GeneralFailure('Unknown error')));
+    }
+
+    final data = dataResult.fold(
+      (failure) => throw Exception('Failed to get timesheet data: ${failure.message}'),
+      (data) => data,
+    );
+
+    logger.i('Données récupérées - Mois: ${data['month']}/${data['year']}, Statut: ${data['status']}');
+
+    final employeeName = data['employeeName'] as String? ?? '';
+    final employeeCompany = data['employeeCompany'] as String? ?? 'Avasad';
+
+    // Convertir les entries JSON en List<TimesheetEntry>
+    final entriesJson = data['entries'] as List<dynamic>;
+    final List<TimesheetEntry> entries = entriesJson.map((entry) {
+      String dayOfWeekDate = '';
+      DateTime? parsedDate;
+      try {
+        parsedDate = DateFormat('dd-MMM-yy', 'en_US').parse(entry['dayDate'] ?? '');
+        dayOfWeekDate = DateFormat('EEEE', 'fr_FR').format(parsedDate);
+      } catch (e) {
+        dayOfWeekDate = '';
+        parsedDate = DateTime.now();
+      }
+
+      return TimesheetEntry(
+        dayDate: entry['dayDate'] ?? '',
+        dayOfWeekDate: dayOfWeekDate,
+        startMorning: entry['startMorning'] ?? '',
+        endMorning: entry['endMorning'] ?? '',
+        startAfternoon: entry['startAfternoon'] ?? '',
+        endAfternoon: entry['endAfternoon'] ?? '',
+        absence: entry['isAbsence'] == true
+            ? AbsenceEntity(
+                type: AbsenceType.other,
+                motif: entry['absenceReason'] ?? '',
+                startDate: parsedDate ?? DateTime.now(),
+                endDate: parsedDate ?? DateTime.now(),
+              )
+            : null,
+        absenceReason: entry['absenceReason'],
+        hasOvertimeHours: entry['hasOvertimeHours'] ?? false,
+        period: entry['period'] ?? '',
+      );
+    }).toList();
+
+    logger.i('${entries.length} entrées timesheet converties');
+
+    // Récupérer la signature de l'employé
+    String? employeeSignatureBase64 = data['employeeSignature'] as String?;
+
+    // Préparer signature manager si validé
+    String? managerSignatureBase64;
+    String? managerName;
+    final statusString = data['status'] as String? ?? 'pending';
+    final validationStatus = ValidationStatusExtension.fromString(statusString);
+
+    if (validationStatus == ValidationStatus.approved) {
+      managerName = data['managerName'] as String?;
+      managerSignatureBase64 = data['managerSignature'] as String?;
+    }
+
+    // Générer le PDF
+    final pdfResult = await generatePdfUseCase.generateFromEntries(
+      entries: entries,
+      monthNumber: data['month'] as int,
+      year: data['year'] as int,
+      employeeName: employeeName,
+      employeeCompany: employeeCompany,
+      employeeSignature: employeeSignatureBase64,
+      managerSignature: managerSignatureBase64,
+      managerName: managerName,
+    );
+
+    if (pdfResult.isLeft()) {
+      logger.e('Erreur lors de la régénération du PDF');
+      return Left(pdfResult.fold((l) => l, (r) => GeneralFailure('Unknown error')));
+    }
+
+    final pdfBytes = pdfResult.fold(
+      (failure) => throw Exception('PDF generation failed: ${failure.message}'),
+      (bytes) => bytes,
+    );
+
+    logger.i('PDF régénéré avec succès: ${pdfBytes.length} octets');
+    return Right(pdfBytes);
   }
 }
 
 class DownloadPdfParams {
   final String validationId;
-  final String? managerSignature; // Plus utilisé, gardé pour compatibilité
+  final String? managerSignature;
 
   const DownloadPdfParams({
     required this.validationId,

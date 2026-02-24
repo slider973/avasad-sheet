@@ -27,12 +27,13 @@ import '../features/pointage/domain/use_cases/signaler_absence_periode_usecase.d
 import '../features/preference/domain/use_cases/get_signature_usecase.dart';
 import '../features/preference/domain/use_cases/get_user_preference_use_case.dart';
 import '../features/preference/domain/use_cases/set_user_preference_use_case.dart';
+import '../features/preference/domain/repositories/user_preference_repository.dart';
 import '../features/preference/domain/use_cases/register_manager_use_case.dart';
 import '../features/preference/domain/use_cases/unregister_manager_use_case.dart';
 import '../features/preference/presentation/manager/preferences_bloc.dart';
 import '../features/pointage/data/repositories/timesheet_repository_impl.dart';
 import '../features/pointage/domain/services/anomaly_detection_service.dart';
-import 'anomaly/anomaly_service.dart';
+import 'anomaly/anomaly_service_powersync.dart';
 
 import '../features/pointage/presentation/pages/pdf/bloc/pdf/pdf_bloc.dart';
 import '../features/pointage/presentation/pages/time-sheet/bloc/time_sheet/time_sheet_bloc.dart';
@@ -60,6 +61,7 @@ class ServiceFactory extends StatelessWidget {
               setUserPreferenceUseCase: getIt<SetUserPreferenceUseCase>(),
               registerManagerUseCase: getIt<RegisterManagerUseCase>(),
               unregisterManagerUseCase: getIt<UnregisterManagerUseCase>(),
+              userPreferencesRepository: getIt<UserPreferencesRepository>(),
             )..add(LoadPreferences()),
           ),
           BlocProvider<TimeSheetBloc>(
@@ -109,7 +111,7 @@ class ServiceFactory extends StatelessWidget {
               anomalyRepository: getIt<AnomalyRepository>(),
               newAnomalyDetectionService: getIt<AnomalyDetectionService>(),
               timesheetRepository: getIt<TimesheetRepositoryImpl>(),
-              anomalyService: getIt<AnomalyService>(),
+              anomalyService: getIt<AnomalyServicePowerSync>(),
             ),
           ),
         ],

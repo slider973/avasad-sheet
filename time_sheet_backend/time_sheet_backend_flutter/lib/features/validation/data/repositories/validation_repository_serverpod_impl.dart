@@ -33,6 +33,9 @@ class ValidationRepositoryServerpodImpl implements ValidationRepository {
     double? totalDays,
     String? totalHours,
     String? totalOvertimeHours,
+    String? employeeSignature,
+    String? clientSignerName,
+    String? clientSignerEmail,
   }) async {
     try {
       // Récupérer les informations de l'employé si non fournies
@@ -450,6 +453,14 @@ class ValidationRepositoryServerpodImpl implements ValidationRepository {
     return Stream.value(Left(ServerFailure('Watch user notifications not implemented')));
   }
 
+  @override
+  Future<Either<Failure, String>> getSigningUrl({
+    required String validationId,
+    required String signerRole,
+    required String signerName,
+    String? signerEmail,
+  }) async => const Left(ServerFailure('Signing URL not supported in Serverpod implementation'));
+
   // Mapper serverpod.ValidationRequest vers domain ValidationRequest
   ValidationRequest _mapToEntity(serverpod.ValidationRequest request) {
     return ValidationRequest(
@@ -535,4 +546,5 @@ class ValidationRepositoryServerpodImpl implements ValidationRepository {
         return ValidationStatus.rejected; // Traiter les expirés comme rejetés
     }
   }
+
 }

@@ -15,6 +15,7 @@ abstract class AuthRepository {
     required String password,
     required String firstName,
     required String lastName,
+    String? organizationId,
   });
 
   /// Sign in with Google

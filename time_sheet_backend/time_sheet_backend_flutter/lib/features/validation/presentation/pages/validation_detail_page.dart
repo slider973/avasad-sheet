@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:time_sheet/features/validation/presentation/bloc/validation_detail/validation_detail_bloc.dart';
@@ -11,7 +11,6 @@ import 'package:time_sheet/features/validation/presentation/widgets/weekend_over
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:time_sheet/features/preference/presentation/manager/preferences_bloc.dart';
-
 /// Page de détail d'une validation
 class ValidationDetailPage extends StatefulWidget {
   final String validationId;
@@ -74,10 +73,16 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
         actions: [
           BlocBuilder<ValidationDetailBloc, ValidationDetailState>(
             builder: (context, state) {
+              String? validationId;
               if (state is ValidationDetailLoaded) {
+                validationId = state.validation.id;
+              } else if (state is ValidationDetailWithTimesheetLoaded) {
+                validationId = state.validation.id;
+              }
+              if (validationId != null) {
                 return IconButton(
                   icon: const Icon(Icons.picture_as_pdf),
-                  onPressed: () => _downloadPdf(state.validation.id),
+                  onPressed: () => _downloadPdf(validationId!),
                   tooltip: 'Télécharger le PDF',
                 );
               }
@@ -96,6 +101,18 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
               ),
             );
             Navigator.pop(context, true);
+          }
+
+          if (state is SigningLinkGenerated) {
+            Clipboard.setData(ClipboardData(text: state.signingUrl));
+            final roleLabel = state.signerRole == 'manager' ? 'manager' : 'client';
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Lien de signature $roleLabel copié dans le presse-papier'),
+                backgroundColor: Colors.green,
+                duration: const Duration(seconds: 4),
+              ),
+            );
           }
 
           if (state is ValidationDetailError) {
@@ -213,6 +230,9 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
 
         const SizedBox(height: 16),
 
+        // Progression des signatures (multi-acteurs)
+        ..._buildSigningProgress(validation),
+
         // Document PDF
         Card(
           child: Padding(
@@ -233,7 +253,9 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
                       size: 40, color: Colors.red),
                   title: const Text('Timesheet.pdf'),
                   subtitle: Text(
-                      'Taille: ${_formatFileSize(validation.pdfSizeBytes)}'),
+                      validation.pdfSizeBytes > 0
+                          ? 'Taille: ${_formatFileSize(validation.pdfSizeBytes)}'
+                          : _formatFileSize(validation.pdfSizeBytes)),
                   trailing: IconButton(
                     icon: const Icon(Icons.download),
                     onPressed: () => _downloadPdf(validation.id),
@@ -532,6 +554,9 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
 
         const SizedBox(height: 16),
 
+        // Progression des signatures (multi-acteurs)
+        ..._buildSigningProgress(validation),
+
         // Document PDF
         Card(
           child: Padding(
@@ -552,7 +577,9 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
                       size: 40, color: Colors.red),
                   title: const Text('Timesheet.pdf'),
                   subtitle: Text(
-                      'Taille: ${_formatFileSize(validation.pdfSizeBytes)}'),
+                      validation.pdfSizeBytes > 0
+                          ? 'Taille: ${_formatFileSize(validation.pdfSizeBytes)}'
+                          : _formatFileSize(validation.pdfSizeBytes)),
                   trailing: IconButton(
                     icon: const Icon(Icons.download),
                     onPressed: () => _downloadPdf(validation.id),
@@ -756,6 +783,181 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
     );
   }
 
+  List<Widget> _buildSigningProgress(ValidationRequest validation) {
+    if (validation.signingStep == null) return [];
+
+    return [
+      Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Progression des signatures',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const Divider(height: 24),
+              _buildSigningStep(
+                'Employé',
+                Icons.person,
+                _isStepCompleted(validation, 'employee'),
+                _isStepCurrent(validation, 'employee'),
+              ),
+              const SizedBox(height: 8),
+              _buildSigningStep(
+                'Manager',
+                Icons.supervisor_account,
+                _isStepCompleted(validation, 'manager'),
+                _isStepCurrent(validation, 'manager'),
+                rejected: _isStepRejected(validation, 'manager'),
+              ),
+              // Bouton pour générer le lien de signature manager (pour managers externes)
+              if (_isStepCurrent(validation, 'manager') &&
+                  validation.isPending) ...[
+                const SizedBox(height: 8),
+                _buildSigningLinkButton(
+                  validation: validation,
+                  signerRole: 'manager',
+                  label: 'Copier le lien de signature manager',
+                  icon: Icons.link,
+                ),
+              ],
+              if (validation.clientSignerName != null &&
+                  validation.clientSignerName!.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                _buildSigningStep(
+                  'Client (${validation.clientSignerName})',
+                  Icons.business,
+                  _isStepCompleted(validation, 'client'),
+                  _isStepCurrent(validation, 'client'),
+                ),
+                // Bouton pour copier le lien de signature client
+                if (_isStepCurrent(validation, 'client')) ...[
+                  const SizedBox(height: 8),
+                  _buildSigningLinkButton(
+                    validation: validation,
+                    signerRole: 'client',
+                    label: 'Copier le lien de signature client',
+                    icon: Icons.share,
+                  ),
+                ],
+              ],
+            ],
+          ),
+        ),
+      ),
+      const SizedBox(height: 16),
+    ];
+  }
+
+  Widget _buildSigningLinkButton({
+    required ValidationRequest validation,
+    required String signerRole,
+    required String label,
+    required IconData icon,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 36),
+      child: OutlinedButton.icon(
+        onPressed: () {
+          context.read<ValidationDetailBloc>().add(
+                GenerateSigningLink(
+                  validationId: validation.id,
+                  signerRole: signerRole,
+                ),
+              );
+        },
+        icon: Icon(icon, size: 18),
+        label: Text(label),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: Colors.blue,
+          side: const BorderSide(color: Colors.blue),
+        ),
+      ),
+    );
+  }
+
+  /// Détermine si une étape de signature est complétée en se basant sur le signing_step
+  bool _isStepCompleted(ValidationRequest validation, String step) {
+    final signingStep = validation.signingStep ?? 'employee';
+    switch (step) {
+      case 'employee':
+        // L'employé a signé dès la création de la validation
+        return true;
+      case 'manager':
+        // Manager a signé si on est passé à l'étape client ou completed, ou si approuvé
+        return signingStep == 'client' || signingStep == 'completed' || validation.isApproved;
+      case 'client':
+        return signingStep == 'completed' && validation.isApproved;
+      default:
+        return false;
+    }
+  }
+
+  /// Détermine si une étape est en cours d'attente
+  bool _isStepCurrent(ValidationRequest validation, String step) {
+    final signingStep = validation.signingStep ?? 'manager';
+    switch (step) {
+      case 'manager':
+        return signingStep == 'manager' && validation.isPending;
+      case 'client':
+        return signingStep == 'client' && !validation.isRejected;
+      default:
+        return false;
+    }
+  }
+
+  /// Détermine si une étape a été rejetée
+  bool _isStepRejected(ValidationRequest validation, String step) {
+    return step == 'manager' && validation.isRejected;
+  }
+
+  Widget _buildSigningStep(String label, IconData icon, bool completed, bool current, {bool rejected = false}) {
+    Color color;
+    IconData statusIcon;
+    String statusText;
+    if (rejected) {
+      color = Colors.red;
+      statusIcon = Icons.cancel;
+      statusText = 'Rejeté';
+    } else if (completed) {
+      color = Colors.green;
+      statusIcon = Icons.check_circle;
+      statusText = 'Signé';
+    } else if (current) {
+      color = Colors.orange;
+      statusIcon = Icons.hourglass_top;
+      statusText = 'En attente';
+    } else {
+      color = Colors.grey.shade400;
+      statusIcon = Icons.radio_button_unchecked;
+      statusText = 'En attente';
+    }
+
+    return Row(
+      children: [
+        Icon(statusIcon, color: color, size: 24),
+        const SizedBox(width: 12),
+        Icon(icon, color: color, size: 20),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: completed || current || rejected ? null : Colors.grey,
+              fontWeight: current ? FontWeight.bold : null,
+            ),
+          ),
+        ),
+        Text(statusText, style: TextStyle(color: color, fontSize: 12)),
+      ],
+    );
+  }
+
   Widget _buildInfoRow(IconData icon, String label, String value,
       {Color? color}) {
     return Row(
@@ -801,6 +1003,7 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
   Color _getStatusColor(ValidationStatus status) {
     switch (status) {
       case ValidationStatus.pending:
+      case ValidationStatus.signing:
         return Colors.orange;
       case ValidationStatus.approved:
         return Colors.green;
@@ -812,6 +1015,7 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
   String _getStatusLabel(ValidationStatus status) {
     switch (status) {
       case ValidationStatus.pending:
+      case ValidationStatus.signing:
         return 'En attente';
       case ValidationStatus.approved:
         return 'Approuvée';
@@ -823,6 +1027,7 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
   IconData _getStatusIcon(ValidationStatus status) {
     switch (status) {
       case ValidationStatus.pending:
+      case ValidationStatus.signing:
         return Icons.schedule;
       case ValidationStatus.approved:
         return Icons.check_circle;
@@ -832,6 +1037,7 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
   }
 
   String _formatFileSize(int bytes) {
+    if (bytes <= 0) return 'Document PDF';
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
     return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
@@ -950,9 +1156,8 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
     );
 
     // Attendre le résultat
-    context
-        .read<ValidationDetailBloc>()
-        .stream
+    final bloc = context.read<ValidationDetailBloc>();
+    bloc.stream
         .firstWhere((state) =>
             state is ValidationDetailPdfDownloaded ||
             state is ValidationDetailError)
@@ -961,6 +1166,13 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
 
       if (state is ValidationDetailPdfDownloaded) {
         _openPdf(state.pdfBytes, state.fileName);
+      }
+
+      // Recharger les données pour restaurer la page
+      if (widget.isManager) {
+        bloc.add(LoadValidationTimesheetData(validationId));
+      } else {
+        bloc.add(LoadValidationDetail(validationId));
       }
     });
   }

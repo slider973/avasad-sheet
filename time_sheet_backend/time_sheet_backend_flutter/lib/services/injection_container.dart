@@ -1,23 +1,19 @@
-import 'dart:io';
-import 'package:path/path.dart' as path;
-
 import 'package:get_it/get_it.dart';
-import 'package:isar/isar.dart';
 import 'package:logger/logger.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:time_sheet/features/pointage/data/models/anomalies/anomalies.dart';
 
 import '../core/auth/auth_repository.dart';
 import '../core/auth/auth_repository_impl.dart';
+import '../core/database/powersync_database.dart';
 import '../core/services/supabase/supabase_service.dart';
 import '../features/auth/domain/use_cases/sign_in_usecase.dart';
 import '../features/auth/domain/use_cases/sign_up_usecase.dart';
 import '../features/auth/domain/use_cases/sign_out_usecase.dart';
 import '../features/auth/domain/use_cases/get_current_user_usecase.dart';
 import '../features/auth/presentation/bloc/auth_bloc.dart';
-import '../features/absence/data/models/absence.dart';
+import '../features/pointage/data/data_sources/local_powersync.dart';
+import '../features/pointage/data/data_sources/timesheet_data_source.dart';
 import '../features/pointage/data/repositories/anomaly_repository_impl.dart';
+import '../features/pointage/data/repositories/anomaly_repository_powersync_impl.dart';
 import '../features/pointage/domain/factories/anomaly_detector_factory.dart';
 import '../features/pointage/domain/use_cases/delete_timesheet_entry_usecase.dart';
 import '../features/pointage/domain/use_cases/detect_anomalies_usecase.dart';
@@ -34,13 +30,11 @@ import '../features/pointage/domain/use_cases/get_weekly_work_time_usecase.dart'
 import '../features/pointage/domain/use_cases/detect_anomalies_with_compensation_usecase.dart';
 import '../features/pointage/domain/use_cases/save_timesheet_entry_usecase.dart';
 import '../features/pointage/domain/use_cases/signaler_absence_periode_usecase.dart';
-import '../features/preference/data/models/user_preference.dart';
-import '../features/preference/data/models/overtime_configuration.dart';
-import '../features/preference/data/repositories/user_preference_repository.impl.dart';
-import '../features/preference/data/repositories/overtime_configuration_repository_impl.dart';
+import '../features/preference/data/repositories/user_preference_repository_powersync_impl.dart';
+import '../features/preference/data/repositories/overtime_configuration_repository_powersync_impl.dart';
 import '../features/preference/domain/repositories/overtime_configuration_repository.dart';
-import 'anomaly/anomaly_service.dart';
-import 'backup.dart';
+import '../features/preference/domain/repositories/user_preference_repository.dart';
+import 'anomaly/anomaly_service_powersync.dart';
 import 'watch_service.dart';
 import 'clock_reminder_service.dart';
 import 'overtime_configuration_service.dart';
@@ -52,18 +46,12 @@ import '../features/preference/domain/use_cases/get_user_preference_use_case.dar
 import '../features/preference/domain/use_cases/set_user_preference_use_case.dart';
 import '../features/preference/domain/use_cases/register_manager_use_case.dart';
 import '../features/preference/domain/use_cases/unregister_manager_use_case.dart';
-import '../features/pointage/data/data_sources/local.dart';
-import '../features/pointage/data/models/generated_pdf/generated_pdf.dart';
-import '../features/pointage/data/models/timesheet_entry/timesheet_entry.dart';
 import '../features/pointage/data/repositories/timesheet_repository_impl.dart';
+import '../features/pointage/domain/repositories/timesheet_repository.dart';
 import '../features/pointage/domain/services/anomaly_detection_service.dart';
 import '../features/pointage/domain/use_cases/toggle_overtime_hours_use_case.dart';
 import '../features/pointage/domain/use_cases/calculate_overtime_hours_use_case.dart';
 import '../features/pointage/domain/use_cases/get_days_with_overtime_use_case.dart';
-import '../features/validation/data/models/validation_request_cache.dart';
-import '../features/validation/data/models/notification_cache.dart';
-import '../features/validation/data/models/manager_signature.dart';
-import '../features/validation/data/models/sync_queue_item.dart';
 import '../features/validation/domain/use_cases/create_validation_request_usecase.dart';
 import '../features/validation/domain/use_cases/approve_validation_usecase.dart';
 import '../features/validation/domain/use_cases/reject_validation_usecase.dart';
@@ -72,14 +60,14 @@ import '../features/validation/domain/use_cases/get_manager_validations_usecase.
 import '../features/validation/domain/use_cases/download_validation_pdf_usecase.dart';
 import '../features/validation/domain/use_cases/get_available_managers_usecase.dart';
 import '../features/validation/domain/use_cases/get_validation_timesheet_data_usecase.dart';
-import '../features/validation/data/repositories/validation_repository_serverpod_impl.dart';
-import '../features/validation/data/data_sources/validation_local_data_source.dart';
+import '../features/validation/domain/use_cases/get_signing_url_usecase.dart';
+import '../features/validation/data/repositories/validation_repository_supabase_impl.dart';
 import '../features/validation/presentation/bloc/validation_list/validation_list_bloc.dart';
 import '../features/validation/presentation/bloc/create_validation/create_validation_bloc.dart';
 import '../features/validation/presentation/bloc/validation_detail/validation_detail_bloc.dart';
 import '../features/validation/domain/repositories/validation_repository.dart';
-import '../features/expense/data/models/expense_model.dart';
-import '../features/expense/data/data_sources/expense_local_data_source.dart';
+import '../features/expense/data/data_sources/expense_data_source.dart';
+import '../features/expense/data/data_sources/expense_powersync_data_source.dart';
 import '../features/expense/data/repositories/expense_repository_impl.dart';
 import '../features/expense/domain/repositories/expense_repository.dart';
 import '../features/expense/domain/use_cases/create_expense_usecase.dart';
@@ -91,91 +79,10 @@ import '../features/expense/domain/use_cases/get_monthly_report_usecase.dart';
 import '../features/expense/domain/use_cases/generate_expense_pdf_usecase.dart';
 import '../features/expense/presentation/bloc/expense_list/expense_list_bloc.dart';
 import '../features/manager/presentation/bloc/manager_dashboard_bloc.dart';
-
 final getIt = GetIt.instance;
-Future<String> getInstallationPath() async {
-  if (Platform.isWindows) {
-    String localAppData = Platform.environment['LOCALAPPDATA'] ?? '';
-    String configDir = path.join(localAppData, 'TimeSheet');
-    String configPath = path.join(configDir, 'config.txt');
-    String databaseDir = path.join(configDir, 'Database');
-
-    if (await Directory(configDir).exists()) {
-      // Le répertoire de configuration existe déjà
-      return databaseDir;
-    } else {
-      // Première exécution de l'application
-      String exePath = Platform.resolvedExecutable;
-      String installDir = path.dirname(exePath);
-
-      // Créer le répertoire de configuration
-      await Directory(configDir).create(recursive: true);
-
-      // Écrire le chemin d'installation dans le fichier de configuration
-      await File(configPath).writeAsString(installDir);
-
-      // Créer le répertoire de la base de données
-      await Directory(databaseDir).create();
-      return databaseDir;
-    }
-  } else {
-    // Pour les autres plateformes, utilisez le dossier de documents par défaut
-    final dir = await getApplicationDocumentsDirectory();
-    return dir.path;
-  }
-}
 
 Future<void> setup() async {
-  final dir = await getInstallationPath();
-  Directory(dir).createSync(recursive: true);
-  // Fonction pour obtenir l'instance Isar
-  Future<Isar> getIsarInstance() async {
-    if (!getIt.isRegistered<Isar>()) {
-      final isar = await Isar.open(
-        [
-          TimeSheetEntryModelSchema,
-          GeneratedPdfModelSchema,
-          UserPreferencesSchema,
-          OvertimeConfigurationSchema,
-          AbsenceSchema,
-          AnomalyModelSchema,
-          ValidationRequestCacheSchema,
-          NotificationCacheSchema,
-          SyncQueueItemSchema,
-          ManagerSignatureSchema,
-          ExpenseModelSchema,
-        ],
-        directory: dir,
-      );
-      getIt.registerSingleton<Isar>(isar);
-    }
-    return getIt<Isar>();
-  }
-
-  // Fonction pour fermer l'instance Isar
-  Future<void> closeIsarInstance() async {
-    if (getIt.isRegistered<Isar>()) {
-      final isar = getIt<Isar>();
-      await isar.close();
-      getIt.unregister<Isar>();
-    }
-  }
-
-  // Fonction pour rouvrir l'instance Isar
-  Future<Isar> reopenIsarInstance() async {
-    await closeIsarInstance();
-    return await getIsarInstance();
-  }
-
-  // Enregistrer le BackupService avec les nouvelles fonctions
-  getIt.registerLazySingleton<BackupService>(() => BackupService(
-        getIsarInstance: getIsarInstance,
-        closeIsarInstance: closeIsarInstance,
-        reopenIsarInstance: reopenIsarInstance,
-      ));
-
-  // Initialiser l'instance Isar
-  await getIsarInstance();
+  final db = PowerSyncDatabaseManager.database;
 
   // Enregistrer le Logger
   getIt.registerLazySingleton<Logger>(() => Logger());
@@ -207,14 +114,28 @@ Future<void> setup() async {
     () => AuthBloc(authRepository: getIt<AuthRepository>()),
   );
 
-  getIt.registerLazySingleton<LocalDatasourceImpl>(
-      () => LocalDatasourceImpl(getIt<Isar>()));
-  getIt.registerLazySingleton<UserPreferencesRepositoryImpl>(
-      () => UserPreferencesRepositoryImpl(getIt<Isar>()));
+  // ============ DATA SOURCES (PowerSync) ============
+
+  getIt.registerLazySingleton<LocalDataSource>(
+      () => LocalDatasourcePowerSyncImpl(db));
+
+  // ============ USER PREFERENCES (local-only SQLite table) ============
+
+  final userPrefsRepo = UserPreferencesRepositoryPowerSyncImpl(db);
+  await userPrefsRepo.initialize();
+  getIt.registerLazySingleton<UserPreferencesRepository>(() => userPrefsRepo);
+
+  // ============ OVERTIME CONFIGURATION ============
+
   getIt.registerLazySingleton<OvertimeConfigurationRepository>(
-      () => OvertimeConfigurationRepositoryImpl(getIt<Isar>()));
+      () => OvertimeConfigurationRepositoryPowerSyncImpl(db));
+
+  // ============ TIMESHEET ============
+
   getIt.registerLazySingleton<TimesheetRepositoryImpl>(
-      () => TimesheetRepositoryImpl(getIt<LocalDatasourceImpl>()));
+      () => TimesheetRepositoryImpl(getIt<LocalDataSource>()));
+  getIt.registerLazySingleton<TimesheetRepository>(
+      () => getIt<TimesheetRepositoryImpl>());
   getIt.registerLazySingleton<SaveTimesheetEntryUseCase>(
       () => SaveTimesheetEntryUseCase(getIt<TimesheetRepositoryImpl>()));
   getIt.registerLazySingleton<DeleteTimesheetEntryUsecase>(
@@ -222,11 +143,11 @@ Future<void> setup() async {
   getIt.registerLazySingleton<FindPointedListUseCase>(
       () => FindPointedListUseCase(getIt<TimesheetRepositoryImpl>()));
   getIt.registerLazySingleton<GetUserPreferenceUseCase>(
-      () => GetUserPreferenceUseCase(getIt<UserPreferencesRepositoryImpl>()));
+      () => GetUserPreferenceUseCase(getIt<UserPreferencesRepository>()));
   getIt.registerLazySingleton<SetUserPreferenceUseCase>(
-      () => SetUserPreferenceUseCase(getIt<UserPreferencesRepositoryImpl>()));
+      () => SetUserPreferenceUseCase(getIt<UserPreferencesRepository>()));
   getIt.registerLazySingleton<GetSignatureUseCase>(
-      () => GetSignatureUseCase(getIt<UserPreferencesRepositoryImpl>()));
+      () => GetSignatureUseCase(getIt<UserPreferencesRepository>()));
 
   // Use cases pour la gestion des managers dans Supabase
   getIt.registerLazySingleton<RegisterManagerUseCase>(
@@ -257,6 +178,7 @@ Future<void> setup() async {
       allDetectors.values.toList(),
     );
   });
+
   // Enregistrer les nouveaux use cases pour les heures supplémentaires
   getIt.registerLazySingleton<ToggleOvertimeHoursUseCase>(
     () => ToggleOvertimeHoursUseCase(getIt<TimesheetRepositoryImpl>()),
@@ -284,12 +206,14 @@ Future<void> setup() async {
       () => GenerateExcelUseCase(getIt<TimesheetRepositoryImpl>()));
   getIt.registerLazySingleton<GetGeneratedPdfsUseCase>(
       () => GetGeneratedPdfsUseCase(getIt<TimesheetRepositoryImpl>()));
-  getIt.registerLazySingleton<AnomalyRepository>(
-      () => AnomalyRepositoryImpl(getIt<Isar>()));
 
-  // Enregistrez AnomalyService
-  final anomalyService = AnomalyService(getIt<Isar>());
-  GetIt.instance.registerSingleton<AnomalyService>(anomalyService);
+  // ============ ANOMALY ============
+
+  getIt.registerLazySingleton<AnomalyRepository>(
+      () => AnomalyRepositoryPowerSyncImpl(db));
+
+  final anomalyService = AnomalyServicePowerSync(db);
+  getIt.registerSingleton<AnomalyServicePowerSync>(anomalyService);
 
   // Enregistrer le nouveau service de détection d'anomalies
   getIt.registerLazySingleton<AnomalyDetectionService>(
@@ -303,6 +227,8 @@ Future<void> setup() async {
       AnomalyDetectorFactory.getWeeklyCompensationDetector(),
     ),
   );
+
+  // ============ SERVICES ============
 
   // Enregistrer le service Watch
   getIt.registerLazySingleton<WatchService>(() => WatchService());
@@ -330,8 +256,8 @@ Future<void> setup() async {
   getIt.registerLazySingleton<ClockReminderService>(
       () => ClockReminderService());
 
-  // Initialisez le service des anomalies
-  await anomalyService.createAnomaliesForCurrentMonth();
+  // Créer les anomalies pour le mois courant (en arrière-plan, non bloquant)
+  anomalyService.createAnomaliesForCurrentMonth();
 
   // Initialiser le service Watch
   await getIt<WatchService>().initialize();
@@ -341,29 +267,11 @@ Future<void> setup() async {
     timerService: getIt<TimerService>(),
   );
 
-  // Enregistrer les services de validation
+  // ============ VALIDATION ============
 
-  getIt.registerLazySingleton<ValidationLocalDataSource>(
-    () => ValidationLocalDataSourceImpl(
-      isar: getIt<Isar>(),
-    ),
-  );
-
-  // Utiliser la nouvelle implémentation Serverpod
   getIt.registerLazySingleton<ValidationRepository>(
-    () => ValidationRepositoryServerpodImpl(
-      getUserPreferenceUseCase: getIt<GetUserPreferenceUseCase>(),
-    ),
+    () => ValidationRepositorySupabaseImpl(),
   );
-
-  // Ancienne implémentation Supabase (commentée pour référence)
-  // getIt.registerLazySingleton<ValidationRepositoryImpl>(
-  //   () => ValidationRepositoryImpl(
-  //     remoteDataSource: getIt<ValidationRemoteDataSource>(),
-  //     localDataSource: getIt<ValidationLocalDataSource>(),
-  //     supabaseService: SupabaseService.instance,
-  //   ),
-  // );
 
   // Enregistrer les use cases de validation
   getIt.registerLazySingleton<CreateValidationRequestUseCase>(
@@ -373,8 +281,6 @@ Future<void> setup() async {
   getIt.registerLazySingleton<ApproveValidationUseCase>(
     () => ApproveValidationUseCase(
       getIt<ValidationRepository>(),
-      getIt<GeneratePdfUseCase>(),
-      getIt<GetSignatureUseCase>(),
       getIt<GetUserPreferenceUseCase>(),
     ),
   );
@@ -397,7 +303,6 @@ Future<void> setup() async {
       getIt<GeneratePdfUseCase>(),
       getIt<GetSignatureUseCase>(),
       getIt<GetUserPreferenceUseCase>(),
-      getIt<Isar>(),
     ),
   );
 
@@ -407,6 +312,10 @@ Future<void> setup() async {
 
   getIt.registerLazySingleton<GetValidationTimesheetDataUseCase>(
     () => GetValidationTimesheetDataUseCase(getIt<ValidationRepository>()),
+  );
+
+  getIt.registerLazySingleton<GetSigningUrlUseCase>(
+    () => GetSigningUrlUseCase(getIt<ValidationRepository>()),
   );
 
   // Enregistrer les BLoCs de validation
@@ -434,20 +343,21 @@ Future<void> setup() async {
       rejectValidation: getIt<RejectValidationUseCase>(),
       downloadPdf: getIt<DownloadValidationPdfUseCase>(),
       getTimesheetData: getIt<GetValidationTimesheetDataUseCase>(),
+      getSigningUrl: getIt<GetSigningUrlUseCase>(),
     ),
   );
 
   // ============ EXPENSE MANAGEMENT ============
 
   // Data sources
-  getIt.registerLazySingleton<ExpenseLocalDataSource>(
-    () => ExpenseLocalDataSource(isar: getIt<Isar>()),
+  getIt.registerLazySingleton<ExpenseDataSource>(
+    () => ExpensePowerSyncDataSource(db: db),
   );
 
   // Repositories
   getIt.registerLazySingleton<ExpenseRepository>(
     () => ExpenseRepositoryImpl(
-      localDataSource: getIt<ExpenseLocalDataSource>(),
+      localDataSource: getIt<ExpenseDataSource>(),
     ),
   );
 

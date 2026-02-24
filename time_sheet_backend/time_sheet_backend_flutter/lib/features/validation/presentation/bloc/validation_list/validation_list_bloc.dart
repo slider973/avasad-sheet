@@ -3,8 +3,7 @@ import 'package:equatable/equatable.dart';
 import 'package:time_sheet/features/validation/domain/entities/validation_request.dart';
 import 'package:time_sheet/features/validation/domain/use_cases/get_employee_validations_usecase.dart';
 import 'package:time_sheet/features/validation/domain/use_cases/get_manager_validations_usecase.dart';
-import 'package:time_sheet/features/preference/domain/use_cases/get_user_preference_use_case.dart';
-import 'package:time_sheet/services/injection_container.dart' as di;
+import 'package:time_sheet/core/services/supabase/supabase_service.dart';
 
 part 'validation_list_event.dart';
 part 'validation_list_state.dart';
@@ -31,28 +30,20 @@ class ValidationListBloc
     emit(ValidationListLoading());
 
     try {
-      // Récupérer l'ID utilisateur depuis les préférences
-      final getUserPref = di.getIt<GetUserPreferenceUseCase>();
-      final firstName = await getUserPref.execute('firstName') ?? '';
-      final lastName = await getUserPref.execute('lastName') ?? '';
-      final company = await getUserPref.execute('company') ?? '';
+      // Récupérer l'ID utilisateur réel depuis Supabase Auth
+      final userId = SupabaseService.instance.currentUserId;
 
-      if (firstName.isEmpty || lastName.isEmpty) {
-        emit(const ValidationListError(
-            'Veuillez configurer votre nom dans les paramètres'));
+      if (userId == null || userId.isEmpty) {
+        emit(const ValidationListError('Utilisateur non connecté'));
         return;
       }
 
-      // Pour les employés : prénom_nom
-      final employeeId = '${firstName.toLowerCase()}_${lastName.toLowerCase()}';
-
       // Déterminer le type de liste à charger
       if (event.viewType == ValidationViewType.employee) {
-        final result = await getEmployeeValidations(employeeId);
+        final result = await getEmployeeValidations(userId);
         result.fold(
           (failure) => emit(ValidationListError(failure.message)),
           (validations) {
-            // Appliquer les filtres si nécessaire
             final filtered = _applyFilters(validations, event.filters);
             emit(ValidationListLoaded(
               validations: filtered,
@@ -63,20 +54,12 @@ class ValidationListBloc
           },
         );
       } else {
-        // Pour les managers, on doit récupérer leur ID depuis la base de données
-        // en utilisant leur email
-        final email =
-            '${firstName.toLowerCase()}.${lastName.toLowerCase()}@${company.toLowerCase().replaceAll(' ', '_')}.ch';
-
-        // Récupérer toutes les validations et filtrer par email du manager
-        // Note: On pourrait améliorer cela en ajoutant une méthode getManagerByEmail
-        final result = await getManagerValidations(
-            email); // On passe l'email au lieu de l'ID
+        // Pour les managers, utiliser le même UUID Supabase
+        final result = await getManagerValidations(userId);
 
         result.fold(
           (failure) => emit(ValidationListError(failure.message)),
           (validations) {
-            // Appliquer les filtres si nécessaire
             final filtered = _applyFilters(validations, event.filters);
             emit(ValidationListLoaded(
               validations: filtered,

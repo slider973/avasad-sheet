@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/auth/auth_repository.dart';
+import '../../../../core/database/powersync_database.dart';
 import '../../domain/entities/app_user.dart';
 
 part 'auth_event.dart';
@@ -64,6 +65,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       password: event.password,
       firstName: event.firstName,
       lastName: event.lastName,
+      organizationId: event.organizationId,
     );
     result.fold(
       (failure) => emit(AuthError(failure.message)),
@@ -90,6 +92,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     emit(AuthLoading());
+    await PowerSyncDatabaseManager.disconnect();
     final result = await _authRepository.signOut();
     result.fold(
       (failure) => emit(AuthError(failure.message)),

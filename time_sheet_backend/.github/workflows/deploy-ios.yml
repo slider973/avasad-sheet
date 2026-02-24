@@ -1,0 +1,77 @@
+name: Deploy iOS to TestFlight
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'time_sheet_backend_flutter/**'
+      - '.github/workflows/deploy-ios.yml'
+
+  # Permet de lancer manuellement le workflow depuis l'interface GitHub
+  workflow_dispatch:
+
+jobs:
+  deploy-ios:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Install Flutter dependencies
+        working-directory: time_sheet_backend_flutter
+        run: flutter pub get
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+          working-directory: time_sheet_backend_flutter
+
+      - name: Install Fastlane
+        working-directory: time_sheet_backend_flutter
+        run: |
+          bundle install
+
+      - name: Install CocoaPods dependencies
+        working-directory: time_sheet_backend_flutter/ios
+        run: |
+          pod install
+
+      - name: Run Fastlane Beta Lane
+        working-directory: time_sheet_backend_flutter/ios
+        env:
+          # Credentials Apple
+          FASTLANE_USER: ${{ secrets.FASTLANE_USER }}
+          FASTLANE_PASSWORD: ${{ secrets.FASTLANE_PASSWORD }}
+          FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: ${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}
+          FASTLANE_SESSION: ${{ secrets.FASTLANE_SESSION }}
+
+          # Match (si vous l'utilisez)
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+
+          # App Store Connect API (alternative recommandée)
+          # APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          # APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          # APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+        run: |
+          bundle exec fastlane beta
+
+      - name: Upload build artifacts (if failed)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build-logs
+          path: |
+            time_sheet_backend_flutter/ios/fastlane/report.xml
+            time_sheet_backend_flutter/ios/fastlane/*.log

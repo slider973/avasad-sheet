@@ -19,6 +19,9 @@ abstract class ValidationRepository {
     double? totalDays,
     String? totalHours,
     String? totalOvertimeHours,
+    String? employeeSignature,
+    String? clientSignerName,
+    String? clientSignerEmail,
   });
   
   /// Récupère une demande de validation par ID
@@ -86,6 +89,15 @@ abstract class ValidationRepository {
   
   /// Écoute les changements de notifications en temps réel
   Stream<Either<Failure, List<NotificationEntity>>> watchUserNotifications(String userId);
+
+  /// Génère un lien de signature externe pour un signataire donné
+  Future<Either<Failure, String>> getSigningUrl({
+    required String validationId,
+    required String signerRole,
+    required String signerName,
+    String? signerEmail,
+  });
+
 }
 
 /// Modèle simple pour les managers

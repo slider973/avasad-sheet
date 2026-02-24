@@ -45,6 +45,9 @@ class CreateValidationRequestUseCase implements UseCase<ValidationRequest, Creat
       totalDays: params.totalDays,
       totalHours: params.totalHours,
       totalOvertimeHours: params.totalOvertimeHours,
+      employeeSignature: params.employeeSignature,
+      clientSignerName: params.clientSignerName,
+      clientSignerEmail: params.clientSignerEmail,
     );
   }
 }
@@ -63,7 +66,12 @@ class CreateValidationParams {
   final double? totalDays;
   final String? totalHours;
   final String? totalOvertimeHours;
-  
+  // Signature employé (base64) intégrée dans la validation
+  final String? employeeSignature;
+  // Multi-actor signing
+  final String? clientSignerName;
+  final String? clientSignerEmail;
+
   const CreateValidationParams({
     required this.employeeId,
     required this.managerId,
@@ -76,6 +84,9 @@ class CreateValidationParams {
     this.totalDays,
     this.totalHours,
     this.totalOvertimeHours,
+    this.employeeSignature,
+    this.clientSignerName,
+    this.clientSignerEmail,
   });
 }
 

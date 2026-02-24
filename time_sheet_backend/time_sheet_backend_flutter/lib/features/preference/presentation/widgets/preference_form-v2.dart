@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:get_it/get_it.dart';
+import '../../../../core/services/supabase/supabase_service.dart';
 import '../../../pointage/presentation/pages/pdf/pages/signature_page.dart';
 import '../../../pointage/presentation/pages/time-sheet/bloc/time_sheet/time_sheet_bloc.dart';
 import '../../../pointage/domain/entities/timesheet_generation_config.dart';
@@ -10,9 +10,6 @@ import '../../../pointage/presentation/pages/timesheet_generation_config_page.da
 import '../pages/weekend_settings_page.dart';
 import '../pages/reminder_settings_page.dart';
 import '../manager/preferences_bloc.dart';
-
-import '../../../../services/backup.dart';
-import '../../../../services/restart_service.dart';
 
 class PreferencesFormV2 extends StatefulWidget {
   const PreferencesFormV2({super.key});
@@ -160,52 +157,100 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
     );
   }
 
-  void _showPersonalInfoDialog(BuildContext context, PreferencesLoaded state) {
+  void _showPersonalInfoDialog(BuildContext context, PreferencesLoaded state) async {
     final firstNameController = TextEditingController(text: state.firstName);
     final lastNameController = TextEditingController(text: state.lastName);
-    final companyController = TextEditingController(text: state.company);
+
+    // Charger les organisations enfants depuis Supabase
+    List<Map<String, dynamic>> organizations = [];
+    try {
+      final response = await SupabaseService.instance.client
+          .rpc('list_child_organizations');
+      organizations = List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      debugPrint('Erreur chargement organisations: $e');
+    }
+
+    // Pré-sélectionner l'organisation actuelle basée sur le nom
+    String? selectedOrgId;
+    for (final org in organizations) {
+      if (org['name'] == state.company) {
+        selectedOrgId = org['id'] as String;
+        break;
+      }
+    }
+
+    if (!mounted) return;
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Informations personnelles'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: firstNameController,
-              decoration: const InputDecoration(labelText: 'Prénom'),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: lastNameController,
-              decoration: const InputDecoration(labelText: 'Nom'),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: companyController,
-              decoration: const InputDecoration(labelText: 'Entreprise'),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            child: const Text('Annuler'),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-          TextButton(
-            child: const Text('Enregistrer'),
-            onPressed: () {
-              context.read<PreferencesBloc>().add(SavePreferences(
-                    firstName: firstNameController.text,
-                    lastName: lastNameController.text,
-                    company: companyController.text,
-                  ));
-              Navigator.of(context).pop();
-            },
-          ),
-        ],
-      ),
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Informations personnelles'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: firstNameController,
+                    decoration: const InputDecoration(labelText: 'Prénom'),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: lastNameController,
+                    decoration: const InputDecoration(labelText: 'Nom'),
+                  ),
+                  const SizedBox(height: 10),
+                  DropdownButtonFormField<String>(
+                    initialValue: selectedOrgId,
+                    decoration: const InputDecoration(labelText: 'Entreprise'),
+                    isExpanded: true,
+                    items: organizations.map((org) {
+                      return DropdownMenuItem<String>(
+                        value: org['id'] as String,
+                        child: Text(org['name'] as String),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setDialogState(() {
+                        selectedOrgId = value;
+                      });
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  child: const Text('Annuler'),
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                ),
+                TextButton(
+                  child: const Text('Enregistrer'),
+                  onPressed: () {
+                    String companyName = state.company;
+                    if (selectedOrgId != null) {
+                      for (final org in organizations) {
+                        if (org['id'] == selectedOrgId) {
+                          companyName = org['name'] as String;
+                          break;
+                        }
+                      }
+                    }
+                    this.context.read<PreferencesBloc>().add(SavePreferences(
+                          firstName: firstNameController.text,
+                          lastName: lastNameController.text,
+                          company: companyName,
+                          organizationId: selectedOrgId,
+                        ));
+                    Navigator.of(dialogContext).pop();
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
@@ -231,85 +276,19 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Sauvegarde et Restauration'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ElevatedButton(
-              child: const Text('Sauvegarder'),
-              onPressed: () => _performBackup(),
-            ),
-            const SizedBox(height: 8),
-            ElevatedButton(
-              child: const Text('Restaurer'),
-              onPressed: () => _performRestore(),
-            ),
-          ],
+        title: const Text('Synchronisation'),
+        content: const Text(
+          'Vos données sont automatiquement synchronisées avec le serveur via PowerSync. '
+          'Aucune sauvegarde manuelle n\'est nécessaire.',
         ),
         actions: [
           TextButton(
-            child: const Text('Fermer'),
+            child: const Text('OK'),
             onPressed: () => Navigator.of(context).pop(),
           ),
         ],
       ),
     );
-  }
-
-  void _performBackup() async {
-    final backupService = GetIt.instance<BackupService>();
-    try {
-      final backupPath = await backupService.backupDatabase();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Sauvegarde réussie : $backupPath')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('Erreur lors de la sauvegarde : ${e.toString()}')),
-        );
-      }
-    }
-  }
-
-  void _performRestore() async {
-    final backupService = GetIt.instance<BackupService>();
-    try {
-      final importSuccess = await backupService.importDatabase();
-      if (importSuccess && mounted) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: const Text('Restauration réussie'),
-              content: const Text(
-                  'La restauration a réussi. L\'application doit être redémarrée pour appliquer les changements.'),
-              actions: <Widget>[
-                TextButton(
-                  child: const Text('Redémarrer'),
-                  onPressed: () async {
-                    Navigator.of(context).pop();
-                    await RestartService.restartApp();
-                  },
-                ),
-              ],
-            );
-          },
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content:
-                  Text('Erreur lors de la restauration : ${e.toString()}')),
-        );
-      }
-    }
   }
 
   bool _isGeneratedThisMonth(DateTime? lastGenerationDate) {

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:fpdart/fpdart.dart';
+import 'package:intl/intl.dart';
 import 'package:powersync/powersync.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -43,6 +44,9 @@ class ValidationRepositorySupabaseImpl implements ValidationRepository {
     double? totalDays,
     String? totalHours,
     String? totalOvertimeHours,
+    String? employeeSignature,
+    String? clientSignerName,
+    String? clientSignerEmail,
   }) async {
     try {
       // Upload PDF to storage
@@ -55,25 +59,44 @@ class ValidationRepositorySupabaseImpl implements ValidationRepository {
         customFileName: 'validation_${year}_$month.pdf',
       );
 
-      // Upload employee signature if available
-      String? signatureUrl;
-      try {
-        signatureUrl = await _storage.getSignatureUrl();
-      } catch (_) {}
-
       // Insert validation request via PowerSync (syncs to Supabase)
+      // employee_signature_url stocke la signature base64 directement (pas un URL Storage)
       await _db.execute(
         '''INSERT INTO validation_requests
           (id, employee_id, manager_id, period_start, period_end, status,
-           pdf_url, employee_signature_url)
-          VALUES (uuid(), ?, ?, ?, ?, 'pending', ?, ?)''',
+           pdf_url, employee_signature_url, signing_step, client_signer_name, client_signer_email)
+          VALUES (uuid(), ?, ?, ?, ?, 'pending', ?, ?, 'employee', ?, ?)''',
         [
           employeeId, managerId,
           periodStart.toIso8601String().substring(0, 10),
           periodEnd.toIso8601String().substring(0, 10),
-          pdfUrl, signatureUrl ?? '',
+          pdfUrl, employeeSignature ?? '',
+          clientSignerName ?? '', clientSignerEmail ?? '',
         ],
       );
+
+      // Ensure manager_employees relationship exists (needed for PowerSync sync)
+      try {
+        await _supabase.from('manager_employees').upsert(
+          {'manager_id': managerId, 'employee_id': employeeId},
+          onConflict: 'manager_id,employee_id',
+        );
+      } catch (e) {
+        // Non-critical: fallback to local insert if Supabase fails
+        logger.w('Could not upsert manager_employees via Supabase: $e');
+        try {
+          final existing = await _db.getOptional(
+            'SELECT id FROM manager_employees WHERE manager_id = ? AND employee_id = ?',
+            [managerId, employeeId],
+          );
+          if (existing == null) {
+            await _db.execute(
+              'INSERT INTO manager_employees (id, manager_id, employee_id) VALUES (uuid(), ?, ?)',
+              [managerId, employeeId],
+            );
+          }
+        } catch (_) {}
+      }
 
       // Create notification for manager
       await _db.execute(
@@ -126,6 +149,22 @@ class ValidationRepositorySupabaseImpl implements ValidationRepository {
   @override
   Future<Either<Failure, List<ValidationRequest>>> getEmployeeValidations(String employeeId) async {
     try {
+      // 1. Essayer via Supabase directement (données toujours à jour)
+      try {
+        final response = await _supabase
+            .from('validation_requests')
+            .select()
+            .eq('employee_id', employeeId)
+            .order('created_at', ascending: false);
+        final supabaseRows = List<Map<String, dynamic>>.from(response);
+        if (supabaseRows.isNotEmpty) {
+          return Right(supabaseRows.map((row) => _rowToValidation(row)).toList());
+        }
+      } catch (e) {
+        logger.w('Supabase direct query for employee validations failed, falling back to local: $e');
+      }
+
+      // 2. Fallback: requête locale PowerSync
       final rows = await _db.getAll(
         'SELECT * FROM validation_requests WHERE employee_id = ? ORDER BY created_at DESC',
         [employeeId],
@@ -139,6 +178,22 @@ class ValidationRepositorySupabaseImpl implements ValidationRepository {
   @override
   Future<Either<Failure, List<ValidationRequest>>> getManagerValidations(String managerId) async {
     try {
+      // 1. Essayer via Supabase directement (données toujours à jour)
+      try {
+        final response = await _supabase
+            .from('validation_requests')
+            .select()
+            .eq('manager_id', managerId)
+            .order('created_at', ascending: false);
+        final supabaseRows = List<Map<String, dynamic>>.from(response);
+        if (supabaseRows.isNotEmpty) {
+          return Right(supabaseRows.map((row) => _rowToValidation(row)).toList());
+        }
+      } catch (e) {
+        logger.w('Supabase direct query for manager validations failed, falling back to local: $e');
+      }
+
+      // 2. Fallback: requête locale PowerSync
       final rows = await _db.getAll(
         'SELECT * FROM validation_requests WHERE manager_id = ? ORDER BY created_at DESC',
         [managerId],
@@ -156,31 +211,43 @@ class ValidationRepositorySupabaseImpl implements ValidationRepository {
     String? comment,
   }) async {
     try {
-      await _db.execute(
-        '''UPDATE validation_requests
-          SET status = 'approved', manager_comment = ?,
-              validated_at = datetime('now'), manager_signature_url = ?
-          WHERE id = ?''',
-        [comment ?? '', managerSignature, validationId],
+      // Appeler l'Edge Function approve-validation qui gère :
+      // - L'avancement du signing_step (manager → client ou completed)
+      // - La création du token de signature client si nécessaire
+      // - La mise à jour du statut
+      final response = await _supabase.functions.invoke(
+        'approve-validation',
+        body: {
+          'validation_id': validationId,
+          'manager_signature': managerSignature,
+          'comment': comment ?? '',
+        },
       );
 
-      // Notify the employee
-      final validation = await _db.getOptional(
-        'SELECT * FROM validation_requests WHERE id = ?',
-        [validationId],
-      );
-      if (validation != null) {
-        await _db.execute(
-          '''INSERT INTO notifications
-            (id, user_id, type, title, message, is_read)
-            VALUES (uuid(), ?, 'validation_approved', 'Validation approuvée',
-                    'Votre demande de validation a été approuvée', 0)''',
-          [validation['employee_id']],
-        );
+      if (response.status != 200) {
+        final errorData = response.data;
+        final errorMsg = errorData is Map ? errorData['error'] as String? : null;
+        return Left(ServerFailure(errorMsg ?? 'Erreur lors de l\'approbation (${response.status})'));
+      }
+
+      // Rafraîchir les données locales depuis Supabase pour refléter les changements
+      // faits par l'Edge Function (signing_step, status, etc.)
+      try {
+        final row = await _supabase
+            .from('validation_requests')
+            .select()
+            .eq('id', validationId)
+            .maybeSingle();
+        if (row != null) {
+          return Right(_rowToValidation(row));
+        }
+      } catch (e) {
+        logger.w('Fallback to local after approve: $e');
       }
 
       return getValidationRequest(validationId);
     } catch (e) {
+      logger.e('Error approving validation via Edge Function', error: e);
       return Left(ServerFailure(e.toString()));
     }
   }
@@ -269,17 +336,49 @@ class ValidationRepositorySupabaseImpl implements ValidationRepository {
   @override
   Future<Either<Failure, Uint8List>> downloadValidationPdf(String validationId, [String? managerSignature]) async {
     try {
+      // Try local PowerSync first
+      String? pdfUrl;
       final validation = await _db.getOptional(
         'SELECT pdf_url FROM validation_requests WHERE id = ?',
         [validationId],
       );
-      if (validation == null || validation['pdf_url'] == null) {
+      if (validation != null && validation['pdf_url'] != null) {
+        pdfUrl = validation['pdf_url'] as String;
+      }
+
+      // Fallback to Supabase direct query if not found locally
+      if (pdfUrl == null || pdfUrl.isEmpty) {
+        logger.i('pdf_url not found locally, falling back to Supabase');
+        try {
+          final row = await _supabase
+              .from('validation_requests')
+              .select('pdf_url')
+              .eq('id', validationId)
+              .maybeSingle();
+          if (row != null && row['pdf_url'] != null) {
+            pdfUrl = row['pdf_url'] as String;
+          }
+        } catch (e) {
+          logger.w('Supabase fallback for pdf_url failed: $e');
+        }
+      }
+
+      if (pdfUrl == null || pdfUrl.isEmpty) {
         return const Left(ServerFailure('PDF non trouvé'));
       }
 
-      // Download from Storage URL
-      final pdfUrl = validation['pdf_url'] as String;
-      final response = await _supabase.storage.from('pdfs').download(pdfUrl);
+      // Extract relative path from full URL if needed
+      // e.g. "https://.../storage/v1/object/public/pdfs/userId/file.pdf" -> "userId/file.pdf"
+      String storagePath = pdfUrl;
+      final pdfsBucketMarker = '/pdfs/';
+      final markerIndex = pdfUrl.indexOf(pdfsBucketMarker);
+      if (markerIndex != -1) {
+        storagePath = pdfUrl.substring(markerIndex + pdfsBucketMarker.length);
+      }
+
+      // Download from Storage
+      logger.i('Downloading PDF from Storage path: $storagePath');
+      final response = await _supabase.storage.from('pdfs').download(storagePath);
       return Right(response);
     } catch (e) {
       return Left(ServerFailure(e.toString()));
@@ -289,22 +388,194 @@ class ValidationRepositorySupabaseImpl implements ValidationRepository {
   @override
   Future<Either<Failure, Map<String, dynamic>>> getValidationTimesheetData(String validationId) async {
     try {
-      final row = await _db.getOptional(
+      // 1. Get validation request (local first, then Supabase)
+      Map<String, dynamic>? rowData;
+      final localRow = await _db.getOptional(
         'SELECT * FROM validation_requests WHERE id = ?',
         [validationId],
       );
-      if (row == null) {
+      if (localRow != null) {
+        rowData = Map<String, dynamic>.from(localRow);
+      } else {
+        try {
+          rowData = await _supabase
+              .from('validation_requests')
+              .select()
+              .eq('id', validationId)
+              .maybeSingle();
+        } catch (e) {
+          logger.w('Supabase fallback for validation_requests failed: $e');
+        }
+      }
+      if (rowData == null) {
         return const Left(ServerFailure('Validation non trouvée'));
       }
 
+      final employeeId = rowData['employee_id'] as String;
+      final periodStart = rowData['period_start'] as String;
+      final periodEnd = rowData['period_end'] as String;
+
+      // Parse period to extract month/year (period_end is the 20th of the target month)
+      final endDate = DateTime.parse(periodEnd);
+      final month = endDate.month;
+      final year = endDate.year;
+
+      // 2. Get employee profile (local first, then Supabase)
+      Map<String, dynamic>? profileData;
+      final localProfile = await _db.getOptional(
+        'SELECT first_name, last_name, email, signature_url, organization_id FROM profiles WHERE id = ?',
+        [employeeId],
+      );
+      if (localProfile != null) {
+        profileData = Map<String, dynamic>.from(localProfile);
+      } else {
+        try {
+          profileData = await _supabase
+              .from('profiles')
+              .select('first_name, last_name, email, signature_url, organization_id')
+              .eq('id', employeeId)
+              .maybeSingle();
+        } catch (e) {
+          logger.w('Supabase fallback for employee profile failed: $e');
+        }
+      }
+
+      final employeeName = profileData != null
+          ? '${profileData['first_name'] ?? ''} ${profileData['last_name'] ?? ''}'.trim()
+          : '';
+      // Get organization name for company
+      String employeeCompany = '';
+      if (profileData != null && profileData['organization_id'] != null) {
+        Map<String, dynamic>? orgData;
+        final localOrg = await _db.getOptional(
+          'SELECT name FROM organizations WHERE id = ?',
+          [profileData['organization_id']],
+        );
+        if (localOrg != null) {
+          orgData = Map<String, dynamic>.from(localOrg);
+        } else {
+          try {
+            orgData = await _supabase
+                .from('organizations')
+                .select('name')
+                .eq('id', profileData['organization_id'])
+                .maybeSingle();
+          } catch (e) {
+            logger.w('Supabase fallback for organization failed: $e');
+          }
+        }
+        employeeCompany = (orgData?['name'] as String?) ?? '';
+      }
+
+      // Les signatures ne sont pas stockées dans Storage (sécurité).
+      // La signature de l'employé est intégrée dans le PDF stocké.
+      // La signature du manager est stockée en base64 dans validation_requests.manager_signature_url.
+
+      // 3. Get manager info
+      String? managerName;
+      String? managerSignatureBase64;
+      final managerId = rowData['manager_id'] as String?;
+      if (managerId != null) {
+        Map<String, dynamic>? managerProfileData;
+        final localMgrProfile = await _db.getOptional(
+          'SELECT first_name, last_name FROM profiles WHERE id = ?',
+          [managerId],
+        );
+        if (localMgrProfile != null) {
+          managerProfileData = Map<String, dynamic>.from(localMgrProfile);
+        } else {
+          try {
+            managerProfileData = await _supabase
+                .from('profiles')
+                .select('first_name, last_name')
+                .eq('id', managerId)
+                .maybeSingle();
+          } catch (e) {
+            logger.w('Supabase fallback for manager profile failed: $e');
+          }
+        }
+        if (managerProfileData != null) {
+          managerName = '${managerProfileData['first_name'] ?? ''} ${managerProfileData['last_name'] ?? ''}'.trim();
+        }
+
+        // Get manager signature from validation_requests (stored as base64 on approval)
+        final status = rowData['status'] as String? ?? 'pending';
+        if (status == 'approved') {
+          managerSignatureBase64 = rowData['manager_signature_url'] as String?;
+        }
+      }
+
+      // 4. Get timesheet entries for the period (local first, then Supabase)
+      final localEntries = await _db.getAll(
+        'SELECT * FROM timesheet_entries WHERE user_id = ? AND day_date >= ? AND day_date <= ? ORDER BY day_date',
+        [employeeId, periodStart, periodEnd],
+      );
+
+      List<Map<String, dynamic>> entriesData;
+      if (localEntries.isNotEmpty) {
+        entriesData = localEntries.map((e) => Map<String, dynamic>.from(e)).toList();
+      } else {
+        // Fallback to Supabase if no local entries (e.g. manager doesn't have employee data synced)
+        logger.i('No local timesheet entries found, falling back to Supabase direct query');
+        entriesData = [];
+        try {
+          final response = await _supabase
+              .from('timesheet_entries')
+              .select()
+              .eq('user_id', employeeId)
+              .gte('day_date', periodStart)
+              .lte('day_date', periodEnd)
+              .order('day_date');
+          entriesData = List<Map<String, dynamic>>.from(response);
+        } catch (e) {
+          logger.w('Supabase fallback for timesheet entries failed: $e');
+        }
+      }
+
+      logger.i('getValidationTimesheetData: ${entriesData.length} entries found for period $periodStart - $periodEnd');
+
+      // Convert entries to the expected format
+      // day_date in DB is yyyy-MM-dd, but the PDF use case expects dd-MMM-yy
+      final entriesList = entriesData.map((e) {
+        final dbDate = (e['day_date'] as String?) ?? '';
+        String formattedDate = dbDate;
+        try {
+          final parsed = DateTime.parse(dbDate);
+          formattedDate = DateFormat('dd-MMM-yy', 'en_US').format(parsed);
+        } catch (_) {}
+        final absenceReason = (e['absence_reason'] as String?) ?? '';
+        final hasAbsence = absenceReason.isNotEmpty;
+        return <String, dynamic>{
+          'dayDate': formattedDate,
+          'startMorning': e['start_morning'] ?? '',
+          'endMorning': e['end_morning'] ?? '',
+          'startAfternoon': e['start_afternoon'] ?? '',
+          'endAfternoon': e['end_afternoon'] ?? '',
+          'isAbsence': hasAbsence,
+          'absenceReason': absenceReason,
+          'hasOvertimeHours': e['has_overtime_hours'] == 1 || e['has_overtime_hours'] == true,
+          'period': e['period'] ?? '',
+        };
+      }).toList();
+
       final data = <String, dynamic>{
-        'validationId': row['id'],
-        'employeeId': row['employee_id'],
-        'status': row['status'],
-        'periodStart': row['period_start'],
-        'periodEnd': row['period_end'],
-        'managerComment': row['manager_comment'],
-        'validatedAt': row['validated_at'],
+        'validationId': rowData['id'],
+        'employeeId': employeeId,
+        'status': rowData['status'],
+        'periodStart': periodStart,
+        'periodEnd': periodEnd,
+        'managerComment': rowData['manager_comment'],
+        'validatedAt': rowData['validated_at'],
+        'month': month,
+        'year': year,
+        'employeeName': employeeName,
+        'employeeCompany': employeeCompany,
+        'employeeSignature': (rowData['employee_signature_url'] as String?)?.isNotEmpty == true
+          ? rowData['employee_signature_url'] as String
+          : null,
+        'managerName': managerName,
+        'managerSignature': managerSignatureBase64,
+        'entries': entriesList,
       };
 
       return Right(data);
@@ -383,14 +654,46 @@ class ValidationRepositorySupabaseImpl implements ValidationRepository {
   @override
   Future<Either<Failure, List<Manager>>> getAvailableManagers(String employeeId) async {
     try {
-      final rows = await _db.getAll(
-        '''SELECT p.id, p.email, p.first_name, p.last_name FROM profiles p
-          WHERE p.role IN ('manager', 'admin') AND p.is_active = 1
-          AND p.organization_id = (
-            SELECT organization_id FROM profiles WHERE id = ?
-          )''',
-        [employeeId],
-      );
+      final realUserId = _userId;
+
+      List<Map<String, dynamic>> rows = [];
+
+      // 1. Essayer via RPC Supabase (bypass RLS, données toujours à jour)
+      try {
+        final response = await _supabase.rpc(
+          'get_managers_for_employee',
+          params: {'employee_user_id': realUserId},
+        );
+        rows = List<Map<String, dynamic>>.from(response);
+      } catch (rpcError) {
+        logger.w('RPC get_managers_for_employee failed, falling back to local query: $rpcError');
+      }
+
+      // 2. Fallback: requête locale PowerSync (même org)
+      if (rows.isEmpty) {
+        final localRows = await _db.getAll(
+          '''SELECT p.id, p.email, p.first_name, p.last_name FROM profiles p
+            WHERE p.role IN ('manager', 'admin', 'org_admin', 'super_admin') AND p.is_active = 1
+            AND p.organization_id IS NOT NULL
+            AND p.organization_id = (
+              SELECT organization_id FROM profiles WHERE id = ?
+            )''',
+          [realUserId],
+        );
+        rows = localRows.map((r) => Map<String, dynamic>.from(r)).toList();
+      }
+
+      // 3. Fallback: via manager_employees
+      if (rows.isEmpty) {
+        final meRows = await _db.getAll(
+          '''SELECT p.id, p.email, p.first_name, p.last_name FROM profiles p
+            INNER JOIN manager_employees me ON me.manager_id = p.id
+            WHERE me.employee_id = ?''',
+          [realUserId],
+        );
+        rows = meRows.map((r) => Map<String, dynamic>.from(r)).toList();
+      }
+
       return Right(rows.map((row) => Manager(
         id: row['id'] as String,
         email: row['email'] as String? ?? '',
@@ -452,6 +755,43 @@ class ValidationRepositorySupabaseImpl implements ValidationRepository {
     });
   }
 
+  @override
+  Future<Either<Failure, String>> getSigningUrl({
+    required String validationId,
+    required String signerRole,
+    required String signerName,
+    String? signerEmail,
+  }) async {
+    try {
+      final response = await _supabase.functions.invoke(
+        'generate-signing-token',
+        body: {
+          'validation_id': validationId,
+          'next_signer_role': signerRole,
+          'signer_name': signerName,
+          if (signerEmail != null) 'signer_email': signerEmail,
+        },
+      );
+
+      if (response.status != 200) {
+        final errorData = response.data;
+        final errorMsg = errorData is Map ? errorData['error'] as String? : null;
+        return Left(ServerFailure(errorMsg ?? 'Erreur lors de la génération du lien (${response.status})'));
+      }
+
+      final data = response.data as Map<String, dynamic>;
+      final signingUrl = data['signing_url'] as String?;
+      if (signingUrl == null || signingUrl.isEmpty) {
+        return const Left(ServerFailure('URL de signature non disponible'));
+      }
+
+      return Right(signingUrl);
+    } catch (e) {
+      logger.e('Error generating signing URL', error: e);
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
   ValidationRequest _rowToValidation(Map<String, dynamic> row) {
     return ValidationRequest(
       id: row['id'] as String? ?? '',
@@ -463,12 +803,17 @@ class ValidationRepositorySupabaseImpl implements ValidationRepository {
       periodEnd: DateTime.tryParse(row['period_end'] as String? ?? '') ?? DateTime.now(),
       status: _parseStatus(row['status'] as String? ?? 'pending'),
       managerComment: row['manager_comment'] as String?,
+      managerSignature: row['manager_signature_url'] as String?,
       validatedAt: row['validated_at'] != null ? DateTime.tryParse(row['validated_at'] as String) : null,
       createdAt: DateTime.tryParse(row['created_at'] as String? ?? '') ?? DateTime.now(),
       updatedAt: DateTime.tryParse(row['updated_at'] as String? ?? '') ?? DateTime.now(),
+      expiresAt: row['expires_at'] != null ? DateTime.tryParse(row['expires_at'] as String) : null,
       pdfPath: row['pdf_url'] as String? ?? '',
       pdfHash: '',
       pdfSizeBytes: 0,
+      signingStep: row['signing_step'] as String?,
+      clientSignerName: row['client_signer_name'] as String?,
+      clientSignerEmail: row['client_signer_email'] as String?,
     );
   }
 
@@ -494,6 +839,8 @@ class ValidationRepositorySupabaseImpl implements ValidationRepository {
         return ValidationStatus.rejected;
       case 'expired':
         return ValidationStatus.rejected;
+      case 'signing':
+        return ValidationStatus.pending;
       default:
         return ValidationStatus.pending;
     }
@@ -511,4 +858,5 @@ class ValidationRepositorySupabaseImpl implements ValidationRepository {
         return NotificationType.reminder;
     }
   }
+
 }

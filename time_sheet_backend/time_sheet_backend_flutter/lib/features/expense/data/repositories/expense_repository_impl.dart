@@ -3,12 +3,12 @@ import '../../../../core/error/failures.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/entities/expense_report.dart';
 import '../../domain/repositories/expense_repository.dart';
-import '../data_sources/expense_local_data_source.dart';
+import '../data_sources/expense_data_source.dart';
 import '../models/expense_model.dart';
 
-/// Implémentation du repository Expense avec Isar
+/// Implémentation du repository Expense
 class ExpenseRepositoryImpl implements ExpenseRepository {
-  final ExpenseLocalDataSource localDataSource;
+  final ExpenseDataSource localDataSource;
 
   ExpenseRepositoryImpl({required this.localDataSource});
 

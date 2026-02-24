@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:time_sheet/features/pointage/presentation/pages/pdf/bloc/pdf/pdf_bloc_simple.dart';
+import 'package:time_sheet/features/pointage/domain/repositories/timesheet_repository.dart';
 import 'package:time_sheet/features/pointage/domain/use_cases/generate_pdf_usecase.dart';
 import 'package:time_sheet/features/pointage/domain/use_cases/generate_pdf_params.dart';
 import 'package:get_it/get_it.dart';
@@ -31,6 +32,7 @@ class _PdfGenerationPageState extends State<PdfGenerationPage> {
     super.initState();
     _pdfBloc = PdfBlocSimple(
       generatePdfUseCase: GetIt.instance<GeneratePdfUseCase>(),
+      repository: GetIt.instance<TimesheetRepository>(),
     );
     
     // Générer le PDF immédiatement

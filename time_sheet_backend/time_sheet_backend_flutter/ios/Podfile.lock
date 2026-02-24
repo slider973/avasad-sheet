@@ -59,18 +59,18 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/watch_connectivity/ios"
 
 SPEC CHECKSUMS:
-  device_info: d7d233b645a32c40dfdc212de5cf646ca482f175
+  device_info: 52e8c0c9c61def8d0a92bf175f5f500abbea04bc
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
-  flutter_native_splash: edf599c81f74d093a4daf8e17bd7a018854bc778
-  flutter_pdfview: 25f53dd6097661e6395b17de506e6060585946bd
-  flutter_secure_storage: d33dac7ae2ea08509be337e775f6b59f1ff45f12
-  isar_flutter_libs: b69f437aeab9c521821c3f376198c4371fa21073
-  open_file_ios: 461db5853723763573e140de3193656f91990d9e
-  package_info_plus: 58f0028419748fad15bf008b270aaa8e54380b1c
-  permission_handler_apple: 9878588469a2b0d0fc1e048d9f43605f92e6cec2
-  printing: 233e1b73bd1f4a05615548e9b5a324c98588640b
-  watch_connectivity: 715eb484685e05846eab74795348a44bb2809b82
+  flutter_native_splash: 35ddbc7228eafcb3969dcc5f1fbbe27c1145a4f0
+  flutter_pdfview: 54e283d5851b0b247b3cc57877d35f1a05a204de
+  flutter_secure_storage: 1ed9476fba7e7a782b22888f956cce43e2c62f13
+  isar_flutter_libs: 9fc2cfb928c539e1b76c481ba5d143d556d94920
+  open_file_ios: 5ff7526df64e4394b4fe207636b67a95e83078bb
+  package_info_plus: 580e9a5f1b6ca5594e7c9ed5f92d1dfb2a66b5e1
+  permission_handler_apple: 4ed2196e43d0651e8ff7ca3483a069d469701f2d
+  printing: 54ff03f28fe9ba3aa93358afb80a8595a071dd07
+  watch_connectivity: 88e5bea25b473e66ef8d3f960954d154ed0356d6
 
 PODFILE CHECKSUM: 3c63482e143d1b91d2d2560aee9fb04ecc74ac7e
 
-COCOAPODS: 1.13.0
+COCOAPODS: 1.16.2

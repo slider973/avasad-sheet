@@ -68,3 +68,18 @@ class DownloadValidationPdf extends ValidationDetailEvent {
   @override
   List<Object?> get props => [validationId, managerSignature];
 }
+
+/// Générer un lien de signature externe
+class GenerateSigningLink extends ValidationDetailEvent {
+  final String validationId;
+  final String signerRole;
+
+  const GenerateSigningLink({
+    required this.validationId,
+    required this.signerRole,
+  });
+
+  @override
+  List<Object> get props => [validationId, signerRole];
+}
+
