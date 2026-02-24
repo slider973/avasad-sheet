@@ -7,14 +7,15 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:syncfusion_localizations/syncfusion_localizations.dart';
 import 'package:time_sheet/services/logger_service.dart';
 import 'package:time_sheet/services/service_factory.dart';
+import 'package:time_sheet/core/config/environment.dart';
 import 'package:time_sheet/core/services/supabase/supabase_service.dart';
+import 'package:time_sheet/core/database/powersync_database.dart';
 import 'dart:io';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
 import 'features/bottom_nav_tab/presentation/pages/bottom_navigation_bar.dart';
 import 'features/preference/presentation/pages/initial_check_page.dart';
-import 'features/preference/presentation/pages/onboarding_page.dart';
 import 'features/auth/presentation/pages/login_page.dart';
 import './services/injection_container.dart' as di;
 import 'package:window_manager/window_manager.dart';
@@ -22,6 +23,12 @@ import 'package:window_manager/window_manager.dart';
 void main() async {
   logger.i('main');
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Select environment: pass --dart-define=ENV=dev to use dev backend
+  const envName = String.fromEnvironment('ENV', defaultValue: 'prod');
+  AppConfig.current = envName == 'dev' ? Environment.dev : Environment.prod;
+  logger.i('Environment: ${AppConfig.current.name}');
+
   await _configureLocalTimeZone();
   await initializeDateFormatting('fr_CH', null);
   // Must add this line.
@@ -39,6 +46,9 @@ void main() async {
 
   // Initialize Supabase first (auth needs to be ready before DI)
   await SupabaseService.instance.initialize();
+
+  // Initialize PowerSync local database (SQLite)
+  await PowerSyncDatabaseManager.initialize();
 
   await di.setup();
 
@@ -80,7 +90,6 @@ class MyApp extends StatelessWidget {
         home: const InitialCheckPage(),
         routes: {
           '/main': (context) => const BottomNavigationBarPage(),
-          '/onboarding': (context) => const OnboardingPage(),
           '/login': (context) => const LoginPage(),
         },
         localizationsDelegates: const [
