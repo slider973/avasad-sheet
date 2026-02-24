@@ -126,6 +126,7 @@ const schema = Schema([
     Column.text('slug'),
     Column.text('parent_id'),
     Column.integer('is_active'),
+    Column.text('web_url'),
     Column.text('created_at'),
     Column.text('updated_at'),
   ]),

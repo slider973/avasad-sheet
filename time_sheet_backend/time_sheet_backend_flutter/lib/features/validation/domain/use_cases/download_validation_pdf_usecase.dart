@@ -42,10 +42,15 @@ class DownloadValidationPdfUseCase implements UseCase<Uint8List, DownloadPdfPara
       (failure) => 'pending',
       (data) => data['status'] as String? ?? 'pending',
     );
+    final signingStep = dataResult.fold(
+      (failure) => '',
+      (data) => data['signingStep'] as String? ?? '',
+    );
 
-    // Si approuvée, régénérer avec les deux signatures (employé + manager)
-    if (status == 'approved') {
-      logger.i('Validation approuvée, régénération du PDF avec les deux signatures');
+    // Si approuvée OU si le manager a déjà signé (signing_step avancé à 'client' ou 'completed'),
+    // régénérer avec les signatures disponibles
+    if (status == 'approved' || signingStep == 'client' || signingStep == 'completed') {
+      logger.i('Régénération du PDF avec signatures (status=$status, signingStep=$signingStep)');
       return _regeneratePdf(params.validationId);
     }
 
@@ -131,13 +136,15 @@ class DownloadValidationPdfUseCase implements UseCase<Uint8List, DownloadPdfPara
     // Récupérer la signature de l'employé
     String? employeeSignatureBase64 = data['employeeSignature'] as String?;
 
-    // Préparer signature manager si validé
+    // Préparer signature manager si le manager a déjà signé
+    // (status approved OU signing_step avancé à 'client' ou 'completed')
     String? managerSignatureBase64;
     String? managerName;
     final statusString = data['status'] as String? ?? 'pending';
+    final signingStepStr = data['signingStep'] as String? ?? '';
     final validationStatus = ValidationStatusExtension.fromString(statusString);
 
-    if (validationStatus == ValidationStatus.approved) {
+    if (validationStatus == ValidationStatus.approved || signingStepStr == 'client' || signingStepStr == 'completed') {
       managerName = data['managerName'] as String?;
       managerSignatureBase64 = data['managerSignature'] as String?;
     }

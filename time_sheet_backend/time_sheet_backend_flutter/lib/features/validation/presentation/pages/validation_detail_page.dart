@@ -364,8 +364,8 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
           ),
         ],
 
-        // Actions pour le manager
-        if (widget.isManager && validation.isPending) ...[
+        // Actions pour le manager (seulement si signing_step == 'manager' ou null)
+        if (widget.isManager && validation.isPending && _isManagerStepCurrent(validation)) ...[
           const SizedBox(height: 32),
           Card(
             child: Padding(
@@ -457,6 +457,12 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
         const SizedBox(height: 32),
       ],
     );
+  }
+
+  /// Le manager peut agir seulement si signing_step est 'manager' (ou null/employee pour anciens records)
+  bool _isManagerStepCurrent(ValidationRequest validation) {
+    final step = validation.signingStep;
+    return step == null || step == 'employee' || step == 'manager';
   }
 
   Widget _buildContentWithTimesheet(
@@ -688,8 +694,8 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
           ),
         ],
 
-        // Actions pour le manager
-        if (widget.isManager && validation.isPending) ...[
+        // Actions pour le manager (seulement si signing_step == 'manager' ou null)
+        if (widget.isManager && validation.isPending && _isManagerStepCurrent(validation)) ...[
           const SizedBox(height: 32),
           Card(
             child: Padding(
@@ -822,6 +828,7 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
                 _buildSigningLinkButton(
                   validation: validation,
                   signerRole: 'manager',
+                  signerName: validation.managerName ?? 'Manager',
                   label: 'Copier le lien de signature manager',
                   icon: Icons.link,
                 ),
@@ -841,6 +848,8 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
                   _buildSigningLinkButton(
                     validation: validation,
                     signerRole: 'client',
+                    signerName: validation.clientSignerName!,
+                    signerEmail: validation.clientSignerEmail,
                     label: 'Copier le lien de signature client',
                     icon: Icons.share,
                   ),
@@ -857,6 +866,8 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
   Widget _buildSigningLinkButton({
     required ValidationRequest validation,
     required String signerRole,
+    required String signerName,
+    String? signerEmail,
     required String label,
     required IconData icon,
   }) {
@@ -868,6 +879,8 @@ class _ValidationDetailPageState extends State<ValidationDetailPage> {
                 GenerateSigningLink(
                   validationId: validation.id,
                   signerRole: signerRole,
+                  signerName: signerName,
+                  signerEmail: signerEmail,
                 ),
               );
         },

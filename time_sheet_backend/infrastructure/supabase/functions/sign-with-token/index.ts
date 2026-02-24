@@ -176,7 +176,9 @@ serve(async (req) => {
         .single();
 
       if (clientToken) {
-        const webUrl = Deno.env.get("WEB_URL") ?? "https://timesheet.heytalent.ch";
+        // Resolve web URL from the organization linked to this validation
+        const { data: orgUrl } = await supabase.rpc('get_org_web_url', { p_validation_id: validation.id });
+        const webUrl = orgUrl || Deno.env.get("WEB_URL") || "https://timesheet.staticflow.ch";
         nextStep = `${webUrl}/sign/${clientToken.token}`;
       }
     }

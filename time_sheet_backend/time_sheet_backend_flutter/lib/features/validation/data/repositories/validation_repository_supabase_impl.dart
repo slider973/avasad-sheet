@@ -133,14 +133,48 @@ class ValidationRepositorySupabaseImpl implements ValidationRepository {
   @override
   Future<Either<Failure, ValidationRequest>> getValidationRequest(String id) async {
     try {
-      final row = await _db.getOptional(
-        'SELECT * FROM validation_requests WHERE id = ?',
-        [id],
-      );
+      // Préférer Supabase pour avoir les données fraîches (signing_step, status, manager_signature_url)
+      // mises à jour par les Edge Functions
+      Map<String, dynamic>? row;
+      try {
+        row = await _supabase
+            .from('validation_requests')
+            .select()
+            .eq('id', id)
+            .maybeSingle();
+      } catch (e) {
+        logger.w('Supabase query for validation_request failed, falling back to local: $e');
+      }
+      if (row == null) {
+        final localRow = await _db.getOptional(
+          'SELECT * FROM validation_requests WHERE id = ?',
+          [id],
+        );
+        if (localRow != null) {
+          row = Map<String, dynamic>.from(localRow);
+        }
+      }
       if (row == null) {
         return const Left(ServerFailure('Validation non trouvée'));
       }
-      return Right(_rowToValidation(row));
+      var validation = _rowToValidation(row);
+
+      // Enrichir avec le nom du manager depuis les profils
+      final managerId = row['manager_id'] as String?;
+      if (managerId != null && managerId.isNotEmpty) {
+        final managerProfile = await _db.getOptional(
+          'SELECT first_name, last_name FROM profiles WHERE id = ?',
+          [managerId],
+        );
+        if (managerProfile != null) {
+          final name = '${managerProfile['first_name'] ?? ''} ${managerProfile['last_name'] ?? ''}'.trim();
+          if (name.isNotEmpty) {
+            validation = validation.copyWith(managerName: name);
+          }
+        }
+      }
+
+      return Right(validation);
     } catch (e) {
       return Left(ServerFailure(e.toString()));
     }
@@ -388,23 +422,25 @@ class ValidationRepositorySupabaseImpl implements ValidationRepository {
   @override
   Future<Either<Failure, Map<String, dynamic>>> getValidationTimesheetData(String validationId) async {
     try {
-      // 1. Get validation request (local first, then Supabase)
+      // 1. Get validation request (Supabase first for fresh signing_step/manager_signature_url,
+      //    then fallback to local PowerSync)
       Map<String, dynamic>? rowData;
-      final localRow = await _db.getOptional(
-        'SELECT * FROM validation_requests WHERE id = ?',
-        [validationId],
-      );
-      if (localRow != null) {
-        rowData = Map<String, dynamic>.from(localRow);
-      } else {
-        try {
-          rowData = await _supabase
-              .from('validation_requests')
-              .select()
-              .eq('id', validationId)
-              .maybeSingle();
-        } catch (e) {
-          logger.w('Supabase fallback for validation_requests failed: $e');
+      try {
+        rowData = await _supabase
+            .from('validation_requests')
+            .select()
+            .eq('id', validationId)
+            .maybeSingle();
+      } catch (e) {
+        logger.w('Supabase query for validation_requests failed, falling back to local: $e');
+      }
+      if (rowData == null) {
+        final localRow = await _db.getOptional(
+          'SELECT * FROM validation_requests WHERE id = ?',
+          [validationId],
+        );
+        if (localRow != null) {
+          rowData = Map<String, dynamic>.from(localRow);
         }
       }
       if (rowData == null) {
@@ -499,8 +535,11 @@ class ValidationRepositorySupabaseImpl implements ValidationRepository {
         }
 
         // Get manager signature from validation_requests (stored as base64 on approval)
+        // La signature manager est disponible dès que signing_step avance à 'client' ou 'completed',
+        // même si le status reste 'pending' (en attente de la signature client)
         final status = rowData['status'] as String? ?? 'pending';
-        if (status == 'approved') {
+        final signingStep = rowData['signing_step'] as String? ?? '';
+        if (status == 'approved' || signingStep == 'client' || signingStep == 'completed') {
           managerSignatureBase64 = rowData['manager_signature_url'] as String?;
         }
       }
@@ -562,6 +601,7 @@ class ValidationRepositorySupabaseImpl implements ValidationRepository {
         'validationId': rowData['id'],
         'employeeId': employeeId,
         'status': rowData['status'],
+        'signingStep': rowData['signing_step'],
         'periodStart': periodStart,
         'periodEnd': periodEnd,
         'managerComment': rowData['manager_comment'],

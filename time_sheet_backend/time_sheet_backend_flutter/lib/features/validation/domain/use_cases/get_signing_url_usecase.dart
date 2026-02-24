@@ -17,10 +17,15 @@ class GetSigningUrlUseCase implements UseCase<String, GetSigningUrlParams> {
     if (params.signerRole.isEmpty) {
       return const Left(ValidationFailure('Le rôle du signataire est requis'));
     }
+    if (params.signerName.isEmpty) {
+      return const Left(ValidationFailure('Le nom du signataire est requis'));
+    }
 
     return await repository.getSigningUrl(
       validationId: params.validationId,
       signerRole: params.signerRole,
+      signerName: params.signerName,
+      signerEmail: params.signerEmail,
     );
   }
 }
@@ -29,9 +34,13 @@ class GetSigningUrlUseCase implements UseCase<String, GetSigningUrlParams> {
 class GetSigningUrlParams {
   final String validationId;
   final String signerRole;
+  final String signerName;
+  final String? signerEmail;
 
   const GetSigningUrlParams({
     required this.validationId,
     required this.signerRole,
+    required this.signerName,
+    this.signerEmail,
   });
 }

@@ -133,7 +133,10 @@ class ValidationDetailBloc
         },
         (validation) {
           emit(ValidationDetailLoaded(validation));
-          emit(ValidationDetailSuccess('Validation approuvée avec succès'));
+          final message = validation.signingStep == 'client'
+              ? 'Signature manager enregistrée. En attente de la signature client.'
+              : 'Validation approuvée avec succès';
+          emit(ValidationDetailSuccess(message));
         },
       );
     } catch (e) {
@@ -222,6 +225,8 @@ class ValidationDetailBloc
       final params = GetSigningUrlParams(
         validationId: event.validationId,
         signerRole: event.signerRole,
+        signerName: event.signerName,
+        signerEmail: event.signerEmail,
       );
 
       final result = await getSigningUrl(params);

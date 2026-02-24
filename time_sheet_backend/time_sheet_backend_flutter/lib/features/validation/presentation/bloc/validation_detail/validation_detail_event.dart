@@ -73,13 +73,17 @@ class DownloadValidationPdf extends ValidationDetailEvent {
 class GenerateSigningLink extends ValidationDetailEvent {
   final String validationId;
   final String signerRole;
+  final String signerName;
+  final String? signerEmail;
 
   const GenerateSigningLink({
     required this.validationId,
     required this.signerRole,
+    required this.signerName,
+    this.signerEmail,
   });
 
   @override
-  List<Object> get props => [validationId, signerRole];
+  List<Object?> get props => [validationId, signerRole, signerName, signerEmail];
 }
 

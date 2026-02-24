@@ -87,9 +87,12 @@ serve(async (req) => {
       .eq("signer_role", next_signer_role)
       .single();
 
+    // Resolve web URL from the organization linked to this validation
+    const { data: orgUrl } = await supabase.rpc('get_org_web_url', { p_validation_id: validation_id });
+    const webUrl = orgUrl || Deno.env.get("WEB_URL") || "https://timesheet.staticflow.ch";
+
     if (existingToken) {
       // Return the existing token instead of creating a new one
-      const webUrl = Deno.env.get("WEB_URL") ?? "https://timesheet.heytalent.ch";
       return new Response(
         JSON.stringify({
           token: existingToken.token,
@@ -124,7 +127,6 @@ serve(async (req) => {
       .update({ signing_step: next_signer_role })
       .eq("id", validation_id);
 
-    const webUrl = Deno.env.get("WEB_URL") ?? "https://timesheet.heytalent.ch";
     const signingUrl = `${webUrl}/sign/${newToken.token}`;
 
     return new Response(

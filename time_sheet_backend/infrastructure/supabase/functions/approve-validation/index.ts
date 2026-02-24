@@ -28,7 +28,7 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { validation_id, comment, signed_pdf_url } = body;
+    const { validation_id, comment, signed_pdf_url, manager_signature } = body;
 
     // Verify this manager is authorized for this validation
     const { data: validation, error: fetchError } = await supabase
@@ -59,6 +59,10 @@ serve(async (req) => {
     const updateData: Record<string, unknown> = {
       manager_comment: comment || null,
     };
+
+    if (manager_signature) {
+      updateData.manager_signature_url = manager_signature;
+    }
 
     if (signed_pdf_url) {
       updateData.pdf_url = signed_pdf_url;
@@ -181,7 +185,9 @@ serve(async (req) => {
         .single();
 
       if (clientToken) {
-        const webUrl = Deno.env.get("WEB_URL") ?? "https://timesheet.heytalent.ch";
+        // Resolve web URL from the organization linked to this validation
+        const { data: orgUrl } = await supabase.rpc('get_org_web_url', { p_validation_id: validation_id });
+        const webUrl = orgUrl || Deno.env.get("WEB_URL") || "https://timesheet.staticflow.ch";
         clientSigningUrl = `${webUrl}/sign/${clientToken.token}`;
       }
     }
