@@ -24,7 +24,8 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    return RefreshIndicator(
+    return Scaffold(
+      body: RefreshIndicator(
       onRefresh: () async {
         context.read<ManagerDashboardBloc>().add(RefreshManagerDashboard());
       },
@@ -66,6 +67,7 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
           return const SizedBox.shrink();
         },
       ),
+    ),
     );
   }
 
@@ -80,11 +82,11 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
           floating: true,
           pinned: false,
           leading: IconButton(
-            icon: const Icon(Icons.menu),
+            icon: const Icon(Icons.arrow_back),
             onPressed: () {
-              Scaffold.of(context).openDrawer();
+              Navigator.of(context).pop();
             },
-            tooltip: 'Menu',
+            tooltip: 'Retour',
           ),
           actions: [
             IconButton(

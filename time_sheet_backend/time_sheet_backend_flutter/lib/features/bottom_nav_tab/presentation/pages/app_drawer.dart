@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../pointage/presentation/pages/statistiques/statistique_page.dart';
 import '../../../pointage/presentation/pages/pointage/pointage_page.dart';
 import '../../../pointage/presentation/pages/dashboard/dashboard_page.dart';
 import '../../../preference/presentation/pages/preference.dart';
 import '../../../validation/presentation/pages/validation_menu_page.dart';
 import '../../../expense/presentation/pages/expense_list_page.dart';
+import '../../../manager/presentation/pages/manager_dashboard_page.dart';
+import '../../../manager/presentation/bloc/manager_dashboard_bloc.dart';
 import 'bottom_navigation_bar.dart';
 
 class AppDrawer extends StatelessWidget {
-  const AppDrawer({super.key});
+  final bool isManager;
+
+  const AppDrawer({super.key, this.isManager = false});
 
   @override
   Widget build(BuildContext context) {
@@ -126,6 +131,25 @@ class AppDrawer extends StatelessWidget {
                     );
                   },
                 ),
+                if (isManager)
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.supervisor_account,
+                    title: 'Manager',
+                    subtitle: 'Tableau de bord équipe',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => BlocProvider(
+                            create: (_) => ManagerDashboardBloc(),
+                            child: const ManagerDashboardPage(),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 16),
                   child: Divider(),

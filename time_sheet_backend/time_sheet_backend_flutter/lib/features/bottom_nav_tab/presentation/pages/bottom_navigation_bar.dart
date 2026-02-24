@@ -10,8 +10,6 @@ import '../../../pointage/presentation/pages/dashboard/dashboard_page.dart';
 import '../../../pointage/presentation/pages/time-sheet/bloc/time_sheet/time_sheet_bloc.dart';
 import '../../../pointage/presentation/pages/time-sheet/bloc/time_sheet_list/time_sheet_list_bloc.dart';
 import '../../../pointage/presentation/pages/calendar/calendar_page.dart';
-import '../../../manager/presentation/pages/manager_dashboard_page.dart';
-import '../../../manager/presentation/bloc/manager_dashboard_bloc.dart';
 import '../widgets/bottom_navigation_bar_widget.dart';
 import 'app_drawer.dart';
 import 'bloc/bottom_navigation_bar_bloc.dart';
@@ -59,7 +57,7 @@ class _BottomNavigationBarPageState extends State<BottomNavigationBarPage> {
       if (mounted && profile != null) {
         final role = profile['role'] as String? ?? 'employee';
         setState(() {
-          _isManager = role == 'manager' || role == 'admin';
+          _isManager = role == 'manager' || role == 'admin' || role == 'org_admin' || role == 'super_admin';
         });
       }
     } catch (_) {
@@ -69,13 +67,6 @@ class _BottomNavigationBarPageState extends State<BottomNavigationBarPage> {
 
   /// Crée le widget correspondant à l'index actuel
   Widget _buildScreen(int index) {
-    if (_isManager && index == 5) {
-      return BlocProvider(
-        create: (_) => ManagerDashboardBloc(),
-        child: const ManagerDashboardPage(key: ValueKey('manager_dashboard_page')),
-      );
-    }
-
     switch (index) {
       case 0:
         return const DashboardPage(key: ValueKey('dashboard_page'));
@@ -99,7 +90,7 @@ class _BottomNavigationBarPageState extends State<BottomNavigationBarPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        drawer: const AppDrawer(),
+        drawer: AppDrawer(isManager: _isManager),
         body: BlocConsumer<BottomNavigationBarBloc, int>(
           listener: (context, currentIndex) {
             // Si l'utilisateur navigue vers l'onglet pointage (index 1 maintenant),
@@ -135,10 +126,6 @@ class _BottomNavigationBarPageState extends State<BottomNavigationBarPage> {
                 _lastAnomalyUpdate = DateTime.now();
               }
             }
-            // Manager tab (index 5) - no special action needed
-            else if (currentIndex == 5) {
-              // Manager dashboard handles its own loading
-            }
             // Pour les autres onglets, mettre à jour les anomalies en arrière-plan
             else {
               _updateAnomaliesBadge(context);
@@ -151,7 +138,7 @@ class _BottomNavigationBarPageState extends State<BottomNavigationBarPage> {
                 Expanded(
                   child: _buildScreen(currentIndex),
                 ),
-                BottomNavigationBarWidget(isManager: _isManager),
+                const BottomNavigationBarWidget(),
               ],
             );
           },

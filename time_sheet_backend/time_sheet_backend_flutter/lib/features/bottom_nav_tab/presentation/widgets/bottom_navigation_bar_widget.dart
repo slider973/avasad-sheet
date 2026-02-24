@@ -7,9 +7,7 @@ import '../pages/bloc/bottom_navigation_bar_bloc.dart';
 import '../../../pointage/presentation/pages/pdf/bloc/anomaly/anomaly_bloc.dart';
 
 class BottomNavigationBarWidget extends StatelessWidget {
-  final bool isManager;
-
-  const BottomNavigationBarWidget({super.key, this.isManager = false});
+  const BottomNavigationBarWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +17,6 @@ class BottomNavigationBarWidget extends StatelessWidget {
       BottomNavigationBarEvent.tab3,
       BottomNavigationBarEvent.tab4,
       BottomNavigationBarEvent.tab5,
-      if (isManager) BottomNavigationBarEvent.tab6,
     ];
 
     final items = <BottomNavigationBarItem>[
@@ -43,11 +40,6 @@ class BottomNavigationBarWidget extends StatelessWidget {
         icon: AnomalyIconWithBadge(),
         label: 'Anomalies',
       ),
-      if (isManager)
-        const BottomNavigationBarItem(
-          icon: Icon(Icons.supervisor_account),
-          label: 'Manager',
-        ),
     ];
 
     return BlocBuilder<BottomNavigationBarBloc, int>(
