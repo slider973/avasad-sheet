@@ -2,6 +2,7 @@ import 'package:intl/intl.dart';
 import 'package:powersync/powersync.dart';
 import 'package:time_sheet/features/pointage/domain/entities/timesheet_entry.dart';
 import 'package:time_sheet/services/logger_service.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../../../core/database/powersync_database.dart';
 import '../../../../core/services/supabase/supabase_service.dart';
@@ -71,13 +72,15 @@ class LocalDatasourcePowerSyncImpl implements LocalDataSource {
         ],
       );
     } else {
-      final result = await db.execute(
+      entryId = const Uuid().v4();
+      await db.execute(
         '''INSERT INTO timesheet_entries (id, user_id, day_date, day_of_week,
           start_morning, end_morning, start_afternoon, end_afternoon,
           absence_reason, period, has_overtime_hours, is_weekend_day,
           is_weekend_overtime_enabled, overtime_type)
-          VALUES (uuid(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
         [
+          entryId,
           userId, dayDateStr, data['day_of_week'],
           data['start_morning'], data['end_morning'],
           data['start_afternoon'], data['end_afternoon'],
@@ -86,29 +89,34 @@ class LocalDatasourcePowerSyncImpl implements LocalDataSource {
           data['is_weekend_overtime_enabled'], data['overtime_type'],
         ],
       );
-      entryId = result.toString();
     }
+
+    // Clean up any existing absences linked to this entry before inserting new one
+    await db.execute(
+      'DELETE FROM absences WHERE timesheet_entry_id = ?',
+      [entryId],
+    );
+    // Also clean up date-range matched absences (migrated from Isar without timesheet_entry_id)
+    await db.execute(
+      '''DELETE FROM absences WHERE timesheet_entry_id IS NULL
+         AND user_id = ? AND start_date = ? AND end_date = ?''',
+      [userId, dayDateStr, dayDateStr],
+    );
 
     // Handle absence if present
     if (entryModel.absence.value != null) {
       final absence = entryModel.absence.value!;
-      final absenceData = {
-        'user_id': userId,
-        'timesheet_entry_id': entryId,
-        'start_date': DateFormat('yyyy-MM-dd').format(absence.startDate),
-        'end_date': DateFormat('yyyy-MM-dd').format(absence.endDate),
-        'type': absence.type.name,
-        'motif': absence.motif ?? '',
-      };
-
       await db.execute(
-        '''INSERT OR REPLACE INTO absences (id, user_id, timesheet_entry_id,
+        '''INSERT INTO absences (id, user_id, timesheet_entry_id,
           start_date, end_date, type, motif)
-          VALUES (uuid(), ?, ?, ?, ?, ?, ?)''',
+          VALUES (?, ?, ?, ?, ?, ?, ?)''',
         [
-          absenceData['user_id'], absenceData['timesheet_entry_id'],
-          absenceData['start_date'], absenceData['end_date'],
-          absenceData['type'], absenceData['motif'],
+          const Uuid().v4(),
+          userId, entryId,
+          DateFormat('yyyy-MM-dd').format(absence.startDate),
+          DateFormat('yyyy-MM-dd').format(absence.endDate),
+          absence.type.name,
+          absence.motif ?? '',
         ],
       );
     }

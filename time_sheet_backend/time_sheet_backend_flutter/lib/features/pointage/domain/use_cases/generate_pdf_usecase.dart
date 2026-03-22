@@ -731,16 +731,16 @@ class GeneratePdfUseCase {
               )),
         ),
         pw.Center(
-            child: pw.Text(day.entry.startMorning,
+            child: pw.Text(isFullDayAbsence ? '' : day.entry.startMorning,
                 style: const pw.TextStyle(fontSize: 6))),
         pw.Center(
-            child: pw.Text(day.entry.endMorning,
+            child: pw.Text(isFullDayAbsence ? '' : day.entry.endMorning,
                 style: const pw.TextStyle(fontSize: 6))),
         pw.Center(
-            child: pw.Text(day.entry.startAfternoon,
+            child: pw.Text(isFullDayAbsence ? '' : day.entry.startAfternoon,
                 style: const pw.TextStyle(fontSize: 6))),
         pw.Center(
-            child: pw.Text(day.entry.endAfternoon,
+            child: pw.Text(isFullDayAbsence ? '' : day.entry.endAfternoon,
                 style: const pw.TextStyle(fontSize: 6))),
         pw.Center(
             child: pw.Text(formattedDuration,
@@ -765,10 +765,13 @@ class GeneratePdfUseCase {
   }
 
   String _getCommentaire(Workday day) {
-    if (day.isAbsence()) {
+    if (day.entry.absence != null) {
       return day.entry.absence!.type == AbsenceType.other
           ? day.entry.absence!.motif
           : _getMotifFromType(day.entry.absence!.type) ?? '';
+    }
+    if (day.entry.absenceReason != null && day.entry.absenceReason!.isNotEmpty) {
+      return day.entry.absenceReason!;
     }
     return '';
   }

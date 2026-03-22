@@ -81,7 +81,7 @@ class TimesheetEntry {
     final format = DateFormat('HH:mm');
     Duration total = Duration.zero;
 
-    if (absence != null) {
+    if (absence != null || (absenceReason != null && absenceReason!.isNotEmpty && period == 'fullDay')) {
       return Duration.zero;
     }
 
