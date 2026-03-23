@@ -26,6 +26,95 @@ class LocalDatasourcePowerSyncImpl implements LocalDataSource {
 
   String get _userId => SupabaseService.instance.currentUserId ?? '';
 
+  /// Nettoie les absences corrompues :
+  /// 1. Supprime les absences avec timesheet_entry_id invalide (ex: '[]')
+  ///    et les relie à la bonne entrée par date
+  /// 2. Supprime les doublons d'absences pour une même date
+  Future<void> repairCorruptedAbsences() async {
+    final userId = _userId;
+    if (userId.isEmpty) return;
+
+    logger.i('[PowerSync] Début du nettoyage des absences corrompues...');
+
+    // 1. Trouver les absences avec timesheet_entry_id invalide (pas un UUID valide)
+    final invalidAbsences = await db.getAll(
+      '''SELECT a.id, a.start_date, a.end_date, a.type, a.motif, a.timesheet_entry_id
+         FROM absences a
+         WHERE a.user_id = ?
+           AND a.timesheet_entry_id IS NOT NULL
+           AND a.timesheet_entry_id != ''
+           AND length(a.timesheet_entry_id) < 36''',
+      [userId],
+    );
+
+    for (final absence in invalidAbsences) {
+      final absenceId = absence['id'] as String;
+      final startDate = absence['start_date'] as String;
+      final type = absence['type'] as String;
+      final motif = absence['motif'] as String? ?? '';
+
+      logger.i('[PowerSync] Absence corrompue trouvée: $absenceId (date: $startDate, entry_id: ${absence['timesheet_entry_id']})');
+
+      // Trouver l'entrée timesheet correspondante par date
+      final entry = await db.getOptional(
+        'SELECT id FROM timesheet_entries WHERE user_id = ? AND day_date = ?',
+        [userId, startDate],
+      );
+
+      // Supprimer l'absence corrompue
+      await db.execute('DELETE FROM absences WHERE id = ?', [absenceId]);
+
+      if (entry != null) {
+        final entryId = entry['id'] as String;
+        // Vérifier qu'il n'y a pas déjà une absence valide pour cette entrée
+        final existing = await db.getOptional(
+          'SELECT id FROM absences WHERE timesheet_entry_id = ? AND start_date = ?',
+          [entryId, startDate],
+        );
+        if (existing == null) {
+          // Recréer avec le bon timesheet_entry_id
+          await db.execute(
+            '''INSERT INTO absences (id, user_id, timesheet_entry_id, start_date, end_date, type, motif)
+               VALUES (?, ?, ?, ?, ?, ?, ?)''',
+            [const Uuid().v4(), userId, entryId, startDate, startDate, type, motif],
+          );
+          logger.i('[PowerSync] Absence recréée correctement pour $startDate -> entry $entryId');
+        }
+      } else {
+        logger.w('[PowerSync] Aucune entrée trouvée pour $startDate, absence orpheline supprimée');
+      }
+    }
+
+    // 2. Supprimer les doublons (garder la plus récente par timesheet_entry_id + date)
+    await db.execute(
+      '''DELETE FROM absences WHERE user_id = ? AND id NOT IN (
+         SELECT MAX(id) FROM absences WHERE user_id = ? GROUP BY timesheet_entry_id, start_date
+      )''',
+      [userId, userId],
+    );
+
+    // 3. Supprimer les absences liées à une entrée qui n'a pas de absence_reason
+    //    (absences fantômes créées par erreur sur des jours travaillés)
+    final ghostAbsences = await db.getAll(
+      '''SELECT a.id, a.start_date, te.absence_reason
+         FROM absences a
+         JOIN timesheet_entries te ON te.id = a.timesheet_entry_id
+         WHERE a.user_id = ?
+           AND (te.absence_reason IS NULL OR te.absence_reason = '')
+           AND te.start_morning != ''''',
+      [userId],
+    );
+
+    for (final ghost in ghostAbsences) {
+      logger.i('[PowerSync] Absence fantôme supprimée pour ${ghost['start_date']} (entrée travaillée sans absence_reason)');
+      await db.execute('DELETE FROM absences WHERE id = ?', [ghost['id']]);
+    }
+
+    if (invalidAbsences.isNotEmpty || ghostAbsences.isNotEmpty) {
+      logger.i('[PowerSync] Nettoyage terminé: ${invalidAbsences.length} corrompues, ${ghostAbsences.length} fantômes');
+    }
+  }
+
   @override
   Future<int> saveTimeSheet(TimeSheetEntryModel entryModel) async {
     final userId = _userId;

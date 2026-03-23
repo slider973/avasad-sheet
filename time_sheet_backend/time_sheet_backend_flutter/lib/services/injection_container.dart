@@ -116,8 +116,15 @@ Future<void> setup() async {
 
   // ============ DATA SOURCES (PowerSync) ============
 
-  getIt.registerLazySingleton<LocalDataSource>(
-      () => LocalDatasourcePowerSyncImpl(db));
+  final localDataSource = LocalDatasourcePowerSyncImpl(db);
+  getIt.registerLazySingleton<LocalDataSource>(() => localDataSource);
+
+  // Nettoyer les absences corrompues (bug historique: timesheet_entry_id invalide)
+  try {
+    await localDataSource.repairCorruptedAbsences();
+  } catch (e) {
+    // Ne pas bloquer le démarrage si le nettoyage échoue
+  }
 
   // ============ USER PREFERENCES (local-only SQLite table) ============
 
