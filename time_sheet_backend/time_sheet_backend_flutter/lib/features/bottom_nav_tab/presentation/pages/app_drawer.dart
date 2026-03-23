@@ -11,6 +11,7 @@ import '../../../validation/presentation/pages/validation_menu_page.dart';
 import '../../../expense/presentation/pages/expense_list_page.dart';
 import '../../../manager/presentation/pages/manager_dashboard_page.dart';
 import '../../../manager/presentation/bloc/manager_dashboard_bloc.dart';
+import '../../../pointage/presentation/pages/debug/debug_database_page.dart';
 import 'bottom_navigation_bar.dart';
 
 class AppDrawer extends StatelessWidget {
@@ -180,6 +181,19 @@ class AppDrawer extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (context) => PreferencesPage()),
+                    );
+                  },
+                ),
+                _buildMenuItem(
+                  context,
+                  icon: Icons.bug_report,
+                  title: 'Debug BDD',
+                  subtitle: 'Absences, entrées, réparation',
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const DebugDatabasePage()),
                     );
                   },
                 ),
