@@ -30,20 +30,21 @@ class LocalDatasourcePowerSyncImpl implements LocalDataSource {
   /// 1. Supprime les absences avec timesheet_entry_id invalide (ex: '[]')
   ///    et les relie à la bonne entrée par date
   /// 2. Supprime les doublons d'absences pour une même date
+  /// 3. Supprime les absences fantômes liées à des jours travaillés
   Future<void> repairCorruptedAbsences() async {
     final userId = _userId;
     if (userId.isEmpty) return;
 
     logger.i('[PowerSync] Début du nettoyage des absences corrompues...');
+    int totalFixed = 0;
 
-    // 1. Trouver les absences avec timesheet_entry_id invalide (pas un UUID valide)
+    // 1. Absences avec timesheet_entry_id invalide (pas un UUID de 36 chars)
     final invalidAbsences = await db.getAll(
-      '''SELECT a.id, a.start_date, a.end_date, a.type, a.motif, a.timesheet_entry_id
-         FROM absences a
-         WHERE a.user_id = ?
-           AND a.timesheet_entry_id IS NOT NULL
-           AND a.timesheet_entry_id != ''
-           AND length(a.timesheet_entry_id) < 36''',
+      'SELECT a.id, a.start_date, a.type, a.motif, a.timesheet_entry_id '
+      'FROM absences a '
+      'WHERE a.user_id = ? '
+      "AND a.timesheet_entry_id IS NOT NULL AND a.timesheet_entry_id != '' "
+      'AND length(a.timesheet_entry_id) < 36',
       [userId],
     );
 
@@ -53,64 +54,59 @@ class LocalDatasourcePowerSyncImpl implements LocalDataSource {
       final type = absence['type'] as String;
       final motif = absence['motif'] as String? ?? '';
 
-      logger.i('[PowerSync] Absence corrompue trouvée: $absenceId (date: $startDate, entry_id: ${absence['timesheet_entry_id']})');
+      logger.i('[PowerSync] Absence corrompue: $absenceId (date: $startDate, entry_id: ${absence['timesheet_entry_id']})');
 
-      // Trouver l'entrée timesheet correspondante par date
+      await db.execute('DELETE FROM absences WHERE id = ?', [absenceId]);
+
+      // Recréer avec le bon lien si l'entrée existe
       final entry = await db.getOptional(
         'SELECT id FROM timesheet_entries WHERE user_id = ? AND day_date = ?',
         [userId, startDate],
       );
-
-      // Supprimer l'absence corrompue
-      await db.execute('DELETE FROM absences WHERE id = ?', [absenceId]);
-
       if (entry != null) {
         final entryId = entry['id'] as String;
-        // Vérifier qu'il n'y a pas déjà une absence valide pour cette entrée
         final existing = await db.getOptional(
           'SELECT id FROM absences WHERE timesheet_entry_id = ? AND start_date = ?',
           [entryId, startDate],
         );
         if (existing == null) {
-          // Recréer avec le bon timesheet_entry_id
           await db.execute(
-            '''INSERT INTO absences (id, user_id, timesheet_entry_id, start_date, end_date, type, motif)
-               VALUES (?, ?, ?, ?, ?, ?, ?)''',
+            'INSERT INTO absences (id, user_id, timesheet_entry_id, start_date, end_date, type, motif) '
+            'VALUES (?, ?, ?, ?, ?, ?, ?)',
             [const Uuid().v4(), userId, entryId, startDate, startDate, type, motif],
           );
-          logger.i('[PowerSync] Absence recréée correctement pour $startDate -> entry $entryId');
+          logger.i('[PowerSync] Absence recréée: $startDate -> entry $entryId');
         }
-      } else {
-        logger.w('[PowerSync] Aucune entrée trouvée pour $startDate, absence orpheline supprimée');
       }
+      totalFixed++;
     }
 
-    // 2. Supprimer les doublons (garder la plus récente par timesheet_entry_id + date)
+    // 2. Supprimer les doublons (garder un seul par timesheet_entry_id + date)
     await db.execute(
-      '''DELETE FROM absences WHERE user_id = ? AND id NOT IN (
-         SELECT MAX(id) FROM absences WHERE user_id = ? GROUP BY timesheet_entry_id, start_date
-      )''',
+      'DELETE FROM absences WHERE user_id = ? AND id NOT IN ('
+      'SELECT MAX(id) FROM absences WHERE user_id = ? GROUP BY timesheet_entry_id, start_date'
+      ')',
       [userId, userId],
     );
 
-    // 3. Supprimer les absences liées à une entrée qui n'a pas de absence_reason
-    //    (absences fantômes créées par erreur sur des jours travaillés)
+    // 3. Absences fantômes : liées à une entrée TRAVAILLÉE (pas de absence_reason)
     final ghostAbsences = await db.getAll(
-      '''SELECT a.id, a.start_date, te.absence_reason
-         FROM absences a
-         JOIN timesheet_entries te ON te.id = a.timesheet_entry_id
-         WHERE a.user_id = ?
-           AND (te.absence_reason IS NULL OR te.absence_reason = '')
-           AND te.start_morning != ''''',
+      'SELECT a.id, a.start_date '
+      'FROM absences a '
+      'JOIN timesheet_entries te ON te.id = a.timesheet_entry_id '
+      'WHERE a.user_id = ? '
+      "AND (te.absence_reason IS NULL OR te.absence_reason = '') "
+      "AND te.start_morning IS NOT NULL AND te.start_morning != ''",
       [userId],
     );
 
     for (final ghost in ghostAbsences) {
-      logger.i('[PowerSync] Absence fantôme supprimée pour ${ghost['start_date']} (entrée travaillée sans absence_reason)');
+      logger.i('[PowerSync] Absence fantôme supprimée: ${ghost['start_date']}');
       await db.execute('DELETE FROM absences WHERE id = ?', [ghost['id']]);
+      totalFixed++;
     }
 
-    if (invalidAbsences.isNotEmpty || ghostAbsences.isNotEmpty) {
+    if (totalFixed > 0) {
       logger.i('[PowerSync] Nettoyage terminé: ${invalidAbsences.length} corrompues, ${ghostAbsences.length} fantômes');
     }
   }
