@@ -19,43 +19,39 @@ export default function SetPasswordPage() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    // Try query params first (?token_hash=...&type=recovery)
-    let tokenHash = searchParams.get('token_hash')
-    let type = searchParams.get('type') as 'recovery' | 'invite' | null
+    const code = searchParams.get('code')
 
-    // Fallback: check hash fragment (#access_token=...&type=recovery)
-    if (!type) {
-      const hash = window.location.hash.substring(1)
-      if (hash) {
-        const hashParams = new URLSearchParams(hash)
-        type = hashParams.get('type') as 'recovery' | 'invite' | null
-        // Hash flow: Supabase auto-processes the tokens via onAuthStateChange
-        if (type === 'recovery' || type === 'invite') {
-          const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-            if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
-              setVerifying(false)
-            }
-          })
-          return () => subscription.unsubscribe()
-        }
-      }
-    }
-
-    if (!tokenHash || !type) {
-      setInvalidLink(true)
-      setVerifying(false)
+    if (code) {
+      // PKCE flow: exchange code for session
+      supabase.auth.exchangeCodeForSession(code)
+        .then(({ error }) => {
+          if (error) {
+            setError(error.message)
+            setInvalidLink(true)
+          }
+          setVerifying(false)
+        })
       return
     }
 
-    // Query param flow: verify token via API
-    supabase.auth.verifyOtp({ token_hash: tokenHash, type })
-      .then(({ error }) => {
-        if (error) {
-          setError(error.message)
-          setInvalidLink(true)
-        }
-        setVerifying(false)
-      })
+    // Fallback: check hash fragment (#access_token=...&type=recovery)
+    const hash = window.location.hash.substring(1)
+    if (hash) {
+      const hashParams = new URLSearchParams(hash)
+      const type = hashParams.get('type')
+      if (type === 'recovery' || type === 'invite') {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+          if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
+            setVerifying(false)
+          }
+        })
+        return () => subscription.unsubscribe()
+      }
+    }
+
+    // No code, no hash → invalid
+    setInvalidLink(true)
+    setVerifying(false)
   }, [searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
