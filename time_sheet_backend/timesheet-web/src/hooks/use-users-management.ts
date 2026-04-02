@@ -31,7 +31,6 @@ export function useCreateUser() {
   return useMutation({
     mutationFn: async (userData: {
       email: string
-      password: string
       first_name: string
       last_name: string
       organization_id?: string

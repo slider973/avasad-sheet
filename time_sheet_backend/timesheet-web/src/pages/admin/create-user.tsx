@@ -18,7 +18,6 @@ export default function AdminCreateUserPage() {
   const { data: organizations } = useOrganizations()
 
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [role, setRole] = useState<UserRole>('employee')
@@ -32,7 +31,6 @@ export default function AdminCreateUserPage() {
     try {
       await createUser.mutateAsync({
         email,
-        password,
         first_name: firstName,
         last_name: lastName,
         role,
@@ -67,7 +65,7 @@ export default function AdminCreateUserPage() {
               </div>
               <div>
                 <CardTitle>Nouvel utilisateur</CardTitle>
-                <CardDescription>Creez un compte utilisateur via l'Edge Function securisee.</CardDescription>
+                <CardDescription>Invitez un utilisateur — il recevra un email pour definir son mot de passe.</CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -102,18 +100,6 @@ export default function AdminCreateUserPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-xs font-medium text-muted-foreground">Mot de passe</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  minLength={6}
                 />
               </div>
 
@@ -154,7 +140,7 @@ export default function AdminCreateUserPage() {
 
               <Button type="submit" className="w-full" disabled={createUser.isPending}>
                 {createUser.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Creer l'utilisateur
+                Envoyer l'invitation
               </Button>
             </form>
           </CardContent>

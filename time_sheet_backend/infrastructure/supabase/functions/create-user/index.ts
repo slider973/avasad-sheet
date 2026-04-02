@@ -64,11 +64,11 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { email, password, first_name, last_name, organization_id, role } = body;
+    const { email, first_name, last_name, organization_id, role } = body;
 
     // Validate required fields
-    if (!email || !password || !first_name || !last_name || !role) {
-      return new Response(JSON.stringify({ error: "Missing required fields: email, password, first_name, last_name, role" }), {
+    if (!email || !first_name || !last_name || !role) {
+      return new Response(JSON.stringify({ error: "Missing required fields: email, first_name, last_name, role" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -124,15 +124,13 @@ serve(async (req) => {
     // Determine the target organization
     const targetOrgId = organization_id || callerProfile.organization_id;
 
-    // Create the auth user
-    const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: {
+    // Invite the user by email (they will set their own password)
+    const { data: newUser, error: createError } = await supabase.auth.admin.inviteUserByEmail(email, {
+      data: {
         first_name,
         last_name,
       },
+      redirectTo: `${Deno.env.get("SITE_URL") || "https://timesheet.staticflow.ch"}/set-password`,
     });
 
     if (createError) {
@@ -156,13 +154,13 @@ serve(async (req) => {
       .single();
 
     if (updateError) {
-      return new Response(JSON.stringify({ error: `User created but profile update failed: ${updateError.message}` }), {
+      return new Response(JSON.stringify({ error: `User invited but profile update failed: ${updateError.message}` }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    return new Response(JSON.stringify({ user: newUser.user, profile }), {
+    return new Response(JSON.stringify({ user: newUser.user, profile, invited: true }), {
       status: 201,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

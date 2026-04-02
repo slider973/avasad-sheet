@@ -22,7 +22,6 @@ export default function OrgCreateUserPage() {
   const { data: allOrgs } = useOrganizations()
 
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [role, setRole] = useState<UserRole>('employee')
@@ -42,7 +41,6 @@ export default function OrgCreateUserPage() {
     try {
       await createUser.mutateAsync({
         email,
-        password,
         first_name: firstName,
         last_name: lastName,
         role,
@@ -76,7 +74,7 @@ export default function OrgCreateUserPage() {
               </div>
               <div>
                 <CardTitle>Nouvel utilisateur</CardTitle>
-                <CardDescription>Creez un employe ou manager dans votre organisation.</CardDescription>
+                <CardDescription>Invitez un employe ou manager — il recevra un email pour definir son mot de passe.</CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -114,19 +112,6 @@ export default function OrgCreateUserPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="jean.dupont@exemple.com"
                   required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-xs font-medium text-muted-foreground">Mot de passe</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Minimum 6 caracteres"
-                  required
-                  minLength={6}
                 />
               </div>
 
@@ -169,7 +154,7 @@ export default function OrgCreateUserPage() {
 
               <Button type="submit" className="w-full" disabled={createUser.isPending}>
                 {createUser.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Creer l'utilisateur
+                Envoyer l'invitation
               </Button>
             </form>
           </CardContent>

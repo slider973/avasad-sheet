@@ -137,6 +137,16 @@ export default function LoginPage() {
               Se connecter
             </Button>
           </form>
+
+          <div className="mt-4 text-center">
+            <button
+              type="button"
+              onClick={() => navigate('/forgot-password')}
+              className="text-sm text-muted-foreground hover:text-primary transition-colors"
+            >
+              Mot de passe oublie ?
+            </button>
+          </div>
         </FadeIn>
       </div>
     </div>
