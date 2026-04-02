@@ -10,6 +10,10 @@
     <title>TimeSheet</title>
   </head>
   <body>
+    <script>
+      // Redirect recovery/invite tokens to /set-password before anything loads
+      (function(){var h=location.hash.substring(1);if(h){var p=new URLSearchParams(h);var t=p.get('type');if((t==='recovery'||t==='invite')&&location.pathname!=='/set-password'){location.replace('/set-password'+location.hash);}}})();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

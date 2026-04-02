@@ -19,8 +19,27 @@ export default function SetPasswordPage() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    const tokenHash = searchParams.get('token_hash')
-    const type = searchParams.get('type') as 'recovery' | 'invite' | null
+    // Try query params first (?token_hash=...&type=recovery)
+    let tokenHash = searchParams.get('token_hash')
+    let type = searchParams.get('type') as 'recovery' | 'invite' | null
+
+    // Fallback: check hash fragment (#access_token=...&type=recovery)
+    if (!type) {
+      const hash = window.location.hash.substring(1)
+      if (hash) {
+        const hashParams = new URLSearchParams(hash)
+        type = hashParams.get('type') as 'recovery' | 'invite' | null
+        // Hash flow: Supabase auto-processes the tokens via onAuthStateChange
+        if (type === 'recovery' || type === 'invite') {
+          const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+            if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
+              setVerifying(false)
+            }
+          })
+          return () => subscription.unsubscribe()
+        }
+      }
+    }
 
     if (!tokenHash || !type) {
       setInvalidLink(true)
@@ -28,6 +47,7 @@ export default function SetPasswordPage() {
       return
     }
 
+    // Query param flow: verify token via API
     supabase.auth.verifyOtp({ token_hash: tokenHash, type })
       .then(({ error }) => {
         if (error) {
