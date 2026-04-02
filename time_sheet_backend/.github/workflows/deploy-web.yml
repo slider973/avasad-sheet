@@ -5,8 +5,8 @@ on:
     branches:
       - main
     paths:
-      - 'timesheet-web/**'
-      - '.github/workflows/deploy-web.yml'
+      - 'time_sheet_backend/timesheet-web/**'
+      - 'time_sheet_backend/.github/workflows/deploy-web.yml'
 
   workflow_dispatch:
 
@@ -36,7 +36,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
-          context: timesheet-web
+          context: time_sheet_backend/timesheet-web
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           build-args: |
