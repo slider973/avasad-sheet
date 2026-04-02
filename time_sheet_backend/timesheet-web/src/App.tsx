@@ -1,5 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { useEffect } from 'react'
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Toaster } from 'sonner'
@@ -46,29 +45,10 @@ const queryClient = new QueryClient({
   },
 })
 
-function HashRedirect() {
-  const navigate = useNavigate()
-  const location = useLocation()
-
-  useEffect(() => {
-    const hash = window.location.hash.substring(1)
-    if (!hash) return
-    const params = new URLSearchParams(hash)
-    const type = params.get('type')
-    if ((type === 'recovery' || type === 'invite') && location.pathname !== '/set-password') {
-      navigate('/set-password' + window.location.hash, { replace: true })
-    }
-  }, [navigate, location.pathname])
-
-  return null
-}
-
 function AppRoutes() {
   useAuth()
 
   return (
-    <>
-    <HashRedirect />
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -118,7 +98,6 @@ function AppRoutes() {
       </Route>
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
-    </>
   )
 }
 
