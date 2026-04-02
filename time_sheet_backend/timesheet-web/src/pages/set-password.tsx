@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -8,37 +8,35 @@ import { FadeIn } from '@/components/motion'
 import { Loader2, CheckCircle2, AlertCircle } from 'lucide-react'
 
 export default function SetPasswordPage() {
+  const [searchParams] = useSearchParams()
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [verifying, setVerifying] = useState(true)
   const [success, setSuccess] = useState(false)
-  const [sessionReady, setSessionReady] = useState(false)
   const [invalidLink, setInvalidLink] = useState(false)
   const navigate = useNavigate()
 
   useEffect(() => {
-    // Check if URL hash contains invite or recovery tokens from Supabase
-    const hash = window.location.hash.substring(1)
-    const params = new URLSearchParams(hash)
-    const type = params.get('type')
-    const hasToken = params.has('access_token')
+    const tokenHash = searchParams.get('token_hash')
+    const type = searchParams.get('type') as 'recovery' | 'invite' | null
 
-    if (!hasToken && !type) {
-      // No token in URL — this page was accessed directly, not from an invite/reset link
+    if (!tokenHash || !type) {
       setInvalidLink(true)
+      setVerifying(false)
       return
     }
 
-    // Listen for Supabase to process the token from the URL hash
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
-        setSessionReady(true)
-      }
-    })
-
-    return () => subscription.unsubscribe()
-  }, [])
+    supabase.auth.verifyOtp({ token_hash: tokenHash, type })
+      .then(({ error }) => {
+        if (error) {
+          setError(error.message)
+          setInvalidLink(true)
+        }
+        setVerifying(false)
+      })
+  }, [searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -76,12 +74,17 @@ export default function SetPasswordPage() {
           <span className="text-xl font-bold">TimeSheet</span>
         </div>
 
-        {invalidLink ? (
+        {verifying ? (
+          <div className="mt-8 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Verification du lien...
+          </div>
+        ) : invalidLink ? (
           <div className="space-y-4 text-center">
             <AlertCircle className="mx-auto h-12 w-12 text-destructive" />
             <h1 className="text-2xl font-bold tracking-tight">Lien invalide</h1>
             <p className="text-sm text-muted-foreground">
-              Ce lien n'est pas valide ou a expire. Demandez une nouvelle invitation ou utilisez "Mot de passe oublie".
+              {error || "Ce lien n'est pas valide ou a expire. Demandez une nouvelle invitation ou utilisez \"Mot de passe oublie\"."}
             </p>
             <Button variant="ghost" onClick={() => navigate('/login')} className="mt-4">
               Retour a la connexion
@@ -104,47 +107,40 @@ export default function SetPasswordPage() {
               </p>
             </div>
 
-            {!sessionReady ? (
-              <div className="mt-8 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Verification du lien...
+            <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+              <div className="space-y-2">
+                <Label className="text-xs font-medium text-muted-foreground">Nouveau mot de passe</Label>
+                <Input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Minimum 6 caracteres"
+                  required
+                  minLength={6}
+                  className="h-11"
+                />
               </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-                <div className="space-y-2">
-                  <Label className="text-xs font-medium text-muted-foreground">Nouveau mot de passe</Label>
-                  <Input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Minimum 6 caracteres"
-                    required
-                    minLength={6}
-                    className="h-11"
-                  />
+              <div className="space-y-2">
+                <Label className="text-xs font-medium text-muted-foreground">Confirmer le mot de passe</Label>
+                <Input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  className="h-11"
+                />
+              </div>
+              {error && (
+                <div className="rounded-lg bg-destructive/10 p-3 text-sm font-medium text-destructive">
+                  {error}
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-xs font-medium text-muted-foreground">Confirmer le mot de passe</Label>
-                  <Input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                    minLength={6}
-                    className="h-11"
-                  />
-                </div>
-                {error && (
-                  <div className="rounded-lg bg-destructive/10 p-3 text-sm font-medium text-destructive">
-                    {error}
-                  </div>
-                )}
-                <Button type="submit" className="h-11 w-full text-sm font-semibold" disabled={loading}>
-                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Definir le mot de passe
-                </Button>
-              </form>
-            )}
+              )}
+              <Button type="submit" className="h-11 w-full text-sm font-semibold" disabled={loading}>
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Definir le mot de passe
+              </Button>
+            </form>
           </>
         )}
       </FadeIn>
