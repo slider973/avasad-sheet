@@ -8,12 +8,12 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
     <title>TimeSheet</title>
-  </head>
-  <body>
     <script>
       // Redirect recovery/invite tokens to /set-password before anything loads
       (function(){var h=location.hash.substring(1);if(h){var p=new URLSearchParams(h);var t=p.get('type');if((t==='recovery'||t==='invite')&&location.pathname!=='/set-password'){location.replace('/set-password'+location.hash);}}})();
     </script>
+  </head>
+  <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
