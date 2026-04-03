@@ -9,6 +9,7 @@ import { AppLayout } from '@/components/layout/app-layout'
 import LoginPage from '@/pages/login'
 import ForgotPasswordPage from '@/pages/forgot-password'
 import SetPasswordPage from '@/pages/set-password'
+import SignupPage from '@/pages/signup'
 import SignPage from '@/pages/sign'
 import DashboardPage from '@/pages/dashboard'
 import TimesheetPage from '@/pages/timesheet'
@@ -51,6 +52,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/signup" element={<SignupPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/set-password" element={<SetPasswordPage />} />
       <Route path="/sign/:token" element={<SignPage />} />
