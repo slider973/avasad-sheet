@@ -51,4 +51,4 @@ jobs:
           key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
           script: |
             docker pull ghcr.io/slider973/timesheet-web:latest
-            docker service update --image ghcr.io/slider973/timesheet-web:latest timesheet-web-t2qcar
+            docker service update --force --image ghcr.io/slider973/timesheet-web:latest timesheet-web-t2qcar
