@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -8,7 +8,6 @@ import { FadeIn } from '@/components/motion'
 import { Loader2, CheckCircle2, AlertCircle } from 'lucide-react'
 
 export default function SetPasswordPage() {
-  const [searchParams] = useSearchParams()
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -19,40 +18,26 @@ export default function SetPasswordPage() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    const code = searchParams.get('code')
-
-    if (code) {
-      // PKCE flow: exchange code for session
-      supabase.auth.exchangeCodeForSession(code)
-        .then(({ error }) => {
-          if (error) {
-            setError(error.message)
-            setInvalidLink(true)
-          }
-          setVerifying(false)
-        })
-      return
-    }
-
-    // Fallback: check hash fragment (#access_token=...&type=recovery)
-    const hash = window.location.hash.substring(1)
-    if (hash) {
-      const hashParams = new URLSearchParams(hash)
-      const type = hashParams.get('type')
-      if (type === 'recovery' || type === 'invite') {
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-          if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
-            setVerifying(false)
-          }
-        })
-        return () => subscription.unsubscribe()
+    // Supabase auto-detects tokens in the URL hash and fires auth events
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
+        setVerifying(false)
       }
-    }
+    })
 
-    // No code, no hash → invalid
-    setInvalidLink(true)
-    setVerifying(false)
-  }, [searchParams])
+    // Timeout: if no auth event after 5s, the link is invalid/expired
+    const timeout = setTimeout(() => {
+      setVerifying((v) => {
+        if (v) setInvalidLink(true)
+        return false
+      })
+    }, 5000)
+
+    return () => {
+      subscription.unsubscribe()
+      clearTimeout(timeout)
+    }
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -100,7 +85,7 @@ export default function SetPasswordPage() {
             <AlertCircle className="mx-auto h-12 w-12 text-destructive" />
             <h1 className="text-2xl font-bold tracking-tight">Lien invalide</h1>
             <p className="text-sm text-muted-foreground">
-              {error || "Ce lien n'est pas valide ou a expire. Demandez une nouvelle invitation ou utilisez \"Mot de passe oublie\"."}
+              Ce lien n'est pas valide ou a expire. Utilisez "Mot de passe oublie" pour en recevoir un nouveau.
             </p>
             <Button variant="ghost" onClick={() => navigate('/login')} className="mt-4">
               Retour a la connexion
