@@ -62,7 +62,7 @@ export default function SignupPage() {
           </p>
         </div>
         <div className="relative z-10">
-          <p className="text-sm text-white/40">HeyTalent — Gestion du temps</p>
+          <p className="text-sm text-white/40">Sonrysa — Gestion du temps</p>
         </div>
       </div>
 

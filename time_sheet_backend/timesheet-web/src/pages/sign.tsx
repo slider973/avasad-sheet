@@ -197,7 +197,7 @@ export default function SignPage() {
               <span className="text-lg font-extrabold text-white">TS</span>
             </div>
             <h1 className="text-2xl font-bold tracking-tight">Signature de releve d'heures</h1>
-            <p className="text-sm text-muted-foreground mt-1">HeyTalent — Gestion du temps</p>
+            <p className="text-sm text-muted-foreground mt-1">Sonrysa — Gestion du temps</p>
           </div>
         </FadeIn>
 
