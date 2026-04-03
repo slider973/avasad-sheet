@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Select,
@@ -9,252 +9,150 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { PageHeader } from '@/components/shared/page-header'
-import { MonthNavigator } from '@/components/shared/date-range-picker'
-import { DataTable, type Column } from '@/components/shared/data-table'
-import { CalendarGrid, type CalendarDay } from '@/components/shared/calendar-grid'
-import { DayDetailPanel } from '@/components/shared/day-detail-panel'
-import { DayTimeline } from '@/components/shared/day-timeline'
-import { MiniCalendar } from '@/components/shared/mini-calendar'
-import { Badge } from '@/components/ui/badge'
 import { FadeIn } from '@/components/motion'
 import { useEmployeeTimesheetEntries } from '@/hooks/use-timesheet'
 import { useTeamMembers } from '@/hooks/use-team'
 import {
-  format, parseISO, eachDayOfInterval, startOfMonth, endOfMonth,
-  isWeekend, isSameMonth, addDays, subDays,
+  format, addMonths, subMonths, addDays, subDays,
+  startOfMonth, endOfMonth, startOfWeek, endOfWeek,
+  eachDayOfInterval, isSameDay, isSameMonth, isToday,
 } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
-import { CalendarDays, ChevronLeft, ChevronRight, Clock, List } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
+import { detectAnomaliesForEntries, severityColors, type DetectedAnomaly } from '@/lib/anomaly-detection'
 import type { TimesheetEntry } from '@/types/database'
 
-type ViewMode = 'list' | 'calendar' | 'day'
-
-interface DayRow {
-  date: string
-  entry?: TimesheetEntry
-  isWeekend: boolean
+const absenceLabels: Record<string, string> = {
+  vacation: 'Vacances', sick: 'Maladie', holiday: 'Jour ferie',
+  unpaid: 'Sans solde', other: 'Autre',
 }
 
-function computeHours(entry?: TimesheetEntry): number {
-  if (!entry) return 0
+const HOUR_HEIGHT = 4
+const START_HOUR = 6
+const END_HOUR = 20
+const TOTAL_MINUTES = (END_HOUR - START_HOUR) * 60
+const HOURS = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR + i)
+
+function timeToMinutes(time: string): number {
+  const [h, m] = time.split(':').map(Number)
+  return h * 60 + m
+}
+
+function computeHours(entry: TimesheetEntry): number {
   let total = 0
-  if (entry.start_morning && entry.end_morning) {
-    const [sh, sm] = entry.start_morning.split(':').map(Number)
-    const [eh, em] = entry.end_morning.split(':').map(Number)
-    total += (eh * 60 + em - sh * 60 - sm) / 60
-  }
-  if (entry.start_afternoon && entry.end_afternoon) {
-    const [sh, sm] = entry.start_afternoon.split(':').map(Number)
-    const [eh, em] = entry.end_afternoon.split(':').map(Number)
-    total += (eh * 60 + em - sh * 60 - sm) / 60
-  }
+  if (entry.start_morning && entry.end_morning)
+    total += (timeToMinutes(entry.end_morning) - timeToMinutes(entry.start_morning)) / 60
+  if (entry.start_afternoon && entry.end_afternoon)
+    total += (timeToMinutes(entry.end_afternoon) - timeToMinutes(entry.start_afternoon)) / 60
   return Math.max(0, total)
+}
+
+function generateCalendarDays(month: Date) {
+  const calStart = startOfWeek(startOfMonth(month), { weekStartsOn: 1 })
+  const calEnd = endOfWeek(endOfMonth(month), { weekStartsOn: 1 })
+  return eachDayOfInterval({ start: calStart, end: calEnd }).map(day => ({
+    date: day,
+    dateStr: format(day, 'yyyy-MM-dd'),
+    isCurrentMonth: isSameMonth(day, month),
+    isToday: isToday(day),
+  }))
 }
 
 export default function TeamTimesheetPage() {
   const { employeeId: paramId } = useParams()
   const [selectedEmployee, setSelectedEmployee] = useState<string>(paramId ?? '')
-  const [currentMonth, setCurrentMonth] = useState(new Date())
-  const [viewMode, setViewMode] = useState<ViewMode>('list')
-  const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const [selectedDate, setSelectedDate] = useState(new Date())
+  const [calendarMonth, setCalendarMonth] = useState(new Date())
+  const timelineRef = useRef<HTMLDivElement>(null)
+
   const { data: members } = useTeamMembers()
-  const { data: entries, isLoading } = useEmployeeTimesheetEntries(
+  const { data: monthEntries, isLoading } = useEmployeeTimesheetEntries(
     selectedEmployee || null,
-    currentMonth
+    calendarMonth
   )
 
   const selectedMember = members?.find((m) => m.id === selectedEmployee)
+  const selectedDateStr = format(selectedDate, 'yyyy-MM-dd')
 
-  const days: DayRow[] = eachDayOfInterval({
-    start: startOfMonth(currentMonth),
-    end: endOfMonth(currentMonth),
-  }).map((day) => {
-    const dateStr = format(day, 'yyyy-MM-dd')
-    return {
-      date: dateStr,
-      entry: entries?.find((e) => e.day_date === dateStr),
-      isWeekend: isWeekend(day),
+  useEffect(() => {
+    if (timelineRef.current) {
+      const pxPerRem = parseFloat(getComputedStyle(document.documentElement).fontSize)
+      timelineRef.current.scrollTop = 1 * HOUR_HEIGHT * pxPerRem
     }
-  })
+  }, [])
 
-  const getDayColor = (row: DayRow) => {
-    if (row.isWeekend) return 'bg-gray-300'
-    if (row.entry?.absence_reason) return 'bg-blue-400'
-    const hours = computeHours(row.entry)
-    if (hours >= 8) return 'bg-emerald-400'
-    if (hours > 0) return 'bg-amber-400'
-    return 'bg-gray-200'
+  const selectDate = (date: Date) => {
+    setSelectedDate(date)
+    if (!isSameMonth(date, calendarMonth)) setCalendarMonth(date)
   }
 
-  const handleMonthChange = (date: Date) => {
-    setCurrentMonth(date)
-    setSelectedDate(null)
-  }
+  const computedAnomalies = useMemo(() => {
+    if (!monthEntries) return new Map<string, DetectedAnomaly[]>()
+    return detectAnomaliesForEntries(monthEntries)
+  }, [monthEntries])
 
-  const handleDayClick = (dateStr: string) => {
-    setSelectedDate(dateStr === selectedDate ? null : dateStr)
-  }
+  const calendarDays = useMemo(() => generateCalendarDays(calendarMonth), [calendarMonth])
 
-  const currentSelectedDate = selectedDate ?? format(new Date(), 'yyyy-MM-dd')
+  const entriesByDate = useMemo(() => {
+    const map = new Map<string, TimesheetEntry>()
+    monthEntries?.forEach(e => map.set(e.day_date, e))
+    return map
+  }, [monthEntries])
 
-  const navigateDay = (offset: number) => {
-    const next = offset > 0
-      ? addDays(parseISO(currentSelectedDate), offset)
-      : subDays(parseISO(currentSelectedDate), Math.abs(offset))
-    const nextStr = format(next, 'yyyy-MM-dd')
-    setSelectedDate(nextStr)
-    if (!isSameMonth(next, currentMonth)) {
-      setCurrentMonth(startOfMonth(next))
+  const selectedEntry = entriesByDate.get(selectedDateStr)
+  const selectedAnomalies = computedAnomalies.get(selectedDateStr) ?? []
+
+  const monthTotalHours = useMemo(() => {
+    return (monthEntries ?? []).reduce((sum, e) => sum + computeHours(e), 0)
+  }, [monthEntries])
+
+  const blocks = useMemo(() => {
+    if (!selectedEntry) return []
+    const result: { top: string; height: string; label: string; time: string; color: 'indigo' | 'emerald' | 'orange' }[] = []
+
+    if (selectedEntry.absence_reason) {
+      const top = ((8 * 60 - START_HOUR * 60) / TOTAL_MINUTES) * (END_HOUR - START_HOUR) * HOUR_HEIGHT
+      const h = (9 * 60 / TOTAL_MINUTES) * (END_HOUR - START_HOUR) * HOUR_HEIGHT
+      result.push({
+        top: `${top}rem`, height: `${h}rem`,
+        label: absenceLabels[selectedEntry.absence_reason] ?? selectedEntry.absence_reason,
+        time: 'Journee entiere', color: 'orange',
+      })
+      return result
     }
-  }
 
-  // Entry lookup
-  const entryMap = new Map<string, TimesheetEntry>()
-  entries?.forEach((e) => entryMap.set(e.day_date, e))
-
-  const renderDayContent = (day: CalendarDay) => {
-    const entry = entryMap.get(day.dateStr)
-    if (!entry) return null
-    const hours = computeHours(entry)
-    return (
-      <div className="space-y-0.5">
-        {hours > 0 && (
-          <span className="text-xs font-semibold tabular-nums">{hours.toFixed(1)}h</span>
-        )}
-        {entry.absence_reason && (
-          <Badge variant="secondary" className="bg-blue-100 text-blue-700 text-[10px] px-1 py-0">
-            {entry.absence_reason}
-          </Badge>
-        )}
-      </div>
-    )
-  }
-
-  const renderDayDot = (day: CalendarDay) => {
-    const entry = entryMap.get(day.dateStr)
-    if (!entry && !day.isWeekend) return null
-    const dotColor = day.isWeekend
-      ? 'bg-gray-300'
-      : entry?.absence_reason
-        ? 'bg-blue-400'
-        : computeHours(entry) >= 8
-          ? 'bg-emerald-400'
-          : computeHours(entry) > 0
-            ? 'bg-amber-400'
-            : 'bg-gray-200'
-    return <div className={cn('h-1.5 w-1.5 rounded-full', dotColor)} />
-  }
-
-  // Selected day data for detail panel
-  const selectedDayRow = selectedDate
-    ? days.find((d) => d.date === selectedDate) ?? {
-        date: selectedDate,
-        entry: entryMap.get(selectedDate),
-        isWeekend: isWeekend(parseISO(selectedDate)),
+    if (selectedEntry.start_morning && selectedEntry.end_morning) {
+      const startMins = timeToMinutes(selectedEntry.start_morning)
+      const endMins = timeToMinutes(selectedEntry.end_morning)
+      if (endMins > startMins) {
+        const top = ((startMins - START_HOUR * 60) / 60) * HOUR_HEIGHT
+        const h = ((endMins - startMins) / 60) * HOUR_HEIGHT
+        result.push({ top: `${top}rem`, height: `${h}rem`, label: 'Matin', time: `${selectedEntry.start_morning} - ${selectedEntry.end_morning}`, color: 'indigo' })
       }
-    : null
+    }
 
-  // Day view data
-  const dayViewEntry = entryMap.get(currentSelectedDate)
-  const dayViewHours = computeHours(dayViewEntry)
+    if (selectedEntry.start_afternoon && selectedEntry.end_afternoon) {
+      const startMins = timeToMinutes(selectedEntry.start_afternoon)
+      const endMins = timeToMinutes(selectedEntry.end_afternoon)
+      if (endMins > startMins) {
+        const top = ((startMins - START_HOUR * 60) / 60) * HOUR_HEIGHT
+        const h = ((endMins - startMins) / 60) * HOUR_HEIGHT
+        result.push({ top: `${top}rem`, height: `${h}rem`, label: 'Apres-midi', time: `${selectedEntry.start_afternoon} - ${selectedEntry.end_afternoon}`, color: 'emerald' })
+      }
+    }
 
-  const columns: Column<DayRow>[] = [
-    {
-      key: 'date',
-      header: 'Date',
-      cell: (row) => (
-        <div className="flex items-center gap-2.5">
-          <div className={cn('h-6 w-1 rounded-full', getDayColor(row))} />
-          <span className={cn('font-medium capitalize', row.isWeekend && 'text-muted-foreground/60')}>
-            {format(parseISO(row.date), 'EEEE d', { locale: fr })}
-          </span>
-        </div>
-      ),
-    },
-    {
-      key: 'morning',
-      header: 'Matin',
-      cell: (row) =>
-        row.entry?.start_morning && row.entry?.end_morning
-          ? <span className="tabular-nums">{row.entry.start_morning} - {row.entry.end_morning}</span>
-          : <span className="text-muted-foreground/40">-</span>,
-    },
-    {
-      key: 'afternoon',
-      header: 'Apres-midi',
-      cell: (row) =>
-        row.entry?.start_afternoon && row.entry?.end_afternoon
-          ? <span className="tabular-nums">{row.entry.start_afternoon} - {row.entry.end_afternoon}</span>
-          : <span className="text-muted-foreground/40">-</span>,
-    },
-    {
-      key: 'hours',
-      header: 'Heures',
-      cell: (row) => {
-        const h = computeHours(row.entry)
-        return h > 0 ? <span className="font-semibold tabular-nums">{h.toFixed(1)}h</span> : null
-      },
-      className: 'text-right',
-    },
-    {
-      key: 'absence',
-      header: 'Absence',
-      cell: (row) =>
-        row.entry?.absence_reason ? (
-          <span className="text-blue-600 font-medium">{row.entry.absence_reason}</span>
-        ) : null,
-    },
-  ]
+    return result
+  }, [selectedEntry])
 
-  const cardTitle = selectedMember
-    ? `${selectedMember.first_name} ${selectedMember.last_name} - ${format(currentMonth, 'MMMM yyyy', { locale: fr })}`
-    : format(currentMonth, 'MMMM yyyy', { locale: fr })
-
-  return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Pointages employe"
-        description={selectedMember ? `${selectedMember.first_name} ${selectedMember.last_name}` : 'Selectionnez un employe'}
-        actions={
-          <div className="flex items-center gap-3">
-            <div className="flex items-center rounded-lg bg-muted/50 p-0.5">
-              <Button
-                variant={viewMode === 'list' ? 'secondary' : 'ghost'}
-                size="icon"
-                className="h-7 w-7"
-                onClick={() => setViewMode('list')}
-              >
-                <List className="h-3.5 w-3.5" />
-              </Button>
-              <Button
-                variant={viewMode === 'calendar' ? 'secondary' : 'ghost'}
-                size="icon"
-                className="h-7 w-7"
-                onClick={() => setViewMode('calendar')}
-              >
-                <CalendarDays className="h-3.5 w-3.5" />
-              </Button>
-              <Button
-                variant={viewMode === 'day' ? 'secondary' : 'ghost'}
-                size="icon"
-                className="h-7 w-7"
-                onClick={() => {
-                  setViewMode('day')
-                  if (!selectedDate) setSelectedDate(format(new Date(), 'yyyy-MM-dd'))
-                }}
-              >
-                <Clock className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-            <MonthNavigator date={currentMonth} onChange={handleMonthChange} />
-          </div>
-        }
-      />
-
-      <FadeIn>
-        <div className="flex items-center gap-4">
+  if (!selectedEmployee) {
+    return (
+      <div className="space-y-6">
+        <FadeIn>
+          <h1 className="text-2xl font-bold tracking-tight">Pointages employe</h1>
+          <p className="text-sm text-muted-foreground">Selectionnez un employe</p>
+        </FadeIn>
+        <FadeIn delay={0.1}>
           <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
             <SelectTrigger className="w-64">
               <SelectValue placeholder="Selectionner un employe" />
@@ -267,104 +165,234 @@ export default function TeamTimesheetPage() {
               ))}
             </SelectContent>
           </Select>
-        </div>
+        </FadeIn>
+      </div>
+    )
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="-m-6 flex flex-col" style={{ height: 'calc(100vh - 4rem)' }}>
+      {/* Header */}
+      <FadeIn>
+        <header className="flex flex-none items-center justify-between border-b bg-background px-6 py-3">
+          <div className="flex items-center gap-3">
+            <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
+              <SelectTrigger className="w-56">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {members?.map((m) => (
+                  <SelectItem key={m.id} value={m.id}>
+                    {m.first_name} {m.last_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {selectedMember && (
+              <div>
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-primary to-[oklch(0.60_0.18_300)] text-xs font-bold text-white">
+                    {(selectedMember.first_name?.[0] ?? '').toUpperCase()}{(selectedMember.last_name?.[0] ?? '').toUpperCase()}
+                  </div>
+                  <Badge variant="outline" className="text-xs">Employe</Badge>
+                </div>
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground capitalize">
+              {format(selectedDate, 'EEEE d MMMM yyyy', { locale: fr })}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center rounded-md border">
+              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-r-none" onClick={() => selectDate(subDays(selectedDate, 1))}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                className="h-9 rounded-none border-x px-3 text-sm font-medium"
+                onClick={() => { const today = new Date(); setSelectedDate(today); setCalendarMonth(today) }}
+              >
+                Aujourd'hui
+              </Button>
+              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-l-none" onClick={() => selectDate(addDays(selectedDate, 1))}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </header>
       </FadeIn>
 
-      {/* List view */}
-      {selectedEmployee && viewMode === 'list' && (
-        <FadeIn delay={0.1}>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">{cardTitle}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <DataTable columns={columns} data={days} emptyMessage="Aucun jour" isLoading={isLoading} />
-            </CardContent>
-          </Card>
-        </FadeIn>
-      )}
-
-      {/* Calendar (month) view */}
-      {selectedEmployee && viewMode === 'calendar' && (
-        <FadeIn delay={0.1}>
-          <div className="flex flex-col gap-6 lg:flex-row">
-            <div className="flex-1">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">{cardTitle}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CalendarGrid
-                    month={currentMonth}
-                    selectedDate={selectedDate}
-                    onDayClick={handleDayClick}
-                    renderDayContent={renderDayContent}
-                    renderDayDot={renderDayDot}
-                    isLoading={isLoading}
-                  />
-                </CardContent>
-              </Card>
-            </div>
-            {selectedDayRow && (
-              <div className="lg:w-80">
-                <DayDetailPanel
-                  date={selectedDayRow.date}
-                  entry={selectedDayRow.entry}
-                  dayColor={getDayColor(selectedDayRow)}
-                  onEdit={() => {}}
-                  onClose={() => setSelectedDate(null)}
-                  readOnly
-                />
+      {/* Main content: timeline + sidebar */}
+      <div className="flex min-h-0 flex-1">
+        {/* Day timeline */}
+        <div ref={timelineRef} className="flex flex-auto overflow-y-auto">
+          <div className="w-16 flex-none">
+            {HOURS.map(hour => (
+              <div key={hour} style={{ height: `${HOUR_HEIGHT}rem` }} className="relative">
+                <span className="absolute -top-2.5 right-3 text-xs text-muted-foreground">{hour}h</span>
+              </div>
+            ))}
+          </div>
+          <div className="relative flex-auto border-l">
+            {HOURS.map(hour => (
+              <div key={hour} style={{ height: `${HOUR_HEIGHT}rem` }} className="border-b border-dashed border-muted" />
+            ))}
+            {blocks.map((block, i) => (
+              <div
+                key={i}
+                className={cn(
+                  'absolute left-2 right-3 rounded-lg p-3 text-xs shadow-sm',
+                  block.color === 'indigo' && 'bg-primary/10 text-primary border border-primary/20',
+                  block.color === 'emerald' && 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+                  block.color === 'orange' && 'bg-orange-50 text-orange-700 border border-orange-200',
+                )}
+                style={{ top: block.top, height: block.height }}
+              >
+                <p className="font-semibold">{block.label}</p>
+                <p className="mt-0.5 opacity-80">{block.time}</p>
+              </div>
+            ))}
+            {!selectedEntry && (
+              <div
+                className="absolute left-2 right-3 flex items-center justify-center rounded-lg border border-dashed border-muted-foreground/30 text-sm text-muted-foreground"
+                style={{ top: `${2 * HOUR_HEIGHT}rem`, height: `${8 * HOUR_HEIGHT}rem` }}
+              >
+                Aucun pointage ce jour
               </div>
             )}
           </div>
-        </FadeIn>
-      )}
+        </div>
 
-      {/* Day (timeline) view */}
-      {selectedEmployee && viewMode === 'day' && (
-        <FadeIn delay={0.1}>
-          <div className="flex flex-col gap-6 lg:flex-row">
-            <div className="flex-1">
-              <Card className="overflow-hidden">
-                <div className="flex items-center justify-between border-b px-6 py-4">
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigateDay(-1)}>
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <div className="text-center">
-                    <p className="text-sm font-semibold capitalize">
-                      {format(parseISO(currentSelectedDate), 'EEEE d MMMM yyyy', { locale: fr })}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {dayViewHours > 0 ? `${dayViewHours.toFixed(1)}h travaillees` : 'Aucun pointage'}
-                    </p>
-                  </div>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigateDay(1)}>
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-                <DayTimeline entry={dayViewEntry} />
-              </Card>
+        {/* Right sidebar */}
+        <div className="hidden w-80 flex-none overflow-y-auto border-l md:block">
+          <div className="p-6">
+            {/* Mini calendar navigation */}
+            <div className="flex items-center text-center">
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCalendarMonth(subMonths(calendarMonth, 1))}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <div className="flex-auto text-sm font-semibold capitalize">
+                {format(calendarMonth, 'MMMM yyyy', { locale: fr })}
+              </div>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCalendarMonth(addMonths(calendarMonth, 1))}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
             </div>
-            <div className="hidden lg:block lg:w-72">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm text-center capitalize">
-                    {format(currentMonth, 'MMMM yyyy', { locale: fr })}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <MiniCalendar
-                    month={currentMonth}
-                    selectedDate={currentSelectedDate}
-                    onDayClick={(dateStr) => setSelectedDate(dateStr)}
-                  />
-                </CardContent>
-              </Card>
+
+            <div className="mt-4 grid grid-cols-7 text-center text-xs font-medium text-muted-foreground">
+              {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d, i) => (
+                <div key={i} className="py-1">{d}</div>
+              ))}
+            </div>
+
+            <div className="mt-1 grid grid-cols-7 gap-px overflow-hidden rounded-xl bg-muted/60 text-sm">
+              {calendarDays.map(day => {
+                const entry = entriesByDate.get(day.dateStr)
+                const hasWork = !!entry && !entry.absence_reason
+                const hasAbsence = !!entry?.absence_reason
+                const hasAnomaly = computedAnomalies.has(day.dateStr)
+                const isSelected = isSameDay(day.date, selectedDate)
+
+                return (
+                  <button
+                    key={day.dateStr}
+                    onClick={() => selectDate(day.date)}
+                    className={cn(
+                      'flex flex-col items-center bg-background py-1.5 hover:bg-muted/80 transition-colors',
+                      !day.isCurrentMonth && 'text-muted-foreground/40',
+                      day.isToday && !isSelected && 'font-semibold text-primary',
+                    )}
+                  >
+                    <span className={cn(
+                      'flex h-7 w-7 items-center justify-center rounded-full text-xs transition-colors',
+                      isSelected && day.isToday && 'bg-primary text-primary-foreground',
+                      isSelected && !day.isToday && 'bg-foreground text-background',
+                    )}>
+                      {format(day.date, 'd')}
+                    </span>
+                    <div className="flex gap-0.5 mt-0.5 h-1.5">
+                      {hasWork && <span className="h-1 w-1 rounded-full bg-emerald-500" />}
+                      {hasAbsence && <span className="h-1 w-1 rounded-full bg-orange-500" />}
+                      {hasAnomaly && <span className="h-1 w-1 rounded-full bg-red-500" />}
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Month summary */}
+            <div className="mt-4 rounded-xl border bg-gradient-to-br from-primary/5 to-transparent p-3">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Bilan du mois</p>
+              <p className="mt-1 text-lg font-bold">{monthTotalHours.toFixed(1)}h</p>
+              <p className="text-xs text-muted-foreground">
+                {monthEntries?.filter(e => !e.absence_reason).length ?? 0} jours travailles
+                {' / '}
+                {monthEntries?.filter(e => e.absence_reason).length ?? 0} absences
+              </p>
+            </div>
+
+            {/* Selected day summary */}
+            <div className="mt-6">
+              <h3 className="text-sm font-semibold capitalize">
+                {format(selectedDate, 'EEEE d MMMM', { locale: fr })}
+              </h3>
+
+              {selectedEntry ? (
+                <div className="mt-3 space-y-3">
+                  {selectedEntry.absence_reason ? (
+                    <div className="rounded-lg border border-orange-200 bg-orange-50 p-3">
+                      <p className="text-sm font-medium text-orange-700">
+                        {absenceLabels[selectedEntry.absence_reason] ?? selectedEntry.absence_reason}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="rounded-lg border p-3 space-y-1">
+                      <p className="text-sm font-semibold">{computeHours(selectedEntry).toFixed(1)}h travaillees</p>
+                      {(selectedEntry.start_morning || selectedEntry.end_morning) && (
+                        <p className="text-xs text-muted-foreground">
+                          Matin: {selectedEntry.start_morning || '?'} - {selectedEntry.end_morning || '?'}
+                        </p>
+                      )}
+                      {(selectedEntry.start_afternoon || selectedEntry.end_afternoon) && (
+                        <p className="text-xs text-muted-foreground">
+                          Apres-midi: {selectedEntry.start_afternoon || '?'} - {selectedEntry.end_afternoon || '?'}
+                        </p>
+                      )}
+                      {!!selectedEntry.has_overtime_hours && (
+                        <Badge variant="outline" className="mt-1 text-xs">Heures sup.</Badge>
+                      )}
+                    </div>
+                  )}
+
+                  {selectedAnomalies.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold text-destructive">
+                        {selectedAnomalies.length} anomalie{selectedAnomalies.length > 1 ? 's' : ''}
+                      </p>
+                      {selectedAnomalies.map((a, i) => (
+                        <div key={i} className={cn('rounded-lg border p-2', severityColors[a.severity])}>
+                          <p className="text-xs font-medium">{a.label}</p>
+                          <p className="text-xs mt-0.5 opacity-80">{a.description}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="mt-3 text-sm text-muted-foreground">Aucun pointage</p>
+              )}
             </div>
           </div>
-        </FadeIn>
-      )}
+        </div>
+      </div>
     </div>
   )
 }
