@@ -47,7 +47,7 @@ CREATE OR REPLACE FUNCTION public.create_mcp_token(
 RETURNS TABLE(id UUID, token TEXT, expires_at TIMESTAMPTZ)
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
   v_user_id UUID := auth.uid();
@@ -89,7 +89,7 @@ CREATE OR REPLACE FUNCTION public.revoke_mcp_token(p_id UUID)
 RETURNS VOID
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 BEGIN
   UPDATE public.mcp_tokens
@@ -109,7 +109,7 @@ CREATE OR REPLACE FUNCTION public.resolve_mcp_token(p_token TEXT)
 RETURNS UUID
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
   v_hash TEXT;
