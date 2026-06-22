@@ -1,0 +1,59 @@
+# Codemagic CI/CD — build & publication TestFlight de l'app Flutter "Planet Time sheet"
+# Bundle: com.jonathanlemaine.timeSheet | Apple ID ASC: 6544810984 | Team: CSQ565C7YY
+#
+# PRÉREQUIS (à faire UNE fois dans l'UI Codemagic — ce sont tes secrets/permissions) :
+#   1. Add application -> connecter le repo GitHub slider973/avasad-sheet.
+#   2. Settings (Team/Personal) -> Integrations -> App Store Connect : ajouter une
+#      intégration avec la clé API (.p8 + Key ID + Issuer ID). La NOMMER exactement
+#      comme la valeur de `integrations.app_store_connect` ci-dessous ("Sonrysa ASC").
+#      ⚠️ Pour la signature automatique, la clé doit avoir le rôle Admin/Account Holder
+#         (l'App Manager ne peut pas créer de certificat). Sinon, faire du manual signing.
+#
+# Lancer ensuite : bouton "Start new build" (workflow ios-testflight) ou push sur main.
+
+workflows:
+  ios-testflight:
+    name: iOS TestFlight (Planet Time sheet)
+    instance_type: mac_mini_m2          # macOS récent + Xcode 26 (SDK iOS 26)
+    max_build_duration: 60
+    working_directory: time_sheet_backend/time_sheet_backend_flutter
+    integrations:
+      app_store_connect: Sonrysa ASC    # <-- doit matcher le nom de l'intégration créée
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.jonathanlemaine.timeSheet
+      vars:
+        APP_STORE_APPLE_ID: 6544810984  # Apple ID ASC de l'app (pas le bundle id)
+      flutter: stable
+      xcode: latest                     # = Xcode 26+ -> SDK iOS 26 (exigé par Apple)
+      cocoapods: default
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+      cancel_previous_builds: true
+    scripts:
+      - name: Flutter packages
+        script: flutter pub get
+      - name: Pod install
+        script: find . -name "Podfile" -execdir pod install \;
+      - name: Code signing (profils gérés par Codemagic)
+        script: xcode-project use-profiles
+      - name: Flutter build ipa (build number = dernier TestFlight + 1)
+        script: |
+          BUILD_NUMBER=$(($(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID") + 1))
+          echo "Build number calculé : $BUILD_NUMBER"
+          flutter build ipa --release \
+            --build-name=1.0.2 \
+            --build-number=$BUILD_NUMBER \
+            --export-options-plist=/Users/builder/export_options.plist
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - flutter_drive.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true      # publie le build dans TestFlight (beta)
