@@ -38,10 +38,15 @@ workflows:
         script: flutter pub get
       - name: Pod install
         script: find . -name "Podfile" -execdir pod install \;
-      - name: Code signing - créer/récupérer le certificat + profil App Store
+      - name: Code signing - certificat (avec clé privée) + profil App Store
         script: |
           keychain initialize
-          # Crée le certificat de distribution + le profil App Store s'ils n'existent pas
+          # Crée un certificat Apple Distribution AVEC sa clé privée (générée + sauvegardée).
+          # Indispensable : les certificats déjà dans le portail n'ont pas leur clé privée ici.
+          app-store-connect certificates create \
+            --type IOS_DISTRIBUTION \
+            --save
+          # Crée/récupère le profil App Store et le lie au certificat ci-dessus
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
             --create
