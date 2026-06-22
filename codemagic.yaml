@@ -20,11 +20,9 @@ workflows:
     integrations:
       app_store_connect: Sonrysa ASC    # <-- doit matcher le nom de l'intégration créée
     environment:
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.jonathanlemaine.timeSheet
       vars:
         APP_STORE_APPLE_ID: 6544810984  # Apple ID ASC de l'app (pas le bundle id)
+        BUNDLE_ID: com.jonathanlemaine.timeSheet
       flutter: stable
       xcode: latest                     # = Xcode 26+ -> SDK iOS 26 (exigé par Apple)
       cocoapods: default
@@ -40,8 +38,15 @@ workflows:
         script: flutter pub get
       - name: Pod install
         script: find . -name "Podfile" -execdir pod install \;
-      - name: Code signing (profils gérés par Codemagic)
-        script: xcode-project use-profiles
+      - name: Code signing - créer/récupérer le certificat + profil App Store
+        script: |
+          keychain initialize
+          # Crée le certificat de distribution + le profil App Store s'ils n'existent pas
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+          keychain add-certificates
+          xcode-project use-profiles
       - name: Flutter build ipa (build number = dernier TestFlight + 1)
         script: |
           BUILD_NUMBER=$(($(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID") + 1))
