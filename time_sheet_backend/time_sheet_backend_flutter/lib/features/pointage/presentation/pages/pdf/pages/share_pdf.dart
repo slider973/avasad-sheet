@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:time_sheet/core/services/storage/storage_service.dart';
@@ -44,5 +45,8 @@ Future<void> sharePdf(String filePath) async {
   await Share.shareXFiles(
     [XFile(actualPath)],
     text: shareText,
+    // iOS 26/iPad : sharePositionOrigin doit être un rectangle non nul, sinon
+    // PlatformException "sharePositionOrigin: argument must be set".
+    sharePositionOrigin: const Rect.fromLTWH(0, 0, 100, 100),
   );
 }

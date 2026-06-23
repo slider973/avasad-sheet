@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:share_plus/share_plus.dart';
 
 Future<void> shareExcel(String filePath) async {
@@ -23,6 +24,7 @@ Future<void> shareExcel(String filePath) async {
   final result = await Share.shareXFiles(
     [XFile(filePath)],
     text: shareText,
+    sharePositionOrigin: const Rect.fromLTWH(0, 0, 100, 100),
   );
 
   if (result.status == ShareResultStatus.success) {

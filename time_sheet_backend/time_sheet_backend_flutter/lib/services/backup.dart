@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui';
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:file_picker/file_picker.dart';
@@ -47,6 +48,7 @@ class BackupService {
           [XFile(backupPath)],
           subject: 'Database Backup',
           text: 'Here is your database backup file.',
+          sharePositionOrigin: const Rect.fromLTWH(0, 0, 100, 100),
         );
 
         // Clean up the temporary file
