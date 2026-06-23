@@ -20,6 +20,8 @@ workflows:
     integrations:
       app_store_connect: Sonrysa ASC    # <-- doit matcher le nom de l'intégration créée
     environment:
+      groups:
+        - signing                       # contient CM_CERTIFICATE_PRIVATE_KEY (secret Codemagic)
       vars:
         APP_STORE_APPLE_ID: 6544810984  # Apple ID ASC de l'app (pas le bundle id)
         BUNDLE_ID: com.jonathanlemaine.timeSheet
@@ -38,17 +40,16 @@ workflows:
         script: flutter pub get
       - name: Pod install
         script: find . -name "Podfile" -execdir pod install \;
-      - name: Code signing - certificat (clé privée générée) + profil App Store
+      - name: Code signing - certificat de distribution PERSISTANT + profil App Store
         script: |
           keychain initialize
-          # La CLI ne génère pas la clé privée -> on la crée nous-mêmes,
-          # puis fetch-signing-files crée le certificat AVEC cette clé + le profil App Store.
-          # NB: cela crée un nouveau certificat de distribution à chaque build.
-          KEY_PATH=/tmp/ios_distribution_private_key.pem
-          openssl genrsa -out "$KEY_PATH" 2048
+          # Certificat de distribution persistant (créé une fois, réutilisé à chaque build).
+          # CM_CERTIFICATE_PRIVATE_KEY = clé privée PEM encodée base64 (secret du groupe "signing").
+          # fetch-signing-files retrouve le certificat lié à cette clé -> pas de nouvelle création.
+          echo "$CM_CERTIFICATE_PRIVATE_KEY" | openssl base64 -d -A > /tmp/dist_key.pem
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
-            --certificate-key=@file:"$KEY_PATH" \
+            --certificate-key=@file:/tmp/dist_key.pem \
             --create
           keychain add-certificates
           xcode-project use-profiles
