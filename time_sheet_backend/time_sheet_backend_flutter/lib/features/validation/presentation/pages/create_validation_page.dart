@@ -5,7 +5,9 @@ import 'package:time_sheet/features/validation/presentation/bloc/create_validati
 import 'package:time_sheet/features/validation/domain/repositories/validation_repository.dart';
 import 'package:time_sheet/features/pointage/presentation/pages/pdf_generation_page.dart';
 import 'package:time_sheet/features/pointage/domain/entities/generated_pdf.dart';
+import 'package:time_sheet/features/preference/domain/use_cases/get_user_preference_use_case.dart';
 import 'package:time_sheet/services/injection_container.dart' as di;
+import 'dart:convert';
 import 'dart:typed_data';
 
 /// Page de création d'une demande de validation
@@ -20,10 +22,33 @@ class _CreateValidationPageState extends State<CreateValidationPage> {
   final _formKey = GlobalKey<FormState>();
   late final CreateValidationBloc _bloc;
 
+  /// Signature employé (préférences) qui sera apposée — chargée pour aperçu.
+  Uint8List? _signatureBytes;
+  bool _signatureChecked = false;
+
   @override
   void initState() {
     super.initState();
     _bloc = di.getIt<CreateValidationBloc>()..add(const LoadManagers());
+    _loadSignaturePreview();
+  }
+
+  Future<void> _loadSignaturePreview() async {
+    try {
+      var sig = await di.getIt<GetUserPreferenceUseCase>().execute('signature');
+      if (sig != null && sig.contains(',')) {
+        sig = sig.substring(sig.indexOf(',') + 1);
+      }
+      final bytes = (sig != null && sig.isNotEmpty) ? base64Decode(sig) : null;
+      if (mounted) {
+        setState(() {
+          _signatureBytes = bytes;
+          _signatureChecked = true;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _signatureChecked = true);
+    }
   }
 
   @override
@@ -432,6 +457,10 @@ class _CreateValidationPageState extends State<CreateValidationPage> {
             ),
           ],
 
+          const SizedBox(height: 24),
+
+          _buildSignaturePreview(),
+
           const SizedBox(height: 32),
 
           // Boutons d'action
@@ -462,6 +491,66 @@ class _CreateValidationPageState extends State<CreateValidationPage> {
           ),
 
           const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  /// Aperçu de la signature employé (préférences) qui sera apposée au PDF,
+  /// pour visibilité/consentement explicite avant l'envoi.
+  Widget _buildSignaturePreview() {
+    if (!_signatureChecked) return const SizedBox.shrink();
+    if (_signatureBytes == null) {
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.orange.shade50,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.orange.shade200),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded,
+                color: Colors.orange.shade700, size: 20),
+            const SizedBox(width: 8),
+            const Expanded(
+              child: Text(
+                'Aucune signature configurée. Ajoutez-la dans Paramètres avant d\'envoyer.',
+                style: TextStyle(fontSize: 13),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.draw, color: Colors.teal.shade600, size: 18),
+              const SizedBox(width: 6),
+              const Text(
+                'Signature qui sera apposée',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Container(
+            height: 70,
+            width: double.infinity,
+            alignment: Alignment.center,
+            color: Colors.white,
+            child: Image.memory(_signatureBytes!, fit: BoxFit.contain),
+          ),
         ],
       ),
     );

@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:time_sheet/features/validation/presentation/bloc/validation_detail/validation_detail_bloc.dart';
+import 'package:time_sheet/features/validation/presentation/pages/validation_detail_page.dart';
+import 'package:time_sheet/services/injection_container.dart' as di;
 
 import '../../../../core/database/powersync_database.dart';
 import '../../../../core/services/supabase/supabase_service.dart';
@@ -248,7 +252,20 @@ class _PendingApprovalsPageState extends State<PendingApprovalsPage>
               children: [
                 TextButton.icon(
                   onPressed: () {
-                    // Navigate to validation detail (uses existing validation feature)
+                    final id = validation['id'] as String?;
+                    if (id == null) return;
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => BlocProvider(
+                          create: (_) => di.getIt<ValidationDetailBloc>(),
+                          child: ValidationDetailPage(
+                            validationId: id,
+                            isManager: true,
+                          ),
+                        ),
+                      ),
+                    ).then((_) => _loadValidations());
                   },
                   icon: const Icon(Icons.visibility, size: 16),
                   label: const Text('Voir détail'),

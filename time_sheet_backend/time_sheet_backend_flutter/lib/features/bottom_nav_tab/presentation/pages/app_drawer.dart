@@ -13,6 +13,13 @@ import '../../../manager/presentation/pages/manager_dashboard_page.dart';
 import '../../../manager/presentation/bloc/manager_dashboard_bloc.dart';
 import '../../../pointage/presentation/pages/debug/debug_database_page.dart';
 import 'bottom_navigation_bar.dart';
+import 'package:fpdart/fpdart.dart';
+import 'package:time_sheet/core/error/failures.dart';
+import 'package:time_sheet/core/services/supabase/supabase_service.dart';
+import 'package:time_sheet/features/validation/domain/entities/notification.dart';
+import 'package:time_sheet/features/validation/domain/repositories/validation_repository.dart';
+import 'package:time_sheet/features/validation/presentation/pages/notifications_page.dart';
+import 'package:time_sheet/services/injection_container.dart' as di;
 
 class AppDrawer extends StatelessWidget {
   final bool isManager;
@@ -171,6 +178,7 @@ class AppDrawer extends StatelessWidget {
                     );
                   },
                 ),
+                _buildNotificationsItem(context),
                 _buildMenuItem(
                   context,
                   icon: Icons.settings,
@@ -267,6 +275,66 @@ class AppDrawer extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  /// Entrée drawer "Notifications" avec badge non-lus (watchUserNotifications).
+  Widget _buildNotificationsItem(BuildContext context) {
+    final repo = di.getIt<ValidationRepository>();
+    final userId = SupabaseService.instance.currentUserId ?? '';
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.teal.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: const Icon(Icons.notifications, color: Colors.teal, size: 20),
+      ),
+      title: const Text(
+        'Notifications',
+        style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+      ),
+      subtitle: Text(
+        'Approbations et rappels',
+        style: TextStyle(color: Colors.grey[600], fontSize: 12),
+      ),
+      trailing: StreamBuilder<Either<Failure, List<NotificationEntity>>>(
+        stream: repo.watchUserNotifications(userId),
+        builder: (context, snapshot) {
+          final count = snapshot.data?.fold(
+                (_) => 0,
+                (list) => list.where((n) => !n.read).length,
+              ) ??
+              0;
+          if (count == 0) return const SizedBox.shrink();
+          return Container(
+            padding: const EdgeInsets.all(6),
+            constraints: const BoxConstraints(minWidth: 22, minHeight: 22),
+            decoration: const BoxDecoration(
+              color: Colors.red,
+              shape: BoxShape.circle,
+            ),
+            child: Text(
+              count > 99 ? '99+' : '$count',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          );
+        },
+      ),
+      onTap: () {
+        Navigator.pop(context);
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const NotificationsPage()),
+        );
+      },
     );
   }
 
