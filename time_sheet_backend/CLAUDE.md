@@ -31,14 +31,26 @@ time_sheet_backend/
 │   ├── powersync/powersync.yaml         # Sync rules (bucket definitions)
 │   ├── volumes/kong/kong.yml            # API Gateway routing
 │   └── supabase/
-│       ├── migrations/                  # SQL schema, RLS policies, storage buckets
+│       ├── migrations/                  # SQL schema, RLS, storage (00001 -> 00015)
 │       │   ├── 00001_create_schema.sql  # 11 tables + triggers
 │       │   ├── 00002_rls_policies.sql   # Row Level Security
-│       │   └── 00003_storage_buckets.sql
+│       │   ├── 00003_storage_buckets.sql
+│       │   ├── 00004_multi_tenant_roles.sql   # Multi-tenant + rôles
+│       │   ├── 00005_docuseal_columns.sql     # Signature DocuSeal
+│       │   ├── 00006_org_hierarchy.sql        # Hiérarchie d'organisations
+│       │   ├── 00007_signing_tokens.sql       # Tokens de signature PDF
+│       │   ├── 00008..00013                   # RLS manager, RPC orgs/managers, storage policies
+│       │   ├── 00014_mcp_tokens.sql
+│       │   └── 00015_harden_validation_rls.sql
 │       └── functions/                   # Edge Functions (TypeScript/Deno)
+│           ├── create-user/             # Création d'utilisateur (admin)
 │           ├── create-validation/
 │           ├── approve-validation/
-│           └── check-expired/
+│           ├── check-expired/
+│           ├── generate-signing-token/  # Signature PDF par lien
+│           ├── get-signing-info/
+│           ├── sign-with-token/
+│           └── main/                    # Routeur edge runtime self-hosted
 ├── time_sheet_backend_flutter/          # Flutter application
 ├── time_sheet_backend_server/           # [LEGACY - being removed] Serverpod backend
 └── time_sheet_backend_client/           # [LEGACY - being removed] Serverpod client
@@ -46,7 +58,7 @@ time_sheet_backend/
 
 ### Database Schema (PostgreSQL)
 
-11 tables with RLS policies:
+11 tables de base avec RLS (le schéma a évolué depuis : multi-tenant/hiérarchie d'orgs, colonnes DocuSeal, `signing_tokens`, `mcp_tokens` — voir `infrastructure/supabase/migrations/` qui fait foi) :
 
 | Table | Description |
 |-------|-------------|
@@ -203,11 +215,19 @@ App Start -> Supabase.initialize() + PowerSync.initialize()
 
 ### Modifying Database Schema
 
-1. Edit SQL in `infrastructure/supabase/migrations/` (create new migration file)
+1. Edit SQL in `infrastructure/supabase/migrations/` (create new migration file, numéro suivant `000NN_description.sql`)
 2. Apply migration to PostgreSQL
 3. Update PowerSync sync rules in `infrastructure/powersync/powersync.yaml` if needed
 4. Update PowerSync schema in `lib/core/database/schema.dart`
 5. Update data sources and repositories in Flutter
+
+Workflow détaillé (prod incluse) : skill projet `db-migration`.
+
+### PDF Signing Workflow (DocuSeal / tokens)
+
+1. `generate-signing-token` crée un token de signature pour un PDF
+2. Le signataire ouvre le lien, `get-signing-info` renvoie le contexte
+3. `sign-with-token` enregistre la signature (colonnes DocuSeal, migration 00005/00007)
 
 ### Validation Workflow
 
@@ -314,3 +334,8 @@ See `time_sheet_backend_flutter/lib/features/pointage/domain/rules/README.md`:
 1. Create `infrastructure/supabase/functions/my-function/index.ts`
 2. Deploy: `supabase functions deploy my-function`
 3. Call from Flutter: `SupabaseService.instance.client.functions.invoke('my-function', body: {...})`
+
+## Production & Déploiement
+
+- **Prod self-hosted (Dokploy)** sur `72.61.195.143` — accès, base `supabase`, rôle `supabase_admin`, endpoints : voir le CLAUDE.md racine du repo.
+- **iOS TestFlight** : via Codemagic (`codemagic.yaml` racine, push sur `main`). Le build local est impossible (SDK iOS 26 requis). Détails : skill projet `deploy-ios`.

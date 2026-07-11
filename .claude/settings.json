@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter:*)",
+      "Bash(dart:*)",
+      "Bash(pod install:*)",
+      "Bash(pod cache clean:*)",
+      "Bash(pod deintegrate:*)",
+      "Bash(xcodebuild clean:*)",
+      "Bash(open ios/Runner.xcworkspace)",
+      "Bash(ls:*)",
+      "Bash(grep:*)",
+      "Bash(rg:*)",
+      "Bash(find:*)",
+      "Bash(mkdir:*)",
+      "Bash(mv:*)",
+      "Bash(chmod:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(fastlane verify_api_key)",
+      "mcp__dart__connect_dart_tooling_daemon",
+      "mcp__dart__analyze_files",
+      "mcp__dart__run_tests",
+      "mcp__dart__pub",
+      "mcp__dart__hot_reload"
+    ],
+    "deny": [
+      "Bash(sudo:*)"
+    ]
+  },
+  "enableAllProjectMcpServers": true
+}

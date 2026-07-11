@@ -81,10 +81,19 @@ flutter test --coverage               # With coverage
 ### Build Commands
 ```bash
 flutter build apk --release    # Android
-flutter build ios --release    # iOS
+flutter build ios --release    # iOS (⚠️ release impossible en local, voir Déploiement)
 flutter build web --release    # Web
 flutter build macos --release  # macOS
 ```
+
+## Déploiement iOS (TestFlight)
+
+- App « Planet Time sheet », bundle `com.jonathanlemaine.timeSheet`, Apple ID ASC `6544810984`, team « Friendy fr » (`CSQ565C7YY`).
+- **Voie normale : Codemagic** — `codemagic.yaml` à la racine du repo, workflow `ios-testflight`, déclenché par push sur `main`. Build number auto = dernier TestFlight + 1, publication TestFlight automatique.
+- **Build release local impossible** : Apple exige le SDK iOS 26 (Xcode 26), pas installable sur ce Mac (macOS 14.6).
+- fastlane (`ios/fastlane/Fastfile`) : `fastlane verify_api_key` (test auth sans build), lanes `beta`/`release` conservées pour le jour où Xcode 26 sera dispo. Secrets dans `ios/fastlane/.env` (non versionné, template `.env.example`).
+- `pubspec.yaml` `version: X.Y.Z+N` = source de vérité du **nom** de version ; le **numéro** de build est toujours calculé automatiquement. Ne jamais réintroduire `increment_build_number`.
+- Recette complète et pièges (certificat persistant, clés API) : skill projet `deploy-ios`.
 
 ## Key Technologies
 
