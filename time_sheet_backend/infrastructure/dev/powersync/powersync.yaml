@@ -6,13 +6,13 @@ storage:
 replication:
   connections:
     - type: postgresql
-      uri: postgresql://supabase_admin:dev-super-secret-postgres-password-2024@dev-db:5432/supabase
+      uri: postgresql://${POWERSYNC_DB_USER}:${POWERSYNC_DB_PASSWORD}@${POWERSYNC_DB_HOST}:${POWERSYNC_DB_PORT}/${POWERSYNC_DB_NAME}
       sslmode: disable
       publication: powersync
       slot_name: powersync_dev_slot
 client_auth:
   supabase: true
-  supabase_jwt_secret: 258aaf499791cf8223ad9ac340beefa43787eb2dc8e0b7f66f3deb6948172555
+  supabase_jwt_secret: ${POWERSYNC_JWT_SECRET}
 api:
   port: 8080
 sync_rules:

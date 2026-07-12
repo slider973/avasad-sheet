@@ -1,0 +1,3 @@
+# Secrets d'environnement — jamais versionnés (templates : .env.example)
+.env
+dev/.env
