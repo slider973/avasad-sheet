@@ -3,6 +3,10 @@ name: Deploy to Production
 on:
   push:
     branches: [ main ]
+    # Ce workflow redémarre le backend Serverpod LEGACY : ne le déclencher
+    # que si le code legacy change (en pratique : plus jamais).
+    paths:
+      - 'time_sheet_backend/time_sheet_backend_server/**'
   workflow_dispatch:
 
 jobs:

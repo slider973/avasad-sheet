@@ -35,6 +35,13 @@ workflows:
         - pattern: main
           include: true
       cancel_previous_builds: true
+    # Ne builder que si l'app Flutter change : un commit backend/doc ne doit
+    # ni consommer un build Mac ni publier un TestFlight identique.
+    when:
+      changeset:
+        includes:
+          - 'time_sheet_backend/time_sheet_backend_flutter/**'
+          - 'codemagic.yaml'
     scripts:
       - name: Flutter packages
         script: flutter pub get
@@ -57,8 +64,9 @@ workflows:
         script: |
           BUILD_NUMBER=$(($(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID") + 1))
           echo "Build number calculé : $BUILD_NUMBER"
+          # build-name volontairement absent : Flutter le lit dans pubspec.yaml
+          # (version: X.Y.Z+N), seule source de vérité du nom de version.
           flutter build ipa --release \
-            --build-name=1.0.2 \
             --build-number=$BUILD_NUMBER \
             --export-options-plist=/Users/builder/export_options.plist
     artifacts:
