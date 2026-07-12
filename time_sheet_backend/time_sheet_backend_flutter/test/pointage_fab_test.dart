@@ -222,7 +222,7 @@ void main() {
       pointages = [
         {
           'type': 'Entrée',
-          'heure': '09:00',
+          'heure': DateTime.now().subtract(const Duration(hours: 2)),
           'timestamp': DateTime.now().subtract(const Duration(hours: 2)),
         },
       ];
@@ -274,7 +274,6 @@ void main() {
             vacationInfo: vacationInfo,
             overtimeHours: Duration.zero,
             currentEntry: currentEntry,
-            onToggleOvertime: () {},
           ),
         ),
       );
@@ -320,7 +319,6 @@ void main() {
             vacationInfo: vacationInfo,
             overtimeHours: Duration.zero,
             currentEntry: currentEntry,
-            onToggleOvertime: () {},
           ),
         ),
       );
@@ -365,7 +363,6 @@ void main() {
             vacationInfo: vacationInfo,
             overtimeHours: Duration.zero,
             currentEntry: currentEntry,
-            onToggleOvertime: () {},
           ),
         ),
       );

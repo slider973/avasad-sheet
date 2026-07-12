@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
 
-import '../lib/features/preference/data/models/reminder_notification.dart';
-import '../lib/features/preference/data/models/reminder_settings.dart';
-import '../lib/enum/reminder_type.dart';
+import 'package:time_sheet/features/preference/data/models/reminder_notification.dart';
+import 'package:time_sheet/features/preference/data/models/reminder_settings.dart';
+import 'package:time_sheet/enum/reminder_type.dart';
 
 void main() {
   group('Notification Content and Interaction Handling', () {

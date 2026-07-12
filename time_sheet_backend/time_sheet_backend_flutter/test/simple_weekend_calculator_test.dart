@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import '../lib/services/weekend_overtime_calculator.dart';
-import '../lib/services/weekend_detection_service.dart';
+import 'package:time_sheet/services/weekend_overtime_calculator.dart';
+import 'package:time_sheet/services/weekend_detection_service.dart';
 
 void main() {
   group('WeekendOvertimeCalculator Simple Test', () {

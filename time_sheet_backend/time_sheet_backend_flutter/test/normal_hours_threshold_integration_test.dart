@@ -7,13 +7,17 @@ import 'package:time_sheet/features/pointage/domain/use_cases/calculate_overtime
 import 'package:time_sheet/features/preference/domain/entities/user.dart';
 import 'package:time_sheet/services/overtime_configuration_service.dart';
 
+import 'test_utils.dart';
+
 void main() {
   group('Normal Hours Threshold Integration', () {
     late CalculateOvertimeHoursUseCase calculateOvertimeUseCase;
     late OvertimeConfigurationService configService;
 
     setUp(() {
-      calculateOvertimeUseCase = CalculateOvertimeHoursUseCase();
+      calculateOvertimeUseCase = CalculateOvertimeHoursUseCase(
+        configRepository: FakeOvertimeConfigurationRepository(),
+      );
       configService = OvertimeConfigurationService();
     });
 

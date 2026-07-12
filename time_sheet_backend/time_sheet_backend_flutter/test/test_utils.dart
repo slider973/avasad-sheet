@@ -1,15 +1,105 @@
-import 'package:isar/isar.dart';
 import 'package:time_sheet/features/pointage/domain/entities/timesheet_entry.dart';
-import 'package:time_sheet/features/pointage/data/models/timesheet_entry/timesheet_entry.dart';
 import 'package:time_sheet/features/preference/data/models/overtime_configuration.dart';
+import 'package:time_sheet/features/preference/domain/repositories/overtime_configuration_repository.dart';
+import 'package:time_sheet/features/preference/domain/repositories/user_preference_repository.dart';
 
-/// Setup test Isar database for integration tests
-Future<Isar> setupTestIsar() async {
-  return await Isar.open(
-    [TimesheetEntryModelSchema, OvertimeConfigurationSchema],
-    directory: '',
-    name: 'test_db_${DateTime.now().millisecondsSinceEpoch}',
-  );
+/// In-memory fake of [UserPreferencesRepository] for tests.
+class FakeUserPreferencesRepository implements UserPreferencesRepository {
+  final Map<String, String?> _prefs = {};
+
+  @override
+  Future<void> setPreference(String key, String? value) async {
+    _prefs[key] = value;
+  }
+
+  @override
+  Future<String?> getPreference(String key) async => _prefs[key];
+
+  @override
+  Future<void> clearAll() async {
+    _prefs.clear();
+  }
+}
+
+/// In-memory fake of [OvertimeConfigurationRepository] for tests.
+///
+/// Replaces the old Isar-backed test setup (setupTestIsar) that was removed
+/// with the Isar -> PowerSync migration.
+class FakeOvertimeConfigurationRepository
+    implements OvertimeConfigurationRepository {
+  OvertimeConfiguration? _configuration;
+
+  @override
+  Future<OvertimeConfiguration?> getConfiguration() async => _configuration;
+
+  @override
+  Future<void> saveConfiguration(OvertimeConfiguration configuration) async {
+    _configuration = configuration;
+  }
+
+  /// Default test configuration.
+  ///
+  /// Uses 8h18 (498 min) as daily threshold — the documented app default
+  /// (cf. CalculateOvertimeHoursUseCase / WeekendOvertimeCalculator) —
+  /// rather than OvertimeConfiguration.defaultConfig() which is 480.
+  static OvertimeConfiguration _defaultTestConfig() =>
+      OvertimeConfiguration.defaultConfig()
+        ..dailyWorkThresholdMinutes = 498;
+
+  @override
+  Future<OvertimeConfiguration> getOrCreateDefaultConfiguration() async {
+    _configuration ??= _defaultTestConfig();
+    return _configuration!;
+  }
+
+  @override
+  Future<void> resetToDefault() async {
+    _configuration = _defaultTestConfig();
+  }
+
+  @override
+  Future<void> deleteConfiguration() async {
+    _configuration = null;
+  }
+
+  @override
+  Future<bool> hasConfiguration() async => _configuration != null;
+
+  @override
+  Future<void> updateConfiguration({
+    bool? weekendOvertimeEnabled,
+    List<int>? weekendDays,
+    double? weekendOvertimeRate,
+    double? weekdayOvertimeRate,
+    int? dailyWorkThresholdMinutes,
+    String? description,
+  }) async {
+    final config = await getOrCreateDefaultConfiguration();
+    if (weekendOvertimeEnabled != null) {
+      config.weekendOvertimeEnabled = weekendOvertimeEnabled;
+    }
+    if (weekendDays != null) config.weekendDays = weekendDays;
+    if (weekendOvertimeRate != null) {
+      config.weekendOvertimeRate = weekendOvertimeRate;
+    }
+    if (weekdayOvertimeRate != null) {
+      config.weekdayOvertimeRate = weekdayOvertimeRate;
+    }
+    if (dailyWorkThresholdMinutes != null) {
+      config.dailyWorkThresholdMinutes = dailyWorkThresholdMinutes;
+    }
+    if (description != null) config.description = description;
+    config.lastUpdated = DateTime.now();
+  }
+
+  @override
+  Future<Map<String, dynamic>?> exportConfiguration() async =>
+      _configuration?.toMap();
+
+  @override
+  Future<void> importConfiguration(Map<String, dynamic> configMap) async {
+    _configuration = OvertimeConfiguration.fromMap(configMap);
+  }
 }
 
 List<TimesheetEntry> generateMockTimeSheetEntries(

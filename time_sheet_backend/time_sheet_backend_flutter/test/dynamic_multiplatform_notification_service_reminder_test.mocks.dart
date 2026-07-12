@@ -3,47 +3,47 @@
 // Do not manually edit this file.
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
-import 'dart:async' as _i20;
-import 'dart:typed_data' as _i29;
+import 'dart:async' as _i21;
+import 'dart:typed_data' as _i30;
 
-import 'package:bloc/bloc.dart' as _i27;
+import 'package:bloc/bloc.dart' as _i28;
 import 'package:flutter_local_notifications/src/flutter_local_notifications_plugin.dart'
-    as _i19;
+    as _i20;
 import 'package:flutter_local_notifications/src/initialization_settings.dart'
-    as _i21;
-import 'package:flutter_local_notifications/src/notification_details.dart'
-    as _i23;
-import 'package:flutter_local_notifications/src/platform_flutter_local_notifications.dart'
-    as _i31;
-import 'package:flutter_local_notifications/src/platform_specifics/android/enums.dart'
-    as _i34;
-import 'package:flutter_local_notifications/src/platform_specifics/android/initialization_settings.dart'
-    as _i32;
-import 'package:flutter_local_notifications/src/platform_specifics/android/notification_channel.dart'
-    as _i36;
-import 'package:flutter_local_notifications/src/platform_specifics/android/notification_channel_group.dart'
-    as _i35;
-import 'package:flutter_local_notifications/src/platform_specifics/android/notification_details.dart'
-    as _i33;
-import 'package:flutter_local_notifications/src/platform_specifics/android/schedule_mode.dart'
-    as _i25;
-import 'package:flutter_local_notifications/src/platform_specifics/android/styles/messaging_style_information.dart'
-    as _i37;
-import 'package:flutter_local_notifications/src/platform_specifics/darwin/initialization_settings.dart'
-    as _i38;
-import 'package:flutter_local_notifications/src/platform_specifics/darwin/notification_details.dart'
-    as _i40;
-import 'package:flutter_local_notifications/src/platform_specifics/darwin/notification_enabled_options.dart'
-    as _i39;
-import 'package:flutter_local_notifications/src/types.dart' as _i26;
-import 'package:flutter_local_notifications_platform_interface/flutter_local_notifications_platform_interface.dart'
     as _i22;
+import 'package:flutter_local_notifications/src/notification_details.dart'
+    as _i24;
+import 'package:flutter_local_notifications/src/platform_flutter_local_notifications.dart'
+    as _i32;
+import 'package:flutter_local_notifications/src/platform_specifics/android/enums.dart'
+    as _i35;
+import 'package:flutter_local_notifications/src/platform_specifics/android/initialization_settings.dart'
+    as _i33;
+import 'package:flutter_local_notifications/src/platform_specifics/android/notification_channel.dart'
+    as _i37;
+import 'package:flutter_local_notifications/src/platform_specifics/android/notification_channel_group.dart'
+    as _i36;
+import 'package:flutter_local_notifications/src/platform_specifics/android/notification_details.dart'
+    as _i34;
+import 'package:flutter_local_notifications/src/platform_specifics/android/schedule_mode.dart'
+    as _i26;
+import 'package:flutter_local_notifications/src/platform_specifics/android/styles/messaging_style_information.dart'
+    as _i38;
+import 'package:flutter_local_notifications/src/platform_specifics/darwin/initialization_settings.dart'
+    as _i39;
+import 'package:flutter_local_notifications/src/platform_specifics/darwin/notification_details.dart'
+    as _i41;
+import 'package:flutter_local_notifications/src/platform_specifics/darwin/notification_enabled_options.dart'
+    as _i40;
+import 'package:flutter_local_notifications/src/types.dart' as _i27;
+import 'package:flutter_local_notifications_platform_interface/flutter_local_notifications_platform_interface.dart'
+    as _i23;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i28;
+import 'package:mockito/src/dummies.dart' as _i29;
 import 'package:time_sheet/features/pointage/domain/entities/extended_timer_state.dart'
-    as _i17;
-import 'package:time_sheet/features/pointage/domain/entities/work_time_info.dart'
     as _i18;
+import 'package:time_sheet/features/pointage/domain/entities/work_time_info.dart'
+    as _i19;
 import 'package:time_sheet/features/pointage/domain/use_cases/delete_timesheet_entry_usecase.dart'
     as _i3;
 import 'package:time_sheet/features/pointage/domain/use_cases/generate_monthly_timesheet_usease.dart'
@@ -64,6 +64,8 @@ import 'package:time_sheet/features/pointage/domain/use_cases/signaler_absence_p
     as _i10;
 import 'package:time_sheet/features/pointage/presentation/pages/time-sheet/bloc/time_sheet/time_sheet_bloc.dart'
     as _i12;
+import 'package:time_sheet/features/preference/domain/repositories/user_preference_repository.dart'
+    as _i17;
 import 'package:time_sheet/features/preference/domain/use_cases/get_user_preference_use_case.dart'
     as _i13;
 import 'package:time_sheet/features/preference/domain/use_cases/register_manager_use_case.dart'
@@ -74,8 +76,8 @@ import 'package:time_sheet/features/preference/domain/use_cases/unregister_manag
     as _i16;
 import 'package:time_sheet/features/preference/presentation/manager/preferences_bloc.dart'
     as _i6;
-import 'package:time_sheet/services/timer_service.dart' as _i30;
-import 'package:timezone/timezone.dart' as _i24;
+import 'package:time_sheet/services/timer_service.dart' as _i31;
+import 'package:timezone/timezone.dart' as _i25;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -255,8 +257,9 @@ class _FakeUnregisterManagerUseCase_14 extends _i1.SmartFake
         );
 }
 
-class _FakeDuration_15 extends _i1.SmartFake implements Duration {
-  _FakeDuration_15(
+class _FakeUserPreferencesRepository_15 extends _i1.SmartFake
+    implements _i17.UserPreferencesRepository {
+  _FakeUserPreferencesRepository_15(
     Object parent,
     Invocation parentInvocation,
   ) : super(
@@ -265,9 +268,8 @@ class _FakeDuration_15 extends _i1.SmartFake implements Duration {
         );
 }
 
-class _FakeExtendedTimerState_16 extends _i1.SmartFake
-    implements _i17.ExtendedTimerState {
-  _FakeExtendedTimerState_16(
+class _FakeDuration_16 extends _i1.SmartFake implements Duration {
+  _FakeDuration_16(
     Object parent,
     Invocation parentInvocation,
   ) : super(
@@ -276,8 +278,19 @@ class _FakeExtendedTimerState_16 extends _i1.SmartFake
         );
 }
 
-class _FakeWorkTimeInfo_17 extends _i1.SmartFake implements _i18.WorkTimeInfo {
-  _FakeWorkTimeInfo_17(
+class _FakeExtendedTimerState_17 extends _i1.SmartFake
+    implements _i18.ExtendedTimerState {
+  _FakeExtendedTimerState_17(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+}
+
+class _FakeWorkTimeInfo_18 extends _i1.SmartFake implements _i19.WorkTimeInfo {
+  _FakeWorkTimeInfo_18(
     Object parent,
     Invocation parentInvocation,
   ) : super(
@@ -290,17 +303,17 @@ class _FakeWorkTimeInfo_17 extends _i1.SmartFake implements _i18.WorkTimeInfo {
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockFlutterLocalNotificationsPlugin extends _i1.Mock
-    implements _i19.FlutterLocalNotificationsPlugin {
+    implements _i20.FlutterLocalNotificationsPlugin {
   MockFlutterLocalNotificationsPlugin() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  _i20.Future<bool?> initialize(
-    _i21.InitializationSettings? initializationSettings, {
-    _i22.DidReceiveNotificationResponseCallback?
+  _i21.Future<bool?> initialize(
+    _i22.InitializationSettings? initializationSettings, {
+    _i23.DidReceiveNotificationResponseCallback?
         onDidReceiveNotificationResponse,
-    _i22.DidReceiveBackgroundNotificationResponseCallback?
+    _i23.DidReceiveBackgroundNotificationResponseCallback?
         onDidReceiveBackgroundNotificationResponse,
   }) =>
       (super.noSuchMethod(
@@ -313,26 +326,26 @@ class MockFlutterLocalNotificationsPlugin extends _i1.Mock
                 onDidReceiveBackgroundNotificationResponse,
           },
         ),
-        returnValue: _i20.Future<bool?>.value(),
-      ) as _i20.Future<bool?>);
+        returnValue: _i21.Future<bool?>.value(),
+      ) as _i21.Future<bool?>);
 
   @override
-  _i20.Future<_i22.NotificationAppLaunchDetails?>
+  _i21.Future<_i23.NotificationAppLaunchDetails?>
       getNotificationAppLaunchDetails() => (super.noSuchMethod(
             Invocation.method(
               #getNotificationAppLaunchDetails,
               [],
             ),
             returnValue:
-                _i20.Future<_i22.NotificationAppLaunchDetails?>.value(),
-          ) as _i20.Future<_i22.NotificationAppLaunchDetails?>);
+                _i21.Future<_i23.NotificationAppLaunchDetails?>.value(),
+          ) as _i21.Future<_i23.NotificationAppLaunchDetails?>);
 
   @override
-  _i20.Future<void> show(
+  _i21.Future<void> show(
     int? id,
     String? title,
     String? body,
-    _i23.NotificationDetails? notificationDetails, {
+    _i24.NotificationDetails? notificationDetails, {
     String? payload,
   }) =>
       (super.noSuchMethod(
@@ -346,12 +359,12 @@ class MockFlutterLocalNotificationsPlugin extends _i1.Mock
           ],
           {#payload: payload},
         ),
-        returnValue: _i20.Future<void>.value(),
-        returnValueForMissingStub: _i20.Future<void>.value(),
-      ) as _i20.Future<void>);
+        returnValue: _i21.Future<void>.value(),
+        returnValueForMissingStub: _i21.Future<void>.value(),
+      ) as _i21.Future<void>);
 
   @override
-  _i20.Future<void> cancel(
+  _i21.Future<void> cancel(
     int? id, {
     String? tag,
   }) =>
@@ -361,40 +374,40 @@ class MockFlutterLocalNotificationsPlugin extends _i1.Mock
           [id],
           {#tag: tag},
         ),
-        returnValue: _i20.Future<void>.value(),
-        returnValueForMissingStub: _i20.Future<void>.value(),
-      ) as _i20.Future<void>);
+        returnValue: _i21.Future<void>.value(),
+        returnValueForMissingStub: _i21.Future<void>.value(),
+      ) as _i21.Future<void>);
 
   @override
-  _i20.Future<void> cancelAll() => (super.noSuchMethod(
+  _i21.Future<void> cancelAll() => (super.noSuchMethod(
         Invocation.method(
           #cancelAll,
           [],
         ),
-        returnValue: _i20.Future<void>.value(),
-        returnValueForMissingStub: _i20.Future<void>.value(),
-      ) as _i20.Future<void>);
+        returnValue: _i21.Future<void>.value(),
+        returnValueForMissingStub: _i21.Future<void>.value(),
+      ) as _i21.Future<void>);
 
   @override
-  _i20.Future<void> cancelAllPendingNotifications() => (super.noSuchMethod(
+  _i21.Future<void> cancelAllPendingNotifications() => (super.noSuchMethod(
         Invocation.method(
           #cancelAllPendingNotifications,
           [],
         ),
-        returnValue: _i20.Future<void>.value(),
-        returnValueForMissingStub: _i20.Future<void>.value(),
-      ) as _i20.Future<void>);
+        returnValue: _i21.Future<void>.value(),
+        returnValueForMissingStub: _i21.Future<void>.value(),
+      ) as _i21.Future<void>);
 
   @override
-  _i20.Future<void> zonedSchedule(
+  _i21.Future<void> zonedSchedule(
     int? id,
     String? title,
     String? body,
-    _i24.TZDateTime? scheduledDate,
-    _i23.NotificationDetails? notificationDetails, {
-    required _i25.AndroidScheduleMode? androidScheduleMode,
+    _i25.TZDateTime? scheduledDate,
+    _i24.NotificationDetails? notificationDetails, {
+    required _i26.AndroidScheduleMode? androidScheduleMode,
     String? payload,
-    _i26.DateTimeComponents? matchDateTimeComponents,
+    _i27.DateTimeComponents? matchDateTimeComponents,
   }) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -412,18 +425,18 @@ class MockFlutterLocalNotificationsPlugin extends _i1.Mock
             #matchDateTimeComponents: matchDateTimeComponents,
           },
         ),
-        returnValue: _i20.Future<void>.value(),
-        returnValueForMissingStub: _i20.Future<void>.value(),
-      ) as _i20.Future<void>);
+        returnValue: _i21.Future<void>.value(),
+        returnValueForMissingStub: _i21.Future<void>.value(),
+      ) as _i21.Future<void>);
 
   @override
-  _i20.Future<void> periodicallyShow(
+  _i21.Future<void> periodicallyShow(
     int? id,
     String? title,
     String? body,
-    _i22.RepeatInterval? repeatInterval,
-    _i23.NotificationDetails? notificationDetails, {
-    required _i25.AndroidScheduleMode? androidScheduleMode,
+    _i23.RepeatInterval? repeatInterval,
+    _i24.NotificationDetails? notificationDetails, {
+    required _i26.AndroidScheduleMode? androidScheduleMode,
     String? payload,
   }) =>
       (super.noSuchMethod(
@@ -441,19 +454,19 @@ class MockFlutterLocalNotificationsPlugin extends _i1.Mock
             #payload: payload,
           },
         ),
-        returnValue: _i20.Future<void>.value(),
-        returnValueForMissingStub: _i20.Future<void>.value(),
-      ) as _i20.Future<void>);
+        returnValue: _i21.Future<void>.value(),
+        returnValueForMissingStub: _i21.Future<void>.value(),
+      ) as _i21.Future<void>);
 
   @override
-  _i20.Future<void> periodicallyShowWithDuration(
+  _i21.Future<void> periodicallyShowWithDuration(
     int? id,
     String? title,
     String? body,
     Duration? repeatDurationInterval,
-    _i23.NotificationDetails? notificationDetails, {
-    _i25.AndroidScheduleMode? androidScheduleMode =
-        _i25.AndroidScheduleMode.exact,
+    _i24.NotificationDetails? notificationDetails, {
+    _i26.AndroidScheduleMode? androidScheduleMode =
+        _i26.AndroidScheduleMode.exact,
     String? payload,
   }) =>
       (super.noSuchMethod(
@@ -471,32 +484,32 @@ class MockFlutterLocalNotificationsPlugin extends _i1.Mock
             #payload: payload,
           },
         ),
-        returnValue: _i20.Future<void>.value(),
-        returnValueForMissingStub: _i20.Future<void>.value(),
-      ) as _i20.Future<void>);
+        returnValue: _i21.Future<void>.value(),
+        returnValueForMissingStub: _i21.Future<void>.value(),
+      ) as _i21.Future<void>);
 
   @override
-  _i20.Future<List<_i22.PendingNotificationRequest>>
+  _i21.Future<List<_i23.PendingNotificationRequest>>
       pendingNotificationRequests() => (super.noSuchMethod(
             Invocation.method(
               #pendingNotificationRequests,
               [],
             ),
             returnValue:
-                _i20.Future<List<_i22.PendingNotificationRequest>>.value(
-                    <_i22.PendingNotificationRequest>[]),
-          ) as _i20.Future<List<_i22.PendingNotificationRequest>>);
+                _i21.Future<List<_i23.PendingNotificationRequest>>.value(
+                    <_i23.PendingNotificationRequest>[]),
+          ) as _i21.Future<List<_i23.PendingNotificationRequest>>);
 
   @override
-  _i20.Future<List<_i22.ActiveNotification>> getActiveNotifications() =>
+  _i21.Future<List<_i23.ActiveNotification>> getActiveNotifications() =>
       (super.noSuchMethod(
         Invocation.method(
           #getActiveNotifications,
           [],
         ),
-        returnValue: _i20.Future<List<_i22.ActiveNotification>>.value(
-            <_i22.ActiveNotification>[]),
-      ) as _i20.Future<List<_i22.ActiveNotification>>);
+        returnValue: _i21.Future<List<_i23.ActiveNotification>>.value(
+            <_i23.ActiveNotification>[]),
+      ) as _i21.Future<List<_i23.ActiveNotification>>);
 }
 
 /// A class which mocks [TimeSheetBloc].
@@ -616,10 +629,10 @@ class MockTimeSheetBloc extends _i1.Mock implements _i12.TimeSheetBloc {
       ) as _i12.TimeSheetState);
 
   @override
-  _i20.Stream<_i12.TimeSheetState> get stream => (super.noSuchMethod(
+  _i21.Stream<_i12.TimeSheetState> get stream => (super.noSuchMethod(
         Invocation.getter(#stream),
-        returnValue: _i20.Stream<_i12.TimeSheetState>.empty(),
-      ) as _i20.Stream<_i12.TimeSheetState>);
+        returnValue: _i21.Stream<_i12.TimeSheetState>.empty(),
+      ) as _i21.Stream<_i12.TimeSheetState>);
 
   @override
   bool get isClosed => (super.noSuchMethod(
@@ -628,13 +641,13 @@ class MockTimeSheetBloc extends _i1.Mock implements _i12.TimeSheetBloc {
       ) as bool);
 
   @override
-  _i20.Future<bool> hasCheckedInForDate(DateTime? date) => (super.noSuchMethod(
+  _i21.Future<bool> hasCheckedInForDate(DateTime? date) => (super.noSuchMethod(
         Invocation.method(
           #hasCheckedInForDate,
           [date],
         ),
-        returnValue: _i20.Future<bool>.value(false),
-      ) as _i20.Future<bool>);
+        returnValue: _i21.Future<bool>.value(false),
+      ) as _i21.Future<bool>);
 
   @override
   void add(_i12.TimeSheetEvent? event) => super.noSuchMethod(
@@ -665,8 +678,8 @@ class MockTimeSheetBloc extends _i1.Mock implements _i12.TimeSheetBloc {
 
   @override
   void on<E extends _i12.TimeSheetEvent>(
-    _i27.EventHandler<E, _i12.TimeSheetState>? handler, {
-    _i27.EventTransformer<E>? transformer,
+    _i28.EventHandler<E, _i12.TimeSheetState>? handler, {
+    _i28.EventTransformer<E>? transformer,
   }) =>
       super.noSuchMethod(
         Invocation.method(
@@ -679,7 +692,7 @@ class MockTimeSheetBloc extends _i1.Mock implements _i12.TimeSheetBloc {
 
   @override
   void onTransition(
-          _i27.Transition<_i12.TimeSheetEvent, _i12.TimeSheetState>?
+          _i28.Transition<_i12.TimeSheetEvent, _i12.TimeSheetState>?
               transition) =>
       super.noSuchMethod(
         Invocation.method(
@@ -690,17 +703,17 @@ class MockTimeSheetBloc extends _i1.Mock implements _i12.TimeSheetBloc {
       );
 
   @override
-  _i20.Future<void> close() => (super.noSuchMethod(
+  _i21.Future<void> close() => (super.noSuchMethod(
         Invocation.method(
           #close,
           [],
         ),
-        returnValue: _i20.Future<void>.value(),
-        returnValueForMissingStub: _i20.Future<void>.value(),
-      ) as _i20.Future<void>);
+        returnValue: _i21.Future<void>.value(),
+        returnValueForMissingStub: _i21.Future<void>.value(),
+      ) as _i21.Future<void>);
 
   @override
-  void onChange(_i27.Change<_i12.TimeSheetState>? change) => super.noSuchMethod(
+  void onChange(_i28.Change<_i12.TimeSheetState>? change) => super.noSuchMethod(
         Invocation.method(
           #onChange,
           [change],
@@ -789,19 +802,29 @@ class MockPreferencesBloc extends _i1.Mock implements _i6.PreferencesBloc {
       ) as _i16.UnregisterManagerUseCase);
 
   @override
+  _i17.UserPreferencesRepository get userPreferencesRepository =>
+      (super.noSuchMethod(
+        Invocation.getter(#userPreferencesRepository),
+        returnValue: _FakeUserPreferencesRepository_15(
+          this,
+          Invocation.getter(#userPreferencesRepository),
+        ),
+      ) as _i17.UserPreferencesRepository);
+
+  @override
   _i6.PreferencesState get state => (super.noSuchMethod(
         Invocation.getter(#state),
-        returnValue: _i28.dummyValue<_i6.PreferencesState>(
+        returnValue: _i29.dummyValue<_i6.PreferencesState>(
           this,
           Invocation.getter(#state),
         ),
       ) as _i6.PreferencesState);
 
   @override
-  _i20.Stream<_i6.PreferencesState> get stream => (super.noSuchMethod(
+  _i21.Stream<_i6.PreferencesState> get stream => (super.noSuchMethod(
         Invocation.getter(#stream),
-        returnValue: _i20.Stream<_i6.PreferencesState>.empty(),
-      ) as _i20.Stream<_i6.PreferencesState>);
+        returnValue: _i21.Stream<_i6.PreferencesState>.empty(),
+      ) as _i21.Stream<_i6.PreferencesState>);
 
   @override
   bool get isClosed => (super.noSuchMethod(
@@ -810,13 +833,13 @@ class MockPreferencesBloc extends _i1.Mock implements _i6.PreferencesBloc {
       ) as bool);
 
   @override
-  _i20.Future<_i29.Uint8List?> getCurrentSignature() => (super.noSuchMethod(
+  _i21.Future<_i30.Uint8List?> getCurrentSignature() => (super.noSuchMethod(
         Invocation.method(
           #getCurrentSignature,
           [],
         ),
-        returnValue: _i20.Future<_i29.Uint8List?>.value(),
-      ) as _i20.Future<_i29.Uint8List?>);
+        returnValue: _i21.Future<_i30.Uint8List?>.value(),
+      ) as _i21.Future<_i30.Uint8List?>);
 
   @override
   void add(_i6.PreferencesEvent? event) => super.noSuchMethod(
@@ -847,8 +870,8 @@ class MockPreferencesBloc extends _i1.Mock implements _i6.PreferencesBloc {
 
   @override
   void on<E extends _i6.PreferencesEvent>(
-    _i27.EventHandler<E, _i6.PreferencesState>? handler, {
-    _i27.EventTransformer<E>? transformer,
+    _i28.EventHandler<E, _i6.PreferencesState>? handler, {
+    _i28.EventTransformer<E>? transformer,
   }) =>
       super.noSuchMethod(
         Invocation.method(
@@ -861,7 +884,7 @@ class MockPreferencesBloc extends _i1.Mock implements _i6.PreferencesBloc {
 
   @override
   void onTransition(
-          _i27.Transition<_i6.PreferencesEvent, _i6.PreferencesState>?
+          _i28.Transition<_i6.PreferencesEvent, _i6.PreferencesState>?
               transition) =>
       super.noSuchMethod(
         Invocation.method(
@@ -872,17 +895,17 @@ class MockPreferencesBloc extends _i1.Mock implements _i6.PreferencesBloc {
       );
 
   @override
-  _i20.Future<void> close() => (super.noSuchMethod(
+  _i21.Future<void> close() => (super.noSuchMethod(
         Invocation.method(
           #close,
           [],
         ),
-        returnValue: _i20.Future<void>.value(),
-        returnValueForMissingStub: _i20.Future<void>.value(),
-      ) as _i20.Future<void>);
+        returnValue: _i21.Future<void>.value(),
+        returnValueForMissingStub: _i21.Future<void>.value(),
+      ) as _i21.Future<void>);
 
   @override
-  void onChange(_i27.Change<_i6.PreferencesState>? change) =>
+  void onChange(_i28.Change<_i6.PreferencesState>? change) =>
       super.noSuchMethod(
         Invocation.method(
           #onChange,
@@ -927,7 +950,7 @@ class MockPreferencesBloc extends _i1.Mock implements _i6.PreferencesBloc {
 /// A class which mocks [TimerService].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockTimerService extends _i1.Mock implements _i30.TimerService {
+class MockTimerService extends _i1.Mock implements _i31.TimerService {
   MockTimerService() {
     _i1.throwOnMissingStub(this);
   }
@@ -935,7 +958,7 @@ class MockTimerService extends _i1.Mock implements _i30.TimerService {
   @override
   Duration get accumulatedTime => (super.noSuchMethod(
         Invocation.getter(#accumulatedTime),
-        returnValue: _FakeDuration_15(
+        returnValue: _FakeDuration_16(
           this,
           Invocation.getter(#accumulatedTime),
         ),
@@ -944,7 +967,7 @@ class MockTimerService extends _i1.Mock implements _i30.TimerService {
   @override
   Duration get elapsedTime => (super.noSuchMethod(
         Invocation.getter(#elapsedTime),
-        returnValue: _FakeDuration_15(
+        returnValue: _FakeDuration_16(
           this,
           Invocation.getter(#elapsedTime),
         ),
@@ -953,7 +976,7 @@ class MockTimerService extends _i1.Mock implements _i30.TimerService {
   @override
   String get currentState => (super.noSuchMethod(
         Invocation.getter(#currentState),
-        returnValue: _i28.dummyValue<String>(
+        returnValue: _i29.dummyValue<String>(
           this,
           Invocation.getter(#currentState),
         ),
@@ -984,7 +1007,7 @@ class MockTimerService extends _i1.Mock implements _i30.TimerService {
       ) as bool);
 
   @override
-  _i20.Future<void> initialize(
+  _i21.Future<void> initialize(
     String? etatActuel,
     DateTime? dernierPointage,
   ) =>
@@ -996,9 +1019,9 @@ class MockTimerService extends _i1.Mock implements _i30.TimerService {
             dernierPointage,
           ],
         ),
-        returnValue: _i20.Future<void>.value(),
-        returnValueForMissingStub: _i20.Future<void>.value(),
-      ) as _i20.Future<void>);
+        returnValue: _i21.Future<void>.value(),
+        returnValueForMissingStub: _i21.Future<void>.value(),
+      ) as _i21.Future<void>);
 
   @override
   void updateState(
@@ -1035,14 +1058,14 @@ class MockTimerService extends _i1.Mock implements _i30.TimerService {
       );
 
   @override
-  _i20.Future<void> refreshWeekendConfiguration() => (super.noSuchMethod(
+  _i21.Future<void> refreshWeekendConfiguration() => (super.noSuchMethod(
         Invocation.method(
           #refreshWeekendConfiguration,
           [],
         ),
-        returnValue: _i20.Future<void>.value(),
-        returnValueForMissingStub: _i20.Future<void>.value(),
-      ) as _i20.Future<void>);
+        returnValue: _i21.Future<void>.value(),
+        returnValueForMissingStub: _i21.Future<void>.value(),
+      ) as _i21.Future<void>);
 
   @override
   Map<String, dynamic> getOvertimeInfo() => (super.noSuchMethod(
@@ -1054,34 +1077,34 @@ class MockTimerService extends _i1.Mock implements _i30.TimerService {
       ) as Map<String, dynamic>);
 
   @override
-  _i17.ExtendedTimerState getExtendedTimerState() => (super.noSuchMethod(
+  _i18.ExtendedTimerState getExtendedTimerState() => (super.noSuchMethod(
         Invocation.method(
           #getExtendedTimerState,
           [],
         ),
-        returnValue: _FakeExtendedTimerState_16(
+        returnValue: _FakeExtendedTimerState_17(
           this,
           Invocation.method(
             #getExtendedTimerState,
             [],
           ),
         ),
-      ) as _i17.ExtendedTimerState);
+      ) as _i18.ExtendedTimerState);
 
   @override
-  _i18.WorkTimeInfo getWorkTimeInfo() => (super.noSuchMethod(
+  _i19.WorkTimeInfo getWorkTimeInfo() => (super.noSuchMethod(
         Invocation.method(
           #getWorkTimeInfo,
           [],
         ),
-        returnValue: _FakeWorkTimeInfo_17(
+        returnValue: _FakeWorkTimeInfo_18(
           this,
           Invocation.method(
             #getWorkTimeInfo,
             [],
           ),
         ),
-      ) as _i18.WorkTimeInfo);
+      ) as _i19.WorkTimeInfo);
 
   @override
   Duration getRemainingWorkTime() => (super.noSuchMethod(
@@ -1089,7 +1112,7 @@ class MockTimerService extends _i1.Mock implements _i30.TimerService {
           #getRemainingWorkTime,
           [],
         ),
-        returnValue: _FakeDuration_15(
+        returnValue: _FakeDuration_16(
           this,
           Invocation.method(
             #getRemainingWorkTime,
@@ -1104,7 +1127,7 @@ class MockTimerService extends _i1.Mock implements _i30.TimerService {
           #getCalculatedOvertimeHours,
           [],
         ),
-        returnValue: _FakeDuration_15(
+        returnValue: _FakeDuration_16(
           this,
           Invocation.method(
             #getCalculatedOvertimeHours,
@@ -1119,7 +1142,7 @@ class MockTimerService extends _i1.Mock implements _i30.TimerService {
           #getTotalBreakTime,
           [],
         ),
-        returnValue: _FakeDuration_15(
+        returnValue: _FakeDuration_16(
           this,
           Invocation.method(
             #getTotalBreakTime,
@@ -1142,17 +1165,17 @@ class MockTimerService extends _i1.Mock implements _i30.TimerService {
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockAndroidFlutterLocalNotificationsPlugin extends _i1.Mock
-    implements _i31.AndroidFlutterLocalNotificationsPlugin {
+    implements _i32.AndroidFlutterLocalNotificationsPlugin {
   MockAndroidFlutterLocalNotificationsPlugin() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  _i20.Future<bool> initialize(
-    _i32.AndroidInitializationSettings? initializationSettings, {
-    _i22.DidReceiveNotificationResponseCallback?
+  _i21.Future<bool> initialize(
+    _i33.AndroidInitializationSettings? initializationSettings, {
+    _i23.DidReceiveNotificationResponseCallback?
         onDidReceiveNotificationResponse,
-    _i22.DidReceiveBackgroundNotificationResponseCallback?
+    _i23.DidReceiveBackgroundNotificationResponseCallback?
         onDidReceiveBackgroundNotificationResponse,
   }) =>
       (super.noSuchMethod(
@@ -1165,64 +1188,64 @@ class MockAndroidFlutterLocalNotificationsPlugin extends _i1.Mock
                 onDidReceiveBackgroundNotificationResponse,
           },
         ),
-        returnValue: _i20.Future<bool>.value(false),
-      ) as _i20.Future<bool>);
+        returnValue: _i21.Future<bool>.value(false),
+      ) as _i21.Future<bool>);
 
   @override
-  _i20.Future<bool?> requestExactAlarmsPermission() => (super.noSuchMethod(
+  _i21.Future<bool?> requestExactAlarmsPermission() => (super.noSuchMethod(
         Invocation.method(
           #requestExactAlarmsPermission,
           [],
         ),
-        returnValue: _i20.Future<bool?>.value(),
-      ) as _i20.Future<bool?>);
+        returnValue: _i21.Future<bool?>.value(),
+      ) as _i21.Future<bool?>);
 
   @override
-  _i20.Future<bool?> requestFullScreenIntentPermission() => (super.noSuchMethod(
+  _i21.Future<bool?> requestFullScreenIntentPermission() => (super.noSuchMethod(
         Invocation.method(
           #requestFullScreenIntentPermission,
           [],
         ),
-        returnValue: _i20.Future<bool?>.value(),
-      ) as _i20.Future<bool?>);
+        returnValue: _i21.Future<bool?>.value(),
+      ) as _i21.Future<bool?>);
 
   @override
-  _i20.Future<bool?> requestNotificationsPermission() => (super.noSuchMethod(
+  _i21.Future<bool?> requestNotificationsPermission() => (super.noSuchMethod(
         Invocation.method(
           #requestNotificationsPermission,
           [],
         ),
-        returnValue: _i20.Future<bool?>.value(),
-      ) as _i20.Future<bool?>);
+        returnValue: _i21.Future<bool?>.value(),
+      ) as _i21.Future<bool?>);
 
   @override
-  _i20.Future<bool?> requestNotificationPolicyAccess() => (super.noSuchMethod(
+  _i21.Future<bool?> requestNotificationPolicyAccess() => (super.noSuchMethod(
         Invocation.method(
           #requestNotificationPolicyAccess,
           [],
         ),
-        returnValue: _i20.Future<bool?>.value(),
-      ) as _i20.Future<bool?>);
+        returnValue: _i21.Future<bool?>.value(),
+      ) as _i21.Future<bool?>);
 
   @override
-  _i20.Future<bool?> hasNotificationPolicyAccess() => (super.noSuchMethod(
+  _i21.Future<bool?> hasNotificationPolicyAccess() => (super.noSuchMethod(
         Invocation.method(
           #hasNotificationPolicyAccess,
           [],
         ),
-        returnValue: _i20.Future<bool?>.value(),
-      ) as _i20.Future<bool?>);
+        returnValue: _i21.Future<bool?>.value(),
+      ) as _i21.Future<bool?>);
 
   @override
-  _i20.Future<void> zonedSchedule(
+  _i21.Future<void> zonedSchedule(
     int? id,
     String? title,
     String? body,
-    _i24.TZDateTime? scheduledDate,
-    _i33.AndroidNotificationDetails? notificationDetails, {
-    required _i25.AndroidScheduleMode? scheduleMode,
+    _i25.TZDateTime? scheduledDate,
+    _i34.AndroidNotificationDetails? notificationDetails, {
+    required _i26.AndroidScheduleMode? scheduleMode,
     String? payload,
-    _i26.DateTimeComponents? matchDateTimeComponents,
+    _i27.DateTimeComponents? matchDateTimeComponents,
   }) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -1240,20 +1263,20 @@ class MockAndroidFlutterLocalNotificationsPlugin extends _i1.Mock
             #matchDateTimeComponents: matchDateTimeComponents,
           },
         ),
-        returnValue: _i20.Future<void>.value(),
-        returnValueForMissingStub: _i20.Future<void>.value(),
-      ) as _i20.Future<void>);
+        returnValue: _i21.Future<void>.value(),
+        returnValueForMissingStub: _i21.Future<void>.value(),
+      ) as _i21.Future<void>);
 
   @override
-  _i20.Future<void> startForegroundService(
+  _i21.Future<void> startForegroundService(
     int? id,
     String? title,
     String? body, {
-    _i33.AndroidNotificationDetails? notificationDetails,
+    _i34.AndroidNotificationDetails? notificationDetails,
     String? payload,
-    _i34.AndroidServiceStartType? startType =
-        _i34.AndroidServiceStartType.startSticky,
-    Set<_i34.AndroidServiceForegroundType>? foregroundServiceTypes,
+    _i35.AndroidServiceStartType? startType =
+        _i35.AndroidServiceStartType.startSticky,
+    Set<_i35.AndroidServiceForegroundType>? foregroundServiceTypes,
   }) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -1270,26 +1293,26 @@ class MockAndroidFlutterLocalNotificationsPlugin extends _i1.Mock
             #foregroundServiceTypes: foregroundServiceTypes,
           },
         ),
-        returnValue: _i20.Future<void>.value(),
-        returnValueForMissingStub: _i20.Future<void>.value(),
-      ) as _i20.Future<void>);
+        returnValue: _i21.Future<void>.value(),
+        returnValueForMissingStub: _i21.Future<void>.value(),
+      ) as _i21.Future<void>);
 
   @override
-  _i20.Future<void> stopForegroundService() => (super.noSuchMethod(
+  _i21.Future<void> stopForegroundService() => (super.noSuchMethod(
         Invocation.method(
           #stopForegroundService,
           [],
         ),
-        returnValue: _i20.Future<void>.value(),
-        returnValueForMissingStub: _i20.Future<void>.value(),
-      ) as _i20.Future<void>);
+        returnValue: _i21.Future<void>.value(),
+        returnValueForMissingStub: _i21.Future<void>.value(),
+      ) as _i21.Future<void>);
 
   @override
-  _i20.Future<void> show(
+  _i21.Future<void> show(
     int? id,
     String? title,
     String? body, {
-    _i33.AndroidNotificationDetails? notificationDetails,
+    _i34.AndroidNotificationDetails? notificationDetails,
     String? payload,
   }) =>
       (super.noSuchMethod(
@@ -1305,19 +1328,19 @@ class MockAndroidFlutterLocalNotificationsPlugin extends _i1.Mock
             #payload: payload,
           },
         ),
-        returnValue: _i20.Future<void>.value(),
-        returnValueForMissingStub: _i20.Future<void>.value(),
-      ) as _i20.Future<void>);
+        returnValue: _i21.Future<void>.value(),
+        returnValueForMissingStub: _i21.Future<void>.value(),
+      ) as _i21.Future<void>);
 
   @override
-  _i20.Future<void> periodicallyShow(
+  _i21.Future<void> periodicallyShow(
     int? id,
     String? title,
     String? body,
-    _i22.RepeatInterval? repeatInterval, {
-    _i33.AndroidNotificationDetails? notificationDetails,
+    _i23.RepeatInterval? repeatInterval, {
+    _i34.AndroidNotificationDetails? notificationDetails,
     String? payload,
-    _i25.AndroidScheduleMode? scheduleMode = _i25.AndroidScheduleMode.exact,
+    _i26.AndroidScheduleMode? scheduleMode = _i26.AndroidScheduleMode.exact,
   }) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -1334,19 +1357,19 @@ class MockAndroidFlutterLocalNotificationsPlugin extends _i1.Mock
             #scheduleMode: scheduleMode,
           },
         ),
-        returnValue: _i20.Future<void>.value(),
-        returnValueForMissingStub: _i20.Future<void>.value(),
-      ) as _i20.Future<void>);
+        returnValue: _i21.Future<void>.value(),
+        returnValueForMissingStub: _i21.Future<void>.value(),
+      ) as _i21.Future<void>);
 
   @override
-  _i20.Future<void> periodicallyShowWithDuration(
+  _i21.Future<void> periodicallyShowWithDuration(
     int? id,
     String? title,
     String? body,
     Duration? repeatDurationInterval, {
-    _i33.AndroidNotificationDetails? notificationDetails,
+    _i34.AndroidNotificationDetails? notificationDetails,
     String? payload,
-    _i25.AndroidScheduleMode? scheduleMode = _i25.AndroidScheduleMode.exact,
+    _i26.AndroidScheduleMode? scheduleMode = _i26.AndroidScheduleMode.exact,
   }) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -1363,12 +1386,12 @@ class MockAndroidFlutterLocalNotificationsPlugin extends _i1.Mock
             #scheduleMode: scheduleMode,
           },
         ),
-        returnValue: _i20.Future<void>.value(),
-        returnValueForMissingStub: _i20.Future<void>.value(),
-      ) as _i20.Future<void>);
+        returnValue: _i21.Future<void>.value(),
+        returnValueForMissingStub: _i21.Future<void>.value(),
+      ) as _i21.Future<void>);
 
   @override
-  _i20.Future<void> cancel(
+  _i21.Future<void> cancel(
     int? id, {
     String? tag,
   }) =>
@@ -1378,58 +1401,58 @@ class MockAndroidFlutterLocalNotificationsPlugin extends _i1.Mock
           [id],
           {#tag: tag},
         ),
-        returnValue: _i20.Future<void>.value(),
-        returnValueForMissingStub: _i20.Future<void>.value(),
-      ) as _i20.Future<void>);
+        returnValue: _i21.Future<void>.value(),
+        returnValueForMissingStub: _i21.Future<void>.value(),
+      ) as _i21.Future<void>);
 
   @override
-  _i20.Future<void> createNotificationChannelGroup(
-          _i35.AndroidNotificationChannelGroup? notificationChannelGroup) =>
+  _i21.Future<void> createNotificationChannelGroup(
+          _i36.AndroidNotificationChannelGroup? notificationChannelGroup) =>
       (super.noSuchMethod(
         Invocation.method(
           #createNotificationChannelGroup,
           [notificationChannelGroup],
         ),
-        returnValue: _i20.Future<void>.value(),
-        returnValueForMissingStub: _i20.Future<void>.value(),
-      ) as _i20.Future<void>);
+        returnValue: _i21.Future<void>.value(),
+        returnValueForMissingStub: _i21.Future<void>.value(),
+      ) as _i21.Future<void>);
 
   @override
-  _i20.Future<void> deleteNotificationChannelGroup(String? groupId) =>
+  _i21.Future<void> deleteNotificationChannelGroup(String? groupId) =>
       (super.noSuchMethod(
         Invocation.method(
           #deleteNotificationChannelGroup,
           [groupId],
         ),
-        returnValue: _i20.Future<void>.value(),
-        returnValueForMissingStub: _i20.Future<void>.value(),
-      ) as _i20.Future<void>);
+        returnValue: _i21.Future<void>.value(),
+        returnValueForMissingStub: _i21.Future<void>.value(),
+      ) as _i21.Future<void>);
 
   @override
-  _i20.Future<void> createNotificationChannel(
-          _i36.AndroidNotificationChannel? notificationChannel) =>
+  _i21.Future<void> createNotificationChannel(
+          _i37.AndroidNotificationChannel? notificationChannel) =>
       (super.noSuchMethod(
         Invocation.method(
           #createNotificationChannel,
           [notificationChannel],
         ),
-        returnValue: _i20.Future<void>.value(),
-        returnValueForMissingStub: _i20.Future<void>.value(),
-      ) as _i20.Future<void>);
+        returnValue: _i21.Future<void>.value(),
+        returnValueForMissingStub: _i21.Future<void>.value(),
+      ) as _i21.Future<void>);
 
   @override
-  _i20.Future<void> deleteNotificationChannel(String? channelId) =>
+  _i21.Future<void> deleteNotificationChannel(String? channelId) =>
       (super.noSuchMethod(
         Invocation.method(
           #deleteNotificationChannel,
           [channelId],
         ),
-        returnValue: _i20.Future<void>.value(),
-        returnValueForMissingStub: _i20.Future<void>.value(),
-      ) as _i20.Future<void>);
+        returnValue: _i21.Future<void>.value(),
+        returnValueForMissingStub: _i21.Future<void>.value(),
+      ) as _i21.Future<void>);
 
   @override
-  _i20.Future<_i37.MessagingStyleInformation?>
+  _i21.Future<_i38.MessagingStyleInformation?>
       getActiveNotificationMessagingStyle(
     int? id, {
     String? tag,
@@ -1440,108 +1463,108 @@ class MockAndroidFlutterLocalNotificationsPlugin extends _i1.Mock
               [id],
               {#tag: tag},
             ),
-            returnValue: _i20.Future<_i37.MessagingStyleInformation?>.value(),
-          ) as _i20.Future<_i37.MessagingStyleInformation?>);
+            returnValue: _i21.Future<_i38.MessagingStyleInformation?>.value(),
+          ) as _i21.Future<_i38.MessagingStyleInformation?>);
 
   @override
-  _i20.Future<List<_i36.AndroidNotificationChannel>?>
+  _i21.Future<List<_i37.AndroidNotificationChannel>?>
       getNotificationChannels() => (super.noSuchMethod(
             Invocation.method(
               #getNotificationChannels,
               [],
             ),
             returnValue:
-                _i20.Future<List<_i36.AndroidNotificationChannel>?>.value(),
-          ) as _i20.Future<List<_i36.AndroidNotificationChannel>?>);
+                _i21.Future<List<_i37.AndroidNotificationChannel>?>.value(),
+          ) as _i21.Future<List<_i37.AndroidNotificationChannel>?>);
 
   @override
-  _i20.Future<bool?> areNotificationsEnabled() => (super.noSuchMethod(
+  _i21.Future<bool?> areNotificationsEnabled() => (super.noSuchMethod(
         Invocation.method(
           #areNotificationsEnabled,
           [],
         ),
-        returnValue: _i20.Future<bool?>.value(),
-      ) as _i20.Future<bool?>);
+        returnValue: _i21.Future<bool?>.value(),
+      ) as _i21.Future<bool?>);
 
   @override
-  _i20.Future<bool?> canScheduleExactNotifications() => (super.noSuchMethod(
+  _i21.Future<bool?> canScheduleExactNotifications() => (super.noSuchMethod(
         Invocation.method(
           #canScheduleExactNotifications,
           [],
         ),
-        returnValue: _i20.Future<bool?>.value(),
-      ) as _i20.Future<bool?>);
+        returnValue: _i21.Future<bool?>.value(),
+      ) as _i21.Future<bool?>);
 
   @override
-  _i20.Future<void> cancelAll() => (super.noSuchMethod(
+  _i21.Future<void> cancelAll() => (super.noSuchMethod(
         Invocation.method(
           #cancelAll,
           [],
         ),
-        returnValue: _i20.Future<void>.value(),
-        returnValueForMissingStub: _i20.Future<void>.value(),
-      ) as _i20.Future<void>);
+        returnValue: _i21.Future<void>.value(),
+        returnValueForMissingStub: _i21.Future<void>.value(),
+      ) as _i21.Future<void>);
 
   @override
-  _i20.Future<void> cancelAllPendingNotifications() => (super.noSuchMethod(
+  _i21.Future<void> cancelAllPendingNotifications() => (super.noSuchMethod(
         Invocation.method(
           #cancelAllPendingNotifications,
           [],
         ),
-        returnValue: _i20.Future<void>.value(),
-        returnValueForMissingStub: _i20.Future<void>.value(),
-      ) as _i20.Future<void>);
+        returnValue: _i21.Future<void>.value(),
+        returnValueForMissingStub: _i21.Future<void>.value(),
+      ) as _i21.Future<void>);
 
   @override
-  _i20.Future<_i22.NotificationAppLaunchDetails?>
+  _i21.Future<_i23.NotificationAppLaunchDetails?>
       getNotificationAppLaunchDetails() => (super.noSuchMethod(
             Invocation.method(
               #getNotificationAppLaunchDetails,
               [],
             ),
             returnValue:
-                _i20.Future<_i22.NotificationAppLaunchDetails?>.value(),
-          ) as _i20.Future<_i22.NotificationAppLaunchDetails?>);
+                _i21.Future<_i23.NotificationAppLaunchDetails?>.value(),
+          ) as _i21.Future<_i23.NotificationAppLaunchDetails?>);
 
   @override
-  _i20.Future<List<_i22.PendingNotificationRequest>>
+  _i21.Future<List<_i23.PendingNotificationRequest>>
       pendingNotificationRequests() => (super.noSuchMethod(
             Invocation.method(
               #pendingNotificationRequests,
               [],
             ),
             returnValue:
-                _i20.Future<List<_i22.PendingNotificationRequest>>.value(
-                    <_i22.PendingNotificationRequest>[]),
-          ) as _i20.Future<List<_i22.PendingNotificationRequest>>);
+                _i21.Future<List<_i23.PendingNotificationRequest>>.value(
+                    <_i23.PendingNotificationRequest>[]),
+          ) as _i21.Future<List<_i23.PendingNotificationRequest>>);
 
   @override
-  _i20.Future<List<_i22.ActiveNotification>> getActiveNotifications() =>
+  _i21.Future<List<_i23.ActiveNotification>> getActiveNotifications() =>
       (super.noSuchMethod(
         Invocation.method(
           #getActiveNotifications,
           [],
         ),
-        returnValue: _i20.Future<List<_i22.ActiveNotification>>.value(
-            <_i22.ActiveNotification>[]),
-      ) as _i20.Future<List<_i22.ActiveNotification>>);
+        returnValue: _i21.Future<List<_i23.ActiveNotification>>.value(
+            <_i23.ActiveNotification>[]),
+      ) as _i21.Future<List<_i23.ActiveNotification>>);
 }
 
 /// A class which mocks [IOSFlutterLocalNotificationsPlugin].
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockIOSFlutterLocalNotificationsPlugin extends _i1.Mock
-    implements _i31.IOSFlutterLocalNotificationsPlugin {
+    implements _i32.IOSFlutterLocalNotificationsPlugin {
   MockIOSFlutterLocalNotificationsPlugin() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  _i20.Future<bool?> initialize(
-    _i38.DarwinInitializationSettings? initializationSettings, {
-    _i22.DidReceiveNotificationResponseCallback?
+  _i21.Future<bool?> initialize(
+    _i39.DarwinInitializationSettings? initializationSettings, {
+    _i23.DidReceiveNotificationResponseCallback?
         onDidReceiveNotificationResponse,
-    _i22.DidReceiveBackgroundNotificationResponseCallback?
+    _i23.DidReceiveBackgroundNotificationResponseCallback?
         onDidReceiveBackgroundNotificationResponse,
   }) =>
       (super.noSuchMethod(
@@ -1554,11 +1577,11 @@ class MockIOSFlutterLocalNotificationsPlugin extends _i1.Mock
                 onDidReceiveBackgroundNotificationResponse,
           },
         ),
-        returnValue: _i20.Future<bool?>.value(),
-      ) as _i20.Future<bool?>);
+        returnValue: _i21.Future<bool?>.value(),
+      ) as _i21.Future<bool?>);
 
   @override
-  _i20.Future<bool?> requestPermissions({
+  _i21.Future<bool?> requestPermissions({
     bool? sound = false,
     bool? alert = false,
     bool? badge = false,
@@ -1577,28 +1600,28 @@ class MockIOSFlutterLocalNotificationsPlugin extends _i1.Mock
             #critical: critical,
           },
         ),
-        returnValue: _i20.Future<bool?>.value(),
-      ) as _i20.Future<bool?>);
+        returnValue: _i21.Future<bool?>.value(),
+      ) as _i21.Future<bool?>);
 
   @override
-  _i20.Future<_i39.NotificationsEnabledOptions?> checkPermissions() =>
+  _i21.Future<_i40.NotificationsEnabledOptions?> checkPermissions() =>
       (super.noSuchMethod(
         Invocation.method(
           #checkPermissions,
           [],
         ),
-        returnValue: _i20.Future<_i39.NotificationsEnabledOptions?>.value(),
-      ) as _i20.Future<_i39.NotificationsEnabledOptions?>);
+        returnValue: _i21.Future<_i40.NotificationsEnabledOptions?>.value(),
+      ) as _i21.Future<_i40.NotificationsEnabledOptions?>);
 
   @override
-  _i20.Future<void> zonedSchedule(
+  _i21.Future<void> zonedSchedule(
     int? id,
     String? title,
     String? body,
-    _i24.TZDateTime? scheduledDate,
-    _i40.DarwinNotificationDetails? notificationDetails, {
+    _i25.TZDateTime? scheduledDate,
+    _i41.DarwinNotificationDetails? notificationDetails, {
     String? payload,
-    _i26.DateTimeComponents? matchDateTimeComponents,
+    _i27.DateTimeComponents? matchDateTimeComponents,
   }) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -1615,16 +1638,16 @@ class MockIOSFlutterLocalNotificationsPlugin extends _i1.Mock
             #matchDateTimeComponents: matchDateTimeComponents,
           },
         ),
-        returnValue: _i20.Future<void>.value(),
-        returnValueForMissingStub: _i20.Future<void>.value(),
-      ) as _i20.Future<void>);
+        returnValue: _i21.Future<void>.value(),
+        returnValueForMissingStub: _i21.Future<void>.value(),
+      ) as _i21.Future<void>);
 
   @override
-  _i20.Future<void> show(
+  _i21.Future<void> show(
     int? id,
     String? title,
     String? body, {
-    _i40.DarwinNotificationDetails? notificationDetails,
+    _i41.DarwinNotificationDetails? notificationDetails,
     String? payload,
   }) =>
       (super.noSuchMethod(
@@ -1640,17 +1663,17 @@ class MockIOSFlutterLocalNotificationsPlugin extends _i1.Mock
             #payload: payload,
           },
         ),
-        returnValue: _i20.Future<void>.value(),
-        returnValueForMissingStub: _i20.Future<void>.value(),
-      ) as _i20.Future<void>);
+        returnValue: _i21.Future<void>.value(),
+        returnValueForMissingStub: _i21.Future<void>.value(),
+      ) as _i21.Future<void>);
 
   @override
-  _i20.Future<void> periodicallyShow(
+  _i21.Future<void> periodicallyShow(
     int? id,
     String? title,
     String? body,
-    _i22.RepeatInterval? repeatInterval, {
-    _i40.DarwinNotificationDetails? notificationDetails,
+    _i23.RepeatInterval? repeatInterval, {
+    _i41.DarwinNotificationDetails? notificationDetails,
     String? payload,
   }) =>
       (super.noSuchMethod(
@@ -1667,17 +1690,17 @@ class MockIOSFlutterLocalNotificationsPlugin extends _i1.Mock
             #payload: payload,
           },
         ),
-        returnValue: _i20.Future<void>.value(),
-        returnValueForMissingStub: _i20.Future<void>.value(),
-      ) as _i20.Future<void>);
+        returnValue: _i21.Future<void>.value(),
+        returnValueForMissingStub: _i21.Future<void>.value(),
+      ) as _i21.Future<void>);
 
   @override
-  _i20.Future<void> periodicallyShowWithDuration(
+  _i21.Future<void> periodicallyShowWithDuration(
     int? id,
     String? title,
     String? body,
     Duration? repeatDurationInterval, {
-    _i40.DarwinNotificationDetails? notificationDetails,
+    _i41.DarwinNotificationDetails? notificationDetails,
     String? payload,
   }) =>
       (super.noSuchMethod(
@@ -1694,71 +1717,71 @@ class MockIOSFlutterLocalNotificationsPlugin extends _i1.Mock
             #payload: payload,
           },
         ),
-        returnValue: _i20.Future<void>.value(),
-        returnValueForMissingStub: _i20.Future<void>.value(),
-      ) as _i20.Future<void>);
+        returnValue: _i21.Future<void>.value(),
+        returnValueForMissingStub: _i21.Future<void>.value(),
+      ) as _i21.Future<void>);
 
   @override
-  _i20.Future<void> cancel(int? id) => (super.noSuchMethod(
+  _i21.Future<void> cancel(int? id) => (super.noSuchMethod(
         Invocation.method(
           #cancel,
           [id],
         ),
-        returnValue: _i20.Future<void>.value(),
-        returnValueForMissingStub: _i20.Future<void>.value(),
-      ) as _i20.Future<void>);
+        returnValue: _i21.Future<void>.value(),
+        returnValueForMissingStub: _i21.Future<void>.value(),
+      ) as _i21.Future<void>);
 
   @override
-  _i20.Future<void> cancelAll() => (super.noSuchMethod(
+  _i21.Future<void> cancelAll() => (super.noSuchMethod(
         Invocation.method(
           #cancelAll,
           [],
         ),
-        returnValue: _i20.Future<void>.value(),
-        returnValueForMissingStub: _i20.Future<void>.value(),
-      ) as _i20.Future<void>);
+        returnValue: _i21.Future<void>.value(),
+        returnValueForMissingStub: _i21.Future<void>.value(),
+      ) as _i21.Future<void>);
 
   @override
-  _i20.Future<void> cancelAllPendingNotifications() => (super.noSuchMethod(
+  _i21.Future<void> cancelAllPendingNotifications() => (super.noSuchMethod(
         Invocation.method(
           #cancelAllPendingNotifications,
           [],
         ),
-        returnValue: _i20.Future<void>.value(),
-        returnValueForMissingStub: _i20.Future<void>.value(),
-      ) as _i20.Future<void>);
+        returnValue: _i21.Future<void>.value(),
+        returnValueForMissingStub: _i21.Future<void>.value(),
+      ) as _i21.Future<void>);
 
   @override
-  _i20.Future<_i22.NotificationAppLaunchDetails?>
+  _i21.Future<_i23.NotificationAppLaunchDetails?>
       getNotificationAppLaunchDetails() => (super.noSuchMethod(
             Invocation.method(
               #getNotificationAppLaunchDetails,
               [],
             ),
             returnValue:
-                _i20.Future<_i22.NotificationAppLaunchDetails?>.value(),
-          ) as _i20.Future<_i22.NotificationAppLaunchDetails?>);
+                _i21.Future<_i23.NotificationAppLaunchDetails?>.value(),
+          ) as _i21.Future<_i23.NotificationAppLaunchDetails?>);
 
   @override
-  _i20.Future<List<_i22.PendingNotificationRequest>>
+  _i21.Future<List<_i23.PendingNotificationRequest>>
       pendingNotificationRequests() => (super.noSuchMethod(
             Invocation.method(
               #pendingNotificationRequests,
               [],
             ),
             returnValue:
-                _i20.Future<List<_i22.PendingNotificationRequest>>.value(
-                    <_i22.PendingNotificationRequest>[]),
-          ) as _i20.Future<List<_i22.PendingNotificationRequest>>);
+                _i21.Future<List<_i23.PendingNotificationRequest>>.value(
+                    <_i23.PendingNotificationRequest>[]),
+          ) as _i21.Future<List<_i23.PendingNotificationRequest>>);
 
   @override
-  _i20.Future<List<_i22.ActiveNotification>> getActiveNotifications() =>
+  _i21.Future<List<_i23.ActiveNotification>> getActiveNotifications() =>
       (super.noSuchMethod(
         Invocation.method(
           #getActiveNotifications,
           [],
         ),
-        returnValue: _i20.Future<List<_i22.ActiveNotification>>.value(
-            <_i22.ActiveNotification>[]),
-      ) as _i20.Future<List<_i22.ActiveNotification>>);
+        returnValue: _i21.Future<List<_i23.ActiveNotification>>.value(
+            <_i23.ActiveNotification>[]),
+      ) as _i21.Future<List<_i23.ActiveNotification>>);
 }

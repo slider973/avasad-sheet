@@ -3,12 +3,16 @@ import 'package:time_sheet/enum/overtime_type.dart';
 import 'package:time_sheet/features/pointage/domain/entities/timesheet_entry.dart';
 import 'package:time_sheet/features/pointage/domain/use_cases/calculate_overtime_hours_use_case.dart';
 
+import 'test_utils.dart';
+
 void main() {
   group('CalculateOvertimeHoursUseCase Weekend Integration', () {
     late CalculateOvertimeHoursUseCase useCase;
 
     setUp(() {
-      useCase = CalculateOvertimeHoursUseCase();
+      useCase = CalculateOvertimeHoursUseCase(
+        configRepository: FakeOvertimeConfigurationRepository(),
+      );
     });
 
     group('Weekend Overtime Calculation', () {

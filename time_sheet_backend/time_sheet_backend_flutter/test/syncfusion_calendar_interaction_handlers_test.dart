@@ -4,6 +4,7 @@ import 'package:syncfusion_flutter_calendar/calendar.dart';
 
 import 'package:time_sheet/features/pointage/presentation/widgets/syncfusion_calendar/syncfusion_timesheet_calendar_widget.dart';
 import 'package:time_sheet/features/pointage/presentation/widgets/syncfusion_calendar/timesheet_appointment.dart';
+import 'package:time_sheet/features/pointage/presentation/widgets/syncfusion_calendar/calendar_theme_config.dart';
 import 'package:time_sheet/features/pointage/presentation/widgets/syncfusion_calendar/timesheet_appointment_data_source.dart';
 import 'package:time_sheet/features/pointage/domain/entities/timesheet_entry.dart';
 import 'package:time_sheet/enum/absence_period.dart';

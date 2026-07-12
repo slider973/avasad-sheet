@@ -81,7 +81,7 @@ void main() {
       ];
       // Total: 6 + 11 + 9 + 8.5 + 7 = 41.5h (>= 41h30)
 
-      when(mockRepository.findEntriesFromMonthOf(2, 2024)).thenAnswer((_) async => entries);
+      when(mockRepository.findEntriesFromMonthOf(1, 2024)).thenAnswer((_) async => entries);
 
       // Act
       final result = await useCase.execute(1, 2024);
@@ -146,7 +146,7 @@ void main() {
       ];
       // Total: 36h (< 41h30)
 
-      when(mockRepository.findEntriesFromMonthOf(2, 2024)).thenAnswer((_) async => entries);
+      when(mockRepository.findEntriesFromMonthOf(1, 2024)).thenAnswer((_) async => entries);
 
       // Act
       final result = await useCase.execute(1, 2024);
@@ -193,7 +193,7 @@ void main() {
         ),
       ];
 
-      when(mockRepository.findEntriesFromMonthOf(2, 2024)).thenAnswer((_) async => entries);
+      when(mockRepository.findEntriesFromMonthOf(1, 2024)).thenAnswer((_) async => entries);
 
       // Act
       final result = await useCase.execute(1, 2024);
@@ -229,7 +229,7 @@ void main() {
         ),
       ];
 
-      when(mockRepository.findEntriesFromMonthOf(2, 2024)).thenAnswer((_) async => entries);
+      when(mockRepository.findEntriesFromMonthOf(1, 2024)).thenAnswer((_) async => entries);
 
       // Act
       final result = await useCase.execute(1, 2024);

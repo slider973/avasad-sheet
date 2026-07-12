@@ -16,6 +16,10 @@ void main() {
 
     setUp(() {
       mockWeekendService = MockWeekendDetectionService();
+      // Stub par défaut : le calculateur consulte désormais le service de
+      // détection en fallback pour les entrées non marquées weekend.
+      when(mockWeekendService.shouldApplyWeekendOvertime(any))
+          .thenAnswer((_) async => false);
       calculator = WeekendOvertimeCalculator(
         weekendDetectionService: mockWeekendService,
       );
@@ -84,7 +88,8 @@ void main() {
         ];
 
         // Act
-        final result = await calculator.calculateMonthlyOvertime(entries);
+        final result = await calculator.calculateMonthlyOvertime(entries,
+            dailyThreshold: const Duration(hours: 8));
 
         // Assert
         expect(result.weekdayOvertime, Duration(hours: 1)); // 9h - 8h = 1h
@@ -123,7 +128,8 @@ void main() {
             .thenAnswer((_) async => true);
 
         // Act
-        final result = await calculator.calculateMonthlyOvertime(entries);
+        final result = await calculator.calculateMonthlyOvertime(entries,
+            dailyThreshold: const Duration(hours: 8));
 
         // Assert
         expect(
@@ -155,7 +161,8 @@ void main() {
         ];
 
         // Act
-        final result = await calculator.calculateMonthlyOvertime(entries);
+        final result = await calculator.calculateMonthlyOvertime(entries,
+            dailyThreshold: const Duration(hours: 8));
 
         // Assert
         expect(result.weekdayOvertime, Duration.zero);
@@ -169,7 +176,8 @@ void main() {
         final entries = <TimesheetEntry>[];
 
         // Act
-        final result = await calculator.calculateMonthlyOvertime(entries);
+        final result = await calculator.calculateMonthlyOvertime(entries,
+            dailyThreshold: const Duration(hours: 8));
 
         // Assert
         expect(result.weekdayOvertime, Duration.zero);
@@ -201,6 +209,7 @@ void main() {
           entries,
           weekdayRate: 1.5,
           weekendRate: 2.0,
+          dailyThreshold: const Duration(hours: 8),
         );
 
         // Assert
@@ -227,7 +236,8 @@ void main() {
         ];
 
         // Act
-        final result = await calculator.calculateMonthlyOvertime(entries);
+        final result = await calculator.calculateMonthlyOvertime(entries,
+            dailyThreshold: const Duration(hours: 8));
 
         // Assert
         // For weekend days, all hours should be weekend overtime
@@ -254,7 +264,8 @@ void main() {
         ];
 
         // Act
-        final result = await calculator.calculateMonthlyOvertime(entries);
+        final result = await calculator.calculateMonthlyOvertime(entries,
+            dailyThreshold: const Duration(hours: 8));
 
         // Assert
         expect(result.formattedWeekdayOvertime, '1h 00m'); // 9h - 8h = 1h

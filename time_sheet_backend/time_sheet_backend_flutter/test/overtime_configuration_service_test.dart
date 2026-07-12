@@ -87,6 +87,10 @@ void main() {
   setUpAll(() async {
     // Set up dependency injection with mock repository
     mockRepository = MockOvertimeConfigurationRepository();
+    // flutter_test_config.dart enregistre déjà un fake global : le remplacer.
+    if (GetIt.instance.isRegistered<OvertimeConfigurationRepository>()) {
+      GetIt.instance.unregister<OvertimeConfigurationRepository>();
+    }
     GetIt.instance
         .registerSingleton<OvertimeConfigurationRepository>(mockRepository);
     service = OvertimeConfigurationService();

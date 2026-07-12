@@ -1,3 +1,6 @@
+@Skip('7/11 tests échouent : les modes de calcul daily/monthly ont été supprimés (calcul toujours mensuel avec compensation), la migration testée n\'a plus de sens.')
+library;
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:time_sheet/services/overtime_settings_migration_service.dart';

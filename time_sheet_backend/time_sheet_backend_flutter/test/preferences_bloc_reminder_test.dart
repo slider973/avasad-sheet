@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import '../lib/features/preference/data/models/reminder_settings.dart';
+import 'package:time_sheet/features/preference/data/models/reminder_settings.dart';
 
 void main() {
   group('ReminderSettings Tests', () {

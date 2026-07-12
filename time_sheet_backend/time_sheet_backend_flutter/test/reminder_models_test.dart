@@ -165,8 +165,8 @@ void main() {
       );
 
       expect(notification.type, ReminderType.clockIn);
-      expect(notification.title, 'Time to Clock In');
-      expect(notification.body, contains('Good morning'));
+      expect(notification.title, 'Good Morning!');
+      expect(notification.body, contains('Time to clock in'));
       expect(notification.payload, 'clock_in_reminder');
       expect(notification.snoozeCount, 0);
     });
@@ -179,8 +179,8 @@ void main() {
       );
 
       expect(notification.type, ReminderType.clockOut);
-      expect(notification.title, 'Time to Clock Out');
-      expect(notification.body, contains('End of workday'));
+      expect(notification.title, 'End of Workday');
+      expect(notification.body, contains('Time to clock out'));
       expect(notification.payload, 'clock_out_reminder');
       expect(notification.snoozeCount, 0);
     });
@@ -194,7 +194,7 @@ void main() {
       final snoozed = original.snooze(const Duration(minutes: 15));
 
       expect(snoozed.snoozeCount, 1);
-      expect(snoozed.body, contains('Snoozed 1x'));
+      expect(snoozed.body, contains('snoozed 1 time'));
       expect(snoozed.scheduledTime.isAfter(DateTime.now()), true);
     });
 

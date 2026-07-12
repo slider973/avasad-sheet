@@ -1,270 +1,201 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:isar/isar.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../lib/features/pointage/data/models/timesheet_entry/timesheet_entry.dart';
-import '../../lib/features/preference/data/models/overtime_configuration.dart';
-import '../../lib/services/weekend_overtime_calculator.dart';
-import '../../lib/services/overtime_configuration_service.dart';
-import '../../lib/enum/overtime_type.dart';
+import 'package:time_sheet/features/pointage/domain/entities/timesheet_entry.dart';
+import 'package:time_sheet/services/weekend_overtime_calculator.dart';
+import 'package:time_sheet/services/weekend_detection_service.dart';
+import 'package:time_sheet/enum/overtime_type.dart';
 
+/// Tests d'intégration weekend au niveau domaine.
+///
+/// Réécrits après la migration Isar -> PowerSync : l'ancienne version
+/// persistait des TimesheetEntryModel dans une base Isar qui n'existe plus.
+/// La logique métier testée (détection weekend + calcul des heures
+/// supplémentaires) vit toujours dans WeekendDetectionService et
+/// WeekendOvertimeCalculator.
 void main() {
-  group('Weekend Integration Tests', () {
-    late Isar isar;
-    late WeekendOvertimeCalculator calculator;
-    late OvertimeConfigurationService configService;
+  TestWidgetsFlutterBinding.ensureInitialized();
 
-    setUpAll(() async {
-      isar = await Isar.open(
-        [TimesheetEntryModelSchema, OvertimeConfigurationSchema],
-        directory: '',
-        name: 'test_db_${DateTime.now().millisecondsSinceEpoch}',
-      );
-    });
+  group('Weekend Integration Tests', () {
+    late WeekendOvertimeCalculator calculator;
+    late WeekendDetectionService detectionService;
 
     setUp(() async {
-      await isar.writeTxn(() async {
-        await isar.timesheetEntryModels.clear();
-        await isar.overtimeConfigurations.clear();
-      });
-
-      calculator = WeekendOvertimeCalculator();
-      configService = OvertimeConfigurationService(isar);
-    });
-
-    tearDownAll(() async {
-      await isar.close();
+      SharedPreferences.setMockInitialValues({});
+      detectionService = WeekendDetectionService();
+      await detectionService.setWeekendOvertimeEnabled(true);
+      calculator = WeekendOvertimeCalculator(
+        weekendDetectionService: detectionService,
+      );
     });
 
     group('End-to-End Weekend Workflow', () {
       test('Complete weekend workflow with Saturday work', () async {
         // Requirement 1.1: Weekend hours automatically marked as overtime
-        final saturdayDate = DateTime(2024, 1, 6); // Saturday
-
-        // Create weekend entry
-        final entry = TimesheetEntryModel()
-          ..dayDate = saturdayDate
-          ..clockInTime = DateTime(2024, 1, 6, 9, 0) // 9:00 AM
-          ..clockOutTime = DateTime(2024, 1, 6, 17, 0) // 5:00 PM
-          ..isWeekendDay = true
-          ..isWeekendOvertimeEnabled = true
-          ..overtimeType = OvertimeType.WEEKEND_ONLY;
-
-        entry.updateWeekendStatus();
-
-        await isar.writeTxn(() async {
-          await isar.timesheetEntryModels.put(entry);
-        });
+        final entry = TimesheetEntry(
+          dayDate: '06-Jan-24', // Saturday
+          dayOfWeekDate: 'Samedi',
+          startMorning: '09:00',
+          endMorning: '12:00',
+          startAfternoon: '13:00',
+          endAfternoon: '18:00', // 8h total
+          isWeekendDay: true,
+          isWeekendOvertimeEnabled: true,
+          overtimeType: OvertimeType.WEEKEND_ONLY,
+        );
 
         // Verify weekend detection
-        expect(entry.isWeekendDay, isTrue);
+        expect(entry.isWeekend, isTrue);
         expect(entry.overtimeType, equals(OvertimeType.WEEKEND_ONLY));
 
-        // Convert to domain entity and verify calculations
-        final domainEntry = entry.toDomain();
-        expect(domainEntry.isWeekend, isTrue);
-        expect(
-            domainEntry.weekendOvertimeHours, equals(const Duration(hours: 8)));
-        expect(domainEntry.weekdayOvertimeHours, equals(Duration.zero));
+        // Verify calculations on the domain entity
+        expect(entry.weekendOvertimeHours, equals(const Duration(hours: 8)));
+        expect(entry.weekdayOvertimeHours, equals(Duration.zero));
       });
 
       test('Mixed week with weekend and weekday overtime', () async {
-        // Create entries for different scenarios
-        final entries = <TimesheetEntryModel>[
-          // Monday - Regular day, no overtime
-          TimesheetEntryModel()
-            ..dayDate = DateTime(2024, 1, 1) // Monday
-            ..clockInTime = DateTime(2024, 1, 1, 9, 0)
-            ..clockOutTime = DateTime(2024, 1, 1, 17, 0) // 8 hours
-            ..isWeekendDay = false
-            ..hasOvertimeHours = false
-            ..overtimeType = OvertimeType.NONE,
-
-          // Tuesday - Weekday overtime
-          TimesheetEntryModel()
-            ..dayDate = DateTime(2024, 1, 2) // Tuesday
-            ..clockInTime = DateTime(2024, 1, 2, 9, 0)
-            ..clockOutTime = DateTime(2024, 1, 2, 19, 0) // 10 hours
-            ..isWeekendDay = false
-            ..hasOvertimeHours = true
-            ..overtimeType = OvertimeType.WEEKDAY_ONLY,
-
-          // Saturday - Weekend work
-          TimesheetEntryModel()
-            ..dayDate = DateTime(2024, 1, 6) // Saturday
-            ..clockInTime = DateTime(2024, 1, 6, 9, 0)
-            ..clockOutTime = DateTime(2024, 1, 6, 17, 0) // 8 hours
-            ..isWeekendDay = true
-            ..isWeekendOvertimeEnabled = true
-            ..overtimeType = OvertimeType.WEEKEND_ONLY,
-
-          // Sunday - Weekend work
-          TimesheetEntryModel()
-            ..dayDate = DateTime(2024, 1, 7) // Sunday
-            ..clockInTime = DateTime(2024, 1, 7, 10, 0)
-            ..clockOutTime = DateTime(2024, 1, 7, 16, 0) // 6 hours
-            ..isWeekendDay = true
-            ..isWeekendOvertimeEnabled = true
-            ..overtimeType = OvertimeType.WEEKEND_ONLY,
+        final entries = <TimesheetEntry>[
+          // Monday - Regular day, no overtime (8h)
+          TimesheetEntry(
+            dayDate: '01-Jan-24',
+            dayOfWeekDate: 'Lundi',
+            startMorning: '09:00',
+            endMorning: '12:00',
+            startAfternoon: '13:00',
+            endAfternoon: '18:00',
+            isWeekendDay: false,
+            hasOvertimeHours: false,
+            overtimeType: OvertimeType.NONE,
+          ),
+          // Tuesday - Weekday overtime (10h)
+          TimesheetEntry(
+            dayDate: '02-Jan-24',
+            dayOfWeekDate: 'Mardi',
+            startMorning: '09:00',
+            endMorning: '12:00',
+            startAfternoon: '13:00',
+            endAfternoon: '20:00',
+            isWeekendDay: false,
+            hasOvertimeHours: true,
+            overtimeType: OvertimeType.WEEKDAY_ONLY,
+          ),
+          // Saturday - Weekend work (8h)
+          TimesheetEntry(
+            dayDate: '06-Jan-24',
+            dayOfWeekDate: 'Samedi',
+            startMorning: '09:00',
+            endMorning: '12:00',
+            startAfternoon: '13:00',
+            endAfternoon: '18:00',
+            isWeekendDay: true,
+            isWeekendOvertimeEnabled: true,
+            overtimeType: OvertimeType.WEEKEND_ONLY,
+          ),
+          // Sunday - Weekend work (6h)
+          TimesheetEntry(
+            dayDate: '07-Jan-24',
+            dayOfWeekDate: 'Dimanche',
+            startMorning: '10:00',
+            endMorning: '13:00',
+            startAfternoon: '14:00',
+            endAfternoon: '17:00',
+            isWeekendDay: true,
+            isWeekendOvertimeEnabled: true,
+            overtimeType: OvertimeType.WEEKEND_ONLY,
+          ),
         ];
 
-        // Save all entries
-        await isar.writeTxn(() async {
-          for (final entry in entries) {
-            entry.updateWeekendStatus();
-            await isar.timesheetEntryModels.put(entry);
-          }
-        });
+        final summary = await calculator.calculateMonthlyOvertime(entries);
 
-        // Calculate weekly summary
-        final domainEntries = entries.map((e) => e.toDomain()).toList();
-        final summary = calculator.calculateMonthlyOvertime(domainEntries);
-
-        // Verify calculations
+        // Tuesday: 10h - 8h18 threshold = 1h42 weekday overtime
         expect(summary.weekdayOvertime,
-            equals(const Duration(hours: 2))); // Tuesday overtime
-        expect(summary.weekendOvertime,
-            equals(const Duration(hours: 14))); // Sat + Sun
-        expect(summary.totalOvertime, equals(const Duration(hours: 16)));
+            equals(const Duration(hours: 1, minutes: 42)));
+        // Saturday 8h + Sunday 6h
+        expect(summary.weekendOvertime, equals(const Duration(hours: 14)));
+        expect(summary.totalOvertime,
+            equals(const Duration(hours: 15, minutes: 42)));
       });
     });
 
     group('Configuration Impact Tests', () {
-      test('Disabling weekend overtime affects calculations', () async {
-        final saturdayDate = DateTime(2024, 1, 6);
+      test('Disabling weekend overtime affects detection service', () async {
+        await detectionService.setWeekendOvertimeEnabled(false);
 
-        // Create entry with weekend overtime disabled
-        final entry = TimesheetEntryModel()
-          ..dayDate = saturdayDate
-          ..clockInTime = DateTime(2024, 1, 6, 9, 0)
-          ..clockOutTime = DateTime(2024, 1, 6, 17, 0)
-          ..isWeekendDay = true
-          ..isWeekendOvertimeEnabled = false // Disabled
-          ..overtimeType = OvertimeType.NONE;
+        final saturday = DateTime(2024, 1, 6);
+        expect(detectionService.isWeekend(saturday), isTrue);
+        expect(
+            await detectionService.shouldApplyWeekendOvertime(saturday),
+            isFalse);
 
-        entry.updateWeekendStatus();
-
-        await isar.writeTxn(() async {
-          await isar.timesheetEntryModels.put(entry);
-        });
-
-        final domainEntry = entry.toDomain();
-        expect(domainEntry.isWeekend, isTrue);
-        expect(domainEntry.weekendOvertimeHours, equals(Duration.zero));
-        expect(domainEntry.overtimeType, equals(OvertimeType.NONE));
-      });
-
-      test('Configuration changes persist across service instances', () async {
-        // Set custom configuration
-        await configService.setWeekendOvertimeEnabled(true);
-        await configService.setWeekendOvertimeRate(2.0);
-        await configService.setWeekdayOvertimeRate(1.5);
-
-        // Create new service instance (simulates app restart)
-        final newConfigService = OvertimeConfigurationService(isar);
-
-        // Verify configuration persisted
-        expect(await newConfigService.isWeekendOvertimeEnabled(), isTrue);
-        expect(await newConfigService.getWeekendOvertimeRate(), equals(2.0));
-        expect(await newConfigService.getWeekdayOvertimeRate(), equals(1.5));
+        // Re-enable for the other tests (singleton with cache)
+        await detectionService.setWeekendOvertimeEnabled(true);
+        expect(
+            await detectionService.shouldApplyWeekendOvertime(saturday),
+            isTrue);
       });
     });
 
     group('Error Handling and Edge Cases', () {
-      test('Handles midnight crossing weekend work', () async {
-        final saturdayDate = DateTime(2024, 1, 6);
+      test('Handles entries with no hours gracefully', () async {
+        final entry = TimesheetEntry(
+          dayDate: '06-Jan-24', // Saturday
+          dayOfWeekDate: 'Samedi',
+          startMorning: '',
+          endMorning: '',
+          startAfternoon: '',
+          endAfternoon: '',
+          isWeekendDay: true,
+          isWeekendOvertimeEnabled: true,
+        );
 
-        // Work that crosses midnight (Saturday night to Sunday morning)
-        final entry = TimesheetEntryModel()
-          ..dayDate = saturdayDate
-          ..clockInTime = DateTime(2024, 1, 6, 22, 0) // 10:00 PM Saturday
-          ..clockOutTime = DateTime(2024, 1, 7, 6, 0) // 6:00 AM Sunday
-          ..isWeekendDay = true
-          ..isWeekendOvertimeEnabled = true
-          ..overtimeType = OvertimeType.WEEKEND_ONLY;
-
-        entry.updateWeekendStatus();
-
-        await isar.writeTxn(() async {
-          await isar.timesheetEntryModels.put(entry);
-        });
-
-        final domainEntry = entry.toDomain();
-        expect(domainEntry.isWeekend, isTrue);
-        expect(
-            domainEntry.weekendOvertimeHours, equals(const Duration(hours: 8)));
-      });
-
-      test('Handles invalid time entries gracefully', () async {
-        final entry = TimesheetEntryModel()
-          ..dayDate = DateTime(2024, 1, 6)
-          ..clockInTime =
-              DateTime(2024, 1, 6, 17, 0) // Clock out before clock in
-          ..clockOutTime = DateTime(2024, 1, 6, 9, 0)
-          ..isWeekendDay = true
-          ..isWeekendOvertimeEnabled = true;
-
-        entry.updateWeekendStatus();
-
-        await isar.writeTxn(() async {
-          await isar.timesheetEntryModels.put(entry);
-        });
-
-        final domainEntry = entry.toDomain();
-        // Should handle invalid times gracefully
-        expect(domainEntry.weekendOvertimeHours, equals(Duration.zero));
-      });
-
-      test('Handles null clock out times', () async {
-        final entry = TimesheetEntryModel()
-          ..dayDate = DateTime(2024, 1, 6)
-          ..clockInTime = DateTime(2024, 1, 6, 9, 0)
-          ..clockOutTime = null // Still clocked in
-          ..isWeekendDay = true
-          ..isWeekendOvertimeEnabled = true;
-
-        entry.updateWeekendStatus();
-
-        await isar.writeTxn(() async {
-          await isar.timesheetEntryModels.put(entry);
-        });
-
-        final domainEntry = entry.toDomain();
-        expect(domainEntry.weekendOvertimeHours, equals(Duration.zero));
+        final summary = await calculator.calculateMonthlyOvertime([entry]);
+        expect(summary.weekendOvertime, equals(Duration.zero));
+        expect(summary.totalOvertime, equals(Duration.zero));
       });
     });
 
     group('Performance and Scale Tests', () {
       test('Handles large datasets efficiently', () async {
-        // Create a large number of entries
-        final largeDataset = <TimesheetEntryModel>[];
+        final monthNames = {
+          1: 'Jan',
+          2: 'Feb',
+          3: 'Mar',
+          4: 'Apr',
+          5: 'May',
+          6: 'Jun',
+          7: 'Jul',
+          8: 'Aug',
+          9: 'Sep',
+          10: 'Oct',
+          11: 'Nov',
+          12: 'Dec',
+        };
 
+        final largeDataset = <TimesheetEntry>[];
         for (int i = 0; i < 100; i++) {
           final date = DateTime(2024, 1, 1).add(Duration(days: i % 30));
           final isWeekend = date.weekday == DateTime.saturday ||
               date.weekday == DateTime.sunday;
 
-          largeDataset.add(TimesheetEntryModel()
-            ..dayDate = date
-            ..clockInTime = DateTime(date.year, date.month, date.day, 9, 0)
-            ..clockOutTime = DateTime(date.year, date.month, date.day, 17, 0)
-            ..isWeekendDay = isWeekend
-            ..isWeekendOvertimeEnabled = isWeekend
-            ..overtimeType =
-                isWeekend ? OvertimeType.WEEKEND_ONLY : OvertimeType.NONE);
+          largeDataset.add(TimesheetEntry(
+            dayDate: '${date.day.toString().padLeft(2, '0')}-'
+                '${monthNames[date.month]}-'
+                '${date.year.toString().substring(2)}',
+            dayOfWeekDate: 'Jour',
+            startMorning: '09:00',
+            endMorning: '12:00',
+            startAfternoon: '13:00',
+            endAfternoon: '18:00', // 8h
+            isWeekendDay: isWeekend,
+            isWeekendOvertimeEnabled: isWeekend,
+            hasOvertimeHours: false,
+            overtimeType:
+                isWeekend ? OvertimeType.WEEKEND_ONLY : OvertimeType.NONE,
+          ));
         }
 
-        // Save large dataset
-        await isar.writeTxn(() async {
-          for (final entry in largeDataset) {
-            entry.updateWeekendStatus();
-            await isar.timesheetEntryModels.put(entry);
-          }
-        });
-
-        // Measure calculation performance
         final stopwatch = Stopwatch()..start();
-        final domainEntries = largeDataset.map((e) => e.toDomain()).toList();
-        final summary = calculator.calculateMonthlyOvertime(domainEntries);
+        final summary = await calculator.calculateMonthlyOvertime(largeDataset);
         stopwatch.stop();
 
         // Verify calculations completed successfully
