@@ -1,10 +1,9 @@
-import 'dart:convert';
-
 import 'package:powersync/powersync.dart';
 
 import '../../../../core/services/supabase/supabase_service.dart';
 import '../../domain/repositories/overtime_configuration_repository.dart';
 import '../models/overtime_configuration.dart';
+import '../utils/weekend_days_db_codec.dart';
 
 /// PowerSync-based implementation of OvertimeConfigurationRepository.
 /// Uses the `overtime_configurations` table which syncs with PostgreSQL.
@@ -36,7 +35,9 @@ class OvertimeConfigurationRepositoryPowerSyncImpl
       [_userId],
     );
 
-    final weekendDaysJson = jsonEncode(configuration.weekendDays);
+    // Littéral PostgreSQL `{6,7}` : seul format casté vers INTEGER[] par
+    // PostgREST (du JSON `[6,7]` provoquerait une erreur 22P02 à l'upload).
+    final weekendDaysDb = WeekendDaysDbCodec.encode(configuration.weekendDays);
 
     if (existing != null) {
       await db.execute(
@@ -48,7 +49,7 @@ class OvertimeConfigurationRepositoryPowerSyncImpl
           WHERE id = ?''',
         [
           configuration.weekendOvertimeEnabled ? 1 : 0,
-          weekendDaysJson,
+          weekendDaysDb,
           configuration.weekendOvertimeRate,
           configuration.weekdayOvertimeRate,
           configuration.dailyWorkThresholdMinutes,
@@ -67,7 +68,7 @@ class OvertimeConfigurationRepositoryPowerSyncImpl
         [
           _userId,
           configuration.weekendOvertimeEnabled ? 1 : 0,
-          weekendDaysJson,
+          weekendDaysDb,
           configuration.weekendOvertimeRate,
           configuration.weekdayOvertimeRate,
           configuration.dailyWorkThresholdMinutes,
@@ -153,14 +154,12 @@ class OvertimeConfigurationRepositoryPowerSyncImpl
     config.weekendOvertimeEnabled =
         (row['weekend_overtime_enabled'] as int? ?? 1) == 1;
 
-    // Parse weekend_days - stored as JSON array string
-    final weekendDaysStr = row['weekend_days'] as String?;
-    if (weekendDaysStr != null && weekendDaysStr.isNotEmpty) {
-      try {
-        config.weekendDays = List<int>.from(jsonDecode(weekendDaysStr));
-      } catch (_) {
-        config.weekendDays = [DateTime.saturday, DateTime.sunday];
-      }
+    // Parse weekend_days : `[6,7]` (JSON, flux descendant PowerSync) ou
+    // `{6,7}` (littéral PostgreSQL écrit localement).
+    final weekendDays =
+        WeekendDaysDbCodec.decode(row['weekend_days'] as String?);
+    if (weekendDays != null && weekendDays.isNotEmpty) {
+      config.weekendDays = weekendDays;
     }
 
     config.weekendOvertimeRate =

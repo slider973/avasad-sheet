@@ -4,17 +4,14 @@ import 'package:time_sheet/features/pointage/domain/entities/timesheet_entry.dar
 import 'package:time_sheet/services/logger_service.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../../../core/database/powersync_database.dart';
 import '../../../../core/services/supabase/supabase_service.dart';
 import '../../../../enum/overtime_type.dart';
 import '../../../absence/data/models/absence.dart';
 import '../../../absence/data/models/absence.mapper.dart';
-import '../../../absence/domain/entities/absence_entity.dart';
-import '../../../absence/domain/value_objects/absence_type.dart';
+import '../../../absence/data/models/absence_type_db_mapper.dart';
 import '../../data/utils/time_sheet_utils.dart';
 import 'timesheet_data_source.dart';
 import '../models/timesheet_entry/timesheet_entry.dart';
-import '../models/anomalies/anomalies.dart';
 import '../models/generated_pdf/generated_pdf.dart';
 
 /// PowerSync-based implementation of the local data source.
@@ -200,7 +197,7 @@ class LocalDatasourcePowerSyncImpl implements LocalDataSource {
           userId, entryId,
           DateFormat('yyyy-MM-dd').format(absence.startDate),
           DateFormat('yyyy-MM-dd').format(absence.endDate),
-          absence.type.name,
+          absence.type.dbValue,
           absence.motif ?? '',
         ],
       );
@@ -497,10 +494,7 @@ class LocalDatasourcePowerSyncImpl implements LocalDataSource {
         ..id = absenceId.hashCode
         ..startDate = DateTime.parse(row['absence_start_date'] as String)
         ..endDate = DateTime.parse(row['absence_end_date'] as String)
-        ..type = AbsenceType.values.firstWhere(
-          (t) => t.name == (row['absence_type'] as String? ?? ''),
-          orElse: () => AbsenceType.other,
-        )
+        ..type = AbsenceTypeDb.fromDb(row['absence_type'] as String?)
         ..motif = row['absence_motif'] as String? ?? '';
       model.absence.value = absence;
     }

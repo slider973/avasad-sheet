@@ -2,7 +2,7 @@ import 'package:intl/intl.dart';
 import 'package:powersync/powersync.dart';
 
 import '../../../../core/services/supabase/supabase_service.dart';
-import '../../domain/entities/expense_category.dart';
+import '../models/expense_category_db_mapper.dart';
 import '../models/expense_model.dart';
 import 'expense_data_source.dart';
 
@@ -26,7 +26,7 @@ class ExpensePowerSyncDataSource implements ExpenseDataSource {
           is_approved = ?, manager_comment = ?
           WHERE id = ?''',
         [
-          dateStr, expense.category.name, expense.description ?? '',
+          dateStr, expense.category.dbValue, expense.description ?? '',
           expense.currency, expense.amount, expense.mileageRate,
           expense.distanceKm, expense.departureLocation ?? '',
           expense.arrivalLocation ?? '', expense.attachmentPath ?? '',
@@ -42,7 +42,7 @@ class ExpensePowerSyncDataSource implements ExpenseDataSource {
           arrival_location, attachment_url, is_approved, manager_comment)
           VALUES (uuid(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
         [
-          _userId, dateStr, expense.category.name, expense.description ?? '',
+          _userId, dateStr, expense.category.dbValue, expense.description ?? '',
           expense.currency, expense.amount, expense.mileageRate,
           expense.distanceKm, expense.departureLocation ?? '',
           expense.arrivalLocation ?? '', expense.attachmentPath ?? '',
@@ -116,10 +116,7 @@ class ExpensePowerSyncDataSource implements ExpenseDataSource {
     model.id = (row['id'] as String).hashCode;
     model.uuid = row['id'] as String;
     model.date = DateTime.parse(row['date'] as String);
-    model.category = ExpenseCategory.values.firstWhere(
-      (e) => e.name == (row['category'] as String? ?? 'other'),
-      orElse: () => ExpenseCategory.other,
-    );
+    model.category = ExpenseCategoryDb.fromDb(row['category'] as String?);
     model.description = row['description'] as String? ?? '';
     model.currency = row['currency'] as String? ?? 'CHF';
     model.amount = (row['amount'] as num?)?.toDouble() ?? 0.0;

@@ -2,7 +2,7 @@ import 'package:intl/intl.dart';
 import 'package:powersync/powersync.dart';
 
 import '../../core/services/supabase/supabase_service.dart';
-import '../../features/pointage/data/models/anomalies/anomalies.dart';
+import '../../features/pointage/data/models/anomalies/anomaly_type_db_mapper.dart';
 import '../../features/pointage/data/models/timesheet_entry/timesheet_entry.dart';
 import 'interface_timeSheetValidator.dart';
 import 'insufficient_hours_rule.dart';
@@ -85,7 +85,7 @@ class AnomalyServicePowerSync {
                 _userId,
                 dayStr,
                 anomaly.description,
-                anomaly.type.name,
+                anomaly.type.dbValue,
                 DateTime.now().toIso8601String(),
               ],
             );

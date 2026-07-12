@@ -8,11 +8,14 @@ import 'package:uuid/uuid.dart';
 
 import '../../features/pointage/data/models/timesheet_entry/timesheet_entry.dart';
 import '../../features/pointage/data/models/anomalies/anomalies.dart';
+import '../../features/pointage/data/models/anomalies/anomaly_type_db_mapper.dart';
 import '../../features/pointage/data/models/generated_pdf/generated_pdf.dart';
 import '../../features/absence/data/models/absence.dart';
+import '../../features/absence/data/models/absence_type_db_mapper.dart';
 import '../../features/preference/data/models/user_preference.dart';
 import '../../features/preference/data/models/overtime_configuration.dart';
 import '../../features/expense/data/models/expense_model.dart';
+import '../../features/expense/data/models/expense_category_db_mapper.dart';
 import '../database/powersync_database.dart';
 import '../services/supabase/supabase_service.dart';
 
@@ -215,7 +218,7 @@ class IsarToPowerSyncMigration {
           userId,
           _formatDate(absence.startDate),
           _formatDate(absence.endDate),
-          absence.type.name,
+          absence.type.dbValue,
           absence.motif,
         ],
       );
@@ -255,7 +258,7 @@ class IsarToPowerSyncMigration {
           _formatDate(anomaly.detectedDate),
           anomaly.description,
           anomaly.isResolved ? 1 : 0,
-          anomaly.type.name,
+          anomaly.type.dbValue,
         ],
       );
     }
@@ -309,7 +312,7 @@ class IsarToPowerSyncMigration {
           uuid,
           userId,
           _formatDate(expense.date),
-          expense.category.name,
+          expense.category.dbValue,
           expense.description,
           expense.currency,
           expense.amount,

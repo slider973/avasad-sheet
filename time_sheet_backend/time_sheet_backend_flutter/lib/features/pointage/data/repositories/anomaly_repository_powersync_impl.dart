@@ -3,6 +3,7 @@ import 'package:powersync/powersync.dart';
 
 import '../../../../core/services/supabase/supabase_service.dart';
 import '../models/anomalies/anomalies.dart';
+import '../models/anomalies/anomaly_type_db_mapper.dart';
 import 'anomaly_repository_impl.dart';
 
 /// PowerSync-based implementation of AnomalyRepository.
@@ -54,7 +55,7 @@ class AnomalyRepositoryPowerSyncImpl implements AnomalyRepository {
         dateStr,
         anomaly.description,
         anomaly.isResolved ? 1 : 0,
-        anomaly.type.name,
+        anomaly.type.dbValue,
         DateTime.now().toIso8601String(),
       ],
     );
@@ -69,11 +70,7 @@ class AnomalyRepositoryPowerSyncImpl implements AnomalyRepository {
     model.description = row['description'] as String? ?? '';
     model.isResolved = (row['is_resolved'] as int? ?? 0) == 1;
 
-    final typeStr = row['type'] as String? ?? 'missingEntry';
-    model.type = AnomalyType.values.firstWhere(
-      (e) => e.name == typeStr,
-      orElse: () => AnomalyType.missingEntry,
-    );
+    model.type = AnomalyTypeDb.fromDb(row['type'] as String?);
 
     return model;
   }

@@ -48,7 +48,7 @@ serve(async (req) => {
     const { error: updateError } = await supabase
       .from("validation_requests")
       .update({ status: "expired" })
-      .in_("id", expiredIds);
+      .in("id", expiredIds);
 
     if (updateError) {
       return new Response(JSON.stringify({ error: updateError.message }), {
@@ -79,7 +79,8 @@ serve(async (req) => {
       { status: 200, headers: { "Content-Type": "application/json" } },
     );
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
+    console.error("check-expired: unexpected error:", err);
+    return new Response(JSON.stringify({ error: "Erreur interne du serveur" }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });
