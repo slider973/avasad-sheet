@@ -25,3 +25,9 @@ fastlane/test_output
 
 # Fastlane session
 .fastlane_session
+
+# App Store Connect API key + secrets (NE JAMAIS committer)
+*.p8
+.env
+.env.*
+!.env.example

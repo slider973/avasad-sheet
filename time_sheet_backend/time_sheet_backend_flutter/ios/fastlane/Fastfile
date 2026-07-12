@@ -4,11 +4,39 @@
 default_platform(:ios)
 
 platform :ios do
+  desc "Vérifie que la clé API App Store Connect authentifie (lecture seule)"
+  lane :verify_api_key do
+    app_store_connect_api_key(
+      key_id: ENV["ASC_KEY_ID"],
+      issuer_id: ENV["ASC_ISSUER_ID"],
+      key_filepath: ENV["ASC_KEY_FILEPATH"],
+      in_house: false
+    )
+    build = latest_testflight_build_number(
+      app_identifier: "com.jonathanlemaine.timeSheet"
+    )
+    UI.success("✅ Auth OK — dernier build TestFlight : #{build}")
+  end
+
   desc "Push a new beta build to TestFlight"
   lane :beta do
+    # Forcer une locale UTF-8 : sans ça, CocoaPods (Ruby) plante pendant l'archive
+    # xcodebuild et Flutter rapporte "CocoaPods is installed but broken".
+    ENV['LANG'] = 'en_US.UTF-8'
+    ENV['LC_ALL'] = 'en_US.UTF-8'
+
     # Important: setup_ci creates a temporary keychain for CI environments
     # Without this, the build could freeze and never finish
     setup_ci if ENV['CI']
+
+    # Authentification App Store Connect via clé API (.p8) — non-interactif, pas de 2FA.
+    # Valeurs lues depuis fastlane/.env (non versionné). Voir ce fichier pour la config.
+    app_store_connect_api_key(
+      key_id: ENV["ASC_KEY_ID"],
+      issuer_id: ENV["ASC_ISSUER_ID"],
+      key_filepath: ENV["ASC_KEY_FILEPATH"],
+      in_house: false
+    )
 
     # Synchronise les certificats et profils de provisioning
     # Utilisez 'match' pour gérer automatiquement vos certificats
@@ -21,18 +49,33 @@ platform :ios do
     #   readonly: true
     # )
 
-    # Incrémenter le build number automatiquement
-    increment_build_number(
-      xcodeproj: "Runner.xcodeproj"
-    )
+    # Le NOM de version vient de pubspec.yaml (Info.plist = $(FLUTTER_BUILD_NAME)).
+    # Le NUMÉRO de build est calculé automatiquement = dernier build TestFlight + 1.
+    # Robuste face aux builds poussés par d'autres sources (Codemagic, Xcode Cloud).
+    next_build = latest_testflight_build_number(
+      app_identifier: "com.jonathanlemaine.timeSheet"
+    ) + 1
+    UI.message("Numéro de build calculé pour ce TestFlight : #{next_build}")
 
-    # Build l'application Flutter
-    Dir.chdir("../..") do
-      sh("flutter", "clean")
-      sh("flutter", "pub", "get")
-      sh("flutter", "build", "ipa",
-         "--release",
-         "--export-options-plist=ios/exportOptions.plist")
+    # Build l'application Flutter.
+    # IMPORTANT : fastlane (brew) exporte GEM_HOME/GEM_PATH vers SES gems, ce qui
+    # fuit dans le sous-process flutter -> pod et casse CocoaPods ("installed but
+    # broken"). On purge l'environnement Ruby/gem le temps du build pour que `pod`
+    # utilise son propre environnement (comme dans un shell normal), puis on restaure.
+    ruby_env_keys = %w[GEM_HOME GEM_PATH RUBYLIB RUBYOPT BUNDLE_GEMFILE BUNDLE_BIN_PATH BUNDLER_VERSION]
+    saved_ruby_env = {}
+    ruby_env_keys.each { |k| saved_ruby_env[k] = ENV.delete(k) }
+    begin
+      Dir.chdir("../..") do
+        sh("flutter", "clean")
+        sh("flutter", "pub", "get")
+        sh("flutter", "build", "ipa",
+           "--release",
+           "--build-number=#{next_build}",
+           "--export-options-plist=ios/exportOptions.plist")
+      end
+    ensure
+      saved_ruby_env.each { |k, v| ENV[k] = v unless v.nil? }
     end
 
     # Upload vers TestFlight
@@ -55,14 +98,17 @@ platform :ios do
   lane :release do
     setup_ci if ENV['CI']
 
-    # Incrémenter la version pour une release
-    increment_version_number(
-      bump_type: "patch" # ou "minor" ou "major"
+    # Authentification App Store Connect via clé API (.p8) — cf. lane :beta / fastlane/.env
+    app_store_connect_api_key(
+      key_id: ENV["ASC_KEY_ID"],
+      issuer_id: ENV["ASC_ISSUER_ID"],
+      key_filepath: ENV["ASC_KEY_FILEPATH"],
+      in_house: false
     )
 
-    increment_build_number(
-      xcodeproj: "Runner.xcodeproj"
-    )
+    # NOTE: version + build proviennent de pubspec.yaml (cf. lane :beta).
+    # Pour une release, mettre à jour `version: X.Y.Z+N` dans pubspec.yaml
+    # avant de lancer cette lane.
 
     # Build l'application Flutter
     Dir.chdir("../..") do
