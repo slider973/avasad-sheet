@@ -78,7 +78,24 @@ import '../features/expense/domain/use_cases/calculate_mileage_usecase.dart';
 import '../features/expense/domain/use_cases/get_monthly_report_usecase.dart';
 import '../features/expense/domain/use_cases/generate_expense_pdf_usecase.dart';
 import '../features/expense/presentation/bloc/expense_list/expense_list_bloc.dart';
+import '../features/manager/data/data_sources/manager_data_source.dart';
+import '../features/manager/data/data_sources/manager_powersync_data_source.dart';
+import '../features/manager/data/repositories/manager_repository_impl.dart';
+import '../features/manager/domain/repositories/manager_repository.dart';
+import '../features/manager/domain/use_cases/approve_expense_usecase.dart';
+import '../features/manager/domain/use_cases/get_employee_timesheet_usecase.dart';
+import '../features/manager/domain/use_cases/get_pending_expenses_usecase.dart';
+import '../features/manager/domain/use_cases/get_pending_validations_usecase.dart';
+import '../features/manager/domain/use_cases/get_team_anomalies_usecase.dart';
+import '../features/manager/domain/use_cases/get_team_overview_usecase.dart';
+import '../features/manager/domain/use_cases/get_user_role_usecase.dart';
+import '../features/manager/domain/use_cases/reject_expense_usecase.dart';
+import '../features/manager/domain/use_cases/resolve_team_anomaly_usecase.dart';
 import '../features/manager/presentation/bloc/manager_dashboard_bloc.dart';
+import '../features/manager/presentation/bloc/pending_approvals/pending_approvals_bloc.dart';
+import '../features/manager/presentation/bloc/team_anomalies/team_anomalies_bloc.dart';
+import '../features/manager/presentation/bloc/team_timesheet/team_timesheet_bloc.dart';
+import '../features/validation/presentation/bloc/validation_menu/validation_menu_bloc.dart';
 final getIt = GetIt.instance;
 
 Future<void> setup() async {
@@ -410,7 +427,86 @@ Future<void> setup() async {
   );
 
   // ============ MANAGER DASHBOARD ============
+
+  // Data sources
+  getIt.registerLazySingleton<ManagerDataSource>(
+    () => ManagerPowerSyncDataSource(db: db),
+  );
+
+  // Repositories
+  getIt.registerLazySingleton<ManagerRepository>(
+    () => ManagerRepositoryImpl(dataSource: getIt<ManagerDataSource>()),
+  );
+
+  // Use cases
+  getIt.registerLazySingleton<GetTeamOverviewUseCase>(
+    () => GetTeamOverviewUseCase(repository: getIt<ManagerRepository>()),
+  );
+
+  getIt.registerLazySingleton<GetPendingValidationsUseCase>(
+    () => GetPendingValidationsUseCase(repository: getIt<ManagerRepository>()),
+  );
+
+  getIt.registerLazySingleton<GetPendingExpensesUseCase>(
+    () => GetPendingExpensesUseCase(repository: getIt<ManagerRepository>()),
+  );
+
+  getIt.registerLazySingleton<ApproveExpenseUseCase>(
+    () => ApproveExpenseUseCase(repository: getIt<ManagerRepository>()),
+  );
+
+  getIt.registerLazySingleton<RejectExpenseUseCase>(
+    () => RejectExpenseUseCase(repository: getIt<ManagerRepository>()),
+  );
+
+  getIt.registerLazySingleton<GetTeamAnomaliesUseCase>(
+    () => GetTeamAnomaliesUseCase(repository: getIt<ManagerRepository>()),
+  );
+
+  getIt.registerLazySingleton<ResolveTeamAnomalyUseCase>(
+    () => ResolveTeamAnomalyUseCase(repository: getIt<ManagerRepository>()),
+  );
+
+  getIt.registerLazySingleton<GetEmployeeTimesheetUseCase>(
+    () => GetEmployeeTimesheetUseCase(repository: getIt<ManagerRepository>()),
+  );
+
+  getIt.registerLazySingleton<GetUserRoleUseCase>(
+    () => GetUserRoleUseCase(repository: getIt<ManagerRepository>()),
+  );
+
+  // BLoCs
   getIt.registerFactory<ManagerDashboardBloc>(
-    () => ManagerDashboardBloc(),
+    () => ManagerDashboardBloc(
+      getTeamOverviewUseCase: getIt<GetTeamOverviewUseCase>(),
+    ),
+  );
+
+  getIt.registerFactory<PendingApprovalsBloc>(
+    () => PendingApprovalsBloc(
+      getPendingValidationsUseCase: getIt<GetPendingValidationsUseCase>(),
+      getPendingExpensesUseCase: getIt<GetPendingExpensesUseCase>(),
+      approveExpenseUseCase: getIt<ApproveExpenseUseCase>(),
+      rejectExpenseUseCase: getIt<RejectExpenseUseCase>(),
+    ),
+  );
+
+  getIt.registerFactory<TeamAnomaliesBloc>(
+    () => TeamAnomaliesBloc(
+      getTeamAnomaliesUseCase: getIt<GetTeamAnomaliesUseCase>(),
+      resolveTeamAnomalyUseCase: getIt<ResolveTeamAnomalyUseCase>(),
+    ),
+  );
+
+  getIt.registerFactory<TeamTimesheetBloc>(
+    () => TeamTimesheetBloc(
+      getEmployeeTimesheetUseCase: getIt<GetEmployeeTimesheetUseCase>(),
+    ),
+  );
+
+  getIt.registerFactory<ValidationMenuBloc>(
+    () => ValidationMenuBloc(
+      getUserRoleUseCase: getIt<GetUserRoleUseCase>(),
+    ),
   );
 }

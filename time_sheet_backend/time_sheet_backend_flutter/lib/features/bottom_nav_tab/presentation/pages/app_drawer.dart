@@ -154,7 +154,7 @@ class AppDrawer extends StatelessWidget {
                         context,
                         MaterialPageRoute(
                           builder: (context) => BlocProvider(
-                            create: (_) => ManagerDashboardBloc(),
+                            create: (_) => di.getIt<ManagerDashboardBloc>(),
                             child: const ManagerDashboardPage(),
                           ),
                         ),

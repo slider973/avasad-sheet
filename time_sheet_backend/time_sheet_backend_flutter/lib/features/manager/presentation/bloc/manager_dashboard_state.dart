@@ -1,29 +1,5 @@
 part of 'manager_dashboard_bloc.dart';
 
-class EmployeeStatus {
-  final String id;
-  final String firstName;
-  final String lastName;
-  final String email;
-  final bool isPresentToday;
-  final String? lastClockIn;
-  final bool hasAbsence;
-  final String? absenceType;
-
-  const EmployeeStatus({
-    required this.id,
-    required this.firstName,
-    required this.lastName,
-    required this.email,
-    this.isPresentToday = false,
-    this.lastClockIn,
-    this.hasAbsence = false,
-    this.absenceType,
-  });
-
-  String get fullName => '$firstName $lastName';
-}
-
 abstract class ManagerDashboardState extends Equatable {
   const ManagerDashboardState();
 
@@ -36,7 +12,7 @@ class ManagerDashboardInitial extends ManagerDashboardState {}
 class ManagerDashboardLoading extends ManagerDashboardState {}
 
 class ManagerDashboardLoaded extends ManagerDashboardState {
-  final List<EmployeeStatus> employees;
+  final List<TeamMemberStatus> employees;
   final int pendingValidations;
   final int pendingExpenses;
   final int teamAnomalies;

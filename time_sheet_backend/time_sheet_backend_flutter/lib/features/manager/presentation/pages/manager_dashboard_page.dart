@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:time_sheet/services/injection_container.dart' as di;
 
 import '../bloc/manager_dashboard_bloc.dart';
+import '../bloc/pending_approvals/pending_approvals_bloc.dart';
+import '../bloc/team_anomalies/team_anomalies_bloc.dart';
+import '../bloc/team_timesheet/team_timesheet_bloc.dart';
 import '../widgets/employee_status_card.dart';
 import '../widgets/team_overview_chart.dart';
 import 'team_timesheet_page.dart';
@@ -160,8 +164,8 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
                         onTap: () {
                           Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: (_) => BlocProvider.value(
-                                value: context.read<ManagerDashboardBloc>(),
+                              builder: (_) => BlocProvider(
+                                create: (_) => di.getIt<TeamTimesheetBloc>(),
                                 child: TeamTimesheetPage(employee: employee),
                               ),
                             ),
@@ -190,8 +194,10 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
             onTap: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (_) => BlocProvider.value(
-                    value: context.read<ManagerDashboardBloc>(),
+                  builder: (_) => BlocProvider(
+                    create: (_) => di.getIt<PendingApprovalsBloc>()
+                      ..add(LoadPendingValidations())
+                      ..add(LoadPendingExpenses()),
                     child: const PendingApprovalsPage(),
                   ),
                 ),
@@ -209,8 +215,10 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
             onTap: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (_) => BlocProvider.value(
-                    value: context.read<ManagerDashboardBloc>(),
+                  builder: (_) => BlocProvider(
+                    create: (_) => di.getIt<PendingApprovalsBloc>()
+                      ..add(LoadPendingValidations())
+                      ..add(LoadPendingExpenses()),
                     child: const PendingApprovalsPage(initialTab: 1),
                   ),
                 ),
@@ -228,8 +236,9 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
             onTap: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (_) => BlocProvider.value(
-                    value: context.read<ManagerDashboardBloc>(),
+                  builder: (_) => BlocProvider(
+                    create: (_) => di.getIt<TeamAnomaliesBloc>()
+                      ..add(LoadTeamAnomalies()),
                     child: const TeamAnomaliesPage(),
                   ),
                 ),

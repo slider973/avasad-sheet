@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:powersync/powersync.dart' hide Column;
 
-import '../../../../core/database/powersync_database.dart';
-import '../bloc/manager_dashboard_bloc.dart';
+import '../../domain/entities/employee_timesheet_entry.dart';
+import '../../domain/entities/team_member_status.dart';
+import '../bloc/team_timesheet/team_timesheet_bloc.dart';
 
 class TeamTimesheetPage extends StatefulWidget {
-  final EmployeeStatus employee;
+  final TeamMemberStatus employee;
 
   const TeamTimesheetPage({super.key, required this.employee});
 
@@ -16,8 +17,6 @@ class TeamTimesheetPage extends StatefulWidget {
 
 class _TeamTimesheetPageState extends State<TeamTimesheetPage> {
   late DateTime _selectedMonth;
-  List<Map<String, dynamic>> _entries = [];
-  bool _isLoading = true;
 
   @override
   void initState() {
@@ -26,35 +25,18 @@ class _TeamTimesheetPageState extends State<TeamTimesheetPage> {
     _loadEntries();
   }
 
-  Future<void> _loadEntries() async {
-    setState(() => _isLoading = true);
-
-    try {
-      final db = PowerSyncDatabaseManager.database;
-      final startDate = DateFormat('yyyy-MM-dd').format(_selectedMonth);
-      final endDate = DateFormat('yyyy-MM-dd').format(
-        DateTime(_selectedMonth.year, _selectedMonth.month + 1, 0),
-      );
-
-      final rows = await db.getAll(
-        '''SELECT * FROM timesheet_entries
-           WHERE user_id = ? AND day_date >= ? AND day_date <= ?
-           ORDER BY day_date ASC''',
-        [widget.employee.id, startDate, endDate],
-      );
-
-      setState(() {
-        _entries = rows;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
-    }
+  void _loadEntries() {
+    context.read<TeamTimesheetBloc>().add(LoadEmployeeTimesheet(
+          employeeId: widget.employee.id,
+          month: _selectedMonth.month,
+          year: _selectedMonth.year,
+        ));
   }
 
   void _changeMonth(int delta) {
     setState(() {
-      _selectedMonth = DateTime(_selectedMonth.year, _selectedMonth.month + delta);
+      _selectedMonth =
+          DateTime(_selectedMonth.year, _selectedMonth.month + delta);
     });
     _loadEntries();
   }
@@ -97,46 +79,48 @@ class _TeamTimesheetPageState extends State<TeamTimesheetPage> {
 
           // Entries list
           Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _entries.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.event_note, size: 48, color: Colors.grey.shade400),
-                            const SizedBox(height: 8),
-                            const Text(
-                              'Aucun pointage ce mois',
-                              style: TextStyle(color: Colors.grey),
-                            ),
-                          ],
+            child: BlocBuilder<TeamTimesheetBloc, TeamTimesheetState>(
+              builder: (context, state) {
+                if (state.isLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (state.entries.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.event_note,
+                            size: 48, color: Colors.grey.shade400),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Aucun pointage ce mois',
+                          style: TextStyle(color: Colors.grey),
                         ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _entries.length,
-                        itemBuilder: (context, index) {
-                          return _buildEntryCard(_entries[index]);
-                        },
-                      ),
+                      ],
+                    ),
+                  );
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: state.entries.length,
+                  itemBuilder: (context, index) {
+                    return _buildEntryCard(state.entries[index]);
+                  },
+                );
+              },
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildEntryCard(Map<String, dynamic> entry) {
-    final dayDate = entry['day_date'] as String? ?? '';
-    final startMorning = entry['start_morning'] as String? ?? '';
-    final endMorning = entry['end_morning'] as String? ?? '';
-    final startAfternoon = entry['start_afternoon'] as String? ?? '';
-    final endAfternoon = entry['end_afternoon'] as String? ?? '';
-    final absenceReason = entry['absence_reason'] as String? ?? '';
-    final isWeekend = (entry['is_weekend_day'] as int?) == 1;
-
-    final hasEntry = startMorning.isNotEmpty;
-    final hasAbsence = absenceReason.isNotEmpty;
+  Widget _buildEntryCard(EmployeeTimesheetEntry entry) {
+    final hasEntry = entry.startMorning.isNotEmpty;
+    final hasAbsence = entry.absenceReason.isNotEmpty;
+    final isWeekend = entry.isWeekendDay;
 
     Color cardColor;
     if (hasAbsence) {
@@ -163,7 +147,7 @@ class _TeamTimesheetPageState extends State<TeamTimesheetPage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  _formatDate(dayDate),
+                  _formatDate(entry.dayDate),
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
@@ -171,13 +155,14 @@ class _TeamTimesheetPageState extends State<TeamTimesheetPage> {
                 ),
                 if (hasAbsence)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
                       color: Colors.orange.shade100,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      absenceReason,
+                      entry.absenceReason,
                       style: TextStyle(
                         fontSize: 11,
                         color: Colors.orange.shade800,
@@ -187,7 +172,8 @@ class _TeamTimesheetPageState extends State<TeamTimesheetPage> {
                   ),
                 if (isWeekend && !hasAbsence)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
                       color: Colors.blue.shade100,
                       borderRadius: BorderRadius.circular(12),
@@ -207,9 +193,15 @@ class _TeamTimesheetPageState extends State<TeamTimesheetPage> {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  _TimeBlock(label: 'Matin', start: startMorning, end: endMorning),
+                  _TimeBlock(
+                      label: 'Matin',
+                      start: entry.startMorning,
+                      end: entry.endMorning),
                   const SizedBox(width: 16),
-                  _TimeBlock(label: 'Après-midi', start: startAfternoon, end: endAfternoon),
+                  _TimeBlock(
+                      label: 'Après-midi',
+                      start: entry.startAfternoon,
+                      end: entry.endAfternoon),
                 ],
               ),
             ],

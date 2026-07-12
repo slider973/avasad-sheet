@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../bloc/manager_dashboard_bloc.dart';
+import '../../domain/entities/team_member_status.dart';
 
 class EmployeeStatusCard extends StatelessWidget {
-  final EmployeeStatus employee;
+  final TeamMemberStatus employee;
   final VoidCallback? onTap;
 
   const EmployeeStatusCard({

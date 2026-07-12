@@ -1,68 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../core/database/powersync_database.dart';
-import '../../../../core/services/supabase/supabase_service.dart';
+import '../../domain/entities/team_anomaly.dart';
+import '../bloc/team_anomalies/team_anomalies_bloc.dart';
 
-class TeamAnomaliesPage extends StatefulWidget {
+class TeamAnomaliesPage extends StatelessWidget {
   const TeamAnomaliesPage({super.key});
-
-  @override
-  State<TeamAnomaliesPage> createState() => _TeamAnomaliesPageState();
-}
-
-class _TeamAnomaliesPageState extends State<TeamAnomaliesPage> {
-  List<Map<String, dynamic>> _anomalies = [];
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadAnomalies();
-  }
-
-  Future<void> _loadAnomalies() async {
-    setState(() => _isLoading = true);
-
-    try {
-      final db = PowerSyncDatabaseManager.database;
-      final managerId = SupabaseService.instance.currentUserId ?? '';
-
-      final rows = await db.getAll(
-        '''SELECT a.*, p.first_name, p.last_name
-           FROM anomalies a
-           JOIN manager_employees me ON me.employee_id = a.user_id
-           JOIN profiles p ON p.id = a.user_id
-           WHERE me.manager_id = ? AND a.is_resolved = 0
-           ORDER BY a.detected_date DESC''',
-        [managerId],
-      );
-
-      setState(() {
-        _anomalies = rows;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _resolveAnomaly(String anomalyId) async {
-    try {
-      final db = PowerSyncDatabaseManager.database;
-      await db.execute(
-        'UPDATE anomalies SET is_resolved = 1 WHERE id = ?',
-        [anomalyId],
-      );
-      _loadAnomalies();
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: $e')),
-        );
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -72,42 +16,53 @@ class _TeamAnomaliesPageState extends State<TeamAnomaliesPage> {
         backgroundColor: Colors.teal,
         foregroundColor: Colors.white,
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _anomalies.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.check_circle, size: 64, color: Colors.green.shade300),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Aucune anomalie non résolue',
-                        style: TextStyle(fontSize: 16, color: Colors.grey),
-                      ),
-                    ],
+      body: BlocConsumer<TeamAnomaliesBloc, TeamAnomaliesState>(
+        listenWhen: (previous, current) => current.actionError != null,
+        listener: (context, state) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Erreur: ${state.actionError}')),
+          );
+        },
+        builder: (context, state) {
+          if (state.isLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (state.anomalies.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.check_circle,
+                      size: 64, color: Colors.green.shade300),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Aucune anomalie non résolue',
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
                   ),
-                )
-              : RefreshIndicator(
-                  onRefresh: () async => _loadAnomalies(),
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _anomalies.length,
-                    itemBuilder: (context, index) {
-                      return _buildAnomalyCard(_anomalies[index]);
-                    },
-                  ),
-                ),
+                ],
+              ),
+            );
+          }
+
+          return RefreshIndicator(
+            onRefresh: () async =>
+                context.read<TeamAnomaliesBloc>().add(LoadTeamAnomalies()),
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: state.anomalies.length,
+              itemBuilder: (context, index) {
+                return _buildAnomalyCard(context, state.anomalies[index]);
+              },
+            ),
+          );
+        },
+      ),
     );
   }
 
-  Widget _buildAnomalyCard(Map<String, dynamic> anomaly) {
-    final firstName = anomaly['first_name'] as String? ?? '';
-    final lastName = anomaly['last_name'] as String? ?? '';
-    final type = anomaly['type'] as String? ?? '';
-    final description = anomaly['description'] as String? ?? '';
-    final detectedDate = anomaly['detected_date'] as String? ?? '';
-    final anomalyId = anomaly['id'] as String;
+  Widget _buildAnomalyCard(BuildContext context, TeamAnomaly anomaly) {
+    final type = anomaly.typeCode;
 
     return Card(
       elevation: 1,
@@ -135,7 +90,7 @@ class _TeamAnomaliesPageState extends State<TeamAnomaliesPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '$firstName $lastName',
+                        '${anomaly.employeeFirstName} ${anomaly.employeeLastName}',
                         style: const TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 14,
@@ -153,7 +108,7 @@ class _TeamAnomaliesPageState extends State<TeamAnomaliesPage> {
                   ),
                 ),
                 Text(
-                  _formatDate(detectedDate),
+                  _formatDate(anomaly.detectedDate),
                   style: TextStyle(
                     fontSize: 11,
                     color: Colors.grey.shade500,
@@ -161,10 +116,10 @@ class _TeamAnomaliesPageState extends State<TeamAnomaliesPage> {
                 ),
               ],
             ),
-            if (description.isNotEmpty) ...[
+            if (anomaly.description.isNotEmpty) ...[
               const SizedBox(height: 8),
               Text(
-                description,
+                anomaly.description,
                 style: TextStyle(
                   fontSize: 13,
                   color: Colors.grey.shade700,
@@ -175,7 +130,9 @@ class _TeamAnomaliesPageState extends State<TeamAnomaliesPage> {
             Align(
               alignment: Alignment.centerRight,
               child: TextButton.icon(
-                onPressed: () => _resolveAnomaly(anomalyId),
+                onPressed: () => context
+                    .read<TeamAnomaliesBloc>()
+                    .add(ResolveTeamAnomalyRequested(anomaly.id)),
                 icon: const Icon(Icons.check, size: 16),
                 label: const Text('Résoudre'),
                 style: TextButton.styleFrom(
