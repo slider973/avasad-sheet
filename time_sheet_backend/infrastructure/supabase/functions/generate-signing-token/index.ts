@@ -115,8 +115,9 @@ serve(async (req) => {
       .single();
 
     if (insertError || !newToken) {
+      console.error("generate-signing-token: insert failed:", insertError?.message);
       return new Response(
-        JSON.stringify({ error: insertError?.message ?? "Erreur lors de la création du token" }),
+        JSON.stringify({ error: "Erreur lors de la création du token" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
@@ -137,8 +138,9 @@ serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (err) {
+    console.error("generate-signing-token: unexpected error:", err);
     return new Response(
-      JSON.stringify({ error: err.message }),
+      JSON.stringify({ error: "Erreur interne du serveur" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }

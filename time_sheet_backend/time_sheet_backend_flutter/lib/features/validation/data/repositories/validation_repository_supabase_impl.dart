@@ -75,28 +75,10 @@ class ValidationRepositorySupabaseImpl implements ValidationRepository {
         ],
       );
 
-      // Ensure manager_employees relationship exists (needed for PowerSync sync)
-      try {
-        await _supabase.from('manager_employees').upsert(
-          {'manager_id': managerId, 'employee_id': employeeId},
-          onConflict: 'manager_id,employee_id',
-        );
-      } catch (e) {
-        // Non-critical: fallback to local insert if Supabase fails
-        logger.w('Could not upsert manager_employees via Supabase: $e');
-        try {
-          final existing = await _db.getOptional(
-            'SELECT id FROM manager_employees WHERE manager_id = ? AND employee_id = ?',
-            [managerId, employeeId],
-          );
-          if (existing == null) {
-            await _db.execute(
-              'INSERT INTO manager_employees (id, manager_id, employee_id) VALUES (uuid(), ?, ?)',
-              [managerId, employeeId],
-            );
-          }
-        } catch (_) {}
-      }
+      // NOTE: la relation manager_employees est créée côté serveur par le
+      // trigger `link_manager_on_validation` (migration 00015) à l'insertion
+      // de la validation. L'upsert client (bloqué par RLS pour un employé)
+      // a été supprimé ; la relation redescend ensuite via PowerSync.
 
       // Create notification for manager
       await _db.execute(
