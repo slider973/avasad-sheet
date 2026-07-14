@@ -1,0 +1,628 @@
+# ============================================================================
+# Compose PROD tel que déployé via Dokploy (serveur 72.61.195.143, stack
+# timesheetsupabase-supabasestack-ggqzyc). Copie de référence du fichier
+# /etc/dokploy/compose/timesheetsupabase-supabasestack-ggqzyc/code/docker-compose.yml
+# mise à jour le 2026-07-14 (ajout du service `functions` + route Kong
+# /functions/v1 dans le heredoc kong-init).
+#
+# ⚠️ Dokploy stocke sa propre version du compose : un « Redeploy » depuis
+# l'UI Dokploy ÉCRASERA le fichier serveur. Si le service `functions` ou la
+# route functions-v1 disparaît, recoller le contenu de CE fichier dans l'UI
+# Dokploy (ou sur le serveur) puis `docker compose -p
+# timesheetsupabase-supabasestack-ggqzyc up -d functions kong-init` et
+# `docker restart <kong>` + `docker restart dokploy-traefik`.
+#
+# Les sources des edge functions sont sur le serveur dans
+# /opt/timesheet/functions (rsync depuis infrastructure/supabase/functions/).
+# Cron serveur : /opt/timesheet/cron-check-expired.sh (03:17 quotidien).
+# Aucun secret ici : tout passe par le .env Dokploy (non versionné).
+# ============================================================================
+services:
+  db:
+    image: supabase/postgres:15.8.1.085
+    restart: unless-stopped
+    networks:
+      - supabase-net
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_DB: ${POSTGRES_DB}
+      JWT_SECRET: ${JWT_SECRET}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U postgres -d supabase
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  auth:
+    image: supabase/gotrue:v2.186.0
+    restart: unless-stopped
+    networks:
+      - supabase-net
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./templates:/templates:ro
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: 9999
+      API_EXTERNAL_URL: ${API_EXTERNAL_URL}
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?search_path=auth
+      GOTRUE_SITE_URL: ${SITE_URL}
+      GOTRUE_URI_ALLOW_LIST: ""
+      GOTRUE_DISABLE_SIGNUP: "false"
+      GOTRUE_JWT_ADMIN_ROLES: service_role
+      GOTRUE_JWT_AUD: authenticated
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_JWT_EXP: 3600
+      GOTRUE_JWT_SECRET: ${JWT_SECRET}
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
+      GOTRUE_MAILER_AUTOCONFIRM: ${GOTRUE_MAILER_AUTOCONFIRM}
+      GOTRUE_SMTP_HOST: ${GOTRUE_SMTP_HOST}
+      GOTRUE_SMTP_PORT: ${GOTRUE_SMTP_PORT}
+      GOTRUE_SMTP_USER: ${GOTRUE_SMTP_USER}
+      GOTRUE_SMTP_PASS: ${GOTRUE_SMTP_PASS}
+      GOTRUE_SMTP_SENDER_NAME: ${GOTRUE_SMTP_SENDER_NAME}
+      GOTRUE_SMTP_ADMIN_EMAIL: ${GOTRUE_SMTP_ADMIN_EMAIL}
+      GOTRUE_MAILER_URLPATHS_RECOVERY: ${GOTRUE_MAILER_URLPATHS_RECOVERY}
+      GOTRUE_MAILER_URLPATHS_INVITE: ${GOTRUE_MAILER_URLPATHS_INVITE}
+      GOTRUE_MAILER_URLPATHS_CONFIRMATION: ${GOTRUE_MAILER_URLPATHS_CONFIRMATION}
+      GOTRUE_MAILER_URLPATHS_EMAIL_CHANGE: ${GOTRUE_MAILER_URLPATHS_EMAIL_CHANGE}
+      GOTRUE_MAILER_TEMPLATES_RECOVERY: ${GOTRUE_MAILER_TEMPLATES_RECOVERY}
+      GOTRUE_MAILER_TEMPLATES_INVITE: ${GOTRUE_MAILER_TEMPLATES_INVITE}
+  rest:
+    image: postgrest/postgrest:v14.5
+    restart: unless-stopped
+    networks:
+      - supabase-net
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGRST_DB_URI: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      PGRST_DB_SCHEMAS: public,storage,graphql_public
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: ${JWT_SECRET}
+      PGRST_DB_USE_LEGACY_GUCS: "false"
+  realtime:
+    image: supabase/realtime:v2.34.47
+    restart: unless-stopped
+    networks:
+      - supabase-net
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: 4000
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: supabase_admin
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_NAME: ${POSTGRES_DB}
+      DB_AFTER_CONNECT_QUERY: SET search_path TO _realtime
+      DB_ENC_KEY: supabaserealtime
+      API_JWT_SECRET: ${JWT_SECRET}
+      APP_NAME: realtime
+      SEED_SELF_HOST: "true"
+      RUN_JANITOR: "true"
+      SECRET_KEY_BASE: UpNVntn3cDxHJpq99YMc1T1AQgQpc8kfYTuRgBiYa15BLrx8etQoXz3gZv1/u2oq
+      ERL_AFLAGS: -proto_dist inet_tcp
+      DNS_NODES: "''"
+      REPLICATION_MODE: RLS
+      REPLICATION_POLL_INTERVAL: 100
+      SECURE_CHANNELS: "true"
+      SLOT_NAME: supabase_realtime_rls
+      TEMPORARY_SLOT: "true"
+      RLIMIT_NOFILE: "1024"
+  storage:
+    image: supabase/storage-api:v1.37.8
+    restart: unless-stopped
+    networks:
+      - supabase-net
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ANON_KEY: ${ANON_KEY}
+      SERVICE_KEY: ${SERVICE_ROLE_KEY}
+      POSTGREST_URL: http://rest:3000
+      PGRST_JWT_SECRET: ${JWT_SECRET}
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      FILE_SIZE_LIMIT: 52428800
+      STORAGE_BACKEND: file
+      FILE_STORAGE_BACKEND_PATH: /var/lib/storage
+      TENANT_ID: stub
+      REGION: stub
+      GLOBAL_S3_BUCKET: stub
+      ENABLE_IMAGE_TRANSFORMATION: "true"
+      IMGPROXY_URL: http://imgproxy:5001
+    volumes:
+      - storage-data:/var/lib/storage
+  imgproxy:
+    image: darthsim/imgproxy:v3.30.1
+    restart: unless-stopped
+    networks:
+      - supabase-net
+    environment:
+      IMGPROXY_BIND: :5001
+      IMGPROXY_LOCAL_FILESYSTEM_ROOT: /
+      IMGPROXY_USE_ETAG: "true"
+      IMGPROXY_ENABLE_WEBP_DETECTION: "true"
+  meta:
+    image: supabase/postgres-meta:v0.95.2
+    restart: unless-stopped
+    networks:
+      - supabase-net
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PG_META_PORT: 8080
+      PG_META_DB_HOST: db
+      PG_META_DB_PORT: 5432
+      PG_META_DB_NAME: ${POSTGRES_DB}
+      PG_META_DB_USER: ${POSTGRES_USER}
+      PG_META_DB_PASSWORD: ${POSTGRES_PASSWORD}
+  studio:
+    image: supabase/studio:2026.02.16-sha-26c615c
+    restart: unless-stopped
+    networks:
+      - supabase-net
+      - dokploy-network
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      STUDIO_PG_META_URL: http://meta:8080
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      DEFAULT_ORGANIZATION_NAME: TimeSheet
+      DEFAULT_PROJECT_NAME: Time Sheet
+      SUPABASE_URL: http://kong:8000
+      SUPABASE_PUBLIC_URL: ${API_EXTERNAL_URL}
+      SUPABASE_ANON_KEY: ${ANON_KEY}
+      SUPABASE_SERVICE_KEY: ${SERVICE_ROLE_KEY}
+      HOSTNAME: 0.0.0.0
+    labels:
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-22-web.rule=Host(`studio.timesheet.staticflow.ch`)
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-22-web.entrypoints=web
+      - traefik.http.services.timesheetsupabase-supabasestack-ggqzyc-22-web.loadbalancer.server.port=3000
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-22-web.service=timesheetsupabase-supabasestack-ggqzyc-22-web
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-22-web.middlewares=redirect-to-https@file
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-22-websecure.rule=Host(`studio.timesheet.staticflow.ch`)
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-22-websecure.entrypoints=websecure
+      - traefik.http.services.timesheetsupabase-supabasestack-ggqzyc-22-websecure.loadbalancer.server.port=3000
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-22-websecure.service=timesheetsupabase-supabasestack-ggqzyc-22-websecure
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-22-websecure.tls.certresolver=letsencrypt
+      - traefik.docker.network=dokploy-network
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-22-web.rule=Host(`studio.timesheet.staticflow.ch`)
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-22-web.entrypoints=web
+      - traefik.http.services.timesheetsupabase-supabasestack-ggqzyc-22-web.loadbalancer.server.port=3000
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-22-web.service=timesheetsupabase-supabasestack-ggqzyc-22-web
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-22-web.middlewares=redirect-to-https@file
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-22-websecure.rule=Host(`studio.timesheet.staticflow.ch`)
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-22-websecure.entrypoints=websecure
+      - traefik.http.services.timesheetsupabase-supabasestack-ggqzyc-22-websecure.loadbalancer.server.port=3000
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-22-websecure.service=timesheetsupabase-supabasestack-ggqzyc-22-websecure
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-22-websecure.tls.certresolver=letsencrypt
+      - traefik.enable=true
+  functions:
+    image: supabase/edge-runtime:v1.65.3
+    restart: unless-stopped
+    networks:
+      - supabase-net
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
+      SUPABASE_URL: http://kong:8000
+      SUPABASE_ANON_KEY: ${ANON_KEY}
+      SUPABASE_SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
+      SUPABASE_DB_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      VERIFY_JWT: "true"
+    volumes:
+      - /opt/timesheet/functions:/home/deno/functions:ro
+    command:
+      - start
+      - --main-service
+      - /home/deno/functions/main
+  kong:
+    image: kong:2.8.1
+    restart: unless-stopped
+    networks:
+      - supabase-net
+      - dokploy-network
+    depends_on:
+      kong-init:
+        condition: service_completed_successfully
+    environment:
+      KONG_DATABASE: off
+      KONG_DECLARATIVE_CONFIG: /var/lib/kong/kong.yml
+      KONG_DNS_ORDER: LAST,A,CNAME
+      KONG_PLUGINS: request-transformer,cors,key-auth,acl,basic-auth
+      KONG_NGINX_PROXY_PROXY_BUFFER_SIZE: 160k
+      KONG_NGINX_PROXY_PROXY_BUFFERS: 64 160k
+      SUPABASE_ANON_KEY: ${ANON_KEY}
+      SUPABASE_SERVICE_KEY: ${SERVICE_ROLE_KEY}
+      HOSTNAME: 0.0.0.0
+    volumes:
+      - kong-config:/var/lib/kong
+    labels:
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-21-web.rule=Host(`supabase.timesheet.staticflow.ch`)
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-21-web.entrypoints=web
+      - traefik.http.services.timesheetsupabase-supabasestack-ggqzyc-21-web.loadbalancer.server.port=8000
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-21-web.service=timesheetsupabase-supabasestack-ggqzyc-21-web
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-21-web.middlewares=redirect-to-https@file
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-21-websecure.rule=Host(`supabase.timesheet.staticflow.ch`)
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-21-websecure.entrypoints=websecure
+      - traefik.http.services.timesheetsupabase-supabasestack-ggqzyc-21-websecure.loadbalancer.server.port=8000
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-21-websecure.service=timesheetsupabase-supabasestack-ggqzyc-21-websecure
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-21-websecure.tls.certresolver=letsencrypt
+      - traefik.docker.network=dokploy-network
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-21-web.rule=Host(`supabase.timesheet.staticflow.ch`)
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-21-web.entrypoints=web
+      - traefik.http.services.timesheetsupabase-supabasestack-ggqzyc-21-web.loadbalancer.server.port=8000
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-21-web.service=timesheetsupabase-supabasestack-ggqzyc-21-web
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-21-web.middlewares=redirect-to-https@file
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-21-websecure.rule=Host(`supabase.timesheet.staticflow.ch`)
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-21-websecure.entrypoints=websecure
+      - traefik.http.services.timesheetsupabase-supabasestack-ggqzyc-21-websecure.loadbalancer.server.port=8000
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-21-websecure.service=timesheetsupabase-supabasestack-ggqzyc-21-websecure
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-21-websecure.tls.certresolver=letsencrypt
+      - traefik.enable=true
+  kong-init:
+    image: alpine:3.19
+    restart: no
+    networks:
+      - supabase-net
+    environment:
+      ANON_KEY: ${ANON_KEY}
+      SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        cat > /kong-config/kong.yml << 'KONGEOF'
+        _format_version: "1.1"
+        consumers:
+          - username: anon
+            keyauth_credentials:
+              - key: ANON_KEY_PLACEHOLDER
+          - username: service_role
+            keyauth_credentials:
+              - key: SERVICE_ROLE_KEY_PLACEHOLDER
+        acls:
+          - consumer: anon
+            group: anon
+          - consumer: service_role
+            group: admin
+        services:
+          - name: auth-v1-open
+            url: http://auth:9999/verify
+            routes:
+              - name: auth-v1-open
+                strip_path: true
+                paths:
+                  - /auth/v1/verify
+            plugins:
+              - name: cors
+          - name: auth-v1-open-callback
+            url: http://auth:9999/callback
+            routes:
+              - name: auth-v1-open-callback
+                strip_path: true
+                paths:
+                  - /auth/v1/callback
+            plugins:
+              - name: cors
+          - name: auth-v1-open-authorize
+            url: http://auth:9999/authorize
+            routes:
+              - name: auth-v1-open-authorize
+                strip_path: true
+                paths:
+                  - /auth/v1/authorize
+            plugins:
+              - name: cors
+          - name: auth-v1
+            url: http://auth:9999/
+            routes:
+              - name: auth-v1
+                strip_path: true
+                paths:
+                  - /auth/v1/
+            plugins:
+              - name: cors
+              - name: key-auth
+                config:
+                  hide_credentials: false
+              - name: acl
+                config:
+                  hide_groups_header: true
+                  allow:
+                    - admin
+                    - anon
+          - name: rest-v1
+            url: http://rest:3000/
+            routes:
+              - name: rest-v1
+                strip_path: true
+                paths:
+                  - /rest/v1/
+            plugins:
+              - name: cors
+              - name: key-auth
+                config:
+                  hide_credentials: false
+              - name: acl
+                config:
+                  hide_groups_header: true
+                  allow:
+                    - admin
+                    - anon
+          - name: realtime-v1-ws
+            url: http://realtime:4000/socket/
+            routes:
+              - name: realtime-v1-ws
+                strip_path: true
+                paths:
+                  - /realtime/v1/
+            plugins:
+              - name: cors
+              - name: key-auth
+                config:
+                  hide_credentials: false
+              - name: acl
+                config:
+                  hide_groups_header: true
+                  allow:
+                    - admin
+                    - anon
+          - name: storage-v1
+            url: http://storage:5000/
+            routes:
+              - name: storage-v1
+                strip_path: true
+                paths:
+                  - /storage/v1/
+            plugins:
+              - name: cors
+              - name: key-auth
+                config:
+                  hide_credentials: false
+              - name: acl
+                config:
+                  hide_groups_header: true
+                  allow:
+                    - admin
+                    - anon
+          - name: functions-v1
+            url: http://functions:9000/
+            routes:
+              - name: functions-v1
+                strip_path: true
+                paths:
+                  - /functions/v1/
+            plugins:
+              - name: cors
+              - name: key-auth
+                config:
+                  hide_credentials: false
+              - name: acl
+                config:
+                  hide_groups_header: true
+                  allow:
+                    - admin
+                    - anon
+          - name: meta
+            url: http://meta:8080/
+            routes:
+              - name: meta
+                strip_path: true
+                paths:
+                  - /pg/
+            plugins:
+              - name: key-auth
+                config:
+                  hide_credentials: false
+              - name: acl
+                config:
+                  hide_groups_header: true
+                  allow:
+                    - admin
+        KONGEOF
+        sed -i "s|ANON_KEY_PLACEHOLDER|$ANON_KEY|g" /kong-config/kong.yml
+        sed -i "s|SERVICE_ROLE_KEY_PLACEHOLDER|$SERVICE_ROLE_KEY|g" /kong-config/kong.yml
+        echo "Kong config written successfully"
+    volumes:
+      - kong-config:/kong-config
+  mongo:
+    hostname: mongo
+    command:
+      - --replSet
+      - rs0
+    image: mongo:7.0
+    restart: unless-stopped
+    networks:
+      - supabase-net
+    volumes:
+      - mongo-data:/data/db
+  mongo-init:
+    image: mongo:7.0
+    restart: no
+    networks:
+      - supabase-net
+    depends_on:
+      mongo:
+        condition: service_started
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        sleep 5
+        mongosh --host mongo:27017 --eval "
+          try {
+            rs.status();
+            print('Replica set already initialized');
+          } catch(e) {
+            rs.initiate({_id: 'rs0', members: [{_id: 0, host: 'mongo:27017'}]});
+            print('Replica set initiated');
+          }"
+  powersync:
+    image: journeyapps/powersync-service:1.19.2
+    restart: unless-stopped
+    networks:
+      - supabase-net
+      - dokploy-network
+    depends_on:
+      db:
+        condition: service_healthy
+      mongo:
+        condition: service_started
+      mongo-init:
+        condition: service_completed_successfully
+      powersync-init:
+        condition: service_completed_successfully
+    volumes:
+      - powersync-config:/powersync-config
+    command:
+      - start
+      - -c
+      - /powersync-config/powersync.yaml
+    labels:
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-23-web.rule=Host(`powersync.timesheet.staticflow.ch`)
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-23-web.entrypoints=web
+      - traefik.http.services.timesheetsupabase-supabasestack-ggqzyc-23-web.loadbalancer.server.port=8080
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-23-web.service=timesheetsupabase-supabasestack-ggqzyc-23-web
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-23-web.middlewares=redirect-to-https@file
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-23-websecure.rule=Host(`powersync.timesheet.staticflow.ch`)
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-23-websecure.entrypoints=websecure
+      - traefik.http.services.timesheetsupabase-supabasestack-ggqzyc-23-websecure.loadbalancer.server.port=8080
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-23-websecure.service=timesheetsupabase-supabasestack-ggqzyc-23-websecure
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-23-websecure.tls.certresolver=letsencrypt
+      - traefik.docker.network=dokploy-network
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-23-web.rule=Host(`powersync.timesheet.staticflow.ch`)
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-23-web.entrypoints=web
+      - traefik.http.services.timesheetsupabase-supabasestack-ggqzyc-23-web.loadbalancer.server.port=8080
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-23-web.service=timesheetsupabase-supabasestack-ggqzyc-23-web
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-23-web.middlewares=redirect-to-https@file
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-23-websecure.rule=Host(`powersync.timesheet.staticflow.ch`)
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-23-websecure.entrypoints=websecure
+      - traefik.http.services.timesheetsupabase-supabasestack-ggqzyc-23-websecure.loadbalancer.server.port=8080
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-23-websecure.service=timesheetsupabase-supabasestack-ggqzyc-23-websecure
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-23-websecure.tls.certresolver=letsencrypt
+      - traefik.enable=true
+  powersync-init:
+    image: alpine:3.19
+    restart: no
+    networks:
+      - supabase-net
+    environment:
+      POWERSYNC_DB_USER: ${POWERSYNC_DB_USER}
+      POWERSYNC_DB_PASSWORD: ${POWERSYNC_DB_PASSWORD}
+      POWERSYNC_DB_NAME: ${POWERSYNC_DB_NAME}
+      JWT_SECRET: ${JWT_SECRET}
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        cat > /powersync-config/powersync.yaml << 'PSEOF'
+        telemetry:
+          disable_telemetry_sharing: true
+        storage:
+          type: mongodb
+          uri: mongodb://mongo:27017/powersync
+        replication:
+          connections:
+            - type: postgresql
+              uri: postgresql://PS_DB_USER:PS_DB_PASS@db:5432/PS_DB_NAME
+              sslmode: disable
+              publication: powersync
+              slot_name: powersync_slot
+        client_auth:
+          supabase: true
+          supabase_jwt_secret: PS_JWT_SECRET
+        api:
+          port: 8080
+        sync_rules:
+          content: |
+            bucket_definitions:
+              user_data:
+                parameters: SELECT token_parameters.user_id as user_id
+                data:
+                  - SELECT * FROM profiles WHERE id = bucket.user_id
+                  - SELECT * FROM timesheet_entries WHERE user_id = bucket.user_id
+                  - SELECT * FROM absences WHERE user_id = bucket.user_id
+                  - SELECT * FROM anomalies WHERE user_id = bucket.user_id
+                  - SELECT * FROM expenses WHERE user_id = bucket.user_id
+                  - SELECT * FROM overtime_configurations WHERE user_id = bucket.user_id
+                  - SELECT * FROM generated_pdfs WHERE user_id = bucket.user_id
+                  - SELECT * FROM notifications WHERE user_id = bucket.user_id
+                  - SELECT * FROM validation_requests WHERE employee_id = bucket.user_id
+                  - SELECT * FROM manager_employees WHERE manager_id = bucket.user_id OR employee_id = bucket.user_id
+              manager_data:
+                parameters: SELECT employee_id FROM manager_employees WHERE manager_id = token_parameters.user_id
+                data:
+                  - SELECT * FROM timesheet_entries WHERE user_id = bucket.employee_id
+                  - SELECT * FROM absences WHERE user_id = bucket.employee_id
+                  - SELECT * FROM anomalies WHERE user_id = bucket.employee_id
+                  - SELECT * FROM expenses WHERE user_id = bucket.employee_id
+                  - SELECT * FROM validation_requests WHERE employee_id = bucket.employee_id
+              org_data:
+                parameters: SELECT organization_id as org_id FROM profiles WHERE id = token_parameters.user_id AND organization_id IS NOT NULL
+                data:
+                  - SELECT * FROM profiles WHERE organization_id = bucket.org_id
+                  - SELECT * FROM organizations WHERE id = bucket.org_id
+        PSEOF
+        sed -i "s|PS_DB_USER|$POWERSYNC_DB_USER|g" /powersync-config/powersync.yaml
+        sed -i "s|PS_DB_PASS|$POWERSYNC_DB_PASSWORD|g" /powersync-config/powersync.yaml
+        sed -i "s|PS_DB_NAME|$POWERSYNC_DB_NAME|g" /powersync-config/powersync.yaml
+        sed -i "s|PS_JWT_SECRET|$JWT_SECRET|g" /powersync-config/powersync.yaml
+        echo "PowerSync config written successfully"
+    volumes:
+      - powersync-config:/powersync-config
+  docuseal:
+    image: docuseal/docuseal:latest
+    restart: unless-stopped
+    networks:
+      - supabase-net
+      - dokploy-network
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      SECRET_KEY_BASE: ${DOCUSEAL_SECRET_KEY}
+      FORCE_SSL: "false"
+    volumes:
+      - docuseal-data:/data
+    labels:
+      - traefik.docker.network=dokploy-network
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-24-web.rule=Host(`docuseal.timesheet.staticflow.ch`)
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-24-web.entrypoints=web
+      - traefik.http.services.timesheetsupabase-supabasestack-ggqzyc-24-web.loadbalancer.server.port=3000
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-24-web.service=timesheetsupabase-supabasestack-ggqzyc-24-web
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-24-web.middlewares=redirect-to-https@file
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-24-websecure.rule=Host(`docuseal.timesheet.staticflow.ch`)
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-24-websecure.entrypoints=websecure
+      - traefik.http.services.timesheetsupabase-supabasestack-ggqzyc-24-websecure.loadbalancer.server.port=3000
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-24-websecure.service=timesheetsupabase-supabasestack-ggqzyc-24-websecure
+      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-24-websecure.tls.certresolver=letsencrypt
+      - traefik.enable=true
+networks:
+  supabase-net:
+    driver: bridge
+  dokploy-network:
+    external: true
+volumes:
+  db-data: null
+  storage-data: null
+  mongo-data: null
+  kong-config: null
+  powersync-config: null
+  docuseal-data: null

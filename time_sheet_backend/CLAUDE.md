@@ -30,8 +30,9 @@ time_sheet_backend/
 │   ├── nginx/timesheet.conf             # Reverse proxy + SSL
 │   ├── powersync/powersync.yaml         # Sync rules (bucket definitions)
 │   ├── volumes/kong/kong.yml            # API Gateway routing
+│   ├── dokploy/docker-compose.prod.yml  # Copie de référence du compose PROD Dokploy
 │   └── supabase/
-│       ├── migrations/                  # SQL schema, RLS, storage (00001 -> 00015)
+│       ├── migrations/                  # SQL schema, RLS, storage (00001 -> 00018)
 │       │   ├── 00001_create_schema.sql  # 11 tables + triggers
 │       │   ├── 00002_rls_policies.sql   # Row Level Security
 │       │   ├── 00003_storage_buckets.sql
@@ -41,7 +42,10 @@ time_sheet_backend/
 │       │   ├── 00007_signing_tokens.sql       # Tokens de signature PDF
 │       │   ├── 00008..00013                   # RLS manager, RPC orgs/managers, storage policies
 │       │   ├── 00014_mcp_tokens.sql
-│       │   └── 00015_harden_validation_rls.sql
+│       │   ├── 00015_harden_validation_rls.sql
+│       │   ├── 00016_manager_anomalies_update.sql
+│       │   ├── 00017_harden_storage_notifications_rpc.sql
+│       │   └── 00018_drop_legacy_policies.sql # Purge policies legacy prod + DELETE expenses/anomalies
 │       └── functions/                   # Edge Functions (TypeScript/Deno)
 │           ├── create-user/             # Création d'utilisateur (admin)
 │           ├── create-validation/
@@ -338,4 +342,7 @@ See `time_sheet_backend_flutter/lib/features/pointage/domain/rules/README.md`:
 ## Production & Déploiement
 
 - **Prod self-hosted (Dokploy)** sur `72.61.195.143` — accès, base `supabase`, rôle `supabase_admin`, endpoints : voir le CLAUDE.md racine du repo.
+- **Migrations appliquées en prod** : traçées dans `public.schema_migrations` (00001 → 00018 au 2026-07-14). Toute nouvelle migration doit y insérer sa version après application.
+- **Edge functions en prod** : conteneur `functions` (edge-runtime) du stack Dokploy, sources dans `/opt/timesheet/functions` sur le serveur (rsync depuis `infrastructure/supabase/functions/` après chaque modif). Route Kong `/functions/v1` générée par kong-init — voir `infrastructure/dokploy/docker-compose.prod.yml` (⚠️ un Redeploy Dokploy UI écrase le compose serveur).
+- **Cron `check-expired`** : `/opt/timesheet/cron-check-expired.sh` (crontab root, 03:17 quotidien).
 - **iOS TestFlight** : via Codemagic (`codemagic.yaml` racine, push sur `main`). Le build local est impossible (SDK iOS 26 requis). Détails : skill projet `deploy-ios`.
