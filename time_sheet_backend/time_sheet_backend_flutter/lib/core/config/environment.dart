@@ -15,7 +15,7 @@ class AppConfig {
 
   static String get anonKey => switch (current) {
         Environment.dev =>
-          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzAwMDAwMDAwLCJleHAiOjE5MDAwMDAwMDB9.MdkUvagcXQ9cs5hO-fw0FkENVVq6vskG3wBR-P5gR58',
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MTE2MTMyLCJleHAiOjIwOTk0NzYxMzJ9.7SFJIowKRkvMM7YLXIHq8IN9Gwuq1szVW9kdbXEivvc',
         Environment.prod =>
           'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzAwMDAwMDAwLCJleHAiOjE5MDAwMDAwMDB9.KEoz8wTUGwgLtXFiZ_sBC-wy57qSd-lwH4J0h79R8lU',
       };
