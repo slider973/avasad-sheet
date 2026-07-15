@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:time_sheet/core/database/powersync_database.dart';
+import 'package:time_sheet/core/database/sync_repair_service.dart';
 import 'package:time_sheet/core/migration/isar_to_powersync_migration.dart';
+import 'package:time_sheet/services/injection_container.dart';
 import 'package:time_sheet/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:time_sheet/features/preference/presentation/manager/preferences_bloc.dart';
 import 'package:time_sheet/features/preference/presentation/pages/onboarding_page.dart';
@@ -35,6 +37,9 @@ class _InitialCheckPageState extends State<InitialCheckPage> {
         }
       },
     );
+    // Répare les lignes locales legacy jamais synchronisées (valeurs d'enum
+    // rejetées par PostgreSQL avant les correctifs). Ne lève jamais.
+    await getIt<SyncRepairService>().repairIfNeeded();
     if (mounted) {
       context.read<PreferencesBloc>().add(LoadPreferences());
     }

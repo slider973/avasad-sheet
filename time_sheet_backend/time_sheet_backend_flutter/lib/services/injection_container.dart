@@ -4,6 +4,7 @@ import 'package:logger/logger.dart';
 import '../core/auth/auth_repository.dart';
 import '../core/auth/auth_repository_impl.dart';
 import '../core/database/powersync_database.dart';
+import '../core/database/sync_repair_service.dart';
 import '../core/services/supabase/supabase_service.dart';
 import '../features/auth/domain/use_cases/sign_in_usecase.dart';
 import '../features/auth/domain/use_cases/sign_up_usecase.dart';
@@ -135,6 +136,13 @@ Future<void> setup() async {
 
   final localDataSource = LocalDatasourcePowerSyncImpl(db);
   getIt.registerLazySingleton<LocalDataSource>(() => localDataSource);
+
+  // Réparation des lignes locales legacy jamais synchronisées (valeurs
+  // d'enum rejetées par PostgreSQL avant les correctifs des mappers).
+  // Exécutée au démarrage après la migration Isar (InitialCheckPage).
+  getIt.registerLazySingleton<SyncRepairService>(
+    () => SyncRepairService(db: db),
+  );
 
   // Nettoyer les absences corrompues (bug historique: timesheet_entry_id invalide)
   try {
