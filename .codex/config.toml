@@ -1,0 +1,6 @@
+[mcp_servers.dart]
+args = [
+    "mcp-server",
+    "--experimental-mcp-server",
+]
+command = "dart"
