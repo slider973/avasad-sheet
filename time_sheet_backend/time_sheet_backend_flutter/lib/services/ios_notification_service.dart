@@ -66,9 +66,9 @@ class DynamicMultiplatformNotificationService {
       initializationSettings,
       onDidReceiveNotificationResponse: _onDidReceiveNotificationResponse,
     );
-    await flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation()
-        ?.cancelAll();
+    // cancelAll() cross-platform : resolvePlatformSpecificImplementation()
+    // sans type générique lève un ArgumentError fatal (Sentry FLUTTER-AW).
+    await flutterLocalNotificationsPlugin.cancelAll();
 
     await _resetBadge();
   }

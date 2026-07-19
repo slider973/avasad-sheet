@@ -59,7 +59,12 @@ class _DashboardPageState extends State<DashboardPage> {
             leading: IconButton(
               icon: const Icon(Icons.menu),
               onPressed: () {
-                Scaffold.of(context).openDrawer();
+                // La page peut être affichée hors du Scaffold parent porteur
+                // du drawer (Sentry FLUTTER-BY) : ne pas crasher dans ce cas.
+                final scaffold = Scaffold.maybeOf(context);
+                if (scaffold?.hasDrawer ?? false) {
+                  scaffold!.openDrawer();
+                }
               },
               tooltip: 'Menu',
             ),
