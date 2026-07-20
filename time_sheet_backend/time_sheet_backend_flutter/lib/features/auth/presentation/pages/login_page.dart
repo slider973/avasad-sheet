@@ -1,3 +1,6 @@
+import 'dart:io' show Platform;
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -188,38 +191,49 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Divider
-                    const Row(
-                      children: [
-                        Expanded(child: Divider()),
-                        Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 16),
-                          child: Text('ou', style: TextStyle(color: Colors.grey)),
-                        ),
-                        Expanded(child: Divider()),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
+                    // Google Sign-In : masqué sur iOS natif tant que la config
+                    // OAuth iOS n'existe pas (GIDClientID absent -> crash
+                    // NSInvalidArgumentException, Sentry FLUTTER-C6, rejet
+                    // App Review 2.1). Le réactiver exigera aussi Sign in
+                    // with Apple (guideline 4.8).
+                    if (kIsWeb || !Platform.isIOS) ...[
+                      // Divider
+                      const Row(
+                        children: [
+                          Expanded(child: Divider()),
+                          Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 16),
+                            child:
+                                Text('ou', style: TextStyle(color: Colors.grey)),
+                          ),
+                          Expanded(child: Divider()),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
 
-                    // Google sign in
-                    OutlinedButton.icon(
-                      onPressed: () {
-                        context.read<AuthBloc>().add(AuthGoogleSignInRequested());
-                      },
-                      icon: Image.network(
-                        'https://www.google.com/favicon.ico',
-                        height: 20,
-                        width: 20,
-                        errorBuilder: (_, __, ___) => const Icon(Icons.g_mobiledata, size: 20),
-                      ),
-                      label: const Text('Continuer avec Google'),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                      // Google sign in
+                      OutlinedButton.icon(
+                        onPressed: () {
+                          context
+                              .read<AuthBloc>()
+                              .add(AuthGoogleSignInRequested());
+                        },
+                        icon: Image.network(
+                          'https://www.google.com/favicon.ico',
+                          height: 20,
+                          width: 20,
+                          errorBuilder: (_, __, ___) =>
+                              const Icon(Icons.g_mobiledata, size: 20),
+                        ),
+                        label: const Text('Continuer avec Google'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                     const SizedBox(height: 24),
 
                     // Register link
