@@ -68,9 +68,9 @@ serve(async (req) => {
     }
 
     // Le manager doit exister, être actif, avoir un rôle de manager, et
-    // appartenir à la MÊME organisation que l'employé (strict : la RPC
-    // get_managers_for_employee ne propose que les managers de la même org,
-    // pas ceux des orgs enfants).
+    // appartenir à l'organisation de l'employé OU à une organisation
+    // ANCÊTRE (modèle réel : manager dans l'org mère, employés dans l'org
+    // fille — aligné sur get_managers_for_employee, migration 00019).
     const [{ data: callerProfile }, { data: managerProfile }] = await Promise.all([
       supabase
         .from("profiles")
@@ -92,12 +92,35 @@ serve(async (req) => {
       );
     }
 
-    if (!callerProfile?.organization_id ||
-        callerProfile.organization_id !== managerProfile.organization_id) {
+    if (!callerProfile?.organization_id || !managerProfile.organization_id) {
       return new Response(
         JSON.stringify({ error: "Le manager doit appartenir à votre organisation" }),
         { status: 403, headers: jsonHeaders },
       );
+    }
+    if (callerProfile.organization_id !== managerProfile.organization_id) {
+      // Autoriser un manager d'une org ancêtre : remonter la hiérarchie
+      // depuis l'org de l'employé.
+      let allowed = false;
+      let cursor: string | null = callerProfile.organization_id;
+      for (let depth = 0; depth < 10 && cursor; depth++) {
+        const { data: org } = await supabase
+          .from("organizations")
+          .select("parent_id")
+          .eq("id", cursor)
+          .single();
+        cursor = org?.parent_id ?? null;
+        if (cursor === managerProfile.organization_id) {
+          allowed = true;
+          break;
+        }
+      }
+      if (!allowed) {
+        return new Response(
+          JSON.stringify({ error: "Le manager doit appartenir à votre organisation" }),
+          { status: 403, headers: jsonHeaders },
+        );
+      }
     }
 
     // Create the validation request (status forcé à 'pending')
