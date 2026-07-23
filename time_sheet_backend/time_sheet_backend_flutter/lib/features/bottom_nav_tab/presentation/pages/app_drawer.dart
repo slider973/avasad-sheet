@@ -261,6 +261,7 @@ class AppDrawer extends StatelessWidget {
             child: const Text('Annuler'),
           ),
           TextButton(
+            key: const Key('confirmSignOutButton'),
             onPressed: () {
               Navigator.pop(dialogContext);
               context.read<PreferencesBloc>().add(ClearPreferences());

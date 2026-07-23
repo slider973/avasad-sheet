@@ -5,6 +5,7 @@ import 'package:fpdart/fpdart.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../config/environment.dart';
 import '../error/failures.dart';
 import '../../features/auth/domain/entities/app_user.dart';
 import 'auth_repository.dart';
@@ -133,13 +134,22 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<Either<Failure, void>> signOut() async {
+    // Toujours révoquer la session Supabase EN PREMIER : c'est elle qui
+    // détermine si l'utilisateur est connecté. La déconnexion Google est
+    // best-effort et ne doit jamais empêcher la déconnexion Supabase (elle
+    // peut lever si Google n'est pas configuré — bug historique iOS où le
+    // logout ne nettoyait jamais la session).
     try {
-      await _googleSignIn.signOut();
       await _supabaseClient.auth.signOut();
-      return const Right(null);
     } catch (e) {
       return Left(GeneralFailure('Erreur de déconnexion: $e'));
     }
+    try {
+      await _googleSignIn.signOut();
+    } catch (_) {
+      // Ignoré : Google non configuré ou non connecté via Google.
+    }
+    return const Right(null);
   }
 
   @override
@@ -187,7 +197,13 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<Failure, void>> resetPassword({required String email}) async {
     try {
-      await _supabaseClient.auth.resetPasswordForEmail(email);
+      // Rediriger vers la page web /set-password : le lien par défaut
+      // (SITE_URL racine) n'a pas d'écran de reset, l'utilisateur atterrissait
+      // sur le dashboard/login sans pouvoir changer son mot de passe.
+      await _supabaseClient.auth.resetPasswordForEmail(
+        email,
+        redirectTo: '${AppConfig.webUrl}/set-password',
+      );
       return const Right(null);
     } on AuthException catch (e) {
       return Left(ServerFailure(_mapAuthError(e)));

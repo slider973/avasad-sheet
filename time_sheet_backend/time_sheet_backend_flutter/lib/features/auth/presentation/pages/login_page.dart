@@ -1,6 +1,3 @@
-import 'dart:io' show Platform;
-
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -8,6 +5,10 @@ import '../bloc/auth_bloc.dart';
 import '../../../preference/presentation/pages/initial_check_page.dart';
 import 'register_page.dart';
 import 'forgot_password_page.dart';
+
+/// Connexion Google désactivée tant que la configuration OAuth n'est pas
+/// complète (provider GoTrue + clients iOS/Android + Sign in with Apple).
+const bool _googleSignInEnabled = false;
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -191,12 +192,14 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Google Sign-In : masqué sur iOS natif tant que la config
-                    // OAuth iOS n'existe pas (GIDClientID absent -> crash
-                    // NSInvalidArgumentException, Sentry FLUTTER-C6, rejet
-                    // App Review 2.1). Le réactiver exigera aussi Sign in
-                    // with Apple (guideline 4.8).
-                    if (kIsWeb || !Platform.isIOS) ...[
+                    // Google Sign-In désactivé PARTOUT tant que la config OAuth
+                    // n'est pas complète : aucun provider Google côté GoTrue
+                    // self-hosted, pas de GIDClientID iOS (crash FLUTTER-C6),
+                    // 0 oauth_client dans google-services.json Android. Le
+                    // bouton ne pouvait que produire une erreur. Réactivation =
+                    // config OAuth serveur + iOS/Android + Sign in with Apple
+                    // (guideline 4.8) ; passer _googleSignInEnabled à true.
+                    if (_googleSignInEnabled) ...[
                       // Divider
                       const Row(
                         children: [

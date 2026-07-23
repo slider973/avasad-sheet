@@ -13,6 +13,14 @@ class AppConfig {
         Environment.prod => 'https://powersync.timesheet.staticflow.ch',
       };
 
+  /// URL de l'app web (React), où l'utilisateur définit son nouveau mot de
+  /// passe après un reset. Le lien de recovery doit pointer ici : l'app
+  /// mobile n'a pas d'écran de reset, on délègue au web (page /set-password).
+  static String get webUrl => switch (current) {
+        Environment.dev => 'https://dev.timesheet.staticflow.ch',
+        Environment.prod => 'https://timesheet.staticflow.ch',
+      };
+
   static String get anonKey => switch (current) {
         Environment.dev =>
           'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MTE2MTMyLCJleHAiOjIwOTk0NzYxMzJ9.7SFJIowKRkvMM7YLXIHq8IN9Gwuq1szVW9kdbXEivvc',
