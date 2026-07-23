@@ -1,18 +1,16 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/pages/login_page.dart';
 import '../../../preference/presentation/manager/preferences_bloc.dart';
 import '../../../pointage/presentation/pages/statistiques/statistique_page.dart';
-import '../../../pointage/presentation/pages/pointage/pointage_page.dart';
-import '../../../pointage/presentation/pages/dashboard/dashboard_page.dart';
 import '../../../preference/presentation/pages/preference.dart';
 import '../../../validation/presentation/pages/validation_menu_page.dart';
 import '../../../expense/presentation/pages/expense_list_page.dart';
 import '../../../manager/presentation/pages/manager_dashboard_page.dart';
 import '../../../manager/presentation/bloc/manager_dashboard_bloc.dart';
 import '../../../pointage/presentation/pages/debug/debug_database_page.dart';
-import 'bottom_navigation_bar.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:time_sheet/core/error/failures.dart';
 import 'package:time_sheet/core/services/supabase/supabase_service.dart';
@@ -76,20 +74,10 @@ class AppDrawer extends StatelessWidget {
             child: ListView(
               padding: const EdgeInsets.symmetric(vertical: 8),
               children: [
-                _buildMenuItem(
-                  context,
-                  icon: Icons.home,
-                  title: 'Accueil',
-                  subtitle: 'Retour à la page principale',
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(builder: (context) => const BottomNavigationBarPage()),
-                      (route) => false,
-                    );
-                  },
-                ),
+                // Le drawer ne contient que la navigation SECONDAIRE :
+                // Accueil, Tableau de bord et Pointage étaient des doublons
+                // de la barre du bas (trois chemins vers le même écran) —
+                // retirés pour clarifier la hiérarchie de navigation.
                 _buildMenuItem(
                   context,
                   icon: Icons.bar_chart,
@@ -100,32 +88,6 @@ class AppDrawer extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (context) => const StatistiquePage()),
-                    );
-                  },
-                ),
-                _buildMenuItem(
-                  context,
-                  icon: Icons.timeline,
-                  title: 'Tableau de bord',
-                  subtitle: 'Aperçu de vos activités',
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const DashboardPage()),
-                    );
-                  },
-                ),
-                _buildMenuItem(
-                  context,
-                  icon: Icons.access_time,
-                  title: 'Pointage',
-                  subtitle: 'Page de pointage journalier',
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const PointagePage()),
                     );
                   },
                 ),
@@ -192,19 +154,23 @@ class AppDrawer extends StatelessWidget {
                     );
                   },
                 ),
-                _buildMenuItem(
-                  context,
-                  icon: Icons.bug_report,
-                  title: 'Debug BDD',
-                  subtitle: 'Absences, entrées, réparation',
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const DebugDatabasePage()),
-                    );
-                  },
-                ),
+                // Outil de debug (réparation BDD) : jamais exposé en
+                // production, uniquement en build de développement.
+                if (kDebugMode)
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.bug_report,
+                    title: 'Debug BDD',
+                    subtitle: 'Absences, entrées, réparation',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const DebugDatabasePage()),
+                      );
+                    },
+                  ),
               ],
             ),
           ),

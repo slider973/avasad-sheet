@@ -19,18 +19,23 @@ class BottomNavigationBarWidget extends StatelessWidget {
       BottomNavigationBarEvent.tab5,
     ];
 
+    // Libellés/icônes alignés sur la fonction réelle de chaque écran :
+    // - onglet 3 = page PDF (export), pas la feuille de temps -> « PDF ».
+    // - « Pointage » : horloge de pointage plutôt qu'empreinte digitale
+    //   (qui évoquait l'authentification biométrique).
+    // - libellés cohérents en français.
     final items = <BottomNavigationBarItem>[
       const BottomNavigationBarItem(
         icon: Icon(Icons.dashboard),
-        label: 'Dashboard',
+        label: 'Accueil',
       ),
       const BottomNavigationBarItem(
-        icon: Icon(Icons.fingerprint),
+        icon: Icon(Icons.punch_clock),
         label: 'Pointage',
       ),
       const BottomNavigationBarItem(
-        icon: Icon(Icons.description),
-        label: 'Time Sheet',
+        icon: Icon(Icons.picture_as_pdf),
+        label: 'PDF',
       ),
       const BottomNavigationBarItem(
         icon: Icon(Icons.calendar_today),
