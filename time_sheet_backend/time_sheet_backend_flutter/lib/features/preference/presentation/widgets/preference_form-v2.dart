@@ -160,6 +160,8 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
   void _showPersonalInfoDialog(BuildContext context, PreferencesLoaded state) async {
     final firstNameController = TextEditingController(text: state.firstName);
     final lastNameController = TextEditingController(text: state.lastName);
+    final clientSignerController =
+        TextEditingController(text: state.clientSignerName);
 
     // Charger les organisations enfants depuis Supabase
     List<Map<String, dynamic>> organizations = [];
@@ -218,6 +220,14 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
                       });
                     },
                   ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: clientSignerController,
+                    decoration: const InputDecoration(
+                      labelText: 'Signataire entreprise de mission',
+                      helperText: 'Nom du client qui signe les feuilles de temps',
+                    ),
+                  ),
                 ],
               ),
               actions: [
@@ -241,6 +251,7 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
                           firstName: firstNameController.text,
                           lastName: lastNameController.text,
                           company: companyName,
+                          clientSignerName: clientSignerController.text.trim(),
                           organizationId: selectedOrgId,
                         ));
                     Navigator.of(dialogContext).pop();

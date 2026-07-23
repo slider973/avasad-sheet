@@ -440,6 +440,19 @@ class GeneratePdfUseCase {
     );
   }
 
+  /// Résout le nom du signataire « Entreprise de mission ».
+  ///
+  /// Priorité : nom explicite (donnée de la validation) s'il est non vide,
+  /// sinon la préférence utilisateur `clientSignerName`, sinon chaîne vide.
+  Future<String> resolveClientSignerName(String? explicitName) async {
+    if (explicitName != null && explicitName.trim().isNotEmpty) {
+      return explicitName.trim();
+    }
+    final preferred =
+        await getUserPreferenceUseCase.execute('clientSignerName');
+    return preferred?.trim() ?? '';
+  }
+
   Future<File> generatePdf(List<WorkWeek> weeks, int monthNumber, User user,
       List<TimesheetEntry> entries,
       {Uint8List? managerSignature, String? managerName,
@@ -488,7 +501,10 @@ class GeneratePdfUseCase {
 
     // Signature du client si fournie
     pw.Image? clientSignatureImage;
-    String finalClientSignerName = clientSignerName ?? '';
+    // Nom du signataire « Entreprise de mission » :
+    // nom explicite (validation) > préférence `clientSignerName` > vide.
+    final String finalClientSignerName =
+        await resolveClientSignerName(clientSignerName);
     if (clientSignature != null) {
       clientSignatureImage = pw.Image(pw.MemoryImage(clientSignature));
       logger.i('✅ Image signature client créée');
@@ -928,10 +944,9 @@ class GeneratePdfUseCase {
     logger.i('DEBUG _buildFooter - clientSignatureImage is null: ${clientSignatureImage == null}');
     logger.i('DEBUG _buildFooter - user.fullName: ${user.fullName}');
 
-    // Nom du client : utiliser le nom dynamique ou un fallback
-    final clientName = (clientSignerName != null && clientSignerName.isNotEmpty)
-        ? clientSignerName
-        : 'Nadia Aepli';
+    // Nom du signataire « Entreprise de mission », déjà résolu en amont
+    // (param explicite > préférence `clientSignerName` > vide).
+    final clientName = clientSignerName ?? '';
 
     return pw.Container(
       margin: const pw.EdgeInsets.only(top: 15),

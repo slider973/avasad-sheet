@@ -58,6 +58,8 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
           await getUserPreferenceUseCase.execute('firstName') ?? '';
       var lastName = await getUserPreferenceUseCase.execute('lastName') ?? '';
       var company = await getUserPreferenceUseCase.execute('company') ?? '';
+      final clientSignerName =
+          await getUserPreferenceUseCase.execute('clientSignerName') ?? '';
       var signatureBase64 =
           await getUserPreferenceUseCase.execute('signature');
       final lastGenerationDateString =
@@ -171,6 +173,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
         firstName: firstName,
         lastName: lastName,
         company: company,
+        clientSignerName: clientSignerName,
         signature: signature,
         lastGenerationDate: lastGenerationDate,
         notificationsEnabled: notificationsEnabled == 'true',
@@ -206,6 +209,10 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
       await setUserPreferenceUseCase.execute('firstName', event.firstName);
       await setUserPreferenceUseCase.execute('lastName', event.lastName);
       await setUserPreferenceUseCase.execute('company', event.company);
+      if (event.clientSignerName != null) {
+        await setUserPreferenceUseCase.execute(
+            'clientSignerName', event.clientSignerName);
+      }
 
       // Sauvegarder organization_id directement via Supabase (pas PowerSync)
       // pour éviter des CRUD operations bloquées par RLS
@@ -225,11 +232,14 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
       bool notificationsEnabled = true;
       bool isDeliveryManager = false;
       ReminderSettings? reminderSettings;
+      String clientSignerName = event.clientSignerName ?? '';
       if (currentState is PreferencesLoaded) {
         signature = currentState.signature;
         notificationsEnabled = currentState.notificationsEnabled;
         isDeliveryManager = currentState.isDeliveryManager;
         reminderSettings = currentState.reminderSettings;
+        clientSignerName =
+            event.clientSignerName ?? currentState.clientSignerName;
       }
 
       // Charger les préférences mises à jour
@@ -251,6 +261,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
         firstName: event.firstName,
         lastName: event.lastName,
         company: event.company,
+        clientSignerName: clientSignerName,
         signatureBase64: signatureBase64,
         lastGenerationDate: lastGenerationDate,
         signature: signature,
@@ -300,6 +311,9 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
         lastName: lastName,
         company: state is PreferencesLoaded
             ? (state as PreferencesLoaded).company
+            : '',
+        clientSignerName: state is PreferencesLoaded
+            ? (state as PreferencesLoaded).clientSignerName
             : '',
         signature: event.signature,
         // Utilisez la signature non encodée pour l'état
@@ -356,6 +370,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
           firstName: currentState.firstName,
           lastName: currentState.lastName,
           company: currentState.company,
+          clientSignerName: currentState.clientSignerName,
           signature: currentState.signature,
           lastGenerationDate: event.date,
           notificationsEnabled: currentState.notificationsEnabled,
@@ -392,6 +407,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
           firstName: currentState.firstName,
           lastName: currentState.lastName,
           company: currentState.company,
+          clientSignerName: currentState.clientSignerName,
           signature: currentState.signature,
           lastGenerationDate: currentState.lastGenerationDate,
           notificationsEnabled: event.enabled,
@@ -457,6 +473,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
           firstName: currentState.firstName,
           lastName: currentState.lastName,
           company: currentState.company,
+          clientSignerName: currentState.clientSignerName,
           signature: currentState.signature,
           lastGenerationDate: currentState.lastGenerationDate,
           notificationsEnabled: currentState.notificationsEnabled,
@@ -493,6 +510,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
           firstName: currentState.firstName,
           lastName: currentState.lastName,
           company: currentState.company,
+          clientSignerName: currentState.clientSignerName,
           signature: currentState.signature,
           lastGenerationDate: currentState.lastGenerationDate,
           notificationsEnabled: currentState.notificationsEnabled,
@@ -553,6 +571,8 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
           await getUserPreferenceUseCase.execute('badgeCount');
       final reminderSettingsJson =
           await getUserPreferenceUseCase.execute('reminderSettings');
+      final clientSignerName =
+          await getUserPreferenceUseCase.execute('clientSignerName') ?? '';
 
       // Load reminder settings or use default
       ReminderSettings? reminderSettings;
@@ -579,6 +599,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
         firstName: event.firstName,
         lastName: event.lastName,
         company: event.company,
+        clientSignerName: clientSignerName,
         signature: event.signature,
         lastGenerationDate: lastGenerationDate,
         notificationsEnabled: notificationsEnabled == 'true',
@@ -623,6 +644,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
           firstName: currentState.firstName,
           lastName: currentState.lastName,
           company: currentState.company,
+          clientSignerName: currentState.clientSignerName,
           signature: currentState.signature,
           lastGenerationDate: currentState.lastGenerationDate,
           notificationsEnabled: currentState.notificationsEnabled,
@@ -675,6 +697,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
           firstName: currentState.firstName,
           lastName: currentState.lastName,
           company: currentState.company,
+          clientSignerName: currentState.clientSignerName,
           signature: currentState.signature,
           lastGenerationDate: currentState.lastGenerationDate,
           notificationsEnabled: currentState.notificationsEnabled,
@@ -722,6 +745,7 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
           firstName: currentState.firstName,
           lastName: currentState.lastName,
           company: currentState.company,
+          clientSignerName: currentState.clientSignerName,
           signature: currentState.signature,
           lastGenerationDate: currentState.lastGenerationDate,
           notificationsEnabled: currentState.notificationsEnabled,

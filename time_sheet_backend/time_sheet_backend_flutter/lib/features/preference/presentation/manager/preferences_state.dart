@@ -15,6 +15,9 @@ class PreferencesLoaded extends PreferencesState {
   final String firstName;
   final String lastName;
   final String company;
+
+  /// Nom du signataire « Entreprise de mission » (client) pour les PDF.
+  final String clientSignerName;
   final String? signatureBase64;
   final DateTime? lastGenerationDate;
   Uint8List? signature;
@@ -29,6 +32,7 @@ class PreferencesLoaded extends PreferencesState {
     required this.firstName,
     required this.lastName,
     required this.company,
+    this.clientSignerName = '',
     this.signatureBase64,
     this.lastGenerationDate,
     this.signature,
@@ -45,6 +49,7 @@ class PreferencesLoaded extends PreferencesState {
         firstName,
         lastName,
         company,
+        clientSignerName,
         signature,
         lastGenerationDate,
         notificationsEnabled,

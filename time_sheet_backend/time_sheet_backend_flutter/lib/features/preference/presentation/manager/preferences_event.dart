@@ -15,6 +15,10 @@ class SavePreferences extends PreferencesEvent {
   final String firstName;
   final String lastName;
   final String company;
+
+  /// Nom du signataire « Entreprise de mission » (client) pour les PDF.
+  /// `null` = ne pas modifier la valeur enregistrée.
+  final String? clientSignerName;
   final String? organizationId;
   Uint8List? signature;
 
@@ -22,12 +26,14 @@ class SavePreferences extends PreferencesEvent {
     required this.firstName,
     required this.lastName,
     required this.company,
+    this.clientSignerName,
     this.organizationId,
     this.signature,
   });
 
   @override
-  List<Object?> get props => [firstName, lastName, company, organizationId, signature];
+  List<Object?> get props =>
+      [firstName, lastName, company, clientSignerName, organizationId, signature];
 }
 
 class SaveUserInfoEvent extends PreferencesEvent {

@@ -75,9 +75,20 @@ class CreateValidationBloc extends Bloc<CreateValidationEvent, CreateValidationS
 
       // Charger aussi les PDFs disponibles
       final pdfs = await getGeneratedPdfs.execute();
+
+      // Pré-remplir le signataire client depuis la préférence
+      // `clientSignerName` (l'utilisateur peut toujours le modifier).
+      final defaultClientSigner =
+          await getUserPreference.execute('clientSignerName');
+      final trimmedClientSigner = defaultClientSigner?.trim();
+
       emit(CreateValidationForm(
         availableManagers: managers,
         availablePdfs: pdfs,
+        clientSignerName:
+            (trimmedClientSigner != null && trimmedClientSigner.isNotEmpty)
+                ? trimmedClientSigner
+                : null,
       ));
     } catch (e) {
       emit(CreateValidationError('Erreur inattendue: $e'));
