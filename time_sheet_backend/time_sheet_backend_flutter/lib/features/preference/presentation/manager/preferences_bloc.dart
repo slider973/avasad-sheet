@@ -204,6 +204,10 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
     SavePreferences event,
     Emitter<PreferencesState> emit,
   ) async {
+    // Capturer l'état AVANT d'émettre Loading : après l'emit, `state` n'est
+    // plus PreferencesLoaded et les toggles retomberaient sur des défauts
+    // erronés (le toggle Notifications s'affichait ON après enregistrement).
+    final stateBeforeSave = state;
     emit(PreferencesLoading());
     try {
       await setUserPreferenceUseCase.execute('firstName', event.firstName);
@@ -226,20 +230,26 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
         }
       }
 
-      // Récupérer la signature existante
-      final currentState = state;
+      // Récupérer la signature existante depuis l'état capturé avant Loading,
+      // sinon depuis les préférences stockées (jamais de défaut codé en dur).
       Uint8List? signature;
-      bool notificationsEnabled = true;
-      bool isDeliveryManager = false;
+      bool notificationsEnabled =
+          (await getUserPreferenceUseCase.execute('notificationsEnabled') ??
+                  'false') ==
+              'true';
+      bool isDeliveryManager =
+          (await getUserPreferenceUseCase.execute('isDeliveryManager') ??
+                  'false') ==
+              'true';
       ReminderSettings? reminderSettings;
       String clientSignerName = event.clientSignerName ?? '';
-      if (currentState is PreferencesLoaded) {
-        signature = currentState.signature;
-        notificationsEnabled = currentState.notificationsEnabled;
-        isDeliveryManager = currentState.isDeliveryManager;
-        reminderSettings = currentState.reminderSettings;
+      if (stateBeforeSave is PreferencesLoaded) {
+        signature = stateBeforeSave.signature;
+        notificationsEnabled = stateBeforeSave.notificationsEnabled;
+        isDeliveryManager = stateBeforeSave.isDeliveryManager;
+        reminderSettings = stateBeforeSave.reminderSettings;
         clientSignerName =
-            event.clientSignerName ?? currentState.clientSignerName;
+            event.clientSignerName ?? stateBeforeSave.clientSignerName;
       }
 
       // Charger les préférences mises à jour

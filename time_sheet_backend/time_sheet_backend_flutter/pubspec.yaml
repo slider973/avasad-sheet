@@ -111,6 +111,8 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_driver:
+    sdk: flutter
   isar_flutter_libs: ^3.1.0+1 # contains Isar Core
   isar_generator: ^3.1.0+1
   mockito: ^5.4.4

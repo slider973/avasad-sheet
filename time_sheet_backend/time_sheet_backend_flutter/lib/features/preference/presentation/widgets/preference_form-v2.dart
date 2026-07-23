@@ -222,6 +222,7 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
                   ),
                   const SizedBox(height: 10),
                   TextField(
+                    key: const Key('clientSignerField'),
                     controller: clientSignerController,
                     decoration: const InputDecoration(
                       labelText: 'Signataire entreprise de mission',
