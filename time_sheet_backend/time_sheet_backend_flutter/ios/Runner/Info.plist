@@ -30,7 +30,15 @@
 				<string>timesheet</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.209339291527-c6lh36n7io90n98t3ra700hdpmegqm6u</string>
+			</array>
+		</dict>
 	</array>
+	<key>GIDClientID</key>
+	<string>209339291527-c6lh36n7io90n98t3ra700hdpmegqm6u.apps.googleusercontent.com</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>

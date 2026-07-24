@@ -18,7 +18,11 @@ class AuthRepositoryImpl implements AuthRepository {
     required SupabaseClient supabaseClient,
     GoogleSignIn? googleSignIn,
   })  : _supabaseClient = supabaseClient,
-        _googleSignIn = googleSignIn ?? GoogleSignIn(scopes: ['email']);
+        _googleSignIn = googleSignIn ??
+            GoogleSignIn(
+              serverClientId: AppConfig.googleServerClientId,
+              scopes: ['email'],
+            );
 
   @override
   Future<Either<Failure, AppUser>> signInWithEmail({

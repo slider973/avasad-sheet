@@ -30,4 +30,11 @@ class AppConfig {
 
   static bool get isDev => current == Environment.dev;
   static bool get isProd => current == Environment.prod;
+
+  /// Google Sign-In — projet Firebase time-sheet-b86f6.
+  /// Le client SERVEUR (web) est passé en `serverClientId` : l'idToken émis
+  /// porte alors cette audience, que GoTrue valide (GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID).
+  /// Le client iOS est déclaré dans Info.plist (GIDClientID + URL scheme).
+  static const String googleServerClientId =
+      '209339291527-hh90hae31m3jqb618rcrein1fmpnfuot.apps.googleusercontent.com';
 }

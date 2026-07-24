@@ -6,9 +6,11 @@ import '../../../preference/presentation/pages/initial_check_page.dart';
 import 'register_page.dart';
 import 'forgot_password_page.dart';
 
-/// Connexion Google désactivée tant que la configuration OAuth n'est pas
-/// complète (provider GoTrue + clients iOS/Android + Sign in with Apple).
-const bool _googleSignInEnabled = false;
+/// Connexion Google activée : provider GoTrue configuré (projet
+/// time-sheet-b86f6) + client iOS (Info.plist) + serverClientId (web).
+/// NB Android : nécessitera son propre client OAuth + SHA-1 le jour où
+/// l'app sera distribuée sur le Play Store.
+const bool _googleSignInEnabled = true;
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
