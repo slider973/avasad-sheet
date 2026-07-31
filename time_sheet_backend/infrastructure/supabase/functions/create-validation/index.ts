@@ -115,6 +115,21 @@ serve(async (req) => {
           break;
         }
       }
+
+      // Sinon : rattachement explicite et nominatif via `manager_employees`
+      // (migration 00020). Permet à un manager HORS hiérarchie de valider,
+      // sans avoir à rendre les organisations multi-parents. Aligné sur la
+      // RPC get_managers_for_employee qui alimente le sélecteur client.
+      if (!allowed) {
+        const { data: link } = await supabase
+          .from("manager_employees")
+          .select("id")
+          .eq("manager_id", manager_id)
+          .eq("employee_id", user.id)
+          .maybeSingle();
+        allowed = !!link;
+      }
+
       if (!allowed) {
         return new Response(
           JSON.stringify({ error: "Le manager doit appartenir à votre organisation" }),

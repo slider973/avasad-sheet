@@ -572,6 +572,7 @@ services:
               manager_data:
                 parameters: SELECT employee_id FROM manager_employees WHERE manager_id = token_parameters.user_id
                 data:
+                  - SELECT * FROM profiles WHERE id = bucket.employee_id
                   - SELECT * FROM timesheet_entries WHERE user_id = bucket.employee_id
                   - SELECT * FROM absences WHERE user_id = bucket.employee_id
                   - SELECT * FROM anomalies WHERE user_id = bucket.employee_id

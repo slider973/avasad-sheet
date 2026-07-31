@@ -62,6 +62,15 @@ sync_rules:
         FROM manager_employees me
         WHERE me.manager_id = token_parameters.user_id
       data:
+        # Profil de l'employé rattaché, quelle que soit son organisation.
+        # Sans cette ligne, un employé HORS de l'org du manager n'est jamais
+        # synchronisé côté mobile : les requêtes du dashboard manager font un
+        # JOIN profiles/manager_employees en SQLite local
+        # (manager_powersync_data_source.dart) et ne renvoient donc rien, alors
+        # que ses pointages/absences/frais sont bien là. `org_data` ci-dessous
+        # ne couvre que les profils de la PROPRE org du manager.
+        # Aligné sur la policy RLS profiles_select (migrations 00019/00020).
+        - SELECT * FROM profiles WHERE id = bucket.employee_id
         - SELECT * FROM timesheet_entries WHERE user_id = bucket.employee_id
         - SELECT * FROM absences WHERE user_id = bucket.employee_id
         - SELECT * FROM anomalies WHERE user_id = bucket.employee_id
