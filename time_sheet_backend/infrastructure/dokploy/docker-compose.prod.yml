@@ -591,34 +591,16 @@ services:
         echo "PowerSync config written successfully"
     volumes:
       - powersync-config:/powersync-config
-  docuseal:
-    image: docuseal/docuseal:latest
-    restart: unless-stopped
-    networks:
-      - supabase-net
-      - dokploy-network
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-      SECRET_KEY_BASE: ${DOCUSEAL_SECRET_KEY}
-      FORCE_SSL: "false"
-    volumes:
-      - docuseal-data:/data
-    labels:
-      - traefik.docker.network=dokploy-network
-      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-24-web.rule=Host(`docuseal.timesheet.staticflow.ch`)
-      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-24-web.entrypoints=web
-      - traefik.http.services.timesheetsupabase-supabasestack-ggqzyc-24-web.loadbalancer.server.port=3000
-      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-24-web.service=timesheetsupabase-supabasestack-ggqzyc-24-web
-      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-24-web.middlewares=redirect-to-https@file
-      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-24-websecure.rule=Host(`docuseal.timesheet.staticflow.ch`)
-      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-24-websecure.entrypoints=websecure
-      - traefik.http.services.timesheetsupabase-supabasestack-ggqzyc-24-websecure.loadbalancer.server.port=3000
-      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-24-websecure.service=timesheetsupabase-supabasestack-ggqzyc-24-websecure
-      - traefik.http.routers.timesheetsupabase-supabasestack-ggqzyc-24-websecure.tls.certresolver=letsencrypt
-      - traefik.enable=true
+# DocuSeal SUPPRIMÉ le 2026-08-01. Jamais utilisé par l'application (aucune
+# référence dans le code Flutter, web ou les Edge Functions ; les colonnes
+# `docuseal_*` de validation_requests étaient toutes vides). Il était installé
+# dans le MÊME schéma `public` que Time Sheet, ce qui était la cause racine de
+# l'exposition corrigée par la migration 00021, et il redémarrait en boucle
+# depuis 128 000 tentatives (`relation "accounts" already exists`).
+# La signature PDF réelle passe par `signing_tokens` + les Edge Functions
+# generate-signing-token / sign-with-token (migration 00007).
+# Sauvegardes conservées sur le serveur : /root/docuseal-backup-*.sql et
+# /root/docuseal-volume-*.tar.gz
 networks:
   supabase-net:
     driver: bridge
@@ -630,4 +612,3 @@ volumes:
   mongo-data: null
   kong-config: null
   powersync-config: null
-  docuseal-data: null

@@ -37,7 +37,7 @@ time_sheet_backend/
 │       │   ├── 00002_rls_policies.sql   # Row Level Security
 │       │   ├── 00003_storage_buckets.sql
 │       │   ├── 00004_multi_tenant_roles.sql   # Multi-tenant + rôles
-│       │   ├── 00005_docuseal_columns.sql     # Signature DocuSeal
+│       │   ├── 00005_docuseal_columns.sql     # (obsolète — colonnes retirées, DocuSeal supprimé)
 │       │   ├── 00006_org_hierarchy.sql        # Hiérarchie d'organisations
 │       │   ├── 00007_signing_tokens.sql       # Tokens de signature PDF
 │       │   ├── 00008..00013                   # RLS manager, RPC orgs/managers, storage policies
@@ -62,7 +62,7 @@ time_sheet_backend/
 
 ### Database Schema (PostgreSQL)
 
-11 tables de base avec RLS (le schéma a évolué depuis : multi-tenant/hiérarchie d'orgs, colonnes DocuSeal, `signing_tokens`, `mcp_tokens` — voir `infrastructure/supabase/migrations/` qui fait foi) :
+11 tables de base avec RLS (le schéma a évolué depuis : multi-tenant/hiérarchie d'orgs, `signing_tokens`, `mcp_tokens` — voir `infrastructure/supabase/migrations/` qui fait foi). Au 2026-08-01 le schéma `public` ne contient plus que 13 tables applicatives + `schema_migrations`, toutes sous RLS :
 
 | Table | Description |
 |-------|-------------|
@@ -227,11 +227,17 @@ App Start -> Supabase.initialize() + PowerSync.initialize()
 
 Workflow détaillé (prod incluse) : skill projet `db-migration`.
 
-### PDF Signing Workflow (DocuSeal / tokens)
+### PDF Signing Workflow (tokens)
 
 1. `generate-signing-token` crée un token de signature pour un PDF
 2. Le signataire ouvre le lien, `get-signing-info` renvoie le contexte
-3. `sign-with-token` enregistre la signature (colonnes DocuSeal, migration 00005/00007)
+3. `sign-with-token` enregistre la signature (table `signing_tokens`, migration 00007)
+
+⚠️ **DocuSeal a été supprimé le 2026-08-01** (service, 37 tables, colonnes
+`docuseal_*` de `validation_requests`). Il n'était référencé par aucun code
+applicatif et partageait le schéma `public` — cause racine de l'exposition
+corrigée par la migration 00021. La signature repose uniquement sur
+`signing_tokens`. Sauvegardes : `/root/docuseal-*` sur le serveur.
 
 ### Validation Workflow
 
