@@ -255,9 +255,14 @@ corrigée par la migration 00021. La signature repose uniquement sur
 Page web `/admin/organizations/:id` (`timesheet-web/src/pages/admin/organization-detail.tsx`) :
 
 1. **Identité** — logo (bucket `org-logos`), nom, slug, `web_url`, statut actif.
-   Le logo remplace l'asset codé en dur `logo-sonrysa.png` dans l'en-tête des
-   PDF de relevé (`GeneratePdfUseCase._loadImage`, repli sur l'asset si absent
-   ou non décodable).
+   Le logo est la source de vérité pour l'en-tête de **tous** les PDF (relevé
+   d'heures et note de frais) via `PdfLogoProvider`
+   (`lib/features/organization/domain/services/`). L'asset `logo-sonrysa.png`
+   n'est plus qu'un repli, utilisé si l'organisation n'a pas de logo, si le
+   téléchargement échoue ou si les octets ne sont ni PNG ni JPEG.
+   Le logo est mis en cache **sur disque** (`OrganizationRepository`) pour que
+   la génération hors ligne utilise bien le logo configuré ; la clé de
+   fraîcheur est le `?v=` ajouté à l'URL à chaque téléversement.
 2. **Personne de contact** — prénom, nom, email, téléphone, adresse.
 3. **Manager responsable** — RPC `set_organization_manager(org, manager,
    include_descendants)` / `clear_organization_manager(...)` (migration 00023).

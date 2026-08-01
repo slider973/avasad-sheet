@@ -433,6 +433,7 @@ Future<void> setup() async {
       repository: getIt<ExpenseRepository>(),
       getSignatureUseCase: getIt<GetSignatureUseCase>(),
       getUserPreferenceUseCase: getIt<GetUserPreferenceUseCase>(),
+      organizationRepository: getIt<OrganizationRepository>(),
     ),
   );
 

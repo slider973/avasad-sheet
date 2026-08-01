@@ -9,6 +9,8 @@ import '../../../../core/error/failures.dart';
 import '../entities/expense.dart';
 import '../entities/expense_report.dart';
 import '../repositories/expense_repository.dart';
+import '../../../organization/domain/repositories/organization_repository.dart';
+import '../../../organization/domain/services/pdf_logo_provider.dart';
 import '../../../preference/domain/use_cases/get_signature_usecase.dart';
 import '../../../preference/domain/use_cases/get_user_preference_use_case.dart';
 
@@ -18,10 +20,15 @@ class GenerateExpensePdfUseCase {
   final GetSignatureUseCase getSignatureUseCase;
   final GetUserPreferenceUseCase getUserPreferenceUseCase;
 
+  /// Optionnel : fournit le logo de l'organisation configuré depuis l'interface
+  /// web. Absent (ou sans logo), le PDF retombe sur le logo par défaut.
+  final OrganizationRepository? organizationRepository;
+
   GenerateExpensePdfUseCase({
     required this.repository,
     required this.getSignatureUseCase,
     required this.getUserPreferenceUseCase,
+    this.organizationRepository,
   });
 
   Future<Either<Failure, String>> execute({
@@ -78,9 +85,11 @@ class GenerateExpensePdfUseCase {
     final fontData = await rootBundle.load("assets/fonts/helvetica.ttf");
     final ttf = pw.Font.ttf(fontData.buffer.asByteData());
 
-    // Charger le logo
-    final logoData = await rootBundle.load('assets/images/logo-sonrysa.png');
-    final logoImage = pw.MemoryImage(logoData.buffer.asUint8List());
+    // Charger le logo de l'organisation (repli sur le logo embarqué)
+    final logoImage = pw.MemoryImage(
+      await PdfLogoProvider(organizationRepository: organizationRepository)
+          .load(),
+    );
 
     // Signature
     pw.Image? signatureImage;
