@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../core/services/supabase/supabase_service.dart';
 import '../../../pointage/presentation/pages/pdf/pages/signature_page.dart';
 import '../../../pointage/presentation/pages/time-sheet/bloc/time_sheet/time_sheet_bloc.dart';
 import '../../../pointage/domain/entities/timesheet_generation_config.dart';
@@ -163,25 +162,10 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
     final clientSignerController =
         TextEditingController(text: state.clientSignerName);
 
-    // Charger les organisations enfants depuis Supabase
-    List<Map<String, dynamic>> organizations = [];
-    try {
-      final response = await SupabaseService.instance.client
-          .rpc('list_child_organizations');
-      organizations = List<Map<String, dynamic>>.from(response);
-    } catch (e) {
-      debugPrint('Erreur chargement organisations: $e');
-    }
-
-    // Pré-sélectionner l'organisation actuelle basée sur le nom
-    String? selectedOrgId;
-    for (final org in organizations) {
-      if (org['name'] == state.company) {
-        selectedOrgId = org['id'] as String;
-        break;
-      }
-    }
-
+    // L'entreprise n'est plus modifiable ici : le rattachement à une
+    // organisation est décidé par l'organisation et la base refuse toute
+    // écriture de `organization_id` par l'employé (migration 00026).
+    // L'ancien sélecteur listait toutes les entreprises clientes.
     if (!mounted) return;
 
     showDialog(
@@ -204,21 +188,17 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
                     decoration: const InputDecoration(labelText: 'Nom'),
                   ),
                   const SizedBox(height: 10),
-                  DropdownButtonFormField<String>(
-                    initialValue: selectedOrgId,
-                    decoration: const InputDecoration(labelText: 'Entreprise'),
-                    isExpanded: true,
-                    items: organizations.map((org) {
-                      return DropdownMenuItem<String>(
-                        value: org['id'] as String,
-                        child: Text(org['name'] as String),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setDialogState(() {
-                        selectedOrgId = value;
-                      });
-                    },
+                  InputDecorator(
+                    decoration: InputDecoration(
+                      labelText: 'Entreprise',
+                      helperText: state.company.isEmpty
+                          ? 'Votre administrateur vous rattachera à votre entreprise'
+                          : 'Rattachement géré par votre administrateur',
+                    ),
+                    child: Text(
+                      state.company.isEmpty ? '—' : state.company,
+                      style: const TextStyle(fontSize: 16),
+                    ),
                   ),
                   const SizedBox(height: 10),
                   TextField(
@@ -239,21 +219,11 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
                 TextButton(
                   child: const Text('Enregistrer'),
                   onPressed: () {
-                    String companyName = state.company;
-                    if (selectedOrgId != null) {
-                      for (final org in organizations) {
-                        if (org['id'] == selectedOrgId) {
-                          companyName = org['name'] as String;
-                          break;
-                        }
-                      }
-                    }
                     this.context.read<PreferencesBloc>().add(SavePreferences(
                           firstName: firstNameController.text,
                           lastName: lastNameController.text,
-                          company: companyName,
+                          company: state.company,
                           clientSignerName: clientSignerController.text.trim(),
-                          organizationId: selectedOrgId,
                         ));
                     Navigator.of(dialogContext).pop();
                   },

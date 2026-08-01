@@ -218,17 +218,13 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
             'clientSignerName', event.clientSignerName);
       }
 
-      // Sauvegarder organization_id directement via Supabase (pas PowerSync)
-      // pour éviter des CRUD operations bloquées par RLS
-      if (event.organizationId != null) {
-        final userId = SupabaseService.instance.currentUserId;
-        if (userId != null) {
-          await SupabaseService.instance.client
-              .from('profiles')
-              .update({'organization_id': event.organizationId})
-              .eq('id', userId);
-        }
-      }
+      // `organization_id` n'est plus écrit ici : le rattachement à une
+      // organisation est une décision de l'organisation, pas de l'utilisateur.
+      // La base le refuse depuis la migration 00026 (« Rattachement à une
+      // organisation interdit ») — un employé pouvait sinon rejoindre
+      // n'importe quelle entreprise et lire son répertoire. Les comptes sont
+      // créés ou rattachés depuis l'admin web. `company` reste une préférence
+      // locale, utilisée pour l'affichage et l'en-tête des PDF.
 
       // Récupérer la signature existante depuis l'état capturé avant Loading,
       // sinon depuis les préférences stockées (jamais de défaut codé en dur).
@@ -553,17 +549,13 @@ class PreferencesBloc extends Bloc<PreferencesEvent, PreferencesState> {
         await setUserPreferenceUseCase.execute('signature', signatureBase64);
       }
 
-      // Sauvegarder organization_id directement via Supabase (pas PowerSync)
-      // pour éviter des CRUD operations bloquées par RLS
-      if (event.organizationId != null) {
-        final userId = SupabaseService.instance.currentUserId;
-        if (userId != null) {
-          await SupabaseService.instance.client
-              .from('profiles')
-              .update({'organization_id': event.organizationId})
-              .eq('id', userId);
-        }
-      }
+      // `organization_id` n'est plus écrit ici : le rattachement à une
+      // organisation est une décision de l'organisation, pas de l'utilisateur.
+      // La base le refuse depuis la migration 00026 (« Rattachement à une
+      // organisation interdit ») — un employé pouvait sinon rejoindre
+      // n'importe quelle entreprise et lire son répertoire. Les comptes sont
+      // créés ou rattachés depuis l'admin web. `company` reste une préférence
+      // locale, utilisée pour l'affichage et l'en-tête des PDF.
 
       // Charger les autres préférences existantes
       final notificationsEnabled =

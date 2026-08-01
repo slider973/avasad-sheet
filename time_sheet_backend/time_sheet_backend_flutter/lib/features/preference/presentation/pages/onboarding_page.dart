@@ -26,13 +26,13 @@ class _OnboardingPageState extends State<OnboardingPage> {
   String? _signatureSaveMessage;
   bool _showSignaturePad = false;
   int _currentPage = 0;
-  List<Map<String, dynamic>> _organizations = [];
-  String? _selectedOrgId;
+  String? _organizationName;
+  bool _organizationLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _loadOrganizations();
+    _loadMyOrganization();
     _loadExistingSignature();
   }
 
@@ -54,17 +54,33 @@ class _OnboardingPageState extends State<OnboardingPage> {
     }
   }
 
-  Future<void> _loadOrganizations() async {
+  /// Lit le nom de l'organisation à laquelle l'utilisateur est déjà rattaché.
+  ///
+  /// L'utilisateur ne choisit plus son entreprise : le rattachement est décidé
+  /// par l'organisation (compte créé ou rattaché depuis l'admin web) et la base
+  /// refuse toute écriture de `organization_id` par l'employé lui-même
+  /// (migration 00026). Cet écran ne fait donc plus que restituer l'existant.
+  ///
+  /// Requête volontairement sans embed `organizations(name)` : une seconde clé
+  /// étrangère entre `profiles` et `organizations` rendrait l'embed ambigu et
+  /// casserait l'écran (PGRST201, cf. migration 00025).
+  Future<void> _loadMyOrganization() async {
+    final orgId = widget.user.organizationId;
+    if (orgId == null) return;
+    setState(() => _organizationLoading = true);
     try {
       final response = await SupabaseService.instance.client
-          .rpc('list_child_organizations');
-      if (mounted) {
-        setState(() {
-          _organizations = List<Map<String, dynamic>>.from(response);
-        });
+          .from('organizations')
+          .select('name')
+          .eq('id', orgId)
+          .maybeSingle();
+      if (mounted && response != null) {
+        setState(() => _organizationName = response['name'] as String?);
       }
     } catch (e) {
-      debugPrint('Erreur chargement organisations: $e');
+      debugPrint('Erreur chargement de l\'organisation: $e');
+    } finally {
+      if (mounted) setState(() => _organizationLoading = false);
     }
   }
 
@@ -117,22 +133,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   void _saveAndFinish() {
-    String companyName = '';
-    if (_selectedOrgId != null) {
-      for (final org in _organizations) {
-        if (org['id'] == _selectedOrgId) {
-          companyName = org['name'] as String;
-          break;
-        }
-      }
-    }
     // Sauvegarder les données dans les préférences
     context.read<PreferencesBloc>().add(
       SaveUserInfoEvent(
         firstName: widget.user.firstName,
         lastName: widget.user.lastName,
-        company: companyName,
-        organizationId: _selectedOrgId,
+        company: _organizationName ?? '',
         signature: _signatureData,
       ),
     );
@@ -196,39 +202,74 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
             ),
             const SizedBox(height: 10),
-            const Text(
-              'Veuillez sélectionner votre entreprise pour continuer.',
-              style: TextStyle(
+            Text(
+              _organizationName != null
+                  ? 'Voici votre entreprise. Passez à l\'étape suivante pour enregistrer votre signature.'
+                  : 'Il ne reste que votre signature à enregistrer.',
+              style: const TextStyle(
                 fontSize: 16,
                 color: Colors.grey,
               ),
             ),
             const SizedBox(height: 40),
-            DropdownButtonFormField<String>(
-              initialValue: _selectedOrgId,
-              decoration: const InputDecoration(
-                labelText: 'Entreprise',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.business),
+            if (_organizationLoading)
+              const Center(child: CircularProgressIndicator())
+            else if (_organizationName != null)
+              InputDecorator(
+                decoration: const InputDecoration(
+                  labelText: 'Entreprise',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.business),
+                ),
+                child: Text(
+                  _organizationName!,
+                  style: const TextStyle(fontSize: 16),
+                ),
+              )
+            else
+              // Le rattachement à une entreprise est décidé par
+              // l'organisation, jamais par l'employé (migration 00026) : on
+              // n'affiche donc plus de sélecteur, seulement l'information.
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.blue.shade100),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.blue.shade700),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Entreprise à rattacher',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue.shade900,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Votre administrateur vous rattachera à votre '
+                            'entreprise. Vous pourrez ensuite envoyer vos '
+                            'feuilles de temps en validation.',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.blue.shade900,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              items: _organizations.map((org) {
-                return DropdownMenuItem<String>(
-                  value: org['id'] as String,
-                  child: Text(org['name'] as String),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedOrgId = value;
-                });
-              },
-              validator: (value) {
-                if (value == null) {
-                  return 'Veuillez sélectionner votre entreprise';
-                }
-                return null;
-              },
-            ),
           ],
         ),
       ),
