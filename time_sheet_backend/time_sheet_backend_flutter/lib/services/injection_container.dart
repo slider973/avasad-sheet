@@ -83,6 +83,8 @@ import '../features/manager/data/data_sources/manager_data_source.dart';
 import '../features/manager/data/data_sources/manager_powersync_data_source.dart';
 import '../features/manager/data/repositories/manager_repository_impl.dart';
 import '../features/manager/domain/repositories/manager_repository.dart';
+import '../features/organization/data/repositories/organization_repository_powersync_impl.dart';
+import '../features/organization/domain/repositories/organization_repository.dart';
 import '../features/manager/domain/use_cases/approve_expense_usecase.dart';
 import '../features/manager/domain/use_cases/get_employee_timesheet_usecase.dart';
 import '../features/manager/domain/use_cases/get_pending_expenses_usecase.dart';
@@ -104,6 +106,13 @@ Future<void> setup() async {
 
   // Enregistrer le Logger
   getIt.registerLazySingleton<Logger>(() => Logger());
+
+  // ============ ORGANISATION ============
+  // Paramètres d'organisation (logo, contact, manager responsable) définis par
+  // le super_admin depuis l'app web et synchronisés via la bucket `org_data`.
+  getIt.registerLazySingleton<OrganizationRepository>(
+    () => OrganizationRepositoryPowerSyncImpl(db: db),
+  );
 
   // ============ AUTHENTICATION ============
   final supabaseClient = SupabaseService.instance.client;
@@ -233,6 +242,7 @@ Future<void> setup() async {
         anomalyDetectionService: getIt<AnomalyDetectionService>(),
         calculateOvertimeHoursUseCase: getIt<CalculateOvertimeHoursUseCase>(),
         configRepository: getIt<OvertimeConfigurationRepository>(),
+        organizationRepository: getIt<OrganizationRepository>(),
       ));
   getIt.registerLazySingleton<GenerateExcelUseCase>(
       () => GenerateExcelUseCase(getIt<TimesheetRepositoryImpl>()));

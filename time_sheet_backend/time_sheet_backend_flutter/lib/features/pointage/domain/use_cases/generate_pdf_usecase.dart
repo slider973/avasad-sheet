@@ -14,6 +14,7 @@ import '../../../../enum/absence_motif.dart';
 import '../../../../enum/absence_period.dart';
 import '../../../absence/domain/value_objects/absence_type.dart';
 import '../../../../services/logger_service.dart';
+import '../../../organization/domain/repositories/organization_repository.dart';
 import '../../../preference/domain/entities/user.dart';
 import '../../../preference/domain/use_cases/get_signature_usecase.dart';
 import '../../../preference/domain/use_cases/get_user_preference_use_case.dart';
@@ -46,6 +47,10 @@ class GeneratePdfUseCase {
   final CalculateOvertimeHoursUseCase calculateOvertimeHoursUseCase;
   final OvertimeConfigurationRepository configRepository;
 
+  /// Optionnel : fournit le logo de l'organisation configuré par le
+  /// super_admin. Absent (ou sans logo), le PDF retombe sur le logo par défaut.
+  final OrganizationRepository? organizationRepository;
+
   GeneratePdfUseCase({
     required this.repository,
     required this.getSignatureUseCase,
@@ -53,6 +58,7 @@ class GeneratePdfUseCase {
     required this.anomalyDetectionService,
     required this.calculateOvertimeHoursUseCase,
     required this.configRepository,
+    this.organizationRepository,
   });
 
   final headerColor = PdfColor.fromHex('#D9D9D9'); // Gris clair pour l'en-tête
@@ -1053,8 +1059,33 @@ class GeneratePdfUseCase {
     );
   }
 
+  /// Logo à incruster dans l'en-tête du PDF.
+  ///
+  /// Priorité au logo de l'organisation (paramétré par le super_admin depuis
+  /// l'app web, bucket `org-logos`), avec repli sur le logo embarqué dans
+  /// l'application si l'organisation n'en a pas ou si le téléchargement échoue.
   Future<Uint8List> _loadImage() async {
+    try {
+      final orgLogo = await organizationRepository?.getMyOrganizationLogo();
+      if (orgLogo != null && _isRasterImage(orgLogo)) {
+        return orgLogo;
+      }
+    } catch (e) {
+      logger.w('Logo organisation inutilisable, repli sur le logo par défaut: $e');
+    }
     final byteData = await rootBundle.load('assets/images/logo-sonrysa.png');
     return byteData.buffer.asUint8List();
+  }
+
+  /// `pw.MemoryImage` ne décode que le PNG et le JPEG : on vérifie la signature
+  /// des octets plutôt que de faire confiance à l'extension du fichier.
+  bool _isRasterImage(Uint8List bytes) {
+    if (bytes.length < 4) return false;
+    final isPng = bytes[0] == 0x89 &&
+        bytes[1] == 0x50 &&
+        bytes[2] == 0x4E &&
+        bytes[3] == 0x47;
+    final isJpeg = bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF;
+    return isPng || isJpeg;
   }
 }

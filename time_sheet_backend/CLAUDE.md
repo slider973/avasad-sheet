@@ -45,7 +45,9 @@ time_sheet_backend/
 │       │   ├── 00015_harden_validation_rls.sql
 │       │   ├── 00016_manager_anomalies_update.sql
 │       │   ├── 00017_harden_storage_notifications_rpc.sql
-│       │   └── 00018_drop_legacy_policies.sql # Purge policies legacy prod + DELETE expenses/anomalies
+│       │   ├── 00018_drop_legacy_policies.sql # Purge policies legacy prod + DELETE expenses/anomalies
+│       │   ├── 00019..00022                   # Lien manager inter-orgs, durcissement prod, liste des orgs
+│       │   └── 00023_org_settings_and_manager.sql # Paramètres d'org (logo, contact) + manager responsable
 │       └── functions/                   # Edge Functions (TypeScript/Deno)
 │           ├── create-user/             # Création d'utilisateur (admin)
 │           ├── create-validation/
@@ -245,6 +247,27 @@ corrigée par la migration 00021. La signature repose uniquement sur
 2. Manager approves -> Edge Function `approve-validation` -> notification to employee
 3. Cron job -> Edge Function `check-expired` -> expires pending validations > 30 days
 
+### Paramétrage d'une organisation (super_admin)
+
+Page web `/admin/organizations/:id` (`timesheet-web/src/pages/admin/organization-detail.tsx`) :
+
+1. **Identité** — logo (bucket `org-logos`), nom, slug, `web_url`, statut actif.
+   Le logo remplace l'asset codé en dur `logo-sonrysa.png` dans l'en-tête des
+   PDF de relevé (`GeneratePdfUseCase._loadImage`, repli sur l'asset si absent
+   ou non décodable).
+2. **Personne de contact** — prénom, nom, email, téléphone, adresse.
+3. **Manager responsable** — RPC `set_organization_manager(org, manager,
+   include_descendants)` / `clear_organization_manager(...)` (migration 00023).
+   L'affectation promeut le profil en `manager` si besoin, mémorise le choix
+   dans `organizations.default_manager_id` et **matérialise les liens
+   `manager_employees`** vers tous les employés actifs du périmètre.
+   ⚠️ C'est ce lien — et non la hiérarchie d'orgs — qui ouvre la lecture des
+   pointages, la bucket PowerSync `manager_data`, le droit de valider et de
+   signer (cf. migrations 00019/00020 et `create-validation`).
+
+Côté Flutter, les paramètres arrivent par la bucket `org_data` et se lisent via
+`OrganizationRepository` (`lib/features/organization/`).
+
 ### Manager Dashboard
 
 Manager role detected from `profiles.role` via PowerSync. 6th tab "Manager" shows:
@@ -267,6 +290,11 @@ Three private buckets with RLS:
 - `pdfs/` : Generated timesheet PDFs (`{userId}/{year}-{month}.pdf`)
 - `signatures/` : User signatures (`{userId}/signature.png`)
 - `receipts/` : Expense receipt photos (`{userId}/{expenseId}.jpg`)
+
+Plus one **public** bucket (migration 00023) :
+- `org-logos/` : Logo d'organisation (`{orgId}/logo.png|jpg`, 2 Mo max, PNG/JPEG).
+  Lecture publique assumée (l'app mobile l'incruste dans les PDF hors ligne) ;
+  écriture réservée au super_admin ou à l'org_admin de l'organisation.
 
 Access: `StorageService` in `lib/core/services/storage/storage_service.dart`
 

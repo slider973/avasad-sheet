@@ -40,8 +40,28 @@ export interface Organization {
   slug: string | null
   parent_id: string | null
   is_active: boolean
+  web_url: string | null
+  // Paramétrage de l'organisation (migration 00023)
+  logo_url: string | null
+  contact_first_name: string | null
+  contact_last_name: string | null
+  contact_email: string | null
+  contact_phone: string | null
+  address: string | null
+  default_manager_id: string | null
   created_at: string
   updated_at: string
+}
+
+/** Candidat manager retourné par la RPC `list_manager_candidates` */
+export interface ManagerCandidate {
+  id: string
+  email: string
+  first_name: string
+  last_name: string
+  role: UserRole
+  organization_id: string | null
+  organization_name: string | null
 }
 
 export interface TimesheetEntry {
