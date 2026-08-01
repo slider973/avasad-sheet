@@ -79,9 +79,14 @@ class _InitialCheckPageState extends State<InitialCheckPage> {
 
             if (state is PreferencesLoaded) {
               _isNavigating = true;
+              // `company` n'entre plus dans cette condition : l'entreprise
+              // n'est plus saisie par l'employé (le rattachement se fait côté
+              // organisation, cf. migration 00026), donc elle reste vide tant
+              // qu'un administrateur n'a pas rattaché le compte. L'exiger ici
+              // renverrait l'utilisateur à l'onboarding en boucle, même après
+              // l'avoir terminé.
               if (state.firstName.isEmpty ||
                   state.lastName.isEmpty ||
-                  state.company.isEmpty ||
                   state.signature == null) {
                 // Missing profile info → onboarding
                 Navigator.of(context).pushReplacement(
