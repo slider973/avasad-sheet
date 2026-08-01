@@ -47,7 +47,9 @@ time_sheet_backend/
 │       │   ├── 00017_harden_storage_notifications_rpc.sql
 │       │   ├── 00018_drop_legacy_policies.sql # Purge policies legacy prod + DELETE expenses/anomalies
 │       │   ├── 00019..00022                   # Lien manager inter-orgs, durcissement prod, liste des orgs
-│       │   └── 00023_org_settings_and_manager.sql # Paramètres d'org (logo, contact) + manager responsable
+│       │   ├── 00023_org_settings_and_manager.sql # Paramètres d'org (logo, contact) + manager responsable
+│       │   ├── 00024_manager_candidates_cross_org.sql # Sélecteur : managers hors hiérarchie (super_admin)
+│       │   └── 00025_fix_postgrest_embed_ambiguity.sql # ⚠️ PAS de FK organizations->profiles (PGRST201)
 │       └── functions/                   # Edge Functions (TypeScript/Deno)
 │           ├── create-user/             # Création d'utilisateur (admin)
 │           ├── create-validation/
