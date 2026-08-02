@@ -2,7 +2,6 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:powersync/powersync.dart';
 
@@ -23,16 +22,20 @@ import '../../domain/repositories/organization_repository.dart';
 /// L'URL stockée dans `organizations.logo_url` porte un paramètre `?v=`
 /// renouvelé à chaque téléversement : elle sert donc de clé de fraîcheur du
 /// cache disque. Pas de cache disque sur le web (pas de système de fichiers).
+///
+/// ⚠️ Le téléchargement passe par le **client Storage de Supabase**, pas par un
+/// GET nu sur l'URL publique : la passerelle Kong protège tout `/storage/v1/`
+/// par le plugin `key-auth`, y compris la route `/object/public/`. Un GET sans
+/// en-tête `apikey` reçoit un 401 (vérifié en prod le 2026-08-02), et le PDF
+/// retomberait silencieusement sur le logo par défaut. Le client Storage
+/// attache la clé et la session automatiquement.
 class OrganizationRepositoryPowerSyncImpl implements OrganizationRepository {
   static const String _cacheDirName = 'org_logo';
+  static const String _logoBucket = 'org-logos';
 
   final PowerSyncDatabase db;
-  final http.Client httpClient;
 
-  OrganizationRepositoryPowerSyncImpl({
-    required this.db,
-    http.Client? httpClient,
-  }) : httpClient = httpClient ?? http.Client();
+  OrganizationRepositoryPowerSyncImpl({required this.db});
 
   /// Cache mémoire : clé = URL du logo, valeur = octets (ou null si échec).
   final Map<String, Uint8List?> _logoCache = {};
@@ -74,25 +77,43 @@ class OrganizationRepositoryPowerSyncImpl implements OrganizationRepository {
       return cached;
     }
 
-    // 2. Téléchargement
+    // 2. Téléchargement via le client Storage (qui porte la clé API)
+    final path = _storagePath(url);
+    if (path == null) {
+      logger.w('URL de logo inattendue, téléchargement ignoré: $url');
+      _logoCache[url] = null;
+      return null;
+    }
+
     try {
-      final response = await httpClient
-          .get(Uri.parse(url))
+      final bytes = await SupabaseService.instance.client.storage
+          .from(_logoBucket)
+          .download(path)
           .timeout(const Duration(seconds: 10));
-      if (response.statusCode != 200 || response.bodyBytes.isEmpty) {
-        logger.w('Logo organisation indisponible (HTTP ${response.statusCode})');
+      if (bytes.isEmpty) {
         _logoCache[url] = null;
         return null;
       }
-      await _writeToDisk(url, response.bodyBytes);
-      _logoCache[url] = response.bodyBytes;
-      return response.bodyBytes;
+      await _writeToDisk(url, bytes);
+      _logoCache[url] = bytes;
+      return bytes;
     } catch (e) {
       // Hors ligne et rien en cache : l'appelant retombe sur le logo embarqué.
       logger.w('Téléchargement du logo organisation échoué: $e');
       _logoCache[url] = null;
       return null;
     }
+  }
+
+  /// Chemin dans le bucket (`{orgId}/logo.png`) extrait de l'URL publique
+  /// stockée en base, paramètre `?v=` retiré. `null` si l'URL ne pointe pas
+  /// sur le bucket attendu.
+  String? _storagePath(String url) {
+    const marker = '/$_logoBucket/';
+    final index = url.indexOf(marker);
+    if (index == -1) return null;
+    final path = url.substring(index + marker.length).split('?').first;
+    return path.isEmpty ? null : path;
   }
 
   /// Répertoire de cache, `null` sur le web ou si l'accès disque échoue.

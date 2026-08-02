@@ -263,6 +263,18 @@ Page web `/admin/organizations/:id` (`timesheet-web/src/pages/admin/organization
    Le logo est mis en cache **sur disque** (`OrganizationRepository`) pour que
    la génération hors ligne utilise bien le logo configuré ; la clé de
    fraîcheur est le `?v=` ajouté à l'URL à chaque téléversement.
+
+   ⚠️ **Un bucket « public » n'est pas joignable sans clé API.** Kong protège
+   tout `/storage/v1/` par le plugin `key-auth`, route `/object/public/`
+   comprise : un GET nu renvoie **401** (vérifié en prod le 2026-08-02, upload
+   200 / lecture sans clé 401 / lecture avec clé 200). Conséquences :
+   - Flutter télécharge le logo par le **client Storage** (`.download(path)`),
+     qui attache la clé — jamais par un `http.get` sur l'URL publique.
+   - Le web passe la clé anon en paramètre d'URL via `storageImageSrc()`
+     (`src/lib/supabase.ts`), une balise `<img>` ne pouvant porter d'en-tête.
+
+   Ouvrir une route Kong `/storage/v1/object/public/` sans `key-auth`
+   simplifierait les deux, au prix d'un redéploiement Dokploy du stack.
 2. **Personne de contact** — prénom, nom, email, téléphone, adresse.
 3. **Manager responsable** — RPC `set_organization_manager(org, manager,
    include_descendants)` / `clear_organization_manager(...)` (migration 00023).

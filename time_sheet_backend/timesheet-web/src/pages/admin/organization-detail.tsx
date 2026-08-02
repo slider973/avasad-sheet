@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { storageImageSrc } from '@/lib/supabase'
 import { FadeIn } from '@/components/motion'
 import { EmptyState } from '@/components/shared/empty-state'
 import { TableSkeleton, CardSkeletonGrid } from '@/components/shared/loading-skeleton'
@@ -265,7 +266,7 @@ export default function AdminOrgDetailPage() {
           </Button>
           {org.logo_url ? (
             <img
-              src={org.logo_url}
+              src={storageImageSrc(org.logo_url)}
               alt={`Logo ${org.name}`}
               className="h-10 w-10 rounded-xl border object-contain bg-white p-0.5"
             />
@@ -321,7 +322,7 @@ export default function AdminOrgDetailPage() {
               <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl border bg-white">
                 {org.logo_url ? (
                   <img
-                    src={org.logo_url}
+                    src={storageImageSrc(org.logo_url)}
                     alt={`Logo ${org.name}`}
                     className="h-full w-full object-contain p-1.5"
                   />
@@ -675,7 +676,7 @@ export default function AdminOrgDetailPage() {
                       <div className="flex items-center gap-3">
                         {child.logo_url ? (
                           <img
-                            src={child.logo_url}
+                            src={storageImageSrc(child.logo_url)}
                             alt={`Logo ${child.name}`}
                             className="h-9 w-9 rounded-xl border bg-white object-contain p-0.5"
                           />
