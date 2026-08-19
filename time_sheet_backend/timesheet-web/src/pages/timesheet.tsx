@@ -20,6 +20,8 @@ import { MiniCalendar } from '@/components/shared/mini-calendar'
 import { FadeIn } from '@/components/motion'
 import { Badge } from '@/components/ui/badge'
 import { useTimesheetEntries, useUpsertTimesheetEntry } from '@/hooks/use-timesheet'
+import { formatSlot } from '@/lib/timesheet'
+import { QuickPunchCard } from '@/components/shared/quick-punch-card'
 import { useAuthStore } from '@/stores/auth-store'
 import {
   format, parseISO, eachDayOfInterval, startOfMonth, endOfMonth,
@@ -212,18 +214,22 @@ export default function TimesheetPage() {
     {
       key: 'morning',
       header: 'Matin',
-      cell: (row) =>
-        row.entry?.start_morning && row.entry?.end_morning
-          ? <span className="tabular-nums">{row.entry.start_morning} - {row.entry.end_morning}</span>
-          : <span className="text-muted-foreground/40">-</span>,
+      cell: (row) => {
+        const slot = formatSlot(row.entry?.start_morning, row.entry?.end_morning)
+        return slot
+          ? <span className="tabular-nums">{slot}</span>
+          : <span className="text-muted-foreground/40">-</span>
+      },
     },
     {
       key: 'afternoon',
       header: 'Apres-midi',
-      cell: (row) =>
-        row.entry?.start_afternoon && row.entry?.end_afternoon
-          ? <span className="tabular-nums">{row.entry.start_afternoon} - {row.entry.end_afternoon}</span>
-          : <span className="text-muted-foreground/40">-</span>,
+      cell: (row) => {
+        const slot = formatSlot(row.entry?.start_afternoon, row.entry?.end_afternoon)
+        return slot
+          ? <span className="tabular-nums">{slot}</span>
+          : <span className="text-muted-foreground/40">-</span>
+      },
     },
     {
       key: 'hours',
@@ -294,6 +300,13 @@ export default function TimesheetPage() {
           </div>
         }
       />
+
+      {/* Pointage en un clic pour aujourd'hui. Toujours visible, y compris en
+          consultant un autre mois : le bouton agit sur la date du jour, qu'il
+          affiche explicitement. */}
+      <FadeIn>
+        <QuickPunchCard />
+      </FadeIn>
 
       {/* List view */}
       {viewMode === 'list' && (
