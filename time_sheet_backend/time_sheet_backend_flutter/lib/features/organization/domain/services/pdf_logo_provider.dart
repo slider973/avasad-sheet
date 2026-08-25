@@ -1,4 +1,4 @@
-import 'package:flutter/services.dart';
+import 'dart:typed_data';
 
 import '../../../../services/logger_service.dart';
 import '../repositories/organization_repository.dart';
@@ -6,30 +6,29 @@ import '../repositories/organization_repository.dart';
 /// Fournit le logo à incruster dans l'en-tête des PDF (relevé d'heures et note
 /// de frais).
 ///
-/// Source de vérité : le logo configuré par un super_admin depuis l'interface
-/// web (`/admin/organizations/:id`, bucket `org-logos`, colonne
-/// `organizations.logo_url`). L'asset embarqué dans l'application ne sert plus
-/// que de repli quand l'organisation n'a pas de logo, que le téléchargement
-/// échoue ou que les octets reçus ne sont pas décodables.
+/// Source de vérité unique : le logo configuré par un super_admin depuis
+/// l'interface web (`/admin/organizations/:id`, bucket `org-logos`, colonne
+/// `organizations.logo_url`).
+///
+/// Retourne `null` quand l'organisation n'a pas de logo, que le téléchargement
+/// échoue ou que les octets reçus ne sont pas décodables : l'en-tête est alors
+/// rendu sans image. Aucun logo de repli n'est embarqué — un document ne doit
+/// jamais porter la marque d'une société qui n'est pas celle de l'employé.
 class PdfLogoProvider {
-  /// Logo historique, utilisé tant qu'aucune organisation n'a configuré le sien.
-  static const String fallbackAsset = 'assets/images/logo-sonrysa.png';
-
   final OrganizationRepository? organizationRepository;
 
   const PdfLogoProvider({this.organizationRepository});
 
-  Future<Uint8List> load() async {
+  Future<Uint8List?> load() async {
     try {
       final orgLogo = await organizationRepository?.getMyOrganizationLogo();
       if (orgLogo != null && isRasterImage(orgLogo)) {
         return orgLogo;
       }
     } catch (e) {
-      logger.w('Logo organisation inutilisable, repli sur le logo par défaut: $e');
+      logger.w('Logo organisation indisponible, PDF généré sans logo: $e');
     }
-    final byteData = await rootBundle.load(fallbackAsset);
-    return byteData.buffer.asUint8List();
+    return null;
   }
 
   /// `pw.MemoryImage` ne décode que le PNG et le JPEG : on vérifie la signature

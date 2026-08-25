@@ -477,7 +477,8 @@ class GeneratePdfUseCase {
     final ttf = pw.Font.ttf(fontData.buffer.asByteData());
 
     // Chargez le logo
-    final logoImage = pw.MemoryImage(await _loadImage());
+    final logoBytes = await _loadImage();
+    final logoImage = logoBytes == null ? null : pw.MemoryImage(logoBytes);
 
     // Convertissez la signature en pw.Image si elle existe
     pw.Image? signatureImage;
@@ -630,7 +631,7 @@ class GeneratePdfUseCase {
     );
   }
 
-  pw.Widget _buildHeader(pw.MemoryImage logoImage) {
+  pw.Widget _buildHeader(pw.MemoryImage? logoImage) {
     return pw.Container(
       padding: const pw.EdgeInsets.all(10),
       decoration: pw.BoxDecoration(
@@ -643,7 +644,7 @@ class GeneratePdfUseCase {
           pw.Text('Note de temps',
               style:
                   pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
-          pw.Image(logoImage, width: 70),
+          if (logoImage != null) pw.Image(logoImage, width: 70),
         ],
       ),
     );
@@ -1062,9 +1063,9 @@ class GeneratePdfUseCase {
 
   /// Logo à incruster dans l'en-tête du PDF.
   ///
-  /// Priorité au logo de l'organisation (paramétré par le super_admin depuis
-  /// l'app web, bucket `org-logos`), avec repli sur le logo embarqué dans
-  /// l'application si l'organisation n'en a pas ou si le téléchargement échoue.
-  Future<Uint8List> _loadImage() =>
+  /// Provient exclusivement de l'organisation (paramétré par le super_admin
+  /// depuis l'app web, bucket `org-logos`). Vaut `null` si elle n'en a pas ou
+  /// si le téléchargement échoue : l'en-tête est alors rendu sans image.
+  Future<Uint8List?> _loadImage() =>
       PdfLogoProvider(organizationRepository: organizationRepository).load();
 }

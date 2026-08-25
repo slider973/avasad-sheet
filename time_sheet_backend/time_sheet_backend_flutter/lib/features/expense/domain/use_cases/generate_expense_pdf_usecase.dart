@@ -85,11 +85,11 @@ class GenerateExpensePdfUseCase {
     final fontData = await rootBundle.load("assets/fonts/helvetica.ttf");
     final ttf = pw.Font.ttf(fontData.buffer.asByteData());
 
-    // Charger le logo de l'organisation (repli sur le logo embarqué)
-    final logoImage = pw.MemoryImage(
-      await PdfLogoProvider(organizationRepository: organizationRepository)
-          .load(),
-    );
+    // Logo de l'organisation ; `null` si elle n'en a pas configuré
+    final logoBytes =
+        await PdfLogoProvider(organizationRepository: organizationRepository)
+            .load();
+    final logoImage = logoBytes == null ? null : pw.MemoryImage(logoBytes);
 
     // Signature
     pw.Image? signatureImage;
@@ -143,7 +143,7 @@ class GenerateExpensePdfUseCase {
   }
 
   pw.Widget _buildHeader(
-    pw.MemoryImage logo,
+    pw.MemoryImage? logo,
     String employeeName,
     int month,
     int year,
@@ -164,12 +164,14 @@ class GenerateExpensePdfUseCase {
           pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
-              pw.Image(logo, width: 100),
-              pw.Container(
-                width: 1,
-                height: 50,
-                color: PdfColors.black,
-              ),
+              if (logo != null) ...[
+                pw.Image(logo, width: 100),
+                pw.Container(
+                  width: 1,
+                  height: 50,
+                  color: PdfColors.black,
+                ),
+              ],
               pw.Expanded(
                 child: pw.Padding(
                   padding: const pw.EdgeInsets.only(left: 16),

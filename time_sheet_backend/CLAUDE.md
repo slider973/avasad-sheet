@@ -255,11 +255,13 @@ corrigée par la migration 00021. La signature repose uniquement sur
 Page web `/admin/organizations/:id` (`timesheet-web/src/pages/admin/organization-detail.tsx`) :
 
 1. **Identité** — logo (bucket `org-logos`), nom, slug, `web_url`, statut actif.
-   Le logo est la source de vérité pour l'en-tête de **tous** les PDF (relevé
-   d'heures et note de frais) via `PdfLogoProvider`
-   (`lib/features/organization/domain/services/`). L'asset `logo-sonrysa.png`
-   n'est plus qu'un repli, utilisé si l'organisation n'a pas de logo, si le
-   téléchargement échoue ou si les octets ne sont ni PNG ni JPEG.
+   Le logo est la source de vérité **unique** pour l'en-tête de **tous** les
+   PDF (relevé d'heures et note de frais) via `PdfLogoProvider`
+   (`lib/features/organization/domain/services/`). **Aucun logo de repli** :
+   si l'organisation n'en a pas, si le téléchargement échoue ou si les octets
+   ne sont ni PNG ni JPEG, `load()` renvoie `null` et l'en-tête est rendu sans
+   image. Un document ne doit jamais porter la marque d'une autre société —
+   l'asset historique `logo-sonrysa.png` n'est plus utilisé nulle part.
    Le logo est mis en cache **sur disque** (`OrganizationRepository`) pour que
    la génération hors ligne utilise bien le logo configuré ; la clé de
    fraîcheur est le `?v=` ajouté à l'URL à chaque téléversement.

@@ -57,18 +57,15 @@ void main() {
       expect(await provider.load(), equals(logo));
     });
 
-    test('retombe sur le logo embarqué quand l\'organisation n\'en a pas',
-        () async {
+    test('ne renvoie aucun logo quand l\'organisation n\'en a pas', () async {
       final provider = PdfLogoProvider(
         organizationRepository: _FakeOrganizationRepository(logo: null),
       );
 
-      final bytes = await provider.load();
-      expect(bytes, isNotEmpty);
-      expect(PdfLogoProvider.isRasterImage(bytes), isTrue);
+      expect(await provider.load(), isNull);
     });
 
-    test('retombe sur le logo embarqué si les octets ne sont pas décodables',
+    test('ne renvoie aucun logo si les octets ne sont pas décodables',
         () async {
       final provider = PdfLogoProvider(
         organizationRepository: _FakeOrganizationRepository(
@@ -76,23 +73,21 @@ void main() {
         ),
       );
 
-      final bytes = await provider.load();
-      expect(PdfLogoProvider.isRasterImage(bytes), isTrue);
-      expect(bytes, isNot(equals(Uint8List.fromList('<svg xmlns='.codeUnits))));
+      expect(await provider.load(), isNull);
     });
 
-    test('retombe sur le logo embarqué si la récupération échoue', () async {
+    test('ne renvoie aucun logo si la récupération échoue', () async {
       final provider = PdfLogoProvider(
         organizationRepository: _FakeOrganizationRepository(throws: true),
       );
 
-      expect(PdfLogoProvider.isRasterImage(await provider.load()), isTrue);
+      expect(await provider.load(), isNull);
     });
 
-    test('retombe sur le logo embarqué sans repository', () async {
+    test('ne renvoie aucun logo sans repository', () async {
       const provider = PdfLogoProvider();
 
-      expect(PdfLogoProvider.isRasterImage(await provider.load()), isTrue);
+      expect(await provider.load(), isNull);
     });
   });
 }
