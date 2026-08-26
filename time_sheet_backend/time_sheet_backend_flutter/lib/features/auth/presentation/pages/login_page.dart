@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart'
+    show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -6,11 +8,24 @@ import '../../../preference/presentation/pages/initial_check_page.dart';
 import 'register_page.dart';
 import 'forgot_password_page.dart';
 
-/// Connexion Google activée : provider GoTrue configuré (projet
-/// time-sheet-b86f6) + client iOS (Info.plist) + serverClientId (web).
+/// Connexion Google : provider GoTrue configuré (projet time-sheet-b86f6)
+/// + client iOS (Info.plist) + serverClientId (web).
+///
+/// ⚠️ Masquée sur **iOS natif** : la guideline App Store 4.8 impose de
+/// proposer « Sign in with Apple » dès qu'un login social tiers sert à créer
+/// un compte, et l'inscription publique (`/signup`) est ouverte — l'exception
+/// « app d'entreprise » ne s'applique donc pas. C'est le bouton Google qui a
+/// valu le rejet 2.1 de juillet ; la 1.0.2 approuvée le masquait déjà ainsi.
+/// Réactivation sur iOS = implémenter Sign in with Apple au préalable.
+///
+/// `defaultTargetPlatform` plutôt que `Platform.isIOS` : `dart:io` n'existe
+/// pas sur le web. Le `kIsWeb` passe en premier car Safari iOS rapporte
+/// `TargetPlatform.iOS` alors que la règle 4.8 ne vise pas le web.
+///
 /// NB Android : nécessitera son propre client OAuth + SHA-1 le jour où
 /// l'app sera distribuée sur le Play Store.
-const bool _googleSignInEnabled = true;
+final bool _googleSignInEnabled =
+    kIsWeb || defaultTargetPlatform != TargetPlatform.iOS;
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -194,13 +209,8 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Google Sign-In désactivé PARTOUT tant que la config OAuth
-                    // n'est pas complète : aucun provider Google côté GoTrue
-                    // self-hosted, pas de GIDClientID iOS (crash FLUTTER-C6),
-                    // 0 oauth_client dans google-services.json Android. Le
-                    // bouton ne pouvait que produire une erreur. Réactivation =
-                    // config OAuth serveur + iOS/Android + Sign in with Apple
-                    // (guideline 4.8) ; passer _googleSignInEnabled à true.
+                    // Bouton masqué sur iOS natif uniquement (guideline 4.8 :
+                    // pas de Sign in with Apple) — voir _googleSignInEnabled.
                     if (_googleSignInEnabled) ...[
                       // Divider
                       const Row(
