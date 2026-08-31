@@ -35,6 +35,10 @@ workflows:
         - pattern: main
           include: true
       cancel_previous_builds: true
+    # ⚠️ Codemagic scanne le MESSAGE de commit et saute le build s'il y trouve
+    # « [skip ci] » ou « [ci skip] » — y compris dans le corps, y compris entre
+    # backticks (piège rencontré le 26/08/2026 : le webhook répond 202 mais aucun
+    # build n'est créé). Ne jamais citer ce marqueur dans un message de commit.
     # Ne builder que si l'app Flutter change : un commit backend/doc ne doit
     # ni consommer un build Mac ni publier un TestFlight identique.
     when:

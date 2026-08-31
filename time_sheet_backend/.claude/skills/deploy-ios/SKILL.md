@@ -48,4 +48,5 @@ Le build local est **impossible** (Apple exige le SDK iOS 26 / Xcode 26 ; le Mac
 - **« Cloud signing permission error »** : la clé API utilisée n'est pas Admin.
 - **CocoaPods « installed but broken » sous fastlane** : fuite `GEM_HOME`/`GEM_PATH` — déjà corrigé dans le Fastfile (purge/restore), ne pas retirer ce bloc.
 - **Build rejeté pour numéro déjà utilisé** : ne jamais fixer le build number à la main ; il est toujours calculé = dernier TestFlight + 1.
+- **Aucun build créé alors que le push est parti** : Codemagic saute le build si le **message de commit** contient « [skip ci] » ou « [ci skip] », **corps compris et même entre backticks**. Le webhook GitHub répond alors `202` et aucun check-run n'apparaît — le symptôme ressemble à une panne. Ne jamais citer ce marqueur dans un message ; pour redéclencher, refaire un commit touchant `codemagic.yaml` ou l'app Flutter.
 - **Builds TestFlight expirent après 90 jours** : relancer un build suffit à prolonger la beta.
