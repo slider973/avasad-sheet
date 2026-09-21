@@ -788,11 +788,32 @@ class GeneratePdfUseCase {
     );
   }
 
+  /// Contenu de la colonne « Commentaires » du relevé.
+  ///
+  /// Deux sources peuvent coexister sur une même journée : le motif de
+  /// l'absence (automatique) et le commentaire libre saisi par l'employé.
+  /// Les deux sont rendus, séparés par un tiret, plutôt que de laisser l'un
+  /// masquer l'autre : une demi-journée d'absence commentée doit montrer le
+  /// motif ET l'explication.
   String _getCommentaire(Workday day) {
+    final parts = <String>[];
+
+    final motif = _getMotifAbsence(day);
+    if (motif.isNotEmpty) parts.add(motif);
+
+    final comment = day.entry.comment;
+    if (comment != null && comment.trim().isNotEmpty) {
+      parts.add(comment.trim());
+    }
+
+    return parts.join(' — ');
+  }
+
+  String _getMotifAbsence(Workday day) {
     if (day.entry.absence != null) {
       return day.entry.absence!.type == AbsenceType.other
           ? day.entry.absence!.motif
-          : _getMotifFromType(day.entry.absence!.type) ?? '';
+          : _getMotifFromType(day.entry.absence!.type);
     }
     if (day.entry.absenceReason != null && day.entry.absenceReason!.isNotEmpty) {
       return day.entry.absenceReason!;

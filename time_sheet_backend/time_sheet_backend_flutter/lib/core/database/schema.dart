@@ -29,6 +29,7 @@ const schema = Schema([
     Column.integer('is_weekend_day'),
     Column.integer('is_weekend_overtime_enabled'),
     Column.text('overtime_type'),
+    Column.text('comment'),
     Column.text('created_at'),
     Column.text('updated_at'),
   ]),

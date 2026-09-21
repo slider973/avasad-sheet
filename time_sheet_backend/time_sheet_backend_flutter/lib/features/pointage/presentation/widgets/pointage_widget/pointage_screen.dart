@@ -38,6 +38,7 @@ class PointageScreen extends StatelessWidget {
   final bool isLoading;
   final bool showAppBar; // Nouveau paramètre pour contrôler l'AppBar
   final Duration? dailyWorkThreshold; // Objectif journalier configurable
+  final ValueChanged<String>? onCommentSaved;
 
   const PointageScreen({
     super.key,
@@ -65,6 +66,7 @@ class PointageScreen extends StatelessWidget {
     this.isLoading = false,
     this.showAppBar = true, // Par défaut, affiche l'AppBar
     this.dailyWorkThreshold,
+    this.onCommentSaved,
   });
 
   @override
@@ -92,6 +94,7 @@ class PointageScreen extends StatelessWidget {
       extendedTimerState: extendedTimerState,
       workTimeInfo: workTimeInfo,
       dailyWorkThreshold: dailyWorkThreshold,
+      onCommentSaved: onCommentSaved,
     );
 
     final fab = PointageFAB(

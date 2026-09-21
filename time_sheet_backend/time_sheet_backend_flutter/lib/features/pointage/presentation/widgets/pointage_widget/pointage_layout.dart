@@ -19,6 +19,7 @@ import 'pointage_main_section.dart';
 import 'pointage_design_system.dart';
 import 'daily_objective_card.dart';
 import 'weekly_summary_card.dart';
+import 'pointage_comment_card.dart';
 import 'pointage_fab.dart';
 
 class PointageLayout extends StatelessWidget {
@@ -46,6 +47,10 @@ class PointageLayout extends StatelessWidget {
   final WorkTimeInfo? workTimeInfo;
   final Duration? dailyWorkThreshold;
 
+  /// Enregistre le commentaire libre de la journée. Absent tant que l'écran
+  /// est utilisé en lecture seule (aperçu depuis les anomalies).
+  final ValueChanged<String>? onCommentSaved;
+
   const PointageLayout({
     super.key,
     required this.etatActuel,
@@ -70,6 +75,7 @@ class PointageLayout extends StatelessWidget {
     this.extendedTimerState,
     this.workTimeInfo,
     this.dailyWorkThreshold,
+    this.onCommentSaved,
   });
 
   @override
@@ -112,6 +118,14 @@ class PointageLayout extends StatelessWidget {
 
               // Action Buttons Section - boutons secondaires (exigences 5.2, 5.4, 7.6)
               _buildActionButtonsSection(),
+
+              // Commentaire libre de la journée, repris dans le PDF
+              if (onCommentSaved != null)
+                PointageCommentCard(
+                  comment: currentEntry?.comment,
+                  onCommentSaved: onCommentSaved!,
+                  enabled: currentEntry != null,
+                ),
 
               // History Section avec séparation visuelle (exigences 4.5, 7.5, 7.7)
               _buildHistorySection(),

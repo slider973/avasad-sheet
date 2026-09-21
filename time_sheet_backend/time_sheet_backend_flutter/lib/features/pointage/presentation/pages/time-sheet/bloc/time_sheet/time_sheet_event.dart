@@ -84,6 +84,20 @@ class UpdateTimeSheetDataEvent extends TimeSheetEvent {
   List<Object?> get props => [entry];
 }
 
+/// Enregistre le commentaire libre de la journée affichée.
+///
+/// Le commentaire appartient à l'entrée du jour : l'événement part de
+/// l'entrée courante de l'état et n'en modifie que ce champ, afin de ne
+/// jamais écraser les horaires déjà saisis.
+class TimeSheetUpdateCommentEvent extends TimeSheetEvent {
+  final String comment;
+
+  const TimeSheetUpdateCommentEvent(this.comment);
+
+  @override
+  List<Object?> get props => [comment];
+}
+
 class GenerateMonthlyTimesheetEvent extends TimeSheetEvent {
   final TimesheetGenerationConfig? config;
   final DateTime? month;

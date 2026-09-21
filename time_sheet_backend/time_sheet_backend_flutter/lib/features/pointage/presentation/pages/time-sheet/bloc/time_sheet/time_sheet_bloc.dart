@@ -70,6 +70,7 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
     on<LoadTimeSheetDataEvent>(_loadDataTimeSheetData);
     on<TimeSheetUpdatePointageEvent>(_updatePointage);
     on<UpdateTimeSheetDataEvent>(_updateTimeSheetData);
+    on<TimeSheetUpdateCommentEvent>(_updateComment);
     on<GenerateMonthlyTimesheetEvent>(_generateMonthlyTimesheet);
     on<CheckGenerationStatusEvent>(_checkGenerationStatus);
     on<TimeSheetSignalerAbsencePeriodeEvent>(_onSignalerAbsencePeriode);
@@ -152,6 +153,9 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
         id: currentEntry.id,
         dayDate: currentEntry.dayDate,
         dayOfWeekDate: currentEntry.dayOfWeekDate,
+        // Recopié explicitement : ce constructeur ne reprend que les
+        // horaires, un champ omis serait effacé à chaque pointage.
+        comment: currentEntry.comment,
         startMorning: DateFormat('HH:mm').format(event.startTime),
         endMorning: currentEntry.endMorning,
         startAfternoon: currentEntry.startAfternoon,
@@ -187,6 +191,9 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
       TimesheetEntry updatedEntry = TimesheetEntry(
         dayDate: currentEntry.dayDate,
         dayOfWeekDate: currentEntry.dayOfWeekDate,
+        // Recopié explicitement : ce constructeur ne reprend que les
+        // horaires, un champ omis serait effacé à chaque pointage.
+        comment: currentEntry.comment,
         startMorning: currentEntry.startMorning,
         endMorning: currentEntry.endMorning,
         startAfternoon: currentEntry.startAfternoon,
@@ -219,6 +226,9 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
         id: currentEntry.id,
         dayDate: currentEntry.dayDate,
         dayOfWeekDate: currentEntry.dayOfWeekDate,
+        // Recopié explicitement : ce constructeur ne reprend que les
+        // horaires, un champ omis serait effacé à chaque pointage.
+        comment: currentEntry.comment,
         startMorning: currentEntry.startMorning,
         endMorning: DateFormat('HH:mm').format(event.startBreakTime),
         startAfternoon: currentEntry.startAfternoon,
@@ -254,6 +264,9 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
         id: currentEntry.id,
         dayDate: currentEntry.dayDate,
         dayOfWeekDate: currentEntry.dayOfWeekDate,
+        // Recopié explicitement : ce constructeur ne reprend que les
+        // horaires, un champ omis serait effacé à chaque pointage.
+        comment: currentEntry.comment,
         startMorning: currentEntry.startMorning,
         endMorning: currentEntry.endMorning,
         startAfternoon: DateFormat('HH:mm').format(event.endBreakTime),
@@ -342,6 +355,23 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
         ),
       ));
     }
+  }
+
+  /// Persiste le commentaire de la journée courante.
+  ///
+  /// `copyWith` garantit que seul ce champ change : les horaires, l'absence
+  /// et les heures supplémentaires de l'entrée affichée sont conservés tels
+  /// quels. Sans entrée courante il n'y a pas de journée à commenter — le
+  /// commentaire est alors ignoré plutôt que d'en créer une vide.
+  Future<void> _updateComment(
+      TimeSheetUpdateCommentEvent event, Emitter<TimeSheetState> emit) async {
+    if (state is! TimeSheetDataState) return;
+
+    final currentEntry = (state as TimeSheetDataState).entry;
+    final updatedEntry = currentEntry.copyWith(comment: event.comment);
+
+    final id = await saveTimesheetEntryUseCase.execute(updatedEntry);
+    emit(await _createTimeSheetDataState(updatedEntry.copyWith(id: id)));
   }
 
   Future<void> _updateTimeSheetData(

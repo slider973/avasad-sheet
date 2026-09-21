@@ -12,6 +12,7 @@ class TimesheetEntry {
   String startAfternoon;
   String endAfternoon;
   final String? absenceReason;
+  final String? comment;
   final AbsenceEntity? absence;
   final String? period;
   final bool hasOvertimeHours;
@@ -29,6 +30,7 @@ class TimesheetEntry {
     required this.endAfternoon,
     this.absence,
     this.absenceReason,
+    this.comment,
     this.period,
     this.hasOvertimeHours = false,
     this.isWeekendDay = false,
@@ -186,6 +188,7 @@ class TimesheetEntry {
     String? startAfternoon,
     String? endAfternoon,
     String? absenceReason,
+    String? comment,
     AbsenceEntity? absence,
     String? period,
     bool? hasOvertimeHours,
@@ -202,6 +205,7 @@ class TimesheetEntry {
       startAfternoon: startAfternoon ?? this.startAfternoon,
       endAfternoon: endAfternoon ?? this.endAfternoon,
       absenceReason: absenceReason ?? this.absenceReason,
+      comment: comment ?? this.comment,
       period: period ?? this.period,
       absence: absence ?? this.absence,
       hasOvertimeHours: hasOvertimeHours ?? this.hasOvertimeHours,

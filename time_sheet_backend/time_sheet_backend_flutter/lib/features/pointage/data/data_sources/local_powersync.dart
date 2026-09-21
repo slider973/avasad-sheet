@@ -128,6 +128,7 @@ class LocalDatasourcePowerSyncImpl implements LocalDataSource {
       'start_afternoon': entryModel.startAfternoon,
       'end_afternoon': entryModel.endAfternoon,
       'absence_reason': entryModel.absenceReason,
+      'comment': entryModel.comment,
       'period': entryModel.period,
       'has_overtime_hours': entryModel.hasOvertimeHours ? 1 : 0,
       'is_weekend_day': entryModel.isWeekendDay ? 1 : 0,
@@ -142,12 +143,14 @@ class LocalDatasourcePowerSyncImpl implements LocalDataSource {
         '''UPDATE timesheet_entries SET
           day_of_week = ?, start_morning = ?, end_morning = ?,
           start_afternoon = ?, end_afternoon = ?, absence_reason = ?,
+          comment = ?,
           period = ?, has_overtime_hours = ?, is_weekend_day = ?,
           is_weekend_overtime_enabled = ?, overtime_type = ?
           WHERE id = ?''',
         [
           data['day_of_week'], data['start_morning'], data['end_morning'],
           data['start_afternoon'], data['end_afternoon'], data['absence_reason'],
+          data['comment'],
           data['period'], data['has_overtime_hours'], data['is_weekend_day'],
           data['is_weekend_overtime_enabled'], data['overtime_type'],
           entryId,
@@ -158,15 +161,15 @@ class LocalDatasourcePowerSyncImpl implements LocalDataSource {
       await db.execute(
         '''INSERT INTO timesheet_entries (id, user_id, day_date, day_of_week,
           start_morning, end_morning, start_afternoon, end_afternoon,
-          absence_reason, period, has_overtime_hours, is_weekend_day,
+          absence_reason, comment, period, has_overtime_hours, is_weekend_day,
           is_weekend_overtime_enabled, overtime_type)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
         [
           entryId,
           userId, dayDateStr, data['day_of_week'],
           data['start_morning'], data['end_morning'],
           data['start_afternoon'], data['end_afternoon'],
-          data['absence_reason'], data['period'],
+          data['absence_reason'], data['comment'], data['period'],
           data['has_overtime_hours'], data['is_weekend_day'],
           data['is_weekend_overtime_enabled'], data['overtime_type'],
         ],
@@ -477,6 +480,7 @@ class LocalDatasourcePowerSyncImpl implements LocalDataSource {
     model.startAfternoon = row['start_afternoon'] as String? ?? '';
     model.endAfternoon = row['end_afternoon'] as String? ?? '';
     model.absenceReason = row['absence_reason'] as String? ?? '';
+    model.comment = row['comment'] as String? ?? '';
     model.period = row['period'] as String? ?? '';
     model.hasOvertimeHours = (row['has_overtime_hours'] as int? ?? 0) == 1;
     model.isWeekendDay = (row['is_weekend_day'] as int? ?? 0) == 1;
@@ -512,6 +516,7 @@ class LocalDatasourcePowerSyncImpl implements LocalDataSource {
       startAfternoon: model.startAfternoon,
       endAfternoon: model.endAfternoon,
       absenceReason: model.absenceReason,
+      comment: model.comment,
       absence: model.absence.value?.toEntity(),
       period: model.period,
       hasOvertimeHours: model.hasOvertimeHours,

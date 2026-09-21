@@ -169,6 +169,7 @@ class _PointageWidgetState extends State<PointageWidget>
             extendedTimerState: _extendedTimerState,
             workTimeInfo: _workTimeInfo,
             dailyWorkThreshold: _dailyWorkThreshold,
+            onCommentSaved: _enregistrerCommentaire,
           );
         }
         if (state is TimeSheetLoading) {
@@ -336,6 +337,15 @@ class _PointageWidgetState extends State<PointageWidget>
     String formattedDate = DateFormat("dd-MMM-yy").format(date);
     final bloc = context.read<TimeSheetBloc>();
     bloc.add(LoadTimeSheetDataEvent(formattedDate));
+  }
+
+  /// Enregistre le commentaire libre de la journée affichée.
+  ///
+  /// Le bloc repart de l'entrée courante et n'en modifie que ce champ : les
+  /// horaires déjà pointés ne sont pas touchés.
+  void _enregistrerCommentaire(String commentaire) {
+    final bloc = context.read<TimeSheetBloc>();
+    bloc.add(TimeSheetUpdateCommentEvent(commentaire));
   }
 
   void _updateBlocWithEntry(TimesheetEntry entry) {

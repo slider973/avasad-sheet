@@ -24,6 +24,11 @@ class TimeSheetEntryModel {
   late String absenceReason;
   late String period;
 
+  /// Commentaire libre de l'employé sur la journée, rendu dans la colonne
+  /// « Commentaires » du relevé PDF. Non `late` : les entrées Isar écrites
+  /// avant l'ajout du champ se relisent avec la chaîne vide.
+  String comment = '';
+
   @Index()
   bool hasOvertimeHours = false;
 

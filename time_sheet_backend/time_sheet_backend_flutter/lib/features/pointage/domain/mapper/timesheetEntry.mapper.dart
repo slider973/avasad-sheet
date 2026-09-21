@@ -14,6 +14,7 @@ class TimesheetEntryMapper {
       startAfternoon: model.startAfternoon,
       endAfternoon: model.endAfternoon,
       absenceReason: model.absenceReason,
+      comment: model.comment,
       absence: model.absence.value?.toEntity(),
       period: model.period,
       hasOvertimeHours: model.hasOvertimeHours,
@@ -31,6 +32,7 @@ class TimesheetEntryMapper {
       ..endMorning = entity.endMorning
       ..startAfternoon = entity.startAfternoon
       ..absenceReason = entity.absenceReason ?? ''
+      ..comment = entity.comment ?? ''
       ..period = entity.period ?? ''
       ..endAfternoon = entity.endAfternoon
       ..hasOvertimeHours = entity.hasOvertimeHours

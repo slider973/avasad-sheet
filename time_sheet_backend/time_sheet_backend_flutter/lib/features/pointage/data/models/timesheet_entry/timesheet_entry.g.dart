@@ -23,59 +23,64 @@ const TimeSheetEntryModelSchema = CollectionSchema(
       name: r'absenceReason',
       type: IsarType.string,
     ),
-    r'dayDate': PropertySchema(
+    r'comment': PropertySchema(
       id: 1,
+      name: r'comment',
+      type: IsarType.string,
+    ),
+    r'dayDate': PropertySchema(
+      id: 2,
       name: r'dayDate',
       type: IsarType.dateTime,
     ),
     r'dayOfWeekDate': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'dayOfWeekDate',
       type: IsarType.string,
     ),
     r'endAfternoon': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'endAfternoon',
       type: IsarType.string,
     ),
     r'endMorning': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'endMorning',
       type: IsarType.string,
     ),
     r'hasOvertimeHours': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'hasOvertimeHours',
       type: IsarType.bool,
     ),
     r'isWeekendDay': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'isWeekendDay',
       type: IsarType.bool,
     ),
     r'isWeekendOvertimeEnabled': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'isWeekendOvertimeEnabled',
       type: IsarType.bool,
     ),
     r'overtimeType': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'overtimeType',
       type: IsarType.string,
       enumMap: _TimeSheetEntryModelovertimeTypeEnumValueMap,
     ),
     r'period': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'period',
       type: IsarType.string,
     ),
     r'startAfternoon': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'startAfternoon',
       type: IsarType.string,
     ),
     r'startMorning': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'startMorning',
       type: IsarType.string,
     )
@@ -156,6 +161,7 @@ int _timeSheetEntryModelEstimateSize(
 ) {
   var bytesCount = offsets.last;
   bytesCount += 3 + object.absenceReason.length * 3;
+  bytesCount += 3 + object.comment.length * 3;
   bytesCount += 3 + object.dayOfWeekDate.length * 3;
   bytesCount += 3 + object.endAfternoon.length * 3;
   bytesCount += 3 + object.endMorning.length * 3;
@@ -173,17 +179,18 @@ void _timeSheetEntryModelSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeString(offsets[0], object.absenceReason);
-  writer.writeDateTime(offsets[1], object.dayDate);
-  writer.writeString(offsets[2], object.dayOfWeekDate);
-  writer.writeString(offsets[3], object.endAfternoon);
-  writer.writeString(offsets[4], object.endMorning);
-  writer.writeBool(offsets[5], object.hasOvertimeHours);
-  writer.writeBool(offsets[6], object.isWeekendDay);
-  writer.writeBool(offsets[7], object.isWeekendOvertimeEnabled);
-  writer.writeString(offsets[8], object.overtimeType.name);
-  writer.writeString(offsets[9], object.period);
-  writer.writeString(offsets[10], object.startAfternoon);
-  writer.writeString(offsets[11], object.startMorning);
+  writer.writeString(offsets[1], object.comment);
+  writer.writeDateTime(offsets[2], object.dayDate);
+  writer.writeString(offsets[3], object.dayOfWeekDate);
+  writer.writeString(offsets[4], object.endAfternoon);
+  writer.writeString(offsets[5], object.endMorning);
+  writer.writeBool(offsets[6], object.hasOvertimeHours);
+  writer.writeBool(offsets[7], object.isWeekendDay);
+  writer.writeBool(offsets[8], object.isWeekendOvertimeEnabled);
+  writer.writeString(offsets[9], object.overtimeType.name);
+  writer.writeString(offsets[10], object.period);
+  writer.writeString(offsets[11], object.startAfternoon);
+  writer.writeString(offsets[12], object.startMorning);
 }
 
 TimeSheetEntryModel _timeSheetEntryModelDeserialize(
@@ -194,20 +201,21 @@ TimeSheetEntryModel _timeSheetEntryModelDeserialize(
 ) {
   final object = TimeSheetEntryModel();
   object.absenceReason = reader.readString(offsets[0]);
-  object.dayDate = reader.readDateTime(offsets[1]);
-  object.dayOfWeekDate = reader.readString(offsets[2]);
-  object.endAfternoon = reader.readString(offsets[3]);
-  object.endMorning = reader.readString(offsets[4]);
-  object.hasOvertimeHours = reader.readBool(offsets[5]);
+  object.comment = reader.readString(offsets[1]);
+  object.dayDate = reader.readDateTime(offsets[2]);
+  object.dayOfWeekDate = reader.readString(offsets[3]);
+  object.endAfternoon = reader.readString(offsets[4]);
+  object.endMorning = reader.readString(offsets[5]);
+  object.hasOvertimeHours = reader.readBool(offsets[6]);
   object.id = id;
-  object.isWeekendDay = reader.readBool(offsets[6]);
-  object.isWeekendOvertimeEnabled = reader.readBool(offsets[7]);
+  object.isWeekendDay = reader.readBool(offsets[7]);
+  object.isWeekendOvertimeEnabled = reader.readBool(offsets[8]);
   object.overtimeType = _TimeSheetEntryModelovertimeTypeValueEnumMap[
-          reader.readStringOrNull(offsets[8])] ??
+          reader.readStringOrNull(offsets[9])] ??
       OvertimeType.NONE;
-  object.period = reader.readString(offsets[9]);
-  object.startAfternoon = reader.readString(offsets[10]);
-  object.startMorning = reader.readString(offsets[11]);
+  object.period = reader.readString(offsets[10]);
+  object.startAfternoon = reader.readString(offsets[11]);
+  object.startMorning = reader.readString(offsets[12]);
   return object;
 }
 
@@ -221,28 +229,30 @@ P _timeSheetEntryModelDeserializeProp<P>(
     case 0:
       return (reader.readString(offset)) as P;
     case 1:
-      return (reader.readDateTime(offset)) as P;
-    case 2:
       return (reader.readString(offset)) as P;
+    case 2:
+      return (reader.readDateTime(offset)) as P;
     case 3:
       return (reader.readString(offset)) as P;
     case 4:
       return (reader.readString(offset)) as P;
     case 5:
-      return (reader.readBool(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 6:
       return (reader.readBool(offset)) as P;
     case 7:
       return (reader.readBool(offset)) as P;
     case 8:
+      return (reader.readBool(offset)) as P;
+    case 9:
       return (_TimeSheetEntryModelovertimeTypeValueEnumMap[
               reader.readStringOrNull(offset)] ??
           OvertimeType.NONE) as P;
-    case 9:
-      return (reader.readString(offset)) as P;
     case 10:
       return (reader.readString(offset)) as P;
     case 11:
+      return (reader.readString(offset)) as P;
+    case 12:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -654,6 +664,142 @@ extension TimeSheetEntryModelQueryFilter on QueryBuilder<TimeSheetEntryModel,
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'absenceReason',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterFilterCondition>
+      commentEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'comment',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterFilterCondition>
+      commentGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'comment',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterFilterCondition>
+      commentLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'comment',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterFilterCondition>
+      commentBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'comment',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterFilterCondition>
+      commentStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'comment',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterFilterCondition>
+      commentEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'comment',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterFilterCondition>
+      commentContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'comment',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterFilterCondition>
+      commentMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'comment',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterFilterCondition>
+      commentIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'comment',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterFilterCondition>
+      commentIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'comment',
         value: '',
       ));
     });
@@ -1805,6 +1951,20 @@ extension TimeSheetEntryModelQuerySortBy
   }
 
   QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterSortBy>
+      sortByComment() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'comment', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterSortBy>
+      sortByCommentDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'comment', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterSortBy>
       sortByDayDate() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'dayDate', Sort.asc);
@@ -1972,6 +2132,20 @@ extension TimeSheetEntryModelQuerySortThenBy
       thenByAbsenceReasonDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'absenceReason', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterSortBy>
+      thenByComment() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'comment', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QAfterSortBy>
+      thenByCommentDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'comment', Sort.desc);
     });
   }
 
@@ -2155,6 +2329,13 @@ extension TimeSheetEntryModelQueryWhereDistinct
   }
 
   QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QDistinct>
+      distinctByComment({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'comment', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, TimeSheetEntryModel, QDistinct>
       distinctByDayDate() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'dayDate');
@@ -2246,6 +2427,13 @@ extension TimeSheetEntryModelQueryProperty
       absenceReasonProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'absenceReason');
+    });
+  }
+
+  QueryBuilder<TimeSheetEntryModel, String, QQueryOperations>
+      commentProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'comment');
     });
   }
 
