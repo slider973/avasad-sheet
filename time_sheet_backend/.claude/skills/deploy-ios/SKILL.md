@@ -35,6 +35,24 @@ Le build local est **impossible** (Apple exige le SDK iOS 26 / Xcode 26 ; le Mac
 - Intégration ASC Codemagic : **« Sonrysa ASC »** avec la clé API **Admin `3CU9399LC5`**. Le rôle Admin est obligatoire (une clé App Manager ne peut pas créer de certificat).
 - ⚠️ Ne JAMAIS regénérer une clé privée à chaque build : cela crée un certificat neuf à chaque fois et fait exploser la limite Apple (erreur 409 « You already have a current Distribution certificate »).
 
+### Lire les logs d'un build (API Codemagic)
+
+Token personnel dans `~/.codemagic/api_token` (hors dépôt, chmod 600) —
+Codemagic → Teams → Personal Access Token pour en régénérer un.
+
+```bash
+T=$(cat ~/.codemagic/api_token)
+curl -s -H "x-auth-token: $T" https://api.codemagic.io/apps          # id des apps
+curl -s -H "x-auth-token: $T" https://api.codemagic.io/builds/<buildId>   # étapes + statuts
+curl -s -H "x-auth-token: $T" https://api.codemagic.io/builds/<buildId>/step/<stepId>  # log brut
+```
+
+L'id du build se lit dans le `details_url` du check-run GitHub :
+`gh api repos/slider973/avasad-sheet/commits/<sha>/check-runs --jq '.check_runs[].details_url'`.
+Le champ `buildActions[]` donne le statut par étape : repérer celle en
+`failed`, puis récupérer son `logUrl`. Le message utile d'Apple est dans
+`product-errors[].message`.
+
 ## fastlane local (secours / diagnostic)
 
 - `cd time_sheet_backend/time_sheet_backend_flutter/ios`
@@ -49,4 +67,5 @@ Le build local est **impossible** (Apple exige le SDK iOS 26 / Xcode 26 ; le Mac
 - **CocoaPods « installed but broken » sous fastlane** : fuite `GEM_HOME`/`GEM_PATH` — déjà corrigé dans le Fastfile (purge/restore), ne pas retirer ce bloc.
 - **Build rejeté pour numéro déjà utilisé** : ne jamais fixer le build number à la main ; il est toujours calculé = dernier TestFlight + 1.
 - **Aucun build créé alors que le push est parti** : Codemagic saute le build si le **message de commit** contient « [skip ci] » ou « [ci skip] », **corps compris et même entre backticks**. Le webhook GitHub répond alors `202` et aucun check-run n'apparaît — le symptôme ressemble à une panne. Ne jamais citer ce marqueur dans un message ; pour redéclencher, refaire un commit touchant `codemagic.yaml` ou l'app Flutter.
+- **`Publishing` échoue alors que le build compile** (toutes les étapes vertes sauf la dernière, ~9 min) : lire le log de l'étape. Cause vue le 21/09/2026 — Apple **90062** : « The value for key CFBundleShortVersionString [1.0.3] must contain a higher version than that of the previously approved version [1.0.3] ». Dès qu'une version est `READY_FOR_SALE`, plus aucun build ne peut être envoyé sous ce même nom de version : **bumper `pubspec.yaml`** (le numéro de build, lui, est toujours recalculé et n'est pas en cause). Réflexe : après chaque publication App Store, passer `pubspec.yaml` à la version suivante.
 - **Builds TestFlight expirent après 90 jours** : relancer un build suffit à prolonger la beta.
