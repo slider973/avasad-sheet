@@ -88,6 +88,8 @@ class PointageLayout extends StatelessWidget {
           absence: absence,
           onDeleteEntry: onDeleteEntry,
           etatActuel: etatActuel,
+          comment: currentEntry?.comment,
+          onCommentSaved: onCommentSaved,
         ),
       );
     }

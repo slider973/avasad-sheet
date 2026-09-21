@@ -5,6 +5,7 @@ import 'package:time_sheet/features/absence/domain/entities/absence_entity.dart'
 import 'package:time_sheet/features/absence/domain/value_objects/absence_type.dart';
 import 'package:time_sheet/features/pointage/presentation/widgets/pointage_widget/pointage_remove_timesheet_day.dart';
 import '../../../../../enum/absence_motif.dart';
+import 'pointage_comment_card.dart';
 
 class PointageAbsence extends StatefulWidget {
   final String? absenceReason;
@@ -12,12 +13,21 @@ class PointageAbsence extends StatefulWidget {
   final VoidCallback onDeleteEntry;
   final String etatActuel;
 
+  /// Commentaire libre déjà enregistré sur la journée d'absence.
+  final String? comment;
+
+  /// Enregistre le commentaire. Null quand l'écran est en lecture seule : la
+  /// carte de saisie est alors masquée.
+  final ValueChanged<String>? onCommentSaved;
+
   const PointageAbsence({
     super.key,
     this.absenceReason,
     required this.onDeleteEntry,
     required this.etatActuel,
     this.absence,
+    this.comment,
+    this.onCommentSaved,
   });
 
   @override
@@ -65,6 +75,20 @@ class _PointageAbsenceState extends State<PointageAbsence> {
             SizedBox(height: 20),
             _buildInfoCard(context, absenceType),
             SizedBox(height: 20),
+            // Commentaire libre : il s'ajoute au motif de l'absence dans la
+            // colonne « Commentaires » du relevé PDF, séparé par un tiret.
+            // `double.infinity` car la colonne est centrée : sans contrainte
+            // de largeur, la carte se réduirait à son contenu.
+            if (widget.onCommentSaved != null) ...[
+              SizedBox(
+                width: double.infinity,
+                child: PointageCommentCard(
+                  comment: widget.comment,
+                  onCommentSaved: widget.onCommentSaved!,
+                ),
+              ),
+              SizedBox(height: 20),
+            ],
             PointageRemoveTimesheetDay(
               etatActuel: widget.etatActuel,
               onDeleteEntry: widget.onDeleteEntry,
