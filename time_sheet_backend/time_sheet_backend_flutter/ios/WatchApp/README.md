@@ -65,6 +65,21 @@ Points à ne pas défaire :
   compilés pour iOS ; les tirer dans la target watch casserait le link. Mais il
   doit inclure `Generated.xcconfig`, sinon les versions du bundle watch ne
   correspondent plus à celles de l'app iOS — et Apple rejette l'IPA.
+* **La phase « Embed Watch Content » doit rester juste après « Resources »**,
+  donc AVANT `Thin Binary` et les phases `[CP]` de CocoaPods. Placée en
+  dernier, la copie de `WatchApp.app` entre dans la chaîne de dépendances de la
+  signature du Runner et Xcode refuse de builder :
+
+  ```
+  Error (Xcode): Cycle inside Runner; building could produce unreliable results.
+  → script phase "[CP] Embed Pods Frameworks"
+  ○ script phase "Thin Binary"
+  ○ copy command from Release-watchos/WatchApp.app to Runner.app/Watch/WatchApp.app
+  ○ script phase "[CP] Copy Pods Resources"
+  ```
+
+  C'est l'échec du build du 2026-09-28. L'ordre est stable après `pod install`
+  (vérifié), mais toute manipulation du projet doit le préserver.
 * **`pod install` préserve la target** (vérifié) : le `Podfile` ne cible que
   `Runner` et `RunnerTests`.
 * **L'icône ne doit pas avoir de canal alpha**, watchOS la refuse. Celle du
