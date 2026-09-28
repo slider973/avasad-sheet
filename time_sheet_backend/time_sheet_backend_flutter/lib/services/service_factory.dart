@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'watch_service.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -150,6 +152,10 @@ class ServiceFactory extends StatelessWidget {
               // Handle app returning to foreground for reminder service
               await clockReminderService.onAppForeground();
               timerService.appResumed();
+              // La montre a pu manquer des transitions pendant que
+              // l'application dormait : on republie l'état courant plutôt que
+              // de la laisser sur un écran périmé.
+              await getIt<WatchService>().resynchronize();
             }
             return null;
           });

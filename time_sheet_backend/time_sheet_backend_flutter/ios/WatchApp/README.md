@@ -62,6 +62,28 @@ Limite connue : si l'application iOS a été *tuée* par l'utilisateur, iOS ne l
 relance pas toujours en arrière-plan. Le contexte reste déposé et s'applique au
 prochain lancement — à la bonne heure, grâce à `occurredAt`.
 
+## Reconnexion
+
+WatchConnectivity ne garantit aucune livraison en temps réel : la montre dort,
+l'iPhone s'éloigne, la session se désactive. Trois moments déclenchent donc une
+resynchronisation explicite, car sans elle la montre affiche un état périmé et
+propose la mauvaise étape suivante.
+
+| Déclencheur | Effet |
+|---|---|
+| App watch au premier plan (`scenePhase == .active`) | `resynchronize()` |
+| iPhone redevient joignable (`sessionReachabilityDidChange`) | `resynchronize()` |
+| App iOS au premier plan (`AppLifecycleState.resumed`) | `WatchService.resynchronize()` |
+
+`resynchronize()` côté montre fait trois choses dans cet ordre : réactiver la
+session si elle est tombée, appliquer le `receivedApplicationContext` (fiable
+même hors ligne), puis demander l'état courant à l'iPhone.
+
+Cette demande est `["request": "state"]` — **champ distinct de `action`**. Une
+demande d'état ne doit jamais pouvoir être confondue avec une demande de
+pointage : `WatchService` la traite avant de chercher une action, et y répond
+par un `sendState` sans rien écrire.
+
 ## Intégration Xcode
 
 La target a été ajoutée par script (`xcodeproj`), pas à la main :

@@ -138,6 +138,18 @@ class WatchService {
   void _handleWatchMessage(Map<String, dynamic> message) {
     logger.i('[Watch] Message reçu: $message');
 
+    // Un message entrant prouve que la montre est joignable.
+    _isConnected = true;
+
+    // Demande de resynchronisation : la montre sort de veille et veut l'état
+    // courant. Champ distinct de « action » pour qu'une demande d'état ne
+    // puisse jamais être confondue avec une demande de pointage.
+    if (message['request'] == 'state') {
+      logger.i('[Watch] Demande de resynchronisation');
+      sendState(_currentState);
+      return;
+    }
+
     final rawAction = message['action'];
     if (rawAction is! String) return;
 
@@ -146,9 +158,6 @@ class WatchService {
       logger.w('[Watch] Action inconnue ignorée: $rawAction');
       return;
     }
-
-    // Un message entrant prouve que la montre est joignable.
-    _isConnected = true;
 
     final requestId = message['requestId'];
     if (requestId is String && requestId.isNotEmpty) {
@@ -234,6 +243,18 @@ class WatchService {
     }
 
     logger.i('[Watch] État publié: $state');
+  }
+
+  /// Republie l'état vers la montre après une interruption.
+  ///
+  /// Appelée quand l'application iOS revient au premier plan : l'appairage a
+  /// pu changer, et la montre a pu manquer des transitions pendant que
+  /// l'application était en arrière-plan.
+  Future<void> resynchronize() async {
+    await refreshConnection();
+    logger.i('[Watch] Resynchronisation — appairée: $_isPaired, '
+        'joignable: $_isConnected');
+    await sendState(_currentState);
   }
 
   Future<void> sendPointageConfirmation(String action) async {

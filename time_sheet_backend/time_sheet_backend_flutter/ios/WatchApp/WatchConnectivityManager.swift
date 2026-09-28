@@ -51,6 +51,39 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
         session.activate()
     }
 
+    // MARK: - Reconnexion
+
+    /// À appeler chaque fois que l'app watch revient au premier plan.
+    ///
+    /// Trois choses peuvent avoir changé pendant la veille : la session a pu
+    /// être désactivée, un contexte a pu arriver sans que la vue soit à
+    /// l'écran, et l'utilisateur a pu pointer depuis l'iPhone. Sans cette
+    /// resynchronisation, la montre affiche un état périmé et propose la
+    /// mauvaise étape suivante.
+    func resynchronize() {
+        guard let session else { return }
+
+        if session.activationState != .activated {
+            session.activate()
+            // `apply` sera fait par le callback d'activation.
+            return
+        }
+
+        DispatchQueue.main.async { self.isReachable = session.isReachable }
+
+        // Le contexte déjà reçu est la source la plus fiable hors ligne.
+        apply(session.receivedApplicationContext)
+
+        // Puis on demande l'état courant, au cas où l'iPhone ait enregistré un
+        // pointage sans que le contexte ait été livré à la montre.
+        guard session.isReachable else { return }
+        session.sendMessage(["request": "state"], replyHandler: { [weak self] reply in
+            self?.apply(reply)
+        }, errorHandler: { error in
+            NSLog("[Watch] Demande d'état échouée: \(error.localizedDescription)")
+        })
+    }
+
     // MARK: - Envoi
 
     /// Demande à l'iPhone d'enregistrer l'étape suivante.
@@ -129,12 +162,22 @@ extension WatchConnectivityManager: WCSessionDelegate {
         // Le contexte déjà reçu porte le dernier état connu : l'appliquer au
         // lancement évite d'afficher « Non commencé » à tort.
         apply(session.receivedApplicationContext)
+
+        // Puis demander l'état à jour — le contexte peut dater.
+        if session.isReachable {
+            session.sendMessage(["request": "state"], replyHandler: { [weak self] reply in
+                self?.apply(reply)
+            }, errorHandler: { _ in })
+        }
     }
 
     func sessionReachabilityDidChange(_ session: WCSession) {
         DispatchQueue.main.async {
             self.isReachable = session.isReachable
         }
+        // L'iPhone vient de redevenir joignable : c'est le moment de rattraper
+        // un état qui aurait changé pendant la coupure.
+        if session.isReachable { resynchronize() }
     }
 
     func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
