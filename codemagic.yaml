@@ -25,6 +25,9 @@ workflows:
       vars:
         APP_STORE_APPLE_ID: 6544810984  # Apple ID ASC de l'app (pas le bundle id)
         BUNDLE_ID: com.jonathanlemaine.timeSheet
+        # App watchOS embarquée (target WatchApp). Apple exige que le bundle de
+        # l'app watch soit préfixé par celui de l'app iOS hôte.
+        WATCH_BUNDLE_ID: com.jonathanlemaine.timeSheet.watchkitapp
       flutter: stable
       xcode: latest                     # = Xcode 26+ -> SDK iOS 26 (exigé par Apple)
       cocoapods: default
@@ -62,7 +65,17 @@ workflows:
             --type IOS_APP_STORE \
             --certificate-key=@file:/tmp/dist_key.pem \
             --create
+          # Un bundle embarqué a besoin de SON propre profil : sans lui, l'étape
+          # d'archive échoue sur la target WatchApp (« no profile matching »).
+          # Le type reste IOS_APP_STORE — une app watchOS s'appuie sur un App ID
+          # iOS, il n'existe pas de type watchOS distinct côté App Store Connect.
+          app-store-connect fetch-signing-files "$WATCH_BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --certificate-key=@file:/tmp/dist_key.pem \
+            --create
           keychain add-certificates
+          # Applique les profils à TOUTES les targets du projet, watch incluse,
+          # et régénère export_options.plist avec les deux bundles.
           xcode-project use-profiles
       - name: Flutter build ipa (build number = dernier TestFlight + 1)
         script: |

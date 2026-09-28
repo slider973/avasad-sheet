@@ -11,6 +11,7 @@ import 'package:time_sheet/features/pointage/domain/entities/work_time_info.dart
 import 'package:time_sheet/services/timer_service.dart';
 import 'package:time_sheet/services/work_time_calculator_service.dart';
 import 'package:time_sheet/services/watch_service.dart';
+import 'package:time_sheet/services/logger_service.dart';
 import 'package:time_sheet/services/clock_reminder_service.dart';
 
 //use cases
@@ -49,7 +50,8 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
   final WatchService _watchService = GetIt.I<WatchService>();
   final ClockReminderService _clockReminderService =
       GetIt.I<ClockReminderService>();
-  StreamSubscription<String>? _watchStateSubscription;
+  /// Abonnement aux demandes de pointage émises par l'Apple Watch.
+  StreamSubscription<WatchPointageRequest>? _watchActionSubscription;
 
   TimeSheetBloc({
     required this.saveTimesheetEntryUseCase,
@@ -81,6 +83,14 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
     on<UpdateVacationInfoEvent>(_onUpdateVacationInfo);
     on<GetExtendedTimerStateEvent>(_onGetExtendedTimerState);
     on<UpdateWorkTimeInfoEvent>(_onUpdateWorkTimeInfo);
+    on<TimeSheetWatchActionEvent>(_onWatchAction);
+
+    // Boucle montre → application. Sans cet abonnement, `WatchService`
+    // recevait bien les actions de la montre mais personne ne les traduisait
+    // en pointage : la communication était unidirectionnelle.
+    _watchActionSubscription = _watchService.actionStream.listen(
+      (request) => add(TimeSheetWatchActionEvent(request)),
+    );
   }
 
   void _checkGenerationStatus(
@@ -632,5 +642,80 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
         extendedTimerState: updatedExtendedState,
       ));
     }
+  }
+  /// Applique une demande de pointage venue de l'Apple Watch.
+  ///
+  /// La montre demande, l'application décide : la transition appliquée est
+  /// toujours celle qui est valide pour l'état réel de la journée, jamais
+  /// celle que la montre croit être la bonne. Une montre restée sur un écran
+  /// périmé ne peut donc pas écrire un pointage incohérent.
+  ///
+  /// L'entrée du jour est chargée si nécessaire : la montre peut réveiller
+  /// l'application alors qu'aucune journée n'est en mémoire.
+  Future<void> _onWatchAction(
+      TimeSheetWatchActionEvent event, Emitter<TimeSheetState> emit) async {
+    final today = DateFormat('dd-MMM-yy').format(DateTime.now());
+
+    if (state is! TimeSheetDataState) {
+      if (!event.canRetry) {
+        logger.e('[Watch] Journée introuvable après ${event.attempt} '
+            'tentatives, pointage abandonné');
+        return;
+      }
+      add(LoadTimeSheetDataEvent(today));
+      // L'action est rejouée une fois les données disponibles : le
+      // chargement passe par le même bus d'événements, donc il aura été
+      // traité avant ce second passage.
+      add(event.retry);
+      return;
+    }
+
+    final entry = (state as TimeSheetDataState).entry;
+
+    // La journée affichée n'est pas celle d'aujourd'hui (consultation du
+    // calendrier) : pointer dessus depuis la montre serait une surprise.
+    if (entry.dayDate != today) {
+      if (!event.canRetry) {
+        logger.e("[Watch] Impossible de charger aujourd'hui ($today), "
+            'pointage abandonné');
+        return;
+      }
+      logger.w('[Watch] La journée affichée (${entry.dayDate}) '
+          "n'est pas aujourd'hui ($today) : rechargement avant pointage");
+      add(LoadTimeSheetDataEvent(today));
+      add(event.retry);
+      return;
+    }
+
+    // Heure du geste sur la montre, pas heure de traitement : une demande
+    // livrée en différé doit s'inscrire à l'heure où l'utilisateur a appuyé.
+    final maintenant = event.request.occurredAt;
+
+    switch (entry.currentState) {
+      case 'Non commencé':
+        add(TimeSheetEnterEvent(maintenant));
+        break;
+      case 'Entrée':
+        add(TimeSheetStartBreakEvent(maintenant));
+        break;
+      case 'Pause':
+        add(TimeSheetEndBreakEvent(maintenant));
+        break;
+      case 'Reprise':
+        add(TimeSheetOutEvent(maintenant));
+        break;
+      case 'Sortie':
+        // Journée déjà terminée : aucun pointage à ajouter. On renvoie
+        // simplement l'état pour que la montre cesse de proposer un bouton.
+        logger.i('[Watch] Journée déjà terminée, action sans effet');
+        await _watchService.sendState('Sortie');
+        break;
+    }
+  }
+
+  @override
+  Future<void> close() {
+    _watchActionSubscription?.cancel();
+    return super.close();
   }
 }

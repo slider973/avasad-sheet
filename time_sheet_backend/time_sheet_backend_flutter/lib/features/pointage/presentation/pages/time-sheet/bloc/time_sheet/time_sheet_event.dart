@@ -89,6 +89,30 @@ class UpdateTimeSheetDataEvent extends TimeSheetEvent {
 /// Le commentaire appartient à l'entrée du jour : l'événement part de
 /// l'entrée courante de l'état et n'en modifie que ce champ, afin de ne
 /// jamais écraser les horaires déjà saisis.
+/// Demande de pointage émise par l'Apple Watch.
+///
+/// L'action portée n'est qu'une intention : c'est `TimeSheetBloc` qui applique
+/// la transition valide pour l'état réel de la journée.
+class TimeSheetWatchActionEvent extends TimeSheetEvent {
+  final WatchPointageRequest request;
+
+  /// Nombre de passages déjà effectués. L'action doit parfois être rejouée
+  /// après un chargement de la journée ; ce compteur borne le rejeu pour qu'un
+  /// chargement qui n'aboutit jamais ne boucle pas indéfiniment.
+  final int attempt;
+
+  const TimeSheetWatchActionEvent(this.request, {this.attempt = 0});
+
+  TimeSheetWatchActionEvent get retry =>
+      TimeSheetWatchActionEvent(request, attempt: attempt + 1);
+
+  /// Au-delà de deux tentatives, la journée est considérée inaccessible.
+  bool get canRetry => attempt < 2;
+
+  @override
+  List<Object?> get props => [request.action, request.occurredAt, attempt];
+}
+
 class TimeSheetUpdateCommentEvent extends TimeSheetEvent {
   final String comment;
 
