@@ -36,15 +36,30 @@ incohérent.
 plusieurs minutes après l'appui (iPhone endormi ou hors de portée). Le pointage
 utilise `occurredAt`, l'heure du geste, jamais l'heure de traitement.
 
-## Chaîne d'envoi côté montre
+## Chaîne d'envoi côté montre — et le piège du plugin
 
-1. `sendMessage` si l'iPhone est joignable — retour immédiat.
-2. Sinon, ou en cas d'échec, `transferUserInfo` : le système met en file et
-   livre au réveil de l'app iOS. **Un pointage n'est jamais perdu** parce que le
-   téléphone dormait.
+⚠️ **`transferUserInfo` est inutilisable ici.** C'est pourtant le canal que la
+documentation d'Apple désigne pour une action à livrer plus tard. Mais le plugin
+Flutter `watch_connectivity` (0.2.1+1) **n'implémente pas**
+`session(_:didReceiveUserInfo:)` côté iOS : un message envoyé par ce canal
+n'atteint jamais le code Dart. Le pointage part et disparaît, sans erreur.
+
+La demande emprunte donc les deux seuls canaux que le plugin sait recevoir :
+
+1. `updateApplicationContext` — **toujours**, en premier. Persistant : livré au
+   prochain réveil de l'app iOS. C'est lui qui sauve le pointage quand le
+   téléphone dort.
+2. `sendMessage` — en plus, si l'iPhone est joignable, pour le retour immédiat.
+
+**Conséquence : la déduplication n'est pas optionnelle.** Une demande arrive par
+deux canaux, et surtout le contexte d'application est **relu à chaque lancement**
+de l'app iOS — sans mémoire des demandes traitées, le dernier pointage de la
+montre serait rejoué à chaque redémarrage. D'où le `requestId` (UUID par
+demande) et `WatchRequestLedger`, qui persiste les identifiants vus dans
+SharedPreferences. C'est le rôle de `test/watch_request_ledger_test.dart`.
 
 Limite connue : si l'application iOS a été *tuée* par l'utilisateur, iOS ne la
-relance pas toujours en arrière-plan. La demande reste en file et s'applique au
+relance pas toujours en arrière-plan. Le contexte reste déposé et s'applique au
 prochain lancement — à la bonne heure, grâce à `occurredAt`.
 
 ## Intégration Xcode

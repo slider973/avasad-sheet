@@ -4,13 +4,25 @@ import WatchConnectivity
 /// Pont WatchConnectivity côté montre.
 ///
 /// Protocole (miroir de `lib/services/watch_service.dart`) :
-/// * montre → iPhone : `["action": "toggle"]`
-/// * iPhone → montre : `["state": "Entrée", "lastUpdate": "<ISO8601>"]`,
-///   en message direct ou en `applicationContext`.
+/// * montre → iPhone : `["action": "toggle", "requestId": "<UUID>",
+///   "timestamp": "<ISO8601>"]`
+/// * iPhone → montre : `["state": "Entrée", "lastUpdate": "<ISO8601>"]`
 ///
-/// Les deux canaux sont traités de la même façon : `applicationContext` est
-/// celui qui survit à une montre éteinte, `sendMessage` celui qui donne un
-/// retour immédiat quand l'iPhone est joignable.
+/// ⚠️ `transferUserInfo` n'est PAS utilisé, malgré son apparente pertinence :
+/// le plugin Flutter `watch_connectivity` n'implémente pas
+/// `session(_:didReceiveUserInfo:)` côté iOS. Une demande envoyée par ce canal
+/// n'atteint jamais le code Dart — elle serait silencieusement perdue.
+///
+/// La demande part donc sur les deux canaux que le plugin sait recevoir :
+/// * `sendMessage` — instantané, exige un iPhone joignable ;
+/// * `updateApplicationContext` — persistant, livré au prochain réveil de
+///   l'application iOS. C'est lui qui sauve le pointage quand le téléphone
+///   dort.
+///
+/// Conséquence : une même demande peut arriver deux fois, et le contexte est
+/// relu à chaque lancement de l'app iOS. D'où le `requestId`, sur lequel le
+/// côté Dart déduplique — sans quoi chaque redémarrage rejouerait le dernier
+/// pointage.
 final class WatchConnectivityManager: NSObject, ObservableObject {
     static let shared = WatchConnectivityManager()
 
@@ -43,10 +55,11 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
 
     /// Demande à l'iPhone d'enregistrer l'étape suivante.
     ///
-    /// `sendMessage` est tenté d'abord (instantané). S'il échoue ou si l'iPhone
-    /// n'est pas joignable, la demande passe par `transferUserInfo`, que le
-    /// système met en file et livre au réveil de l'application iOS : un
-    /// pointage n'est donc jamais perdu parce que le téléphone dormait.
+    /// Le contexte d'application est écrit dans tous les cas : c'est le seul
+    /// canal reçu par le plugin qui survive à un iPhone endormi. Un
+    /// `sendMessage` s'y ajoute quand le téléphone est joignable, pour le
+    /// retour immédiat. La déduplication par `requestId` côté Dart rend cette
+    /// double émission sans danger.
     func requestPointage() {
         guard let session, session.activationState == .activated else {
             errorMessage = "Montre non connectée"
@@ -58,23 +71,29 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
 
         let payload: [String: Any] = [
             "action": "toggle",
+            "requestId": UUID().uuidString,
             "timestamp": ISO8601DateFormatter().string(from: Date()),
         ]
 
+        // Canal persistant d'abord : si l'application est tuée juste après,
+        // la demande est déjà déposée.
+        do {
+            try session.updateApplicationContext(payload)
+        } catch {
+            NSLog("[Watch] updateApplicationContext échoué: \(error.localizedDescription)")
+            errorMessage = "Pointage non transmis"
+            isSending = false
+            return
+        }
+
         if session.isReachable {
-            session.sendMessage(payload, replyHandler: nil) { [weak self] error in
-                // L'envoi direct a échoué : on retombe sur la file persistante
-                // plutôt que de perdre le pointage.
-                session.transferUserInfo(payload)
-                DispatchQueue.main.async {
-                    self?.errorMessage = "Envoi différé"
-                    self?.isSending = false
-                }
-                NSLog("[Watch] sendMessage échoué, basculé en transferUserInfo: \(error.localizedDescription)")
+            session.sendMessage(payload, replyHandler: nil) { error in
+                // Pas de repli à tenter : le contexte est déjà déposé et sera
+                // livré au réveil de l'application iOS.
+                NSLog("[Watch] sendMessage échoué, le contexte prendra le relais: \(error.localizedDescription)")
             }
         } else {
-            session.transferUserInfo(payload)
-            errorMessage = "iPhone absent — pointage mis en file"
+            errorMessage = "iPhone absent — pointage enregistré au réveil"
             isSending = false
         }
 
@@ -127,7 +146,4 @@ extension WatchConnectivityManager: WCSessionDelegate {
         apply(applicationContext)
     }
 
-    func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any]) {
-        apply(userInfo)
-    }
 }

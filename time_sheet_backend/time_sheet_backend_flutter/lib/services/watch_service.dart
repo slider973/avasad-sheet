@@ -3,6 +3,8 @@ import 'package:watch_connectivity/watch_connectivity.dart';
 import 'package:get_it/get_it.dart';
 import 'package:logger/logger.dart';
 
+import 'watch_request_ledger.dart';
+
 /// Actions de pointage qu'une Apple Watch peut demander.
 ///
 /// La montre demande, l'application décide : c'est `TimeSheetBloc` qui applique
@@ -56,6 +58,9 @@ class WatchService {
   final Logger logger = GetIt.I<Logger>();
   final _watchConnectivity = WatchConnectivity();
 
+  WatchService({WatchRequestLedger? ledger})
+      : _ledger = ledger ?? WatchRequestLedger();
+
   final _stateController = StreamController<String>.broadcast();
   final _actionController =
       StreamController<WatchPointageRequest>.broadcast();
@@ -77,6 +82,10 @@ class WatchService {
   bool _isPaired = false;
   bool get isPaired => _isPaired;
 
+  /// Mémoire des demandes déjà appliquées — voir [WatchRequestLedger] pour la
+  /// raison pour laquelle elle est indispensable et persistée.
+  final WatchRequestLedger _ledger;
+
   Future<void> initialize() async {
     try {
       final isSupported = await _watchConnectivity.isSupported;
@@ -85,8 +94,13 @@ class WatchService {
         return;
       }
 
-      // Les écouteurs sont branchés AVANT tout appel réseau : un message
-      // arrivant pendant l'initialisation ne doit pas être perdu.
+      // Les identifiants déjà traités sont chargés AVANT d'écouter : le
+      // contexte en attente est livré dès l'abonnement, et il ne doit pas être
+      // rejoué.
+      await _ledger.load();
+
+      // Les écouteurs sont branchés ensuite : un message arrivant pendant
+      // l'initialisation ne doit pas être perdu.
       _setupListeners();
 
       _isPaired = await _watchConnectivity.isPaired;
@@ -135,6 +149,20 @@ class WatchService {
 
     // Un message entrant prouve que la montre est joignable.
     _isConnected = true;
+
+    final requestId = message['requestId'];
+    if (requestId is String && requestId.isNotEmpty) {
+      if (_ledger.alreadyHandled(requestId)) {
+        logger.i('[Watch] Demande $requestId déjà appliquée, ignorée');
+        return;
+      }
+      _ledger.remember(requestId);
+    } else {
+      // Une demande sans identifiant ne peut pas être dédupliquée. On
+      // l'applique quand même — le protocole historique n'en portait pas —
+      // mais on le signale : c'est le cas qui peut produire un doublon.
+      logger.w('[Watch] Demande sans requestId : doublon possible');
+    }
 
     // L'état local n'est PAS modifié ici : seul le bloc, après écriture
     // effective du pointage, fait autorité. Sans quoi l'UI afficherait une
