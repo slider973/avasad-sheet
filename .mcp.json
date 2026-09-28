@@ -11,43 +11,50 @@
       "command": "npx",
       "args": [
         "-y",
-        "@supabase/mcp-server-supabase@latest",
+        "@supabase/mcp-server-supabase@0.13.0",
         "--access-token",
-        "sbp_d24e1a417f6f83810a57ef7af98cf09f5ef57b5d"
+        "${SUPABASE_ACCESS_TOKEN}"
       ],
-      "env": {}
+      "env": {
+        "npm_config_prefer_offline": "true"
+      }
     },
     "sequential-thinking": {
       "command": "npx",
       "args": [
         "-y",
-        "@modelcontextprotocol/server-sequential-thinking"
+        "@modelcontextprotocol/server-sequential-thinking@2026.8.31"
       ],
-      "env": {}
+      "env": {
+        "npm_config_prefer_offline": "true"
+      }
     },
     "memory": {
       "command": "npx",
       "args": [
         "-y",
-        "@modelcontextprotocol/server-memory"
+        "@modelcontextprotocol/server-memory@2026.8.31"
       ],
       "env": {
-        "MEMORY_FILE_PATH": "/Users/jonathanlemaine/StudioProjects/time_sheet/memory-bank"
+        "MEMORY_FILE_PATH": "/Users/jonathanlemaine/StudioProjects/time_sheet/memory-bank",
+        "npm_config_prefer_offline": "true"
       }
     },
     "XcodeBuildMCP": {
       "command": "npx",
       "args": [
         "-y",
-        "xcodebuildmcp@latest"
+        "xcodebuildmcp@2.7.0",
+        "mcp"
       ],
       "env": {
-        "INCREMENTAL_BUILDS_ENABLED": "true"
+        "INCREMENTAL_BUILDS_ENABLED": "true",
+        "npm_config_prefer_offline": "true"
       }
     },
     "context7": {
-      "type": "sse",
-      "url": "https://mcp.context7.com/sse"
+      "type": "http",
+      "url": "https://mcp.context7.com/mcp"
     }
   }
 }
