@@ -99,6 +99,11 @@ import '../features/manager/presentation/bloc/pending_approvals/pending_approval
 import '../features/manager/presentation/bloc/team_anomalies/team_anomalies_bloc.dart';
 import '../features/manager/presentation/bloc/team_timesheet/team_timesheet_bloc.dart';
 import '../features/validation/presentation/bloc/validation_menu/validation_menu_bloc.dart';
+import '../features/geofencing/data/repositories/geofence_preferences_store.dart';
+import '../features/geofencing/data/repositories/geofence_settings_repository_impl.dart';
+import '../features/geofencing/data/services/geofence_service.dart';
+import '../features/geofencing/domain/repositories/geofence_settings_repository.dart';
+import '../features/geofencing/presentation/bloc/geofence_settings_bloc.dart';
 final getIt = GetIt.instance;
 
 Future<void> setup() async {
@@ -165,6 +170,22 @@ Future<void> setup() async {
   final userPrefsRepo = UserPreferencesRepositoryPowerSyncImpl(db);
   await userPrefsRepo.initialize();
   getIt.registerLazySingleton<UserPreferencesRepository>(() => userPrefsRepo);
+
+  // ============ GÉOREPÉRAGE (pointage automatique) ============
+
+  // Les réglages passent par SharedPreferences et non par PowerSync :
+  // l'isolate d'arrière-plan du plugin natif doit pouvoir les relire alors
+  // que l'application est fermée et la base verrouillée.
+  getIt.registerLazySingleton<GeofenceSettingsRepository>(
+      () => const GeofenceSettingsRepositoryImpl(GeofencePreferencesStore()));
+  getIt.registerLazySingleton<GeofenceService>(() => const GeofenceService());
+  getIt.registerFactory<GeofenceSettingsBloc>(() => GeofenceSettingsBloc(
+        repository: getIt<GeofenceSettingsRepository>(),
+        // Après chaque sauvegarde, les zones surveillées sont réalignées sur
+        // les réglages.
+        onSettingsChanged: (settings) =>
+            getIt<GeofenceService>().syncZones(settings),
+      ));
 
   // ============ OVERTIME CONFIGURATION ============
 

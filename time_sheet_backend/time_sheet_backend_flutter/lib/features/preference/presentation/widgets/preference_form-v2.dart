@@ -8,6 +8,10 @@ import '../../../pointage/domain/entities/timesheet_generation_config.dart';
 import '../../../pointage/presentation/pages/timesheet_generation_config_page.dart';
 import '../pages/weekend_settings_page.dart';
 import '../pages/reminder_settings_page.dart';
+import '../../../geofencing/presentation/bloc/geofence_settings_bloc.dart';
+import '../../../geofencing/presentation/bloc/geofence_settings_event.dart';
+import '../../../geofencing/presentation/pages/geofence_settings_page.dart';
+import '../../../../services/injection_container.dart';
 import '../manager/preferences_bloc.dart';
 
 class PreferencesFormV2 extends StatefulWidget {
@@ -85,6 +89,12 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
                   onTap: () => _navigateToWeekendSettings(context),
                 ),
                 _buildReminderSettingsTile(state),
+                _buildListTile(
+                  icon: Icons.my_location,
+                  title: 'Pointage automatique',
+                  subtitle: 'Pointer selon votre position',
+                  onTap: () => _navigateToGeofenceSettings(context),
+                ),
                 _buildListTile(
                   icon: Icons.backup,
                   title: 'Sauvegarde et Restauration',
@@ -341,6 +351,19 @@ class _PreferencesFormV2State extends State<PreferencesFormV2> {
       context,
       MaterialPageRoute(
         builder: (context) => const WeekendSettingsPage(),
+      ),
+    );
+  }
+
+  void _navigateToGeofenceSettings(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => BlocProvider(
+          create: (_) =>
+              getIt<GeofenceSettingsBloc>()..add(const LoadGeofenceSettings()),
+          child: const GeofenceSettingsPage(),
+        ),
       ),
     );
   }
