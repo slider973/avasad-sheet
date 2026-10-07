@@ -147,6 +147,8 @@ class ServiceFactory extends StatelessWidget {
               // Handle app going to background for reminder service
               await clockReminderService.onAppBackground();
               timerService.appPaused();
+              // Inutile de sonder la montre en arrière-plan.
+              getIt<WatchService>().stopReachabilityPolling();
             } else if (msg == AppLifecycleState.resumed.toString()) {
               await dynamicMultiplatformNotificationService.onAppOpened();
               // Handle app returning to foreground for reminder service
@@ -156,6 +158,10 @@ class ServiceFactory extends StatelessWidget {
               // l'application dormait : on republie l'état courant plutôt que
               // de la laisser sur un écran périmé.
               await getIt<WatchService>().resynchronize();
+              // `isReachable` n'a pas de flux côté plugin : sans ce sondage,
+              // la pastille de connexion reste figée tant que l'écran n'est
+              // pas reconstruit.
+              getIt<WatchService>().startReachabilityPolling();
             }
             return null;
           });

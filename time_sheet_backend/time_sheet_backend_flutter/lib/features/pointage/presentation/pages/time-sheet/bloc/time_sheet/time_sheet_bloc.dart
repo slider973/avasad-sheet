@@ -91,6 +91,16 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
     _watchActionSubscription = _watchService.actionStream.listen(
       (request) => add(TimeSheetWatchActionEvent(request)),
     );
+
+    // L'état publié vers la montre est lu en base, et non dans la mémoire de
+    // session : après un redémarrage de l'application, une resynchronisation
+    // renverrait sinon « Non commencé » et effacerait l'affichage correct de
+    // la montre alors que la journée est déjà pointée.
+    _watchService.stateResolver = () async {
+      final today = DateFormat('dd-MMM-yy').format(DateTime.now());
+      final entry = await getTodayTimesheetEntryUseCase.execute(today);
+      return entry?.currentState ?? 'Non commencé';
+    };
   }
 
   void _checkGenerationStatus(
@@ -345,6 +355,11 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
 
       // Notifier le ClockReminderService de l'état initial
       await _clockReminderService.onTimeSheetStateChanged(entry.currentState);
+
+      // La montre doit connaître l'état réel du jour dès le chargement :
+      // sans cela elle reste sur « Non commencé » après un redémarrage de
+      // l'application, alors que la journée est déjà pointée.
+      await _watchService.sendState(entry.currentState);
 
       emit(await _createTimeSheetDataState(entry));
     } else {

@@ -82,6 +82,24 @@ class WatchService {
   bool _isPaired = false;
   bool get isPaired => _isPaired;
 
+  /// Changements de joignabilité, pour que l'interface cesse d'afficher un
+  /// état figé. `watch_connectivity` n'expose pas de flux pour `isReachable` :
+  /// ce flux est alimenté par [refreshConnection] et par l'arrivée d'un
+  /// message.
+  final _connectionController = StreamController<bool>.broadcast();
+  Stream<bool> get connectionStream => _connectionController.stream;
+
+  /// Sondage périodique de la joignabilité tant que l'application est visible.
+  Timer? _reachabilityTimer;
+
+  /// Publie la joignabilité uniquement quand elle change réellement.
+  void _setConnected(bool value) {
+    if (_isConnected == value) return;
+    _isConnected = value;
+    if (!_connectionController.isClosed) _connectionController.add(value);
+    logger.i('[Watch] Joignabilité : $value');
+  }
+
   /// Mémoire des demandes déjà appliquées — voir [WatchRequestLedger] pour la
   /// raison pour laquelle elle est indispensable et persistée.
   final WatchRequestLedger _ledger;
@@ -112,6 +130,11 @@ class WatchService {
       // Le contexte est publié même montre absente : il sera livré au premier
       // lancement de l'app watch.
       await sendState(_currentState);
+
+      // Le premier lancement ne passe pas par `AppLifecycleState.resumed` :
+      // le sondage doit démarrer ici, sinon la pastille reste figée jusqu'au
+      // premier aller-retour en arrière-plan.
+      startReachabilityPolling();
     } catch (e, stack) {
       logger.e('[Watch] Échec de l\'initialisation: $e', stackTrace: stack);
     }
@@ -139,14 +162,16 @@ class WatchService {
     logger.i('[Watch] Message reçu: $message');
 
     // Un message entrant prouve que la montre est joignable.
-    _isConnected = true;
+    _setConnected(true);
 
     // Demande de resynchronisation : la montre sort de veille et veut l'état
     // courant. Champ distinct de « action » pour qu'une demande d'état ne
     // puisse jamais être confondue avec une demande de pointage.
     if (message['request'] == 'state') {
       logger.i('[Watch] Demande de resynchronisation');
-      sendState(_currentState);
+      // L'état réel du jour, pas la mémoire de session : après un
+      // redémarrage de l'application, `_currentState` vaut « Non commencé ».
+      _authoritativeState().then(sendState);
       return;
     }
 
@@ -205,12 +230,29 @@ class WatchService {
   Future<bool> refreshConnection() async {
     try {
       _isPaired = await _watchConnectivity.isPaired;
-      _isConnected = await _watchConnectivity.isReachable;
+      _setConnected(await _watchConnectivity.isReachable);
     } catch (e) {
       logger.w('[Watch] Impossible de rafraîchir la connexion: $e');
-      _isConnected = false;
+      _setConnected(false);
     }
     return _isConnected;
+  }
+
+  /// Démarre le sondage de joignabilité (application au premier plan).
+  ///
+  /// Sans cela, la pastille de l'interface reste sur la valeur lue au
+  /// démarrage : le plugin ne notifie pas les changements de `isReachable`.
+  void startReachabilityPolling(
+      {Duration interval = const Duration(seconds: 10)}) {
+    _reachabilityTimer?.cancel();
+    _reachabilityTimer = Timer.periodic(interval, (_) => refreshConnection());
+  }
+
+  /// Arrête le sondage (application en arrière-plan) pour ne pas consommer
+  /// de batterie inutilement.
+  void stopReachabilityPolling() {
+    _reachabilityTimer?.cancel();
+    _reachabilityTimer = null;
   }
 
   /// Publie l'état de pointage vers la montre et vers l'UI de l'app.
@@ -245,6 +287,28 @@ class WatchService {
     logger.i('[Watch] État publié: $state');
   }
 
+  /// Permet au `TimeSheetBloc` de fournir l'état réel du jour, lu en base.
+  ///
+  /// Indispensable : `_currentState` ne retient que les pointages de la
+  /// session en cours. Après un redémarrage de l'application il repart à
+  /// « Non commencé », et une resynchronisation renverrait alors cette valeur
+  /// fausse à la montre, effaçant son affichage correct.
+  Future<String> Function()? stateResolver;
+
+  /// État faisant autorité : celui de la base si un résolveur est fourni,
+  /// sinon le dernier état connu en mémoire.
+  Future<String> _authoritativeState() async {
+    final resolver = stateResolver;
+    if (resolver == null) return _currentState;
+    try {
+      final resolved = await resolver();
+      if (resolved.isNotEmpty) return resolved;
+    } catch (e) {
+      logger.w('[Watch] État réel illisible, état mémoire conservé: $e');
+    }
+    return _currentState;
+  }
+
   /// Republie l'état vers la montre après une interruption.
   ///
   /// Appelée quand l'application iOS revient au premier plan : l'appairage a
@@ -254,7 +318,7 @@ class WatchService {
     await refreshConnection();
     logger.i('[Watch] Resynchronisation — appairée: $_isPaired, '
         'joignable: $_isConnected');
-    await sendState(_currentState);
+    await sendState(await _authoritativeState());
   }
 
   Future<void> sendPointageConfirmation(String action) async {
@@ -272,11 +336,13 @@ class WatchService {
   }
 
   void dispose() {
+    _reachabilityTimer?.cancel();
     for (final s in _subscriptions) {
       s.cancel();
     }
     _subscriptions.clear();
     _stateController.close();
     _actionController.close();
+    _connectionController.close();
   }
 }

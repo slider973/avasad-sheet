@@ -40,61 +40,78 @@ class _AppleWatchStatusCardState extends State<AppleWatchStatusCard> {
               ],
             ),
             const SizedBox(height: 12),
-            StreamBuilder<String>(
-              stream: _watchService.stateStream,
-              initialData: _watchService.currentState,
-              builder: (context, snapshot) {
-                final isConnected = _watchService.isConnected;
-                final currentState = snapshot.data ?? 'Non commencé';
-                
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+            StreamBuilder<bool>(
+              stream: _watchService.connectionStream,
+              initialData: _watchService.isConnected,
+              builder: (context, connectionSnapshot) {
+                // La joignabilité vient du flux : sans cela l'affichage
+                // restait figé sur la valeur lue au démarrage de l'app.
+                final isConnected =
+                    connectionSnapshot.data ?? _watchService.isConnected;
+
+                return StreamBuilder<String>(
+                  stream: _watchService.stateStream,
+                  initialData: _watchService.currentState,
+                  builder: (context, snapshot) {
+                    final currentState = snapshot.data ?? 'Non commencé';
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          width: 12,
-                          height: 12,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: isConnected ? Colors.green : Colors.grey,
-                          ),
+                        Row(
+                          children: [
+                            Container(
+                              width: 12,
+                              height: 12,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color:
+                                    isConnected ? Colors.green : Colors.grey,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              isConnected ? 'Connectée' : 'Non connectée',
+                              style: TextStyle(
+                                color:
+                                    isConnected ? Colors.green : Colors.grey,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(height: 8),
                         Text(
-                          isConnected ? 'Connectée' : 'Non connectée',
-                          style: TextStyle(
-                            color: isConnected ? Colors.green : Colors.grey,
-                            fontWeight: FontWeight.w500,
+                          'État: $currentState',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                        if (!isConnected)
+                          Text(
+                            '(Mode hors ligne - sync auto)',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(
+                                  fontStyle: FontStyle.italic,
+                                  color: Colors.grey[600],
+                                ),
                           ),
-                        ),
+                        if (!isConnected) ...[
+                          const SizedBox(height: 12),
+                          Text(
+                            'Ouvrez l\'app sur votre Apple Watch pour la connecter',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(color: Colors.grey[600]),
+                          ),
+                        ],
                       ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'État: $currentState',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    if (!isConnected) 
-                      Text(
-                        '(Mode hors ligne - sync auto)',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          fontStyle: FontStyle.italic,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                  ],
+                    );
+                  },
                 );
               },
             ),
-            const SizedBox(height: 12),
-            if (!_watchService.isConnected)
-              Text(
-                'Ouvrez l\'app sur votre Apple Watch pour la connecter',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[600],
-                ),
-              ),
           ],
         ),
       ),
