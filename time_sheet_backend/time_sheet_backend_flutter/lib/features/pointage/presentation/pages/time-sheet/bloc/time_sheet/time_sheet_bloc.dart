@@ -12,6 +12,8 @@ import 'package:time_sheet/services/timer_service.dart';
 import 'package:time_sheet/services/work_time_calculator_service.dart';
 import 'package:time_sheet/services/watch_service.dart';
 import 'package:time_sheet/services/logger_service.dart';
+import 'package:time_sheet/features/geofencing/data/services/day_mirror_store.dart';
+import 'package:time_sheet/features/geofencing/domain/entities/day_pointage_snapshot.dart';
 import 'package:time_sheet/services/clock_reminder_service.dart';
 
 //use cases
@@ -128,12 +130,51 @@ class TimeSheetBloc extends Bloc<TimeSheetEvent, TimeSheetState> {
     // Generate ExtendedTimerState with current timer data
     final extendedTimerState = _generateExtendedTimerState(entry);
 
+    // Point de passage unique de tous les pointages (manuels, montre,
+    // géorepérage) : le miroir de l'arrière-plan y est tenu à jour.
+    await _refreshGeofenceMirror(entry);
+
     return TimeSheetDataState(
       entry,
       monthlyEntries: monthlyEntries,
       vacationInfo: vacationInfo,
       extendedTimerState: extendedTimerState,
     );
+  }
+
+  /// Recopie les horaires du jour dans le miroir lu par l'isolate de
+  /// géorepérage.
+  ///
+  /// Sans cela, l'arrière-plan raisonne sur un état périmé : après un
+  /// pointage manuel il croit la journée non commencée et peut pointer une
+  /// seconde fois à l'entrée de zone suivante.
+  ///
+  /// Passe par `DayMirrorStore` et non par `GeofenceSyncCoordinator` : ce
+  /// dernier importe ce bloc, l'inverse créerait un cycle d'imports.
+  Future<void> _refreshGeofenceMirror(TimesheetEntry entry) async {
+    try {
+      final day = DateFormat('dd-MMM-yy').parse(entry.dayDate);
+      // Seul le jour courant intéresse l'arrière-plan : réécrire un autre
+      // jour (consultation d'historique) écraserait le miroir du jour.
+      final now = DateTime.now();
+      if (day.year != now.year ||
+          day.month != now.month ||
+          day.day != now.day) {
+        return;
+      }
+      await const DayMirrorStore().write(
+        DayPointageSnapshot(
+          startMorning: entry.startMorning,
+          endMorning: entry.endMorning,
+          startAfternoon: entry.startAfternoon,
+          endAfternoon: entry.endAfternoon,
+        ),
+        day,
+      );
+    } catch (e) {
+      // Un miroir non mis à jour ne doit jamais empêcher un pointage.
+      logger.w('[Geofencing] Miroir non mis à jour : $e');
+    }
   }
 
   TimesheetEntry _updateEntryTime(
