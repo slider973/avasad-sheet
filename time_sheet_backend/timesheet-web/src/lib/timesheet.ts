@@ -32,3 +32,44 @@ export function formatSlot(
   if (hasStart) return `${start} - …`
   return `… - ${end}`
 }
+
+/**
+ * Libelle exact stocke dans `timesheet_entries.period` pour une absence qui ne
+ * couvre qu'une moitie de journee (enum Dart `AbsencePeriod.halfDay`).
+ */
+export const DEMI_JOURNEE = 'Demi journée'
+
+/**
+ * Une absence d'une demi-journee ne doit pas compter pour un jour entier.
+ *
+ * La duree est portee par `period` sur `timesheet_entries` ; la table
+ * `absences` ne porte AUCUNE periode, donc tout comptage fonde sur elle
+ * confond un conge d'un jour et un conge d'une demi-journee.
+ */
+export function isHalfDayAbsence(entry: {
+  absence_reason?: string | null
+  period?: string | null
+}): boolean {
+  return isFilled(entry.absence_reason) && entry.period === DEMI_JOURNEE
+}
+
+/** Poids d'une absence en jours : 0,5 pour une demi-journee, 1 sinon. */
+export function absenceWeight(entry: {
+  absence_reason?: string | null
+  period?: string | null
+}): number {
+  return isHalfDayAbsence(entry) ? 0.5 : 1
+}
+
+/**
+ * Total des absences d'une liste d'entrees, en jours (demi-journees ponderees).
+ * Formate en locale suisse : « 1,5 » et non « 1.5 ».
+ */
+export function formatAbsenceTotal(
+  entries: ReadonlyArray<{ absence_reason?: string | null; period?: string | null }>,
+): string {
+  const total = entries
+    .filter((e) => isFilled(e.absence_reason))
+    .reduce((sum, e) => sum + absenceWeight(e), 0)
+  return total.toLocaleString('fr-CH', { maximumFractionDigits: 1 })
+}

@@ -19,6 +19,7 @@ import {
 } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
+import { isHalfDayAbsence, formatAbsenceTotal } from '@/lib/timesheet'
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import { detectAnomaliesForEntries, severityColors, type DetectedAnomaly } from '@/lib/anomaly-detection'
 import type { TimesheetEntry } from '@/types/database'
@@ -335,7 +336,7 @@ export default function TeamTimesheetPage() {
               <p className="text-xs text-muted-foreground">
                 {monthEntries?.filter(e => !e.absence_reason).length ?? 0} jours travailles
                 {' / '}
-                {monthEntries?.filter(e => e.absence_reason).length ?? 0} absences
+                {formatAbsenceTotal(monthEntries ?? [])} absences
               </p>
             </div>
 
@@ -351,7 +352,27 @@ export default function TeamTimesheetPage() {
                     <div className="rounded-lg border border-orange-200 bg-orange-50 p-3">
                       <p className="text-sm font-medium text-orange-700">
                         {absenceLabels[selectedEntry.absence_reason] ?? selectedEntry.absence_reason}
+                        {isHalfDayAbsence(selectedEntry) && ' — demi-journée'}
                       </p>
+                      {/* Une demi-journée d'absence laisse l'autre moitié travaillée :
+                          sans ça, l'après-midi pointé n'apparaissait nulle part. */}
+                      {isHalfDayAbsence(selectedEntry) && computeHours(selectedEntry) > 0 && (
+                        <div className="mt-2 space-y-1 border-t border-orange-200 pt-2">
+                          <p className="text-xs font-semibold text-orange-700">
+                            {computeHours(selectedEntry).toFixed(1)}h travaillees
+                          </p>
+                          {(selectedEntry.start_morning || selectedEntry.end_morning) && (
+                            <p className="text-xs text-orange-700/80">
+                              Matin: {selectedEntry.start_morning || '?'} - {selectedEntry.end_morning || '?'}
+                            </p>
+                          )}
+                          {(selectedEntry.start_afternoon || selectedEntry.end_afternoon) && (
+                            <p className="text-xs text-orange-700/80">
+                              Apres-midi: {selectedEntry.start_afternoon || '?'} - {selectedEntry.end_afternoon || '?'}
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="rounded-lg border p-3 space-y-1">
