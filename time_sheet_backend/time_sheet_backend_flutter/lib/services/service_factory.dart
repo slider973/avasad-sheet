@@ -43,6 +43,7 @@ import '../features/pointage/presentation/pages/time-sheet/bloc/time_sheet_list/
 import 'ios_notification_service.dart';
 import 'timer_service.dart';
 import 'clock_reminder_service.dart';
+import '../features/geofencing/data/services/geofence_sync_coordinator.dart';
 
 class ServiceFactory extends StatelessWidget {
   final getIt = GetIt.instance;
@@ -133,6 +134,15 @@ class ServiceFactory extends StatelessWidget {
           );
           dynamicMultiplatformNotificationService.initNotifications();
 
+          // Géorepérage : réaligne les zones surveillées et transforme en
+          // pointages les décisions que l'isolate d'arrière-plan a empilées
+          // pendant que l'application était fermée.
+          //
+          // Sans cet appel, `GeofenceSyncCoordinator` n'était instancié nulle
+          // part : les entrées et sorties de zone étaient bien détectées et
+          // empilées, mais aucune ne devenait un pointage réel.
+          getIt<GeofenceSyncCoordinator>().onAppStart(timeSheetBloc);
+
           // Set up TimeSheetBloc listener for clock state changes
           timeSheetBloc.stream.listen((state) {
             if (state is TimeSheetDataState) {
@@ -162,6 +172,12 @@ class ServiceFactory extends StatelessWidget {
               // la pastille de connexion reste figée tant que l'écran n'est
               // pas reconstruit.
               getIt<WatchService>().startReachabilityPolling();
+              // Les décisions de géorepérage prises pendant que l'application
+              // dormait n'attendent pas le prochain démarrage à froid : un
+              // simple retour au premier plan suffit à les transformer en
+              // pointages.
+              await getIt<GeofenceSyncCoordinator>()
+                  .replayPendingDecisions(timeSheetBloc);
             }
             return null;
           });

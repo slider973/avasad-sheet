@@ -102,6 +102,7 @@ import '../features/validation/presentation/bloc/validation_menu/validation_menu
 import '../features/geofencing/data/repositories/geofence_preferences_store.dart';
 import '../features/geofencing/data/repositories/geofence_settings_repository_impl.dart';
 import '../features/geofencing/data/services/geofence_service.dart';
+import '../features/geofencing/data/services/geofence_sync_coordinator.dart';
 import '../features/geofencing/domain/repositories/geofence_settings_repository.dart';
 import '../features/geofencing/presentation/bloc/geofence_settings_bloc.dart';
 final getIt = GetIt.instance;
@@ -179,6 +180,15 @@ Future<void> setup() async {
   getIt.registerLazySingleton<GeofenceSettingsRepository>(
       () => const GeofenceSettingsRepositoryImpl(GeofencePreferencesStore()));
   getIt.registerLazySingleton<GeofenceService>(() => const GeofenceService());
+  // Sans ce coordinateur enregistré, les décisions prises par l'isolate
+  // d'arrière-plan restaient empilées dans SharedPreferences et ne
+  // devenaient jamais de vrais pointages : le géorepérage fonctionnait,
+  // mais personne ne rejouait ses décisions.
+  getIt.registerLazySingleton<GeofenceSyncCoordinator>(
+      () => GeofenceSyncCoordinator(
+            settingsRepository: getIt<GeofenceSettingsRepository>(),
+            geofenceService: getIt<GeofenceService>(),
+          ));
   getIt.registerFactory<GeofenceSettingsBloc>(() => GeofenceSettingsBloc(
         repository: getIt<GeofenceSettingsRepository>(),
         // Après chaque sauvegarde, les zones surveillées sont réalignées sur
