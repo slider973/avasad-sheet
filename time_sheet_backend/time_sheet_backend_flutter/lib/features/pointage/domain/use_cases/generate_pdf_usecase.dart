@@ -723,13 +723,23 @@ class GeneratePdfUseCase {
     String overtimeHours = '';
 
     if (!isFullDayAbsence) {
-      // Calculer le seuil journalier en Duration
+      // Seuil journalier PRORATISÉ : une demi-journée d'absence ne doit pas
+      // se voir réclamer la journée entière. Sans ce prorata, le 24/09
+      // (congé le matin, 5h00 l'après-midi) affichait −3h18 au lieu de
+      // +51 min — 4h09 d'écart sur une ligne qui part à la finance.
       final thresholdMinutes = (user.normalHoursThreshold * 60).round();
-      final thresholdDuration = Duration(minutes: thresholdMinutes);
+      final fullThreshold = Duration(minutes: thresholdMinutes);
+      final thresholdDuration = isHalfDayAbsence
+          ? Duration(minutes: thresholdMinutes ~/ 2)
+          : fullThreshold;
 
       if (overtimeByDay.containsKey(day.entry.dayDate)) {
         // Il y a des heures supplémentaires (surplus brut ou heures weekend)
         overtimeHours = _formatDuration(overtimeByDay[day.entry.dayDate]!);
+      } else if (isWeekday && workDuration > thresholdDuration) {
+        // Demi-journée dépassant son seuil réduit : le surplus n'est pas
+        // remonté par overtimeByDay, il doit être affiché ici.
+        overtimeHours = _formatDuration(workDuration - thresholdDuration);
       } else if (isWeekday && workDuration < thresholdDuration &&
           workDuration > Duration.zero) {
         // Il y a un déficit (travaillé moins que le seuil)
@@ -853,18 +863,27 @@ class GeneratePdfUseCase {
     final thresholdDuration = Duration(minutes: thresholdMinutes);
 
     for (final day in week.workday) {
-      if (day.isAbsence()) continue;
+      final isHalfDayAbsence = day.entry.period == AbsencePeriod.halfDay.value;
+      // Une absence de journée complète sort du calcul ; une DEMI-journée y
+      // reste, avec son seuil réduit de moitié.
+      if (day.isAbsence() && !isHalfDayAbsence) continue;
 
       final workDuration = day.calculateTotalHours();
       final isWeekday = _isWeekday(day.entry.dayDate);
+      final dayThreshold = isHalfDayAbsence
+          ? Duration(minutes: thresholdMinutes ~/ 2)
+          : thresholdDuration;
 
       if (overtimeByDay.containsKey(day.entry.dayDate)) {
         // Ce jour a un surplus (weekday ou weekend)
         weekSurplusTotal += overtimeByDay[day.entry.dayDate]!;
-      } else if (isWeekday && workDuration < thresholdDuration &&
+      } else if (isWeekday && workDuration > dayThreshold) {
+        // Demi-journée au-dessus de son seuil réduit
+        weekSurplusTotal += (workDuration - dayThreshold);
+      } else if (isWeekday && workDuration < dayThreshold &&
                  workDuration > Duration.zero) {
         // Jour de semaine avec déficit
-        weekDeficitTotal += (thresholdDuration - workDuration);
+        weekDeficitTotal += (dayThreshold - workDuration);
       }
     }
 
