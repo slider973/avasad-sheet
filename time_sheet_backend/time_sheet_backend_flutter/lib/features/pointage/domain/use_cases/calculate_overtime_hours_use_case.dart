@@ -1,3 +1,4 @@
+import 'package:time_sheet/enum/absence_period.dart';
 import 'package:time_sheet/features/pointage/domain/entities/timesheet_entry.dart';
 import 'package:time_sheet/features/preference/domain/repositories/overtime_configuration_repository.dart';
 import 'package:time_sheet/services/logger_service.dart';
@@ -111,7 +112,21 @@ class CalculateOvertimeHoursUseCase {
     final weekendEntries = <TimesheetEntry>[];
 
     for (final entry in entries) {
-      if (entry.absence != null) continue; // Ignorer les absences
+      // Une absence de journée complète ne compte ni heures ni seuil : il n'y
+      // a rien à comparer. Une DEMI-journée, en revanche, doit rester dans le
+      // calcul — ses heures ont été travaillées et son seuil vaut la moitié.
+      final entryPeriod = AbsencePeriod.tryParse(entry.period);
+      final isHalfDayAbsence = entry.absenceReason != null &&
+          entry.absenceReason!.isNotEmpty &&
+          entryPeriod == AbsencePeriod.halfDay;
+
+      if (entry.absence != null && !isHalfDayAbsence) continue;
+      if (!isHalfDayAbsence &&
+          entry.absenceReason != null &&
+          entry.absenceReason!.isNotEmpty &&
+          entryPeriod == AbsencePeriod.fullDay) {
+        continue;
+      }
 
       if (entry.isWeekendDay && entry.isWeekendOvertimeEnabled) {
         weekendEntries.add(entry);
@@ -144,15 +159,27 @@ class CalculateOvertimeHoursUseCase {
       final dailyTotal = entry.calculateDailyTotal();
       totalWorkedMinutes += dailyTotal;
 
-      if (dailyTotal < thresholdDuration) {
+      // Seuil PRORATISÉ : une demi-journée d'absence ne doit pas se voir
+      // réclamer 8h18. Sans ce prorata, le 24/09 (congé le matin, 5h00
+      // travaillées l'après-midi) affichait −3h18 de déficit au lieu de
+      // +51 min d'excédent — 4h09 d'écart sur une seule ligne.
+      final entryPeriod = AbsencePeriod.tryParse(entry.period);
+      final isHalfDayAbsence = entry.absenceReason != null &&
+          entry.absenceReason!.isNotEmpty &&
+          entryPeriod == AbsencePeriod.halfDay;
+      final dayThreshold = isHalfDayAbsence
+          ? Duration(minutes: thresholdDuration.inMinutes ~/ 2)
+          : thresholdDuration;
+
+      if (dailyTotal < dayThreshold) {
         // Déficit d'heures ce jour
-        final deficit = thresholdDuration - dailyTotal;
+        final deficit = dayThreshold - dailyTotal;
         totalDeficitMinutes += deficit;
         print(
-            'Weekday ${entry.dayDate}: ${_formatDuration(dailyTotal)} - DÉFICIT de ${_formatDuration(deficit)}');
-      } else if (dailyTotal > thresholdDuration) {
+            'Weekday ${entry.dayDate}: ${_formatDuration(dailyTotal)} - DÉFICIT de ${_formatDuration(deficit)}${isHalfDayAbsence ? ' (seuil demi-journée)' : ''}');
+      } else if (dailyTotal > dayThreshold) {
         // Excès d'heures ce jour
-        final excess = dailyTotal - thresholdDuration;
+        final excess = dailyTotal - dayThreshold;
         totalExcessMinutes += excess;
         print(
             'Weekday ${entry.dayDate}: ${_formatDuration(dailyTotal)} - EXCÈS de ${_formatDuration(excess)}');
