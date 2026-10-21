@@ -1,5 +1,6 @@
 import 'package:intl/intl.dart';
 import 'package:time_sheet/features/absence/domain/entities/absence_entity.dart';
+import 'package:time_sheet/enum/absence_period.dart';
 import 'package:time_sheet/enum/overtime_type.dart';
 import 'package:time_sheet/services/weekend_detection_service.dart';
 
@@ -83,7 +84,16 @@ class TimesheetEntry {
     final format = DateFormat('HH:mm');
     Duration total = Duration.zero;
 
-    if (absence != null || (absenceReason != null && absenceReason!.isNotEmpty && period == 'fullDay')) {
+    // Une absence de JOURNÉE COMPLÈTE ne compte aucune heure travaillée.
+    //
+    // ⚠️ La comparaison porte sur le libellé stocké en base (« Journée
+    // complète »), pas sur le nom de la constante : l'ancien
+    // `period == 'fullDay'` ne matchait JAMAIS les données réelles. Une
+    // demi-journée, elle, garde ses heures effectivement travaillées.
+    if (absence != null ||
+        (absenceReason != null &&
+            absenceReason!.isNotEmpty &&
+            AbsencePeriod.tryParse(period) == AbsencePeriod.fullDay)) {
       return Duration.zero;
     }
 
