@@ -17,8 +17,14 @@ class OvertimeConfigurationRepositoryPowerSyncImpl
 
   @override
   Future<OvertimeConfiguration?> getConfiguration() async {
+    // ORDER BY obligatoire : plusieurs lignes peuvent coexister pour un même
+    // user_id (aucune contrainte d'unicité en base). Sans tri, SQLite rend une
+    // ligne arbitraire et le seuil journalier change d'une lecture à l'autre —
+    // c'est ce qui faisait disparaître la ligne « Heures supplémentaires » du
+    // PDF quand une config obsolète à 480 min était tirée au lieu de 498.
     final row = await db.getOptional(
-      'SELECT * FROM overtime_configurations WHERE user_id = ? LIMIT 1',
+      'SELECT * FROM overtime_configurations WHERE user_id = ? '
+      'ORDER BY updated_at DESC, created_at DESC, id DESC LIMIT 1',
       [_userId],
     );
     if (row == null) return null;
@@ -31,7 +37,8 @@ class OvertimeConfigurationRepositoryPowerSyncImpl
     configuration.touch();
 
     final existing = await db.getOptional(
-      'SELECT id FROM overtime_configurations WHERE user_id = ? LIMIT 1',
+      'SELECT id FROM overtime_configurations WHERE user_id = ? '
+      'ORDER BY updated_at DESC, created_at DESC, id DESC LIMIT 1',
       [_userId],
     );
 
