@@ -85,24 +85,37 @@ class CalculateOvertimeHoursUseCase {
     double weekdayRate;
     double weekendRate;
 
+    // Le seuil journalier PASSÉ EN PARAMÈTRE fait foi : c'est celui qu'utilise
+    // déjà l'affichage hebdomadaire du PDF (préférence `normalHoursThreshold`).
+    // Lire le seuil ailleurs — overtime_configurations, qui peut contenir
+    // plusieurs lignes divergentes pour un même utilisateur — faisait calculer
+    // le total mensuel avec une valeur différente de celle des colonnes, d'où
+    // un total mensuel incohérent avec la somme des semaines affichées juste
+    // au-dessus (et la ligne « Heures supplémentaires » absente quand le
+    // solde tombait à zéro). La configuration ne sert plus qu'aux TAUX.
+    final parameterThreshold = Duration(
+      hours: normalHoursThreshold.floor(),
+      minutes: ((normalHoursThreshold % 1) * 60).round(),
+    );
+
     try {
       final config = await _configRepository.getOrCreateDefaultConfiguration();
-      dailyThreshold = config.dailyWorkThreshold;
+      dailyThreshold = parameterThreshold;
       weekdayRate = config.weekdayOvertimeRate;
       weekendRate = config.weekendOvertimeRate;
 
       print(
-          'Seuil journalier (depuis config): ${dailyThreshold.inHours}h ${dailyThreshold.inMinutes.remainder(60)}min');
+          'Seuil journalier (parametre, fait foi): ${dailyThreshold.inHours}h ${dailyThreshold.inMinutes.remainder(60)}min — config ignoree pour le seuil (${config.dailyWorkThreshold.inMinutes} min)');
       print('Taux weekday: $weekdayRate, Taux weekend: $weekendRate');
     } catch (e) {
       // Fallback to default values if configuration loading fails
-      dailyThreshold = const Duration(hours: 8, minutes: 18);
+      dailyThreshold = parameterThreshold;
       weekdayRate = 1.25;
       weekendRate = 1.5;
       logger.w(
           'Échec du chargement de la configuration, utilisation des valeurs par défaut: $e');
       print(
-          'ATTENTION: Utilisation des valeurs par défaut (8h18, taux 1.25/1.5)');
+          'ATTENTION: taux par défaut (1.25/1.5), seuil = paramètre ${dailyThreshold.inMinutes} min');
     }
 
     final thresholdDuration = dailyThreshold;
