@@ -547,6 +547,20 @@ class GeneratePdfUseCase {
     totalOvertimeHours = monthlyOvertimeResult.totalOvertime;
     overtimeByDay = monthlyOvertimeResult.overtimeByDay;
 
+    // Le total du mois est la SOMME des soldes hebdomadaires réellement
+    // imprimés dans le document. `executeMonthly` reste la source de
+    // `overtimeByDay` (surplus bruts par jour, utilisés dans les colonnes),
+    // mais son total global n'est plus affiché : il suivait une autre logique
+    // de compensation et pouvait tomber à zéro — masquant alors la ligne
+    // « Heures supplémentaires » alors que les semaines au-dessus affichaient
+    // +0h51, +0h03, −0h22. Un relevé ne doit jamais se contredire.
+    final Duration weeksNetTotal = weeks.fold(
+      Duration.zero,
+      (sum, week) => sum + _weekNetOvertime(week, overtimeByDay, user),
+    );
+    totalOvertimeHours =
+        weeksNetTotal > Duration.zero ? weeksNetTotal : Duration.zero;
+
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4.copyWith(
@@ -844,18 +858,16 @@ class GeneratePdfUseCase {
     }
   }
 
-  pw.TableRow _buildWeekTotal(
+  /// Solde net d'heures supplémentaires d'UNE semaine : surplus − déficits.
+  ///
+  /// Extrait de `_buildWeekTotal` pour servir de source unique : le total
+  /// mensuel est la SOMME de ces soldes. Sans cela, le total du mois provenait
+  /// d'un calcul séparé (`executeMonthly`) qui pouvait aboutir à zéro — et
+  /// donc masquer la ligne « Heures supplémentaires » — alors que les colonnes
+  /// hebdomadaires imprimées juste au-dessus affichaient les bons soldes.
+  /// Le document doit toujours être cohérent avec lui-même.
+  Duration _weekNetOvertime(
       WorkWeek week, Map<String, Duration> overtimeByDay, User user) {
-    double daysWorked = week.workday.fold(0.0, (sum, day) {
-      if (day.entry.period == AbsencePeriod.halfDay.value) {
-        return sum + 0.5;
-      } else if (!day.isAbsence()) {
-        return sum + 1;
-      }
-      return sum;
-    });
-
-    // Calculer le total des surplus et déficits pour cette semaine
     Duration weekSurplusTotal = Duration.zero;
     Duration weekDeficitTotal = Duration.zero;
 
@@ -880,15 +892,60 @@ class GeneratePdfUseCase {
       } else if (isWeekday && workDuration > dayThreshold) {
         // Demi-journée au-dessus de son seuil réduit
         weekSurplusTotal += (workDuration - dayThreshold);
-      } else if (isWeekday && workDuration < dayThreshold &&
-                 workDuration > Duration.zero) {
+      } else if (isWeekday &&
+          workDuration < dayThreshold &&
+          workDuration > Duration.zero) {
         // Jour de semaine avec déficit
         weekDeficitTotal += (dayThreshold - workDuration);
       }
     }
 
-    // Calculer le net de la semaine (surplus - déficits)
-    Duration netWeekOvertime = weekSurplusTotal - weekDeficitTotal;
+    return weekSurplusTotal - weekDeficitTotal;
+  }
+
+  /// Vrai si la semaine comporte au moins un surplus ou un déficit, afin de
+  /// distinguer « 0h00 par compensation » de « rien à signaler ».
+  bool _weekHasVariation(
+      WorkWeek week, Map<String, Duration> overtimeByDay, User user) {
+    final thresholdMinutes = (user.normalHoursThreshold * 60).round();
+    final thresholdDuration = Duration(minutes: thresholdMinutes);
+
+    for (final day in week.workday) {
+      final isHalfDayAbsence = day.entry.period == AbsencePeriod.halfDay.value;
+      if (day.isAbsence() && !isHalfDayAbsence) continue;
+
+      final workDuration = day.calculateTotalHours();
+      final isWeekday = _isWeekday(day.entry.dayDate);
+      final dayThreshold = isHalfDayAbsence
+          ? Duration(minutes: thresholdMinutes ~/ 2)
+          : thresholdDuration;
+
+      if (overtimeByDay.containsKey(day.entry.dayDate)) return true;
+      if (isWeekday && workDuration > dayThreshold) return true;
+      if (isWeekday &&
+          workDuration < dayThreshold &&
+          workDuration > Duration.zero) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  pw.TableRow _buildWeekTotal(
+      WorkWeek week, Map<String, Duration> overtimeByDay, User user) {
+    double daysWorked = week.workday.fold(0.0, (sum, day) {
+      if (day.entry.period == AbsencePeriod.halfDay.value) {
+        return sum + 0.5;
+      } else if (!day.isAbsence()) {
+        return sum + 1;
+      }
+      return sum;
+    });
+
+    // Net de la semaine (surplus - déficits), calculé par la source unique.
+    final Duration netWeekOvertime =
+        _weekNetOvertime(week, overtimeByDay, user);
+    final bool hasVariation = _weekHasVariation(week, overtimeByDay, user);
 
     String formattedDaysWorked = daysWorked.truncateToDouble() == daysWorked
         ? daysWorked.toStringAsFixed(0)
@@ -900,7 +957,7 @@ class GeneratePdfUseCase {
       weekOvertimeDisplay = '-${_formatDuration(netWeekOvertime.abs())}';
     } else if (netWeekOvertime > Duration.zero) {
       weekOvertimeDisplay = _formatDuration(netWeekOvertime);
-    } else if (weekSurplusTotal > Duration.zero || weekDeficitTotal > Duration.zero) {
+    } else if (hasVariation) {
       // Afficher 0h00 seulement si la semaine a des surplus ou déficits qui se compensent
       weekOvertimeDisplay = '0h00';
     }
