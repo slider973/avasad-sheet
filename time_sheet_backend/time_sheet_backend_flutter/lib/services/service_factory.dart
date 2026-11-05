@@ -1,4 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+
+import 'package:time_sheet/core/services/supabase/supabase_service.dart';
+import 'package:time_sheet/features/geofencing/data/repositories/background_credentials_store.dart';
+import 'package:time_sheet/services/logger_service.dart';
 
 import 'watch_service.dart';
 import 'package:flutter/services.dart';
@@ -143,6 +149,15 @@ class ServiceFactory extends StatelessWidget {
           // empilées, mais aucune ne devenait un pointage réel.
           getIt<GeofenceSyncCoordinator>().onAppStart(timeSheetBloc);
 
+          // Dépose le jeton d'accès à l'usage de l'isolate d'arrière-plan.
+          //
+          // L'isolate n'a ni GetIt ni client Supabase : sans ces valeurs, il ne
+          // peut pas écrire le pointage côté serveur et retombe sur la file
+          // d'attente, donc sur « rien tant que l'application n'est pas
+          // ouverte ». Rafraîchi à chaque démarrage, l'application étant le
+          // seul endroit où la session se renouvelle.
+          unawaited(_publishBackgroundCredentials());
+
           // Set up TimeSheetBloc listener for clock state changes
           timeSheetBloc.stream.listen((state) {
             if (state is TimeSheetDataState) {
@@ -178,10 +193,46 @@ class ServiceFactory extends StatelessWidget {
               // pointages.
               await getIt<GeofenceSyncCoordinator>()
                   .replayPendingDecisions(timeSheetBloc);
+              // Le jeton a pu être renouvelé pendant la mise en veille : le
+              // redéposer pour que l'arrière-plan reste capable d'écrire.
+              unawaited(_publishBackgroundCredentials());
             }
             return null;
           });
           return child;
         }));
+  }
+
+  /// Rend le jeton d'accès lisible par l'isolate d'arrière-plan du
+  /// géorepérage, qui n'a accès ni à GetIt ni au client Supabase.
+  ///
+  /// Les échecs sont journalisés sans être propagés : ne pas pouvoir préparer
+  /// l'écriture directe dégrade l'automatisme (repli sur la file d'attente),
+  /// cela ne doit jamais empêcher l'application de démarrer.
+  static Future<void> _publishBackgroundCredentials() async {
+    try {
+      final session = SupabaseService.instance.client.auth.currentSession;
+      const store = BackgroundCredentialsStore();
+
+      if (session == null) {
+        await store.clear();
+        return;
+      }
+
+      final expiresAt = session.expiresAt;
+      if (expiresAt == null) {
+        await store.clear();
+        return;
+      }
+
+      await store.save(
+        userId: session.user.id,
+        accessToken: session.accessToken,
+        expiresAt:
+            DateTime.fromMillisecondsSinceEpoch(expiresAt * 1000, isUtc: true),
+      );
+    } catch (e) {
+      logger.w('[Geofencing] Identifiants d\'arrière-plan non déposés : $e');
+    }
   }
 }

@@ -1,5 +1,9 @@
+import 'package:http/http.dart' as http;
 import 'package:native_geofence/native_geofence.dart' as ng;
+import 'package:time_sheet/core/config/environment.dart';
+import 'package:time_sheet/features/geofencing/data/repositories/background_credentials_store.dart';
 import 'package:time_sheet/features/geofencing/data/repositories/geofence_preferences_store.dart';
+import 'package:time_sheet/features/geofencing/data/services/attendance_remote_writer.dart';
 import 'package:time_sheet/features/geofencing/data/repositories/geofence_runtime_state_repository_impl.dart';
 import 'package:time_sheet/features/geofencing/data/repositories/geofence_settings_repository_impl.dart';
 import 'package:time_sheet/features/geofencing/data/services/day_mirror_store.dart';
@@ -119,10 +123,49 @@ Future<void> handleGeofenceCallback({
   }
 
   // Le miroir est mis à jour tout de suite pour que l'événement suivant
-  // raisonne sur un état correct, puis la décision est mise en file : seule
-  // l'application au premier plan écrit réellement dans PowerSync.
+  // raisonne sur un état correct.
   await mirrorStore.applyDecision(decision, now: at);
-  await mirrorStore.enqueueDecision(decision);
+
+  // Écriture directe côté serveur, depuis cet isolate.
+  //
+  // Core Location relance l'application à chaque franchissement, application
+  // tuée comprise, et lui accorde « environ 10 secondes » (documentation Apple,
+  // *Region Monitoring*) — amplement assez pour un appel HTTPS. PowerSync, lui,
+  // reste hors de portée ici : il réclame GetIt et une base SQLite ouverte.
+  //
+  // Sans cet appel, la décision n'était QUE mise en file : tant que
+  // l'utilisateur n'ouvrait pas l'application, aucun pointage n'existait, ce
+  // qui privait la fonctionnalité de son objet.
+  final credentials = const BackgroundCredentialsStore();
+  final userId = await credentials.readUserId();
+  final token = await credentials.readAccessToken(now: at);
+
+  var keepInQueue = true;
+  if (userId != null) {
+    final writer = AttendanceRemoteWriter(
+      httpClient: http.Client(),
+      baseUrl: AppConfig.supabaseUrl,
+      anonKey: AppConfig.anonKey,
+    );
+    final resultat = await writer.write(
+      decision: decision,
+      userId: userId,
+      accessToken: token,
+      now: at,
+    );
+    keepInQueue = resultat.shouldKeepInQueue;
+    logger.i('[Geofencing] Écriture directe : ${resultat.status.name}'
+        '${resultat.detail != null ? ' (${resultat.detail})' : ''}');
+  } else {
+    logger.w('[Geofencing] Aucun utilisateur mémorisé : rejeu différé');
+  }
+
+  // La file reste le filet de sécurité : on n'y empile que ce qui n'a pas
+  // abouti, sinon le rejeu à l'ouverture créerait un doublon ou écraserait une
+  // correction saisie à la main entre-temps.
+  if (keepInQueue) {
+    await mirrorStore.enqueueDecision(decision);
+  }
 
   // Une reprise détectée rend caduque la question de 14 h.
   final geofenceNotifier = notifier ?? GeofenceNotifier();
